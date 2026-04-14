@@ -69,6 +69,7 @@ public class VoxelMap implements PreparableReloadListener {
         seedMapperOptions = new SeedMapperSettingsManager();
 
         mapOptions.showUnderMenus = showUnderMenus;
+        radarOptions.forceCpuRendering = VoxelConstants.hasVulkanMod();
         radarOptions.radarAllowed = !isFair;
         radarOptions.radarMobsAllowed = !isFair;
         radarOptions.radarPlayersAllowed = !isFair;

@@ -1,7 +1,7 @@
 modLoader = "javafml"
 loaderVersion = "*"
 license = "All Rights Reserved"
-issueTrackerURL = "https://github.com/cev-api/Voxelmap/issues"
+issueTrackerURL = "https://github.com/cev-api/VoxelMap-x-SeedMapper/issues"
 
 [[mods]]
 modId = "voxelmap-cevapi"
@@ -10,7 +10,7 @@ displayName = "VoxelMap x SeedMapper by CevAPI"
 logoFile = "icon.png"
 authors = "CevAPI, Lahwran, Zaneris, MamiyaOtaru, fantahund, Brokkonaut, TheAlgorithm476, Algamja11"
 description = "Minimap, World Map & Seed Map"
-displayURL = "https://github.com/cev-api/Voxelmap"
+displayURL = "https://github.com/cev-api/VoxelMap-x-SeedMapper"
 
 [[dependencies.voxelmap]]
 modId = "neoforge"
@@ -22,7 +22,7 @@ side = "CLIENT"
 [[dependencies.voxelmap]]
 modId = "minecraft"
 type = "required"
-versionRange = "[26.1]"
+versionRange = "[26.1,)"
 ordering = "NONE"
 side = "CLIENT"
 
