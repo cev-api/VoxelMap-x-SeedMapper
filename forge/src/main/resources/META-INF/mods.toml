@@ -1,16 +1,16 @@
 modLoader = "javafml"
 loaderVersion = "*"
 license = "All Rights Reserved"
-issueTrackerURL = "https://github.com/fantahund/Voxelmap/issues"
+issueTrackerURL = "https://github.com/cev-api/Voxelmap"
 
 [[mods]]
-modId = "voxelmap"
+modId = "voxelmap-cevapi"
 version = "${version}"
-displayName = "VoxelMap"
+displayName = "VoxelMap x SeedMapper by CevAPI"
 logoFile = "icon.png"
-authors = "Lahwran, Zaneris, MamiyaOtaru, fantahund, Brokkonaut, TheAlgorithm476, Algamja11"
-description = "Minimap and world map"
-displayURL = "https://github.com/fantahund/Voxelmap"
+authors = "CevAPI, Lahwran, Zaneris, MamiyaOtaru, fantahund, Brokkonaut, TheAlgorithm476, Algamja11"
+description = "Minimap, World Map & Seed Map"
+displayURL = "https://github.com/cev-api/Voxelmap"
 
 [[dependencies.voxelmap]]
 modId = "forge"

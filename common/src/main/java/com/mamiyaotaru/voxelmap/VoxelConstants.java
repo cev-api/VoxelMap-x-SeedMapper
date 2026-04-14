@@ -1,6 +1,8 @@
 package com.mamiyaotaru.voxelmap;
 
 import com.mamiyaotaru.voxelmap.persistent.ThreadManager;
+import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperCommandHandler;
+import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperEspRenderer;
 import com.mamiyaotaru.voxelmap.util.BiomeRepository;
 import com.mamiyaotaru.voxelmap.util.CommandUtils;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -121,6 +123,9 @@ public final class VoxelConstants {
     }
 
     public static boolean onSendChatMessage(String message) {
+        if (SeedMapperCommandHandler.handleChatCommand(message)) {
+            return false;
+        }
         if (message.startsWith("newWaypoint")) {
             CommandUtils.waypointClicked(message);
             return false;
@@ -135,6 +140,7 @@ public final class VoxelConstants {
     public static void onRenderWaypoints(float gameTimeDeltaPartialTick, PoseStack poseStack, BufferSource bufferSource, Camera camera) {
         try {
             VoxelConstants.getVoxelMapInstance().getWaypointManager().renderWaypoints(gameTimeDeltaPartialTick, poseStack, bufferSource, camera);
+            SeedMapperEspRenderer.render(gameTimeDeltaPartialTick, poseStack, bufferSource, camera);
         } catch (RuntimeException e) {
             VoxelConstants.getLogger().log(org.apache.logging.log4j.Level.ERROR, "Error while render waypoints", e);
         }

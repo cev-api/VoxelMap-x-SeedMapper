@@ -29,12 +29,19 @@ public class GuiPersistentMapOptions extends GuiScreenMinimap {
 
     @Override
     public void init() {
-        EnumOptionsMinimap[] relevantOptions = { EnumOptionsMinimap.SHOW_WORLDMAP_COORDS, EnumOptionsMinimap.SHOW_WAYPOINTS, EnumOptionsMinimap.SHOW_WAYPOINT_NAMES, EnumOptionsMinimap.SHOW_DISTANT_WAYPOINTS };
+        EnumOptionsMinimap[] relevantOptions = {
+                EnumOptionsMinimap.SHOW_WORLDMAP_COORDS,
+                EnumOptionsMinimap.SHOW_WORLDMAP_PLAYER_DIRECTION_ARROW,
+                EnumOptionsMinimap.SHOW_WAYPOINTS,
+                EnumOptionsMinimap.SHOW_WAYPOINT_NAMES,
+                EnumOptionsMinimap.SHOW_DISTANT_WAYPOINTS,
+                EnumOptionsMinimap.CONFIRM_WAYPOINT_DELETE
+        };
 
         int counter = 0;
 
         for (EnumOptionsMinimap option : relevantOptions) {
-            GuiOptionButtonMinimap optionButton = new GuiOptionButtonMinimap(this.getWidth() / 2 - 155 + counter % 2 * 160, this.getHeight() / 6 + 24 * (counter >> 1), option, Component.literal(this.options.getKeyText(option)), this::optionClicked);
+            GuiOptionButtonMinimap optionButton = new GuiOptionButtonMinimap(this.getWidth() / 2 - 155 + counter % 2 * 160, this.getHeight() / 6 + 24 * (counter >> 1), option, Component.literal(this.getKeyText(option)), this::optionClicked);
             this.addRenderableWidget(optionButton);
 
             if (option == EnumOptionsMinimap.SHOW_WAYPOINTS) {
@@ -73,10 +80,18 @@ public class GuiPersistentMapOptions extends GuiScreenMinimap {
 
     protected void optionClicked(Button par1GuiButton) {
         EnumOptionsMinimap option = ((GuiOptionButtonMinimap) par1GuiButton).returnEnumOptions();
-        MapSettingsManager.updateBooleanOrListValue(this.options, option);
-        par1GuiButton.setMessage(Component.literal(this.options.getKeyText(option)));
+        MapSettingsManager.updateBooleanOrListValue(this.getSettingsManager(option), option);
+        par1GuiButton.setMessage(Component.literal(this.getKeyText(option)));
 
         setButtonsActive();
+    }
+
+    private String getKeyText(EnumOptionsMinimap option) {
+        return this.getSettingsManager(option).getKeyText(option);
+    }
+
+    private com.mamiyaotaru.voxelmap.interfaces.ISettingsManager getSettingsManager(EnumOptionsMinimap option) {
+        return option == EnumOptionsMinimap.CONFIRM_WAYPOINT_DELETE ? this.mapOptions : this.options;
     }
 
     private void setButtonsActive() {
@@ -108,9 +123,11 @@ public class GuiPersistentMapOptions extends GuiScreenMinimap {
             }
         }
 
-        graphics.centeredText(this.getFont(), this.screenTitle, this.getWidth() / 2, 20, 0xFFFFFFFF);
-        graphics.centeredText(this.getFont(), this.cacheSettings, this.getWidth() / 2, this.getHeight() / 6 + 49, 0xFFFFFFFF);
-        graphics.centeredText(this.getFont(), this.warning, this.getWidth() / 2, this.getHeight() / 6 + 59, 0xFFFFFFFF);
+        if (!isEmbeddedInParent()) {
+            graphics.centeredText(this.getFont(), this.screenTitle, this.getWidth() / 2, 20, 0xFFFFFFFF);
+            graphics.centeredText(this.getFont(), this.cacheSettings, this.getWidth() / 2, this.getHeight() / 6 + 49, 0xFFFFFFFF);
+            graphics.centeredText(this.getFont(), this.warning, this.getWidth() / 2, this.getHeight() / 6 + 59, 0xFFFFFFFF);
+        }
 
         super.extractRenderState(graphics, mouseX, mouseY, delta);
     }

@@ -23,6 +23,7 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
     protected int cacheSize = 500;
     protected boolean outputImages;
     public boolean showCoordinates = true;
+    public boolean showPlayerDirectionArrow = true;
     public boolean showWaypoints = true;
     public boolean showWaypointNames = true;
     public boolean showDistantWaypoints = true;
@@ -41,6 +42,7 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
                     case "Worldmap Maximum Zoom" -> maxZoom = Float.parseFloat(curLine[1]);
                     case "Worldmap Cache Size" -> cacheSize = Integer.parseInt(curLine[1]);
                     case "Show Worldmap Coordinates" -> showCoordinates = Boolean.parseBoolean(curLine[1]);
+                    case "Show Worldmap Player Direction Arrow" -> showPlayerDirectionArrow = Boolean.parseBoolean(curLine[1]);
                     case "Show Worldmap Waypoints" -> showWaypoints = Boolean.parseBoolean(curLine[1]);
                     case "Show Worldmap Waypoint Names" -> showWaypointNames = Boolean.parseBoolean(curLine[1]);
                     case "Show Worldmap Distant Waypoints" -> showDistantWaypoints = Boolean.parseBoolean(curLine[1]);
@@ -72,6 +74,7 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
         out.println("Worldmap Maximum Zoom:" + maxZoom);
         out.println("Worldmap Cache Size:" + cacheSize);
         out.println("Show Worldmap Coordinates:" + showCoordinates);
+        out.println("Show Worldmap Player Direction Arrow:" + showPlayerDirectionArrow);
         out.println("Show Worldmap Waypoints:" + showWaypoints);
         out.println("Show Worldmap Waypoint Names:" + showWaypointNames);
         out.println("Show Worldmap Distant Waypoints:" + showDistantWaypoints);
@@ -108,6 +111,7 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
     public boolean getBooleanValue(EnumOptionsMinimap option) {
         return switch (option) {
             case SHOW_WORLDMAP_COORDS -> showCoordinates;
+            case SHOW_WORLDMAP_PLAYER_DIRECTION_ARROW -> showPlayerDirectionArrow;
             case SHOW_WAYPOINTS -> showWaypoints && VoxelConstants.getVoxelMapInstance().getMapOptions().waypointsAllowed;
             case SHOW_WAYPOINT_NAMES -> showWaypointNames && VoxelConstants.getVoxelMapInstance().getMapOptions().waypointsAllowed;
             case SHOW_DISTANT_WAYPOINTS -> showDistantWaypoints && VoxelConstants.getVoxelMapInstance().getMapOptions().waypointsAllowed;
@@ -120,6 +124,7 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
     public void toggleBooleanValue(EnumOptionsMinimap option) {
         switch (option) {
             case SHOW_WORLDMAP_COORDS -> showCoordinates = !showCoordinates;
+            case SHOW_WORLDMAP_PLAYER_DIRECTION_ARROW -> showPlayerDirectionArrow = !showPlayerDirectionArrow;
             case SHOW_WAYPOINTS -> showWaypoints = !showWaypoints;
             case SHOW_WAYPOINT_NAMES -> showWaypointNames = !showWaypointNames;
             case SHOW_DISTANT_WAYPOINTS -> showDistantWaypoints = !showDistantWaypoints;

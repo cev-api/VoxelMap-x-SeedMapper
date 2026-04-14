@@ -1,10 +1,11 @@
 {
   "schemaVersion": 1,
-  "id": "voxelmap",
+  "id": "voxelmap-cevapi",
   "version": "${version}",
-  "name": "VoxelMap",
-  "description": "Minimap and world map",
+  "name": "VoxelMap x SeedMapper by CevAPI",
+  "description": "Minimap, World Map & Seed Map",
   "authors": [
+    "CevAPI",
     "Lahwran ",
     "Zaneris",
     "MamiyaOtaru",
@@ -14,7 +15,7 @@
     "Algamja11"
   ],
   "contact": {
-    "homepage": "https://minecraft.curseforge.com/projects/voxelmap"
+    "homepage": "https://github.com/cev-api/Voxelmap"
   },
   "icon": "assets/voxelmap/icon.png",
   "environment": "client",

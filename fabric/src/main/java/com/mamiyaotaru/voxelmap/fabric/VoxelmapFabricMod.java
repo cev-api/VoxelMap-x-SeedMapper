@@ -14,5 +14,6 @@ public class VoxelmapFabricMod implements ClientModInitializer {
         VoxelConstants.setEvents(new FabricEvents());
         VoxelConstants.setPacketBridge(new FabricPacketBridge());
         VoxelConstants.setModApiBride(new FabricModApiBridge());
+        SeedMapperClientCommands.register();
     }
 }

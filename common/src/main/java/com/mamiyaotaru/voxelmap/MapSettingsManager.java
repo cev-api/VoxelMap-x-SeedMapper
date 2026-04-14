@@ -57,6 +57,13 @@ public class MapSettingsManager implements ISettingsManager {
     protected boolean showCaves = true;
     public boolean moveMapBelowStatusEffectIcons = true;
     public boolean moveScoreboardBelowMap = true;
+    public boolean showPortalMarkers = true;
+    public boolean showNetherPortalMarkers = true;
+    public boolean showEndPortalMarkers = true;
+    public boolean showEndGatewayMarkers = true;
+    public boolean highlightTracerEnabled = true;
+    public float highlightTracerThickness = 2.0F;
+    public String highlightTracerColor = "#FF0000";
 
     public boolean dynamicLighting = true;
     public boolean heightmap = multicore;
@@ -75,6 +82,7 @@ public class MapSettingsManager implements ISettingsManager {
     public int waypointSort = 1;
     public int maxWaypointDisplayDistance = -1;
     public float waypointSignScale = 1.0F;
+    public boolean confirmWaypointDelete = true;
     public int deathpoints = 1;
     public int waypointDistanceConversion = 1;
     public int waypointNamesLocation = 2;
@@ -95,6 +103,15 @@ public class MapSettingsManager implements ISettingsManager {
     public KeyMapping keyBindMobToggle;
     public KeyMapping keyBindWaypointToggle;
     public KeyMapping keyBindMinimapToggle;
+    public KeyMapping keyBindSeedMapperToggleOverlay;
+    public KeyMapping keyBindSeedMapperBlockHighlightEsp;
+    public KeyMapping keyBindSeedMapperClearEsp;
+    public KeyMapping keyBindSeedMapperOreVeinEsp;
+    public KeyMapping keyBindSeedMapperCanyonEsp;
+    public KeyMapping keyBindSeedMapperCaveEsp;
+    public KeyMapping keyBindSeedMapperTerrainEsp;
+    public KeyMapping keyBindSeedMapperLootViewer;
+    public KeyMapping keyBindSeedMapperSettings;
     public final KeyMapping[] keyBindings;
 
     public MapSettingsManager() {
@@ -109,7 +126,16 @@ public class MapSettingsManager implements ISettingsManager {
                 keyBindWaypoint = new KeyMapping("key.minimap.waypointHotkey", InputConstants.getKey("key.keyboard.n").getValue(), category),
                 keyBindMobToggle = new KeyMapping("key.minimap.toggleMobs", -1, category),
                 keyBindWaypointToggle = new KeyMapping("key.minimap.toggleInGameWaypoints", -1, category),
-                keyBindMinimapToggle = new KeyMapping("key.minimap.toggleMinimap", InputConstants.getKey("key.keyboard.h").getValue(), category)
+                keyBindMinimapToggle = new KeyMapping("key.minimap.toggleMinimap", InputConstants.getKey("key.keyboard.h").getValue(), category),
+                keyBindSeedMapperToggleOverlay = new KeyMapping("key.seedmapper.toggleOverlay", -1, category),
+                keyBindSeedMapperBlockHighlightEsp = new KeyMapping("key.seedmapper.blockHighlightEsp", -1, category),
+                keyBindSeedMapperClearEsp = new KeyMapping("key.seedmapper.clearEsp", -1, category),
+                keyBindSeedMapperOreVeinEsp = new KeyMapping("key.seedmapper.oreVeinEsp", -1, category),
+                keyBindSeedMapperCanyonEsp = new KeyMapping("key.seedmapper.canyonEsp", -1, category),
+                keyBindSeedMapperCaveEsp = new KeyMapping("key.seedmapper.caveEsp", -1, category),
+                keyBindSeedMapperTerrainEsp = new KeyMapping("key.seedmapper.terrainEsp", -1, category),
+                keyBindSeedMapperLootViewer = new KeyMapping("key.seedmapper.openLootViewer", -1, category),
+                keyBindSeedMapperSettings = new KeyMapping("key.seedmapper.openSettings", -1, category)
         };
     }
 
@@ -147,6 +173,13 @@ public class MapSettingsManager implements ISettingsManager {
                         case "Enable Cave Mode" -> showCaves = Boolean.parseBoolean(curLine[1]);
                         case "Move Map Below Status Effect Icons" -> moveMapBelowStatusEffectIcons = Boolean.parseBoolean(curLine[1]);
                         case "Move Scoreboard Below Map" -> moveScoreboardBelowMap = Boolean.parseBoolean(curLine[1]);
+                        case "Portal Markers" -> showPortalMarkers = Boolean.parseBoolean(curLine[1]);
+                        case "Show Nether Portal Markers" -> showNetherPortalMarkers = Boolean.parseBoolean(curLine[1]);
+                        case "Show End Portal Markers" -> showEndPortalMarkers = Boolean.parseBoolean(curLine[1]);
+                        case "Show End Gateway Markers" -> showEndGatewayMarkers = Boolean.parseBoolean(curLine[1]);
+                        case "Highlight Tracer Enabled" -> highlightTracerEnabled = Boolean.parseBoolean(curLine[1]);
+                        case "Highlight Tracer Thickness" -> highlightTracerThickness = Mth.clamp(Float.parseFloat(curLine[1]), 1.0F, 6.0F);
+                        case "Highlight Tracer Color" -> highlightTracerColor = sanitizeColor(curLine[1], highlightTracerColor);
 
                         case "Dynamic Lighting" -> dynamicLighting = Boolean.parseBoolean(curLine[1]);
                         case "Height Map" -> heightmap = Boolean.parseBoolean(curLine[1]);
@@ -164,6 +197,7 @@ public class MapSettingsManager implements ISettingsManager {
                         case "Waypoint Sort By" -> waypointSort = Mth.clamp(Integer.parseInt(curLine[1]), 1, 4);
                         case "Waypoint Max Distance" -> maxWaypointDisplayDistance = Mth.clamp(Integer.parseInt(curLine[1]), -1, 10000);
                         case "Waypoint Sign Scale" -> waypointSignScale = Mth.clamp(Float.parseFloat(curLine[1]), 0.5F, 1.5F);
+                        case "Confirm Waypoint Delete" -> confirmWaypointDelete = Boolean.parseBoolean(curLine[1]);
                         case "Deathpoints" -> deathpoints = Mth.clamp(Integer.parseInt(curLine[1]), 0, 2);
                         case "Waypoint Distance Unit Conversion" -> waypointDistanceConversion = Mth.clamp(Integer.parseInt(curLine[1]), 0, 2);
                         case "Show In-game Waypoint Names" -> waypointNamesLocation = Mth.clamp(Integer.parseInt(curLine[1]), 0, 2);
@@ -177,6 +211,15 @@ public class MapSettingsManager implements ISettingsManager {
                         case "Mob Key" -> bindKey(keyBindMobToggle, curLine[1]);
                         case "In-game Waypoint Key" -> bindKey(keyBindWaypointToggle, curLine[1]);
                         case "Toggle Minimap Key" -> bindKey(keyBindMinimapToggle, curLine[1]);
+                        case "SeedMapper Overlay Toggle Key" -> bindKey(keyBindSeedMapperToggleOverlay, curLine[1]);
+                        case "SeedMapper Block Highlight ESP Key", "SeedMapper ESP Toggle Key" -> bindKey(keyBindSeedMapperBlockHighlightEsp, curLine[1]);
+                        case "SeedMapper ESP Clear Key" -> bindKey(keyBindSeedMapperClearEsp, curLine[1]);
+                        case "SeedMapper Ore Vein ESP Key" -> bindKey(keyBindSeedMapperOreVeinEsp, curLine[1]);
+                        case "SeedMapper Canyon ESP Key" -> bindKey(keyBindSeedMapperCanyonEsp, curLine[1]);
+                        case "SeedMapper Cave ESP Key" -> bindKey(keyBindSeedMapperCaveEsp, curLine[1]);
+                        case "SeedMapper Terrain ESP Key" -> bindKey(keyBindSeedMapperTerrainEsp, curLine[1]);
+                        case "SeedMapper Loot Viewer Key" -> bindKey(keyBindSeedMapperLootViewer, curLine[1]);
+                        case "SeedMapper Settings Key" -> bindKey(keyBindSeedMapperSettings, curLine[1]);
 
                     }
                 }
@@ -225,6 +268,13 @@ public class MapSettingsManager implements ISettingsManager {
             out.println("Enable Cave Mode:" + showCaves);
             out.println("Move Map Below Status Effect Icons:" + moveMapBelowStatusEffectIcons);
             out.println("Move Scoreboard Below Map:" + moveScoreboardBelowMap);
+            out.println("Portal Markers:" + showPortalMarkers);
+            out.println("Show Nether Portal Markers:" + showNetherPortalMarkers);
+            out.println("Show End Portal Markers:" + showEndPortalMarkers);
+            out.println("Show End Gateway Markers:" + showEndGatewayMarkers);
+            out.println("Highlight Tracer Enabled:" + highlightTracerEnabled);
+            out.println("Highlight Tracer Thickness:" + highlightTracerThickness);
+            out.println("Highlight Tracer Color:" + highlightTracerColor);
 
             out.println("Dynamic Lighting:" + dynamicLighting);
             out.println("Height Map:" + heightmap);
@@ -242,6 +292,7 @@ public class MapSettingsManager implements ISettingsManager {
             out.println("Waypoint Sort By:" + waypointSort);
             out.println("Waypoint Max Distance:" + maxWaypointDisplayDistance);
             out.println("Waypoint Sign Scale:" + waypointSignScale);
+            out.println("Confirm Waypoint Delete:" + confirmWaypointDelete);
             out.println("Deathpoints:" + deathpoints);
             out.println("Waypoint Distance Unit Conversion:" + waypointDistanceConversion);
             out.println("Show In-game Waypoint Names:" + waypointNamesLocation);
@@ -255,6 +306,15 @@ public class MapSettingsManager implements ISettingsManager {
             out.println("Mob Key:" + keyBindMobToggle.saveString());
             out.println("In-game Waypoint Key:" + keyBindWaypointToggle.saveString());
             out.println("Toggle Minimap Key:" + keyBindMinimapToggle.saveString());
+            out.println("SeedMapper Overlay Toggle Key:" + keyBindSeedMapperToggleOverlay.saveString());
+            out.println("SeedMapper Block Highlight ESP Key:" + keyBindSeedMapperBlockHighlightEsp.saveString());
+            out.println("SeedMapper ESP Clear Key:" + keyBindSeedMapperClearEsp.saveString());
+            out.println("SeedMapper Ore Vein ESP Key:" + keyBindSeedMapperOreVeinEsp.saveString());
+            out.println("SeedMapper Canyon ESP Key:" + keyBindSeedMapperCanyonEsp.saveString());
+            out.println("SeedMapper Cave ESP Key:" + keyBindSeedMapperCaveEsp.saveString());
+            out.println("SeedMapper Terrain ESP Key:" + keyBindSeedMapperTerrainEsp.saveString());
+            out.println("SeedMapper Loot Viewer Key:" + keyBindSeedMapperLootViewer.saveString());
+            out.println("SeedMapper Settings Key:" + keyBindSeedMapperSettings.saveString());
 
             for (ISubSettingsManager subSettingsManager : subSettingsManagers) {
                 subSettingsManager.saveAll(out);
@@ -320,6 +380,8 @@ public class MapSettingsManager implements ISettingsManager {
             case WORLD_BORDER -> worldBorder;
             case FILTERING -> filtering;
 
+            case CONFIRM_WAYPOINT_DELETE -> confirmWaypointDelete;
+
             default -> throw new IllegalArgumentException("Invalid boolean value! Add code to handle EnumOptionMinimap: " + option.getName());
         };
     }
@@ -347,6 +409,8 @@ public class MapSettingsManager implements ISettingsManager {
             case SLIME_CHUNKS -> slimeChunks = !slimeChunks;
             case WORLD_BORDER -> worldBorder = !worldBorder;
             case FILTERING -> filtering = !filtering;
+
+            case CONFIRM_WAYPOINT_DELETE -> confirmWaypointDelete = !confirmWaypointDelete;
 
             default -> throw new IllegalArgumentException("Invalid boolean value! Add code to handle EnumOptionMinimap: " + option.getName());
         }
@@ -554,6 +618,7 @@ public class MapSettingsManager implements ISettingsManager {
             showWaypointBeacons = false;
             showWaypointSigns = false;
         }
+        WurstCompat.syncWaypointsToggle(showWaypointBeacons || showWaypointSigns);
     }
 
     private void bindKey(KeyMapping keyBinding, String id) {
@@ -603,6 +668,27 @@ public class MapSettingsManager implements ISettingsManager {
             return true;
         } else {
             return false;
+        }
+    }
+
+    public int getHighlightTracerColorRgb() {
+        return parseColor(highlightTracerColor, 0xFF0000);
+    }
+
+    private static String sanitizeColor(String value, String fallback) {
+        String normalized = value == null ? "" : value.trim();
+        if (!normalized.startsWith("#")) {
+            normalized = "#" + normalized;
+        }
+        return normalized.matches("#[0-9a-fA-F]{6}") ? normalized.toUpperCase() : fallback;
+    }
+
+    private static int parseColor(String value, int fallback) {
+        String normalized = sanitizeColor(value, "#" + String.format("%06X", fallback & 0x00FFFFFF));
+        try {
+            return Integer.parseInt(normalized.substring(1), 16) & 0x00FFFFFF;
+        } catch (NumberFormatException ignored) {
+            return fallback & 0x00FFFFFF;
         }
     }
 }

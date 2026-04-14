@@ -39,7 +39,7 @@ public abstract class MixinWorldRenderer {
     @Inject(method = "setSectionDirty(IIIZ)V", at = @At("RETURN"))
     public void postScheduleChunkRender(int sectionX, int sectionY, int sectionZ, boolean playerChanged, CallbackInfo ci) {
         if (VoxelConstants.getVoxelMapInstance().getWorldUpdateListener() != null) {
-            VoxelConstants.getVoxelMapInstance().getWorldUpdateListener().notifyObservers(sectionX, sectionZ);
+            VoxelConstants.getVoxelMapInstance().getWorldUpdateListener().notifyObservers(sectionX, sectionY, sectionZ);
         }
     }
 }

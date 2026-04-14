@@ -41,6 +41,7 @@ public class CompressibleMapRegionTexture extends AbstractTexture {
         this.compressNotDelete = VoxelConstants.getVoxelMapInstance().getPersistentMapOptions().outputImages;
 
         this.pixels = new NativeImage(CachedRegion.REGION_WIDTH, CachedRegion.REGION_WIDTH, false);
+        clearImage(this.pixels);
         this.samplerSmall = RenderSystem.getSamplerCache().getSampler(AddressMode.CLAMP_TO_EDGE, AddressMode.CLAMP_TO_EDGE, FilterMode.LINEAR, FilterMode.LINEAR, true);
         this.samplerLarge = RenderSystem.getSamplerCache().getSampler(AddressMode.CLAMP_TO_EDGE, AddressMode.CLAMP_TO_EDGE, FilterMode.LINEAR, FilterMode.NEAREST, true);
         this.sampler = samplerLarge;
@@ -137,6 +138,7 @@ public class CompressibleMapRegionTexture extends AbstractTexture {
     private synchronized void decompress() {
         if (pixels == null) {
             this.pixels = new NativeImage(CachedRegion.REGION_WIDTH, CachedRegion.REGION_WIDTH, false);
+            clearImage(this.pixels);
             if (this.compressNotDelete && this.bytes != null) {
                 try {
                     byte[] is = CompressionUtils.decompress(this.bytes);
@@ -147,6 +149,14 @@ public class CompressibleMapRegionTexture extends AbstractTexture {
                     MemoryUtil.memByteBuffer(this.pixels.getPointer(), is.length).put(is);
                 } catch (DataFormatException ignored) {
                 }
+            }
+        }
+    }
+
+    private static void clearImage(NativeImage image) {
+        for (int x = 0; x < image.getWidth(); x++) {
+            for (int y = 0; y < image.getHeight(); y++) {
+                image.setPixel(x, y, 0);
             }
         }
     }

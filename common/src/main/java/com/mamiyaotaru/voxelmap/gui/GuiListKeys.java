@@ -72,10 +72,7 @@ public class GuiListKeys extends AbstractSelectionList<GuiListKeys.RowItem> {
     public boolean keyPressed(KeyEvent keyEvent) {
         if (this.keyEditing()) {
             if (keyEvent.key() == GLFW.GLFW_KEY_ESCAPE) {
-                boolean isMenuKey = this.keyForEdit.same(this.options.keyBindMenu);
-                if (!isMenuKey) {
-                    this.options.setKeyBinding(this.keyForEdit, InputConstants.UNKNOWN);
-                }
+                this.options.setKeyBinding(this.keyForEdit, InputConstants.UNKNOWN);
             } else {
                 this.options.setKeyBinding(this.keyForEdit, InputConstants.getKey(keyEvent));
             }
@@ -113,6 +110,16 @@ public class GuiListKeys extends AbstractSelectionList<GuiListKeys.RowItem> {
     @Override
     public int getRowWidth() {
         return 340;
+    }
+
+    @Override
+    protected void extractListBackground(GuiGraphicsExtractor graphics) {
+        // Embedded inside the tabbed options UI: keep parent background visible.
+    }
+
+    @Override
+    protected void extractListSeparators(GuiGraphicsExtractor graphics) {
+        // Suppress standalone list top/bottom separators in embedded mode.
     }
 
     @Override

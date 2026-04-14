@@ -3,7 +3,8 @@ package com.mamiyaotaru.voxelmap.gui;
 import com.mamiyaotaru.voxelmap.MapSettingsManager;
 import com.mamiyaotaru.voxelmap.VoxelConstants;
 import com.mamiyaotaru.voxelmap.WaypointManager;
-import com.mamiyaotaru.voxelmap.gui.overridden.GuiScreenMinimap;
+import com.mamiyaotaru.voxelmap.gui.overridden.Popup;
+import com.mamiyaotaru.voxelmap.gui.overridden.PopupGuiScreen;
 import com.mamiyaotaru.voxelmap.util.CommandUtils;
 import com.mamiyaotaru.voxelmap.util.DimensionContainer;
 import com.mamiyaotaru.voxelmap.util.GameVariableAccessShim;
@@ -11,17 +12,17 @@ import com.mamiyaotaru.voxelmap.util.Waypoint;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.client.server.IntegratedServer;
 import net.minecraft.network.chat.Component;
 
+import java.util.ArrayList;
 import java.util.Optional;
 import java.util.Random;
 import java.util.TreeSet;
 
-public class GuiWaypoints extends GuiScreenMinimap implements IGuiWaypoints {
+public class GuiWaypoints extends PopupGuiScreen implements IGuiWaypoints {
     protected final MapSettingsManager options;
     protected final WaypointManager waypointManager;
     protected Component screenTitle;
@@ -129,14 +130,12 @@ public class GuiWaypoints extends GuiScreenMinimap implements IGuiWaypoints {
     private void deleteClicked() {
         String waypointName = selectedWaypoint.name;
         if (waypointName != null) {
-            deleteClicked = true;
+            if (!options.confirmWaypointDelete) {
+                deleteSelectedWaypoint();
+                return;
+            }
 
-            Component title = Component.translatable("minimap.waypoints.deleteConfirm");
-            Component explanation = Component.translatable("selectServer.deleteWarning", waypointName);
-            Component affirm = Component.translatable("selectServer.deleteButton");
-            Component deny = Component.translatable("gui.cancel");
-
-            VoxelConstants.getMinecraft().setScreen(new ConfirmScreen(this, title, explanation, affirm, deny));
+            createDeleteConfirmationPopup();
         }
     }
 
@@ -170,8 +169,7 @@ public class GuiWaypoints extends GuiScreenMinimap implements IGuiWaypoints {
         if (deleteClicked) {
             deleteClicked = false;
             if (b) {
-                waypointManager.deleteWaypoint(selectedWaypoint);
-                selectedWaypoint = null;
+                deleteSelectedWaypoint();
             }
 
             VoxelConstants.getMinecraft().setScreen(this);
@@ -256,6 +254,15 @@ public class GuiWaypoints extends GuiScreenMinimap implements IGuiWaypoints {
     }
 
     @Override
+    public void popupAction(Popup popup, int action) {
+        switch (action) {
+            case 10 -> deleteSelectedWaypoint();
+            case 11 -> {
+            }
+        }
+    }
+
+    @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
         tooltip = null;
 
@@ -267,6 +274,25 @@ public class GuiWaypoints extends GuiScreenMinimap implements IGuiWaypoints {
         if (tooltip != null) {
             renderTooltip(graphics, tooltip, mouseX, mouseY);
         }
+    }
+
+    private void createDeleteConfirmationPopup() {
+        ArrayList<Popup.PopupEntry> entries = new ArrayList<>();
+        entries.add(new Popup.PopupEntry("Confirm Delete?", -1, false, false));
+        entries.add(new Popup.PopupEntry(I18n.get("selectServer.deleteButton"), 10, true, true));
+        entries.add(new Popup.PopupEntry(I18n.get("gui.cancel"), 11, true, true));
+        createPopup(getWidth() / 2 - 45, getHeight() / 2 - 20, buttonDelete.getX(), buttonDelete.getY(), 100, entries);
+    }
+
+    private void deleteSelectedWaypoint() {
+        if (selectedWaypoint == null) {
+            return;
+        }
+
+        Waypoint waypointToDelete = selectedWaypoint;
+        waypointManager.deleteWaypoint(waypointToDelete);
+        waypointList.removeWaypoint(waypointToDelete);
+        setSelectedWaypoint(null);
     }
 
     protected void setTooltip(Component tooltip) {
