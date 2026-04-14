@@ -30,11 +30,12 @@ public class RadarSettingsManager implements ISubSettingsManager {
     public boolean showPlayerHelmets = true;
     public boolean filtering = true;
     public boolean outlines = true;
+    public boolean showFacing = true;
+    public boolean cpuRendering = false;
     public boolean showFullEntityNames = false;
     public boolean showEntityElevation = true;
     public boolean hideSneakingPlayers = true;
     public boolean hideInvisibleEntities = true;
-    public boolean showFacing = true;
     public boolean showExploredChunks = false;
     public String exploredChunksColor = "#22A8FF";
     public int exploredChunksOpacity = 28;
@@ -51,6 +52,7 @@ public class RadarSettingsManager implements ISubSettingsManager {
     float fontScale = 1.0F;
     public final HashSet<Identifier> hiddenMobs = new HashSet<>();
 
+    public boolean forceCpuRendering = false;
     public boolean radarAllowed = true;
     public boolean radarPlayersAllowed = true;
     public boolean radarMobsAllowed = true;
@@ -189,6 +191,7 @@ public class RadarSettingsManager implements ISubSettingsManager {
             case RADAR_FILTERING -> filtering;
             case RADAR_OUTLINES -> outlines;
             case SHOW_FACING -> showFacing;
+            case RADAR_CPU_RENDERING -> cpuRendering || forceCpuRendering;
             case SHOW_FULL_ENTITY_NAMES -> showFullEntityNames;
             case SHOW_ENTITY_ELEVATION -> showEntityElevation;
             case HIDE_SNEAKING_PLAYERS -> hideSneakingPlayers;
@@ -210,6 +213,7 @@ public class RadarSettingsManager implements ISubSettingsManager {
             case RADAR_FILTERING -> filtering = !filtering;
             case RADAR_OUTLINES -> outlines = !outlines;
             case SHOW_FACING -> showFacing = !showFacing;
+            case RADAR_CPU_RENDERING -> cpuRendering = !cpuRendering || forceCpuRendering;
             case SHOW_FULL_ENTITY_NAMES -> showFullEntityNames = !showFullEntityNames;
             case SHOW_ENTITY_ELEVATION -> showEntityElevation = !showEntityElevation;
             case HIDE_SNEAKING_PLAYERS -> hideSneakingPlayers = !hideSneakingPlayers;

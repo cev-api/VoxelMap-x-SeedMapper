@@ -772,9 +772,8 @@ public class Map implements Runnable, IChangeObserver {
             return this.lastStableMinimapScaleProj;
         }
 
-        boolean strictMode = VoxelConstants.getVoxelMapInstance().getRadarOptions().showNewerNewChunks;
-        float immediateDeltaThreshold = strictMode ? 0.02F : 0.35F;
-        int persistFramesRequired = strictMode ? 8 : 3;
+        float immediateDeltaThreshold = 0.35F;
+        int persistFramesRequired = 3;
 
         float delta = Math.abs(rawScaleProj - this.lastStableMinimapScaleProj);
         if (delta <= immediateDeltaThreshold) {
@@ -1640,9 +1639,8 @@ public class Map implements Runnable, IChangeObserver {
                 }
             }
 
-            renderBufferSource.endBatch(); // Flush previous batches
+            renderBufferSource.endBatch();
 
-            // Draw map, radar, etc.
             RenderUtils.renderWithCustomProjection(baseMapRenderTarget, mapProjection.getBuffer(), -2000.0F, () -> {
                 float scale = 1.0F;
                 if (this.options.squareMap && this.options.rotates) {
@@ -1664,13 +1662,21 @@ public class Map implements Runnable, IChangeObserver {
                 matrixStack.scale(scale, scale, 1.0F);
                 matrixStack.translate(-percentX * 512.0F / 64.0F, -percentY * 512.0F / 64.0F, 0.0F);
 
-                RenderType mapRenderType = VoxelMapRenderTypes.GUI_TEXTURED_LEQUAL_DEPTH_TEST.apply(mapResources[zoom]);
-                VertexConsumer mapBuffer = renderBufferSource.getBuffer(mapRenderType);
-                RenderUtils.drawTexturedModalRect(matrixStack, mapBuffer, -256.0F, -256.0F, -10.0F, 512.0F, 512.0F, 0xFFFFFFFF);
+                RenderType liveMapRenderType = VoxelMapRenderTypes.GUI_TEXTURED_LEQUAL_DEPTH_TEST.apply(mapResources[zoom]);
+                VertexConsumer liveMapBuffer = renderBufferSource.getBuffer(liveMapRenderType);
+                RenderUtils.drawTexturedModalRect(matrixStack, liveMapBuffer, -256.0F, -256.0F, -10.0F, 512.0F, 512.0F, 0xFFFFFFFF);
                 matrixStack.popMatrix();
+
                 matrixStack.pushMatrix();
+                matrixStack.identity();
                 matrixStack.scale(512.0F / 64.0F, 512.0F / 64.0F, 1.0F);
-                drawChunkOverlayMinimap(matrixStack, 0, 0, GameVariableAccessShim.xCoordDouble(), GameVariableAccessShim.zCoordDouble());
+                try {
+                    drawChunkOverlayMinimap(matrixStack, 0, 0, GameVariableAccessShim.xCoordDouble(), GameVariableAccessShim.zCoordDouble());
+                } catch (Exception exception) {
+                    VoxelConstants.getLogger().error("VoxelMap minimap chunk overlay render", exception);
+                } finally {
+                    renderBufferSource.endBatch();
+                }
                 matrixStack.popMatrix();
 
                 if (VoxelConstants.getVoxelMapInstance().getRadar() != null) {
@@ -1682,18 +1688,17 @@ public class Map implements Runnable, IChangeObserver {
                 renderBufferSource.endBatch();
             });
 
-            // Masking the drawn map
             RenderUtils.renderWithCustomProjection(finalMapRenderTarget, mapProjection.getBuffer(), -2000.0F, () -> {
                 matrixStack.pushMatrix();
                 matrixStack.identity();
 
-                RenderType stencilRenderType = VoxelMapRenderTypes.GUI_TEXTURED_NO_DEPTH_TEST.apply(options.squareMap ? resourceSquareMapStencil : resourceRoundMapStencil);
+                RenderType stencilRenderType = VoxelMapRenderTypes.GUI_TEXTURED_LEQUAL_DEPTH_TEST.apply(this.options.squareMap ? resourceSquareMapStencil : resourceRoundMapStencil);
                 VertexConsumer stencilBuffer = renderBufferSource.getBuffer(stencilRenderType);
-                RenderUtils.drawTexturedModalRect(matrixStack, stencilBuffer, -256.0F, -256.0F, 0.0F, 512.0F, 512.0F,0xFFFFFFFF);
+                RenderUtils.drawTexturedModalRect(matrixStack, stencilBuffer, -256.0F, -256.0F, MAP_IMAGE_DEPTH, 512.0F, 512.0F, 0xFFFFFFFF);
 
-                RenderType mapRenderType = VoxelMapRenderTypes.GUI_TEXTURED_MASKED_NO_DEPTH_TEST.apply(baseMapRenderTarget.colorTextureId);
-                VertexConsumer mapBuffer = renderBufferSource.getBuffer(mapRenderType);
-                RenderUtils.drawTexturedModalRect(matrixStack, mapBuffer, -256.0F, -256.0F, 0.0F, 512.0F, 512.0F, 0xFFFFFFFF);
+                RenderType maskedMapRenderType = VoxelMapRenderTypes.GUI_TEXTURED_MASKED_NO_DEPTH_TEST.apply(baseMapRenderTarget.colorTextureId);
+                VertexConsumer maskedMapBuffer = renderBufferSource.getBuffer(maskedMapRenderType);
+                RenderUtils.drawTexturedModalRect(matrixStack, maskedMapBuffer, -256.0F, -256.0F, 0.0F, 512.0F, 512.0F, 0xFFFFFFFF);
 
                 matrixStack.popMatrix();
                 renderBufferSource.endBatch();
@@ -1702,9 +1707,9 @@ public class Map implements Runnable, IChangeObserver {
             double guiScale = (double) minecraft.getWindow().getWidth() / this.scWidth;
             minTablistOffset = guiScale * 63;
 
-            RenderType mapRenderType = VoxelMapRenderTypes.GUI_TEXTURED_LEQUAL_DEPTH_TEST.apply(finalMapRenderTarget.colorTextureId);
-            VertexConsumer mapBuffer = renderBufferSource.getBuffer(mapRenderType);
-            RenderUtils.drawTexturedModalRect(matrixStack, mapBuffer, x - 32.0F, y - 32.0F, MAP_IMAGE_DEPTH, 64.0F, 64.0F, 0xFFFFFFFF);
+            RenderType finalMapRenderType = VoxelMapRenderTypes.GUI_TEXTURED_LEQUAL_DEPTH_TEST.apply(finalMapRenderTarget.colorTextureId);
+            VertexConsumer finalMapBuffer = renderBufferSource.getBuffer(finalMapRenderType);
+            RenderUtils.drawTexturedModalRect(matrixStack, finalMapBuffer, x - 32.0F, y - 32.0F, MAP_IMAGE_DEPTH, 64.0F, 64.0F, 0xFFFFFFFF);
 
             RenderType frameRenderType = VoxelMapRenderTypes.GUI_TEXTURED_LEQUAL_DEPTH_TEST.apply(options.squareMap ? resourceSquareMapFrame : resourceRoundMapFrame);
             VertexConsumer frameBuffer = renderBufferSource.getBuffer(frameRenderType);
@@ -1713,6 +1718,7 @@ public class Map implements Runnable, IChangeObserver {
             double lastXDouble = GameVariableAccessShim.xCoordDouble();
             double lastZDouble = GameVariableAccessShim.zCoordDouble();
             TextureAtlas textureAtlas = VoxelConstants.getVoxelMapInstance().getWaypointManager().getTextureAtlas();
+
             if (options.waypointsAllowed) {
                 for (Waypoint waypoint : waypointManager.getWaypoints()) {
                     boolean isHighlighted = waypointManager.isHighlightedWaypoint(waypoint);
@@ -1730,12 +1736,15 @@ public class Map implements Runnable, IChangeObserver {
                     drawWaypoint(matrixStack, x, y, highlightedPoint, textureAtlas, textureAtlas.getAtlasSprite("marker/target"), true, 0xFFFF0000, lastXDouble, lastZDouble);
                 }
             }
+
             drawPortalMarkersMinimap(matrixStack, x, y, lastXDouble, lastZDouble);
             drawSeedMapperMinimapMarkers(matrixStack, x, y, lastXDouble, lastZDouble);
+            renderBufferSource.endBatch();
         } finally {
             matrixStack.popMatrix();
         }
     }
+
 
     private void drawWaypoint(Matrix4fStack matrixStack, int x, int y, Waypoint waypoint, TextureAtlas textureAtlas, Sprite icon, boolean isHighlighted, int color, double baseX, double baseZ) {
         boolean uprightIcon = icon != null;
@@ -2031,20 +2040,29 @@ public class Map implements Runnable, IChangeObserver {
         int centerChunkX = Mth.floor(baseX) >> 4;
         int centerChunkZ = Mth.floor(baseZ) >> 4;
         int radius = Math.max(3, (int) Math.ceil(34.0D * zoomScaleAdjusted / 16.0D) + 1);
+
         if (radarSettings.showExploredChunks) {
-            for (ChunkPos chunk : VoxelConstants.getVoxelMapInstance().getExploredChunksManager().getExploredChunksInRange(centerChunkX, centerChunkZ, radius)) {
+            List<ChunkPos> exploredChunks = new ArrayList<>(VoxelConstants.getVoxelMapInstance().getExploredChunksManager().getExploredChunksInRange(centerChunkX, centerChunkZ, radius));
+            for (ChunkPos chunk : exploredChunks) {
                 drawChunkSquare(matrixStack, x, y, baseX, baseZ, chunk, radarSettings.getExploredChunksColorRgb(), radarSettings.exploredChunksOpacity / 100.0F);
             }
         }
+
         if (radarSettings.showNewerNewChunks) {
             NewerNewChunksManager manager = VoxelConstants.getVoxelMapInstance().getNewerNewChunksManager();
-            for (ChunkPos chunk : manager.getOldChunksInRange(centerChunkX, centerChunkZ, radius)) {
+
+            List<ChunkPos> oldChunks = new ArrayList<>(manager.getOldChunksInRange(centerChunkX, centerChunkZ, radius));
+            for (ChunkPos chunk : oldChunks) {
                 drawChunkSquare(matrixStack, x, y, baseX, baseZ, chunk, radarSettings.getNewerNewChunksOldColorRgb(), radarSettings.newerNewChunksOldOpacity / 100.0F);
             }
-            for (ChunkPos chunk : manager.getNewChunksInRange(centerChunkX, centerChunkZ, radius)) {
+
+            List<ChunkPos> newChunks = new ArrayList<>(manager.getNewChunksInRange(centerChunkX, centerChunkZ, radius));
+            for (ChunkPos chunk : newChunks) {
                 drawChunkSquare(matrixStack, x, y, baseX, baseZ, chunk, radarSettings.getNewerNewChunksNewColorRgb(), radarSettings.newerNewChunksNewOpacity / 100.0F);
             }
-            for (ChunkPos chunk : manager.getBlockUpdateChunksInRange(centerChunkX, centerChunkZ, radius)) {
+
+            List<ChunkPos> blockUpdateChunks = new ArrayList<>(manager.getBlockUpdateChunksInRange(centerChunkX, centerChunkZ, radius));
+            for (ChunkPos chunk : blockUpdateChunks) {
                 int color = switch (radarSettings.newerNewChunksDetectMode) {
                     case 1 -> radarSettings.getNewerNewChunksOldColorRgb();
                     case 2 -> radarSettings.getNewerNewChunksBlockColorRgb();
@@ -2129,6 +2147,21 @@ public class Map implements Runnable, IChangeObserver {
         float[] p1 = projectChunkPoint(baseX, baseZ, minX, maxZ);
         float[] p2 = projectChunkPoint(baseX, baseZ, maxX, maxZ);
         float[] p3 = projectChunkPoint(baseX, baseZ, maxX, minZ);
+
+        if (!Float.isFinite(p0[0]) || !Float.isFinite(p0[1])
+                || !Float.isFinite(p1[0]) || !Float.isFinite(p1[1])
+                || !Float.isFinite(p2[0]) || !Float.isFinite(p2[1])
+                || !Float.isFinite(p3[0]) || !Float.isFinite(p3[1])) {
+            return;
+        }
+
+        final float hardLimit = 96.0F;
+        if (Math.abs(p0[0]) > hardLimit || Math.abs(p0[1]) > hardLimit
+                || Math.abs(p1[0]) > hardLimit || Math.abs(p1[1]) > hardLimit
+                || Math.abs(p2[0]) > hardLimit || Math.abs(p2[1]) > hardLimit
+                || Math.abs(p3[0]) > hardLimit || Math.abs(p3[1]) > hardLimit) {
+            return;
+        }
 
         if (isChunkOutsideMinimap(p0, p1, p2, p3)) {
             return;
