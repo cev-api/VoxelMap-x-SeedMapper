@@ -8,6 +8,10 @@ import java.util.ArrayList;
 public abstract class PopupGuiScreen extends GuiScreenMinimap implements IPopupGuiScreen {
     private final ArrayList<Popup> popups = new ArrayList<>();
 
+    protected boolean hasOpenPopup() {
+        return !popups.isEmpty();
+    }
+
     @Override
     public void removed() {
     }
@@ -21,34 +25,22 @@ public abstract class PopupGuiScreen extends GuiScreenMinimap implements IPopupG
     }
 
     public boolean clickedPopup(double x, double y) {
-        boolean clicked = false;
-        ArrayList<Popup> deadPopups = new ArrayList<>();
-
-        for (Popup popup : this.popups) {
-            boolean clickedPopup = popup.clickedMe(x, y);
-            if (!clickedPopup) {
-                deadPopups.add(popup);
-            } else if (popup.shouldClose()) {
-                deadPopups.add(popup);
-            }
-
-            clicked = clicked || clickedPopup;
+        if (this.popups.isEmpty()) {
+            return false;
         }
 
-        this.popups.removeAll(deadPopups);
-        return clicked;
+        // Only the top-most popup should receive clicks.
+        Popup top = this.popups.get(this.popups.size() - 1);
+        boolean clickedTop = top.clickedMe(x, y);
+        if (!clickedTop || top.shouldClose()) {
+            this.popups.remove(top);
+        }
+        return clickedTop;
     }
 
     @Override
     public boolean overPopup(int mouseX, int mouseY) {
-        boolean over = false;
-
-        for (Popup popup : this.popups) {
-            boolean overPopup = popup.overMe(mouseX, mouseY);
-            over = over || overPopup;
-        }
-
-        return !over;
+        return !hasOpenPopup();
     }
 
     @Override
@@ -58,6 +50,11 @@ public abstract class PopupGuiScreen extends GuiScreenMinimap implements IPopupG
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
+        if (hasOpenPopup()) {
+            mouseX = 0;
+            mouseY = 0;
+        }
+
         super.extractRenderState(graphics, mouseX, mouseY, delta);
 
         for (Popup popup : this.popups) {
@@ -67,6 +64,11 @@ public abstract class PopupGuiScreen extends GuiScreenMinimap implements IPopupG
 
     @Override
     public boolean mouseClicked(MouseButtonEvent mouseButtonEvent, boolean doubleClick) {
-        return !this.clickedPopup(mouseButtonEvent.x(), mouseButtonEvent.y()) && super.mouseClicked(mouseButtonEvent, doubleClick);
+        if (hasOpenPopup()) {
+            this.clickedPopup(mouseButtonEvent.x(), mouseButtonEvent.y());
+            return true;
+        }
+
+        return super.mouseClicked(mouseButtonEvent, doubleClick);
     }
 }

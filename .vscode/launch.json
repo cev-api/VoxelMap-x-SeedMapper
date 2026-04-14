@@ -1,0 +1,27 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "request": "launch",
+      "name": "neoforge - Client",
+      "presentation": {
+        "group": "Mod Development - neoforge",
+        "order": 0
+      },
+      "projectName": "neoforge",
+      "mainClass": "net.neoforged.devlaunch.Main",
+      "args": [
+        "@\\\\NAS\\Applications\\Programmin\\Minecraft\\VoxelMap\\VoxelMap\\neoforge\\build\\moddev\\clientRunProgramArgs.txt"
+      ],
+      "vmArgs": [
+        "@\\\\NAS\\Applications\\Programmin\\Minecraft\\VoxelMap\\VoxelMap\\neoforge\\build\\moddev\\clientRunVmArgs.txt",
+        "-Dfml.modFolders\u003dvoxelmap%%\\\\NAS\\Applications\\Programmin\\Minecraft\\VoxelMap\\VoxelMap\\neoforge\\bin\\main;voxelmap%%\\\\NAS\\Applications\\Programmin\\Minecraft\\VoxelMap\\VoxelMap\\common\\bin\\main"
+      ],
+      "cwd": "${workspaceFolder}\\neoforge\\run",
+      "env": {},
+      "console": "internalConsole",
+      "shortenCommandLine": "none"
+    }
+  ]
+}

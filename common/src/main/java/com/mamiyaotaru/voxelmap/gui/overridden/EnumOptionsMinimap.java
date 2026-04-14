@@ -37,6 +37,7 @@ public enum EnumOptionsMinimap {
     // Waypoint
     WAYPOINT_DISTANCE("options.minimap.waypoints.distance", Type.FLOAT),
     WAYPOINT_SIGN_SCALE("options.minimap.waypoints.waypointSignScale", Type.FLOAT),
+    CONFIRM_WAYPOINT_DELETE("options.minimap.waypoints.confirmDelete", Type.BOOLEAN),
     DEATHPOINTS("options.minimap.waypoints.deathpoints", Type.LIST),
     WAYPOINT_DISTANCE_UNIT_CONVERSION("options.minimap.waypoints.distanceUnitConversion", Type.LIST),
     SHOW_IN_GAME_WAYPOINT_NAMES("options.minimap.waypoints.showWaypointNames", Type.LIST),
@@ -61,6 +62,7 @@ public enum EnumOptionsMinimap {
 
     // World Map
     SHOW_WORLDMAP_COORDS("options.worldmap.showCoordinates", Type.BOOLEAN),
+    SHOW_WORLDMAP_PLAYER_DIRECTION_ARROW("options.worldmap.showPlayerDirectionArrow", Type.BOOLEAN),
     SHOW_WAYPOINTS("options.worldmap.showWaypoints", Type.BOOLEAN),
     SHOW_WAYPOINT_NAMES("options.worldmap.showWaypointNames", Type.BOOLEAN),
     SHOW_DISTANT_WAYPOINTS("options.worldmap.showDistantWaypoints", Type.BOOLEAN),

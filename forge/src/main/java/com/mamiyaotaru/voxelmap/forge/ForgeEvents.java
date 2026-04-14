@@ -14,6 +14,7 @@ import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.server.packs.repository.PackSource;
 import net.minecraftforge.client.event.AddGuiOverlayLayersEvent;
 import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
+import net.minecraftforge.client.event.RegisterClientCommandsEvent;
 import net.minecraftforge.client.event.RegisterClientReloadListenersEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.AddPackFindersEvent;
@@ -44,6 +45,7 @@ public class ForgeEvents implements Events {
         FMLCommonSetupEvent.getBus(modBusGroup).addListener(this::preInitClient);
         AddPackFindersEvent.BUS.addListener(this::registerResourcePacks);
         RegisterClientReloadListenersEvent.BUS.addListener(this::registerReloadListener);
+        RegisterClientCommandsEvent.BUS.addListener(ForgeSeedMapperClientCommands::register);
         MinecraftForge.EVENT_BUS.register(new ForgeEventListener(map));
     }
 

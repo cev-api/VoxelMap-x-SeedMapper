@@ -41,9 +41,44 @@ public class GuiScreenMinimap extends Screen {
     public int getHeight() { return height; }
 
     protected Screen lastScreen;
+    private boolean embeddedInParent;
+
+    public Screen getLastScreen() {
+        return this.lastScreen;
+    }
+
+    public void setEmbeddedInParent(boolean embeddedInParent) {
+        this.embeddedInParent = embeddedInParent;
+    }
+
+    public boolean isEmbeddedInParent() {
+        return this.embeddedInParent;
+    }
+
+    @Override
+    protected void extractBlurredBackground(GuiGraphicsExtractor graphics) {
+        if (!this.embeddedInParent) {
+            super.extractBlurredBackground(graphics);
+        }
+    }
+
+    @Override
+    protected void extractMenuBackground(GuiGraphicsExtractor graphics) {
+        if (!this.embeddedInParent) {
+            super.extractMenuBackground(graphics);
+        }
+    }
 
     @Override
     public void onClose() {
-        this.minecraft.setScreen(this.lastScreen);
+        this.minecraft.setScreen(resolveCloseTarget(this.lastScreen));
+    }
+
+    private Screen resolveCloseTarget(Screen target) {
+        Screen current = target;
+        while (current instanceof GuiScreenMinimap minimapScreen && minimapScreen.isEmbeddedInParent()) {
+            current = minimapScreen.getLastScreen();
+        }
+        return current;
     }
 }

@@ -35,6 +35,19 @@ public class RadarSettingsManager implements ISubSettingsManager {
     public boolean hideSneakingPlayers = true;
     public boolean hideInvisibleEntities = true;
     public boolean showFacing = true;
+    public boolean showExploredChunks = false;
+    public String exploredChunksColor = "#22A8FF";
+    public int exploredChunksOpacity = 28;
+    public boolean showNewerNewChunks = false;
+    public boolean newerNewChunksLiquidExploit = false;
+    public boolean newerNewChunksBlockUpdateExploit = false;
+    public int newerNewChunksDetectMode = 0;
+    public String newerNewChunksNewColor = "#FF4040";
+    public int newerNewChunksNewOpacity = 40;
+    public String newerNewChunksOldColor = "#00FF66";
+    public int newerNewChunksOldOpacity = 32;
+    public String newerNewChunksBlockColor = "#0050FF";
+    public int newerNewChunksBlockOpacity = 36;
     float fontScale = 1.0F;
     public final HashSet<Identifier> hiddenMobs = new HashSet<>();
 
@@ -64,6 +77,19 @@ public class RadarSettingsManager implements ISubSettingsManager {
                     case "Show Mob Names" -> showMobNames = Boolean.parseBoolean(curLine[1]);
                     case "Font Scale" -> fontScale = Float.parseFloat(curLine[1]);
                     case "Show Facing" -> showFacing = Boolean.parseBoolean(curLine[1]);
+                    case "Show Explored Chunks" -> showExploredChunks = Boolean.parseBoolean(curLine[1]);
+                    case "Explored Chunks Color" -> exploredChunksColor = sanitizeColor(curLine[1], exploredChunksColor);
+                    case "Explored Chunks Opacity" -> exploredChunksOpacity = clampOpacity(Integer.parseInt(curLine[1]));
+                    case "Show Newer New Chunks" -> showNewerNewChunks = Boolean.parseBoolean(curLine[1]);
+                    case "Newer New Chunks Liquid Exploit" -> newerNewChunksLiquidExploit = Boolean.parseBoolean(curLine[1]);
+                    case "Newer New Chunks Block Update Exploit" -> newerNewChunksBlockUpdateExploit = Boolean.parseBoolean(curLine[1]);
+                    case "Newer New Chunks Detect Mode" -> newerNewChunksDetectMode = Math.max(0, Math.min(2, Integer.parseInt(curLine[1])));
+                    case "Newer New Chunks New Color" -> newerNewChunksNewColor = sanitizeColor(curLine[1], newerNewChunksNewColor);
+                    case "Newer New Chunks New Opacity" -> newerNewChunksNewOpacity = clampOpacity(Integer.parseInt(curLine[1]));
+                    case "Newer New Chunks Old Color" -> newerNewChunksOldColor = sanitizeColor(curLine[1], newerNewChunksOldColor);
+                    case "Newer New Chunks Old Opacity" -> newerNewChunksOldOpacity = clampOpacity(Integer.parseInt(curLine[1]));
+                    case "Newer New Chunks Block Color" -> newerNewChunksBlockColor = sanitizeColor(curLine[1], newerNewChunksBlockColor);
+                    case "Newer New Chunks Block Opacity" -> newerNewChunksBlockOpacity = clampOpacity(Integer.parseInt(curLine[1]));
                     case "Show Full Entity Names" -> showFullEntityNames = Boolean.parseBoolean(curLine[1]);
                     case "Show Entity Elevation" -> showEntityElevation = Boolean.parseBoolean(curLine[1]);
                     case "Hide Sneaking Players" -> hideSneakingPlayers = Boolean.parseBoolean(curLine[1]);
@@ -105,6 +131,19 @@ public class RadarSettingsManager implements ISubSettingsManager {
         out.println("Show Mob Names:" + showMobNames);
         out.println("Font Scale:" + fontScale);
         out.println("Show Facing:" + showFacing);
+        out.println("Show Explored Chunks:" + showExploredChunks);
+        out.println("Explored Chunks Color:" + exploredChunksColor);
+        out.println("Explored Chunks Opacity:" + exploredChunksOpacity);
+        out.println("Show Newer New Chunks:" + showNewerNewChunks);
+        out.println("Newer New Chunks Liquid Exploit:" + newerNewChunksLiquidExploit);
+        out.println("Newer New Chunks Block Update Exploit:" + newerNewChunksBlockUpdateExploit);
+        out.println("Newer New Chunks Detect Mode:" + newerNewChunksDetectMode);
+        out.println("Newer New Chunks New Color:" + newerNewChunksNewColor);
+        out.println("Newer New Chunks New Opacity:" + newerNewChunksNewOpacity);
+        out.println("Newer New Chunks Old Color:" + newerNewChunksOldColor);
+        out.println("Newer New Chunks Old Opacity:" + newerNewChunksOldOpacity);
+        out.println("Newer New Chunks Block Color:" + newerNewChunksBlockColor);
+        out.println("Newer New Chunks Block Opacity:" + newerNewChunksBlockOpacity);
         out.println("Show Full Entity Names:" + showFullEntityNames);
         out.println("Show Entity Elevation:" + showEntityElevation);
         out.println("Hide Sneaking Players:" + hideSneakingPlayers);
@@ -255,5 +294,48 @@ public class RadarSettingsManager implements ISubSettingsManager {
 
     public boolean isMobEnabled(EntityType<?> type) {
         return !hiddenMobs.contains(BuiltInRegistries.ENTITY_TYPE.getKey(type));
+    }
+
+    public int getExploredChunksColorRgb() {
+        return parseColor(exploredChunksColor, 0x22A8FF);
+    }
+
+    public int getNewerNewChunksNewColorRgb() {
+        return parseColor(newerNewChunksNewColor, 0xFF4040);
+    }
+
+    public int getNewerNewChunksOldColorRgb() {
+        return parseColor(newerNewChunksOldColor, 0x00FF66);
+    }
+
+    public int getNewerNewChunksBlockColorRgb() {
+        return parseColor(newerNewChunksBlockColor, 0x0050FF);
+    }
+
+    private static String sanitizeColor(String value, String fallback) {
+        String normalized = value == null ? "" : value.trim();
+        if (!normalized.startsWith("#")) {
+            normalized = "#" + normalized;
+        }
+        return normalized.matches("#[0-9a-fA-F]{6}") ? normalized.toUpperCase() : fallback;
+    }
+
+    private static int parseColor(String value, int fallback) {
+        if (value == null) {
+            return fallback;
+        }
+        String normalized = value.startsWith("#") ? value.substring(1) : value;
+        if (normalized.length() != 6) {
+            return fallback;
+        }
+        try {
+            return Integer.parseInt(normalized, 16);
+        } catch (NumberFormatException ignored) {
+            return fallback;
+        }
+    }
+
+    private static int clampOpacity(int value) {
+        return Math.max(0, Math.min(100, value));
     }
 }

@@ -13,6 +13,7 @@
     "APIMixinMinecraftClient",
     "APIMixinNetHandlerPlayClient",
     "MixinCamera",
+    "MixinClientLevel",
     "MixinChatHud",
     "MixinInGameHud",
     "MixinWorldRenderer"

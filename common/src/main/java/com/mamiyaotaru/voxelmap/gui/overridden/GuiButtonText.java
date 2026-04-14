@@ -31,9 +31,35 @@ public class GuiButtonText extends Button.Plain {
 
     @Override
     public boolean mouseClicked(MouseButtonEvent mouseButtonEvent, boolean doubleClick) {
+        if (editing) {
+            boolean handled = textField.mouseClicked(mouseButtonEvent, doubleClick);
+            if (handled) {
+                return true;
+            }
+        }
+
         boolean pressed = super.mouseClicked(mouseButtonEvent, doubleClick);
         this.setEditing(pressed);
-        return pressed;
+        if (pressed) {
+            return textField.mouseClicked(mouseButtonEvent, doubleClick);
+        }
+        return false;
+    }
+
+    @Override
+    public boolean mouseReleased(MouseButtonEvent mouseButtonEvent) {
+        if (editing) {
+            return textField.mouseReleased(mouseButtonEvent);
+        }
+        return super.mouseReleased(mouseButtonEvent);
+    }
+
+    @Override
+    public boolean mouseDragged(MouseButtonEvent mouseButtonEvent, double deltaX, double deltaY) {
+        if (editing) {
+            return textField.mouseDragged(mouseButtonEvent, deltaX, deltaY);
+        }
+        return super.mouseDragged(mouseButtonEvent, deltaX, deltaY);
     }
 
     public void setEditing(boolean editing) {
@@ -83,4 +109,6 @@ public class GuiButtonText extends Button.Plain {
     public void setText(String text) { textField.setValue(text); }
 
     public String getText() { return textField.getValue(); }
+
+    public void setMaxLength(int maxLength) { textField.setMaxLength(maxLength); }
 }

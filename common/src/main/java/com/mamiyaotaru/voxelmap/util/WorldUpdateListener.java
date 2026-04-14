@@ -12,10 +12,10 @@ public class WorldUpdateListener {
         chunkProcessors.add(chunkProcessor);
     }
 
-    public void notifyObservers(int chunkX, int chunkZ) {
+    public void notifyObservers(int chunkX, int sectionY, int chunkZ) {
         try {
             for (IChangeObserver chunkProcessor : this.chunkProcessors) {
-                chunkProcessor.handleChangeInWorld(chunkX, chunkZ);
+                chunkProcessor.handleChangeInWorld(chunkX, sectionY, chunkZ);
             }
         } catch (RuntimeException exception) {
             VoxelConstants.getLogger().error("Exception", exception);

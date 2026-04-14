@@ -3,7 +3,9 @@ package com.mamiyaotaru.voxelmap;
 import com.mamiyaotaru.voxelmap.interfaces.AbstractRadar;
 import com.mamiyaotaru.voxelmap.persistent.PersistentMap;
 import com.mamiyaotaru.voxelmap.persistent.PersistentMapSettingsManager;
+import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperCommandHandler;
 import com.mamiyaotaru.voxelmap.persistent.ThreadManager;
+import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperSettingsManager;
 import com.mamiyaotaru.voxelmap.util.BiomeRepository;
 import com.mamiyaotaru.voxelmap.util.DimensionManager;
 import com.mamiyaotaru.voxelmap.util.GameVariableAccessShim;
@@ -27,13 +29,17 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class VoxelMap implements PreparableReloadListener {
+    private static final Pattern SEED_IN_CHAT = Pattern.compile("(-?\\d{5,20})");
     private static final boolean SHOW_UNDER_MENUS = true;
     private static final boolean IS_FAIR = false;
     private MapSettingsManager mapOptions;
     private RadarSettingsManager radarOptions;
     private PersistentMapSettingsManager persistentMapOptions;
+    private SeedMapperSettingsManager seedMapperOptions;
     private boolean initialized = false;
     private Map map;
     private Radar radar;
@@ -41,6 +47,9 @@ public class VoxelMap implements PreparableReloadListener {
     private PersistentMap persistentMap;
     private SettingsAndLightingChangeNotifier settingsAndLightingChangeNotifier;
     private WorldUpdateListener worldUpdateListener;
+    private ExploredChunksManager exploredChunksManager;
+    private NewerNewChunksManager newerNewChunksManager;
+    private PortalMarkersManager portalMarkersManager;
     private ColorManager colorManager;
     private WaypointManager waypointManager;
     private DimensionManager dimensionManager;
@@ -57,6 +66,7 @@ public class VoxelMap implements PreparableReloadListener {
         mapOptions = new MapSettingsManager();
         radarOptions = new RadarSettingsManager();
         persistentMapOptions = new PersistentMapSettingsManager();
+        seedMapperOptions = new SeedMapperSettingsManager();
 
         mapOptions.showUnderMenus = showUnderMenus;
         radarOptions.radarAllowed = !isFair;
@@ -65,12 +75,16 @@ public class VoxelMap implements PreparableReloadListener {
 
         mapOptions.addSubSettingsManager(radarOptions);
         mapOptions.addSubSettingsManager(persistentMapOptions);
+        mapOptions.addSubSettingsManager(seedMapperOptions);
         mapOptions.loadAll();
 
         colorManager = new ColorManager();
         waypointManager = new WaypointManager();
         dimensionManager = new DimensionManager();
         persistentMap = new PersistentMap();
+        exploredChunksManager = new ExploredChunksManager();
+        newerNewChunksManager = new NewerNewChunksManager();
+        portalMarkersManager = new PortalMarkersManager();
 
         try {
             boolean radarAllowed = radarOptions.radarAllowed;
@@ -186,11 +200,16 @@ public class VoxelMap implements PreparableReloadListener {
         }
 
         VoxelConstants.tick();
+        exploredChunksManager.onTick();
+        newerNewChunksManager.onTick();
+        portalMarkersManager.onTick();
         persistentMap.onTick();
     }
 
     public void checkPermissionMessages(Component message) {
         String msg = message.getString().replaceAll("§r", "");
+        SeedMapperCommandHandler.handlePotentialLocateResult(msg);
+        tryAutoApplySeedcrackerSeed(msg);
 
         runAfterInitialized(() -> {
             if (msg.contains("§3 §6 §3 §6 §3 §6 §d")) {
@@ -229,6 +248,29 @@ public class VoxelMap implements PreparableReloadListener {
 
     public PersistentMapSettingsManager getPersistentMapOptions() {
         return persistentMapOptions;
+    }
+
+    private void tryAutoApplySeedcrackerSeed(String msg) {
+        if (msg == null || msg.isBlank()) {
+            return;
+        }
+        String lower = msg.toLowerCase();
+        if (!(lower.contains("seedcracker") || lower.contains("cracked seed") || lower.contains("seed found"))) {
+            return;
+        }
+        Matcher matcher = SEED_IN_CHAT.matcher(msg);
+        if (!matcher.find()) {
+            return;
+        }
+        String seed = matcher.group(1);
+        setWorldSeed(seed);
+        if (seedMapperOptions != null && (seedMapperOptions.manualSeed == null || seedMapperOptions.manualSeed.isBlank())) {
+            seedMapperOptions.manualSeed = seed;
+        }
+    }
+
+    public SeedMapperSettingsManager getSeedMapperOptions() {
+        return seedMapperOptions;
     }
 
     public Map getMap() {
@@ -271,6 +313,18 @@ public class VoxelMap implements PreparableReloadListener {
 
     public PersistentMap getPersistentMap() {
         return persistentMap;
+    }
+
+    public ExploredChunksManager getExploredChunksManager() {
+        return exploredChunksManager;
+    }
+
+    public NewerNewChunksManager getNewerNewChunksManager() {
+        return newerNewChunksManager;
+    }
+
+    public PortalMarkersManager getPortalMarkersManager() {
+        return portalMarkersManager;
     }
 
     public void setPermissions(boolean hasFullRadarPermission, boolean hasPlayersOnRadarPermission, boolean hasMobsOnRadarPermission, boolean hasCavemodePermission) {
@@ -323,6 +377,21 @@ public class VoxelMap implements PreparableReloadListener {
     }
 
     public void onJoinServer() {
+        if (seedMapperOptions != null) {
+            seedMapperOptions.loadSavedSeedForCurrentServer();
+            if (seedMapperOptions.datapackAutoload) {
+                String serverKey = seedMapperOptions.getCurrentServerKey();
+                String savedUrl = seedMapperOptions.getDatapackSavedUrlsSnapshot().get(serverKey);
+                String savedPath = seedMapperOptions.getDatapackSavedCachePathsSnapshot().get(serverKey);
+                if (savedUrl != null && !savedUrl.isBlank()) {
+                    seedMapperOptions.datapackUrl = savedUrl;
+                }
+                if (savedPath != null && !savedPath.isBlank()) {
+                    seedMapperOptions.datapackCachePath = savedPath;
+                    seedMapperOptions.datapackEnabled = true;
+                }
+            }
+        }
         if (getRadar() != null) {
             getRadar().onJoinServer();
         }

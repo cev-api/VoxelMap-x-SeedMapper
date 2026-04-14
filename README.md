@@ -1,49 +1,171 @@
-# VoxelMap Updated
+# VoxelMap x SeedMapper by CevAPI
 
-[![Modrinth](https://img.shields.io/badge/modrinth-voxelmap--updated-green)](https://modrinth.com/mod/voxelmap-updated)
+This repository is a heavily modified fork of VoxelMap Updated with SeedMapper integrated directly into the client.
+
+It extends the original project with SeedMapper locating, overlays, loot tools, persistence, UI integration, and a range of rendering and behavior fixes.
 
 ## Overview
 
-VoxelMap Updated is a Minecraft mod that adds a minimap and world map to the game. It enhances the in-game experience by providing detailed maps, helping players navigate their world more efficiently.
+This fork combines VoxelMap's minimap and world map systems with SeedMapper's locating and analysis features in a single mod.
 
-## Features
+Compared to upstream, it includes:
 
-- **Minimap**: Always know where you are with a detailed minimap.
-- **World Map**: Explore the full scope of your world with an interactive world map.
-- **Waypoints**: Mark important locations and easily navigate back to them.
-- **Mob Icons**: Identify nearby mobs and other entities.
+- SeedMapper structure, biome, loot, and ESP tooling
+- Integrated minimap and world map overlays with SeedMapper structures, Newer New Chunks and Explored Chunk Highlighting
+- Extra persistence for SeedMapper state and tracer settings
+- Expanded UI flows and settings pages
+- Bug fixes and rendering improvements
 
-## Requirements
+## Platform support
 
-- **Minecraft Version**: This mod supports the latest version of Minecraft.
-- **Fabric API**: This mod requires the Fabric API to function. Make sure you have it installed.
+- Builds are produced for Fabric, Forge, and NeoForge from one codebase
+- Client command registration is wired for each loader
+- Mod metadata and entrypoints were updated for the forked layout
 
-## Installation
+## SeedMapper integration
 
-1. **Install Minecraft Fabric**: Ensure you have the Fabric Loader installed for your Minecraft version.
-2. **Install Fabric API**: Download and install the Fabric API from [Modrinth](https://modrinth.com/mod/fabric-api) or any other trusted source.
-3. **Download VoxelMap Updated**: Get the latest version of the mod from [Modrinth](https://modrinth.com/mod/voxelmap-updated).
-4. **Place the Mod in Your Mods Folder**: Move the downloaded `.jar` file to your Minecraft `mods` folder.
-5. **Launch Minecraft**: Start Minecraft using the Fabric profile.
+This fork brings SeedMapper directly into VoxelMap, including:
 
-## Contributing
+- Structure locating and map rendering
+- Client commands for locate, highlight, source, and export
+- Structure and biome locating screens
+- Loot locating screens
+- ESP profile and target controls
+- Saved seed management
+- Datapack URL and structure management
+- Loot viewer search and per-result actions
+- Structure icons, arrow assets, and completion markers
 
-We welcome contributions from the community! If you find a bug or have an idea for a new feature, feel free to:
+![SeedMapMenu](https://i.imgur.com/jMBkgbm.png)
 
-1. **Fork the Repository**: Create your own fork of the project.
-2. **Implement Your Changes**: Make your changes in your fork.
-3. **Submit a Pull Request**: When you're ready, submit a pull request to the main repository.
+## Map and overlay changes
 
-Please ensure your contributions are well-tested. We only provide support for the latest version of the mod.
+- SeedMapper structure overlays on the minimap and world map
+- Chunk overlays for explored chunks, newer-new chunks, liquid exploit tracking, and block update exploit tracking
+- Portal marker controls for Nether, End, and gateway markers
+- Highlight tracer rendering for highlighted world points
+- World map popup and waypoint interaction fixes, including delete confirmation behavior
 
-## Support
+#### Options menu
+![ChunkOptions](https://i.imgur.com/jlwfn9V.png)
 
-Support is provided only for the current version of VoxelMap Updated. If you encounter any issues or need assistance, please ensure you are using the latest version before seeking help.
+## UI and settings
 
-## Download
+The minimap options now include a dedicated SeedMapper tab.
 
-You can download VoxelMap Updated from [Modrinth](https://modrinth.com/mod/voxelmap-updated).
+General settings page 2 includes:
 
----
+- Portal detection toggles
+- Highlight tracer controls
 
-Feel free to open issues for any bugs or feature requests, and thank you for using VoxelMap Updated!
+The SeedMapper tab includes:
+
+- Structure overlay toggle
+- Lootable-structures-only toggle
+- ESP target input
+- ESP chunk radius input
+- ESP fill toggle
+- Datapack import and enable controls
+- Loot viewer launcher
+
+## Persistence
+
+- Seed, ESP, datapack, and completion state are saved through the VoxelMap settings system
+- Tracer settings persist alongside other map configuration
+- World and server specific behavior is preserved
+
+## SeedMapper screens
+
+The SeedMapper tab provides access to:
+
+- `Locate structure`
+- `Locate biome`
+- `Locate loot`
+- `Loot viewer`
+- `Run ESP highlight`
+- `Run ore vein ESP`
+- `Run canyon ESP`
+- `Run cave ESP`
+- `Run terrain ESP`
+- `Clear ESP`
+- `Datapack settings`
+- `Saved seeds`
+
+#### Locate structures
+![LocateStructure](https://i.imgur.com/niui9AN.png)
+
+#### ESP settings
+![ESPSettings](https://i.imgur.com/3QQgUH6.png)
+
+## SeedMapper commands
+
+All commands are handled locally on the client.
+
+- `/seedmap help`
+- `/seedmap seed <seed>`
+- `/seedmap locate structure <feature_id>`
+- `/seedmap locate biome <biome_name>`
+- `/seedmap locate orevein <iron|copper>`
+- `/seedmap locate slime`
+- `/seedmap locate loot <text>`
+- `/seedmap highlight ore <block> [chunks]`
+- `/seedmap highlight orevein [chunks]`
+- `/seedmap highlight clear`
+- `/seedmap export`
+
+Alias:
+
+- `/sm ...`
+
+#### Terrain highlighting
+![TerrainESP](https://i.imgur.com/XvwiaI3.png)
+
+### Ore highlighting
+![HardcOre](https://i.imgur.com/rEWn5PP.png)
+
+## World map
+
+- Right-click waypoint menus were updated so delete confirmation behaves correctly
+- SeedMapper markers, loot actions, and completion state are integrated into the map popup flow
+- Visible map bounds can be exported through SeedMapper
+
+#### SeedMapper integration
+![LargeMap](https://i.imgur.com/tx17YeF.png)
+
+#### Marking Nether portal as complete
+![MarkComplete](https://i.imgur.com/F6f8TF6.png)
+
+## Minimap
+
+- SeedMapper structure icons can render on the minimap
+- Portal markers and waypoint rendering were expanded
+- Display new chunks
+- Added support for displaying and clearing explored chunks directly
+
+#### New chunk detection and village detection
+![NewChunks](https://i.imgur.com/jUdodCL.png)
+
+#### Explored chunks (breadcrumbs) and portal detection
+![ExploredChunks+PortalDetection](https://i.imgur.com/c1Q41xy.png)
+
+## Loot viewer
+
+- Search the integrated SeedMapper loot database by item name, ID, enchantment, or NBT terms
+- Toggle per-result highlight and waypoint actions directly from the results list
+- Copy coordinates from any loot result
+
+![LocateLoot](https://i.imgur.com/h7JtYR9.png)
+
+## Build outputs
+
+Root build output jars are generated under:
+
+- `build/libs/voxelmap-fabric-26.1-1.16.5.jar`
+- `build/libs/voxelmap-forge-26.1-1.16.5.jar`
+- `build/libs/voxelmap-neoforge-26.1-1.16.5.jar`
+
+## Notes
+
+- This is not intended to be an upstream-equivalent release
+- Some legacy localization keys may still remain after UI changes or removals
+- The project prioritizes SeedMapper integration and UI consistency over strict upstream parity

@@ -12,6 +12,16 @@ import com.mamiyaotaru.voxelmap.gui.overridden.Popup;
 import com.mamiyaotaru.voxelmap.gui.overridden.PopupGuiButton;
 import com.mamiyaotaru.voxelmap.gui.overridden.PopupGuiScreen;
 import com.mamiyaotaru.voxelmap.interfaces.AbstractMapData;
+import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperChestLootData;
+import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperChestLootWidget;
+import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperFeature;
+import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperLocatorService;
+import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperLootService;
+import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperMarker;
+import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperSettingsManager;
+import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperCompat;
+import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperCommandHandler;
+import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperImportedDatapackManager;
 import com.mamiyaotaru.voxelmap.textures.Sprite;
 import com.mamiyaotaru.voxelmap.textures.TextureAtlas;
 import com.mamiyaotaru.voxelmap.util.BackgroundImageInfo;
@@ -30,8 +40,9 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
+import net.minecraft.client.gui.screens.inventory.tooltip.DefaultTooltipPositioner;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
@@ -44,6 +55,7 @@ import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.PlayerModelPart;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.border.WorldBorder;
 import org.joml.Vector2f;
@@ -51,7 +63,10 @@ import org.lwjgl.glfw.GLFW;
 
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.List;
 import java.util.Random;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -61,6 +76,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     private final WaypointManager waypointManager;
     private final MapSettingsManager mapOptions;
     private final PersistentMapSettingsManager options;
+    private final SeedMapperSettingsManager seedMapperOptions;
     protected String screenTitle = "World Map";
     protected String worldNameDisplay = "";
     protected int worldNameDisplayLength;
@@ -122,11 +138,33 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     public boolean addClicked;
     Waypoint newWaypoint;
     Waypoint selectedWaypoint;
+    Waypoint pendingDeleteWaypoint;
     Waypoint hoverdWaypoint;
+    SeedMapperMarker selectedSeedMapperMarker;
+    String selectedSeedMapperWorldKey;
+    Waypoint selectedSeedMapperWaypoint;
+    Waypoint selectedSeedMapperAssociatedWaypoint;
     private PopupGuiButton buttonWaypoints;
     private final Minecraft minecraft = Minecraft.getInstance();
     private final Identifier voxelmapSkinLocation = Identifier.fromNamespaceAndPath(VoxelConstants.MOD_ID, "persistentmap/playerskin");
     private final Identifier crosshairResource = Identifier.parse("textures/gui/sprites/hud/crosshair.png");
+    private final Identifier seedMapperDirectionArrowResource = Identifier.fromNamespaceAndPath(VoxelConstants.MOD_ID, "images/seedmapper/arrow.png");
+    private final List<FeatureIconHitbox> seedMapperIconHitboxes = new ArrayList<>();
+    private final List<SeedMapperMarkerHitbox> seedMapperMarkerHitboxes = new ArrayList<>();
+    private Set<SeedMapperFeature> seedMapperSavedToggles;
+    private SeedMapperFeature seedMapperIsolatedFeature;
+    private int seedMapperIsolationBaseHash;
+    private int seedMapperLegendPage = 0;
+    private int seedMapperLegendMaxPage = 0;
+    private int legendPrevX;
+    private int legendPrevY;
+    private int legendNextX;
+    private int legendNextY;
+    private int legendArrowSize;
+    private long seedMapperLastMarkerQueryMs = 0L;
+    private SeedMapperQueryCacheKey seedMapperLastMarkerQueryKey;
+    private List<SeedMapperMarker> seedMapperLastMarkerResult = List.of();
+    private SeedMapperChestLootWidget seedMapperChestLootWidget;
     private boolean currentDragging;
     private boolean keySprintPressed;
     private boolean keyUpPressed;
@@ -135,6 +173,8 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     private boolean keyRightPressed;
     private static final int ICON_WIDTH = 16;
     private static final int ICON_HEIGHT = 16;
+    private static final int COMPLETED_TICK_COLOR = 0xFF22C84A;
+    private static final int COMPLETED_TICK_OUTLINE_COLOR = 0xFF000000;
 
     public GuiPersistentMap(Screen parent) {
         this.lastScreen = parent;
@@ -143,6 +183,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         mapOptions = VoxelConstants.getVoxelMapInstance().getMapOptions();
         this.persistentMap = VoxelConstants.getVoxelMapInstance().getPersistentMap();
         this.options = VoxelConstants.getVoxelMapInstance().getPersistentMapOptions();
+        this.seedMapperOptions = VoxelConstants.getVoxelMapInstance().getSeedMapperOptions();
         this.zoom = this.options.zoom;
         this.zoomStart = this.options.zoom;
         this.zoomGoal = this.options.zoom;
@@ -328,6 +369,10 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     public boolean mouseReleased(MouseButtonEvent mouseButtonEvent) {
         currentDragging = false;
 
+        if (mouseButtonEvent.button() == 1 && handleSeedMapperMarkerRightClick((int) mouseButtonEvent.x(), (int) mouseButtonEvent.y())) {
+            return true;
+        }
+
         selectedWaypoint = getHoveredWaypoint();
         if (mouseButtonEvent.button() == 1 && (selectedWaypoint != null || (mouseY > this.top && mouseY < this.bottom))) {
             this.timeOfLastKBInput = 0L;
@@ -343,6 +388,24 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
     @Override
     public boolean mouseClicked(MouseButtonEvent mouseButtonEvent, boolean doubleClick) {
+        if (seedMapperChestLootWidget != null) {
+            if (seedMapperChestLootWidget.mouseClicked(mouseButtonEvent, doubleClick)) {
+                return true;
+            }
+            if (seedMapperChestLootWidget.isMouseOver(mouseButtonEvent.x(), mouseButtonEvent.y())) {
+                return true;
+            }
+            if (mouseButtonEvent.button() == 0) {
+                seedMapperChestLootWidget = null;
+            }
+        }
+
+        if (mouseButtonEvent.button() == 0 && handleSeedMapperIconClick((int) mouseButtonEvent.x(), (int) mouseButtonEvent.y())) {
+            return true;
+        }
+        if (mouseButtonEvent.button() == 0 && handleSeedMapperMarkerLeftClick((int) mouseButtonEvent.x(), (int) mouseButtonEvent.y())) {
+            return true;
+        }
         if (this.popupOpen()) {
             this.coordinates.mouseClicked(mouseButtonEvent, doubleClick);
             this.editingCoordinates = this.coordinates.isFocused();
@@ -371,13 +434,9 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
     @Override
     public boolean keyPressed(KeyEvent keyEvent) {
-        if (!this.editingCoordinates && (minecraft.options.keyJump.matches(keyEvent) || minecraft.options.keyShift.matches(keyEvent))) {
+        if (!this.editingCoordinates && minecraft.options.keyJump.matches(keyEvent)) {
             if (minecraft.options.keyJump.matches(keyEvent)) {
                 this.zoomGoal /= 1.26F;
-            }
-
-            if (minecraft.options.keyShift.matches(keyEvent)) {
-                this.zoomGoal *= 1.26F;
             }
 
             this.zoomStart = this.zoom;
@@ -766,12 +825,15 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             this.overlayBackground(graphics, this.bottom, this.getHeight(), 255, 255);
         }
 
+        drawSeedMapperMarkers(graphics, mouseX, mouseY);
+
         Waypoint currentlyHovered = null;
         if (mapOptions.waypointsAllowed && options.showWaypoints) {
             TextureAtlas textureAtlas = VoxelConstants.getVoxelMapInstance().getWaypointManager().getTextureAtlas();
 
             for (Waypoint waypoint : waypointManager.getWaypoints()) {
                 if (!waypoint.inWorld || !waypoint.inDimension) continue;
+                if (hasVisibleSeedMapperMarkerAt(waypoint.getX(), waypoint.getZ())) continue;
 
                 boolean isHighlighted = waypointManager.isHighlightedWaypoint(waypoint);
                 boolean isHovered = drawWaypoint(graphics, waypoint, textureAtlas, null, isHighlighted, -1, mouseX, mouseY);
@@ -811,6 +873,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
         if (mapOptions.worldmapAllowed) {
             graphics.centeredText(this.getFont(), this.screenTitle, this.getWidth() / 2, 16, 0xFFFFFFFF);
+            drawSeedMapperFeatureStrip(graphics, mouseX, mouseY);
             int x = (int) Math.floor(cursorCoordX);
             int z = (int) Math.floor(cursorCoordZ);
             if (options.showCoordinates) {
@@ -821,13 +884,21 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                     this.coordinates.extractRenderState(graphics, mouseX, mouseY, delta);
                 }
             }
+            String enteredSeed = seedMapperOptions.manualSeed == null ? "" : seedMapperOptions.manualSeed.trim();
+            boolean showSeedHeader = !enteredSeed.isEmpty();
+            if (showSeedHeader) {
+                String seedText = "Seed: " + enteredSeed;
+                int seedWidth = this.getFont().width(seedText);
+                graphics.text(this.getFont(), seedText, this.getWidth() - this.sideMargin - seedWidth, 16, 0xFFFFFFFF);
+            }
 
             if (this.subworldName != null && !this.subworldName.equals(VoxelConstants.getVoxelMapInstance().getWaypointManager().getCurrentSubworldDescriptor(true))
                     || VoxelConstants.getVoxelMapInstance().getWaypointManager().getCurrentSubworldDescriptor(true) != null && !VoxelConstants.getVoxelMapInstance().getWaypointManager().getCurrentSubworldDescriptor(true).equals(this.subworldName)) {
                 this.buildWorldName();
             }
 
-            graphics.text(this.getFont(), this.worldNameDisplay, this.getWidth() - this.sideMargin - this.worldNameDisplayLength, 16, 0xFFFFFF);
+            int worldNameY = showSeedHeader ? 28 : 16;
+            graphics.text(this.getFont(), this.worldNameDisplay, this.getWidth() - this.sideMargin - this.worldNameDisplayLength, worldNameY, 0xFFFFFF);
             if (this.buttonMultiworld != null) {
                 if ((this.subworldName == null || this.subworldName.isEmpty()) && VoxelConstants.getVoxelMapInstance().getWaypointManager().isMultiworld()) {
                     if ((int) (System.currentTimeMillis() / 1000L % 2L) == 0) {
@@ -841,6 +912,16 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             }
         } else {
             graphics.text(this.getFont(), Component.translatable("worldmap.disabled"), this.sideMargin, 16, 0xFFFFFFFF);
+        }
+
+        if (seedMapperChestLootWidget != null) {
+            graphics.nextStratum();
+            seedMapperChestLootWidget.extractRenderState(graphics, mouseX, mouseY, this.getFont());
+            List<ClientTooltipComponent> tooltip = seedMapperChestLootWidget.getPendingItemTooltip();
+            if (tooltip != null) {
+                graphics.nextStratum();
+                graphics.tooltip(this.getFont(), tooltip, seedMapperChestLootWidget.getPendingTooltipX(), seedMapperChestLootWidget.getPendingTooltipY(), DefaultTooltipPositioner.INSTANCE, null);
+            }
         }
         super.extractRenderState(graphics, mouseX, mouseY, delta);
     }
@@ -894,6 +975,28 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         }
 
         VoxelMapGuiGraphics.blitFloat(graphics, RenderPipelines.GUI_TEXTURED, skin, x - headWidth / 2.0F, y - headHeight / 2.0F, headWidth, headHeight, 0, 1, 0, 1, 0xFFFFFFFF);
+        if (options.showPlayerDirectionArrow) {
+            float arrowSize = 10.0F;
+            float angle = (float) (Math.toRadians(GameVariableAccessShim.rotationYaw()) + Math.PI);
+            if (this.oldNorth) {
+                angle += (float) (Math.PI / 2.0D);
+            }
+            graphics.pose().pushMatrix();
+            graphics.pose().translate(x, y);
+            graphics.pose().rotate(angle);
+            VoxelMapGuiGraphics.blitFloat(
+                    graphics,
+                    RenderPipelines.GUI_TEXTURED,
+                    seedMapperDirectionArrowResource,
+                    -arrowSize / 2.0F,
+                    -headHeight / 2.0F - arrowSize - 2.0F,
+                    arrowSize,
+                    arrowSize,
+                    0, 1, 0, 1,
+                    0xFFFFFFFF
+            );
+            graphics.pose().popMatrix();
+        }
 
         graphics.pose().popMatrix();
 
@@ -996,6 +1099,675 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         return isHovered;
     }
 
+    private void drawSeedMapperMarkers(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
+        if (!seedMapperOptions.enabled) {
+            return;
+        }
+        seedMapperMarkerHitboxes.clear();
+
+        int dimension = getCurrentCubiomesDimension();
+        if (dimension == Integer.MIN_VALUE) {
+            return;
+        }
+
+        long seed;
+        try {
+            seed = seedMapperOptions.resolveSeed(VoxelConstants.getVoxelMapInstance().getWorldSeed());
+        } catch (IllegalArgumentException ignored) {
+            return;
+        }
+
+        int mapHalfWidth = (int) (this.centerX * this.guiToMap);
+        int mapHalfHeight = (int) (this.centerY * this.guiToMap);
+        int margin = 256;
+        int rawMinX = (int) Math.floor(this.mapCenterX - mapHalfWidth) - margin;
+        int rawMaxX = (int) Math.ceil(this.mapCenterX + mapHalfWidth) + margin;
+        int rawMinZ = (int) Math.floor(this.mapCenterZ - mapHalfHeight) - margin;
+        int rawMaxZ = (int) Math.ceil(this.mapCenterZ + mapHalfHeight) + margin;
+        int keySnap = currentDragging ? 1024 : 512;
+        int minX = Math.floorDiv(rawMinX, keySnap) * keySnap;
+        int maxX = Math.floorDiv(rawMaxX + keySnap - 1, keySnap) * keySnap;
+        int minZ = Math.floorDiv(rawMinZ, keySnap) * keySnap;
+        int maxZ = Math.floorDiv(rawMaxZ + keySnap - 1, keySnap) * keySnap;
+        int maxSpan = 16384;
+        int spanX = maxX - minX;
+        int spanZ = maxZ - minZ;
+        if (spanX > maxSpan) {
+            int cx = (minX + maxX) / 2;
+            minX = cx - maxSpan / 2;
+            maxX = cx + maxSpan / 2;
+        }
+        if (spanZ > maxSpan) {
+            int cz = (minZ + maxZ) / 2;
+            minZ = cz - maxSpan / 2;
+            maxZ = cz + maxSpan / 2;
+        }
+
+        int generatorFlags = 0;
+        SeedMapperQueryCacheKey key = new SeedMapperQueryCacheKey(
+                seed,
+                dimension,
+                generatorFlags,
+                minX,
+                maxX,
+                minZ,
+                maxZ,
+                seedMapperOptions.showLootableOnly,
+                enabledFeatureSetHash(),
+                seedMapperOptions.getDatapackMarkerHash(),
+                seedMapperOptions.lootSearch == null ? "" : seedMapperOptions.lootSearch,
+                currentSeedMapperWorldKey()
+        );
+
+        long now = System.currentTimeMillis();
+        long minIntervalMs = 1000L;
+        String datapackWorldKey = currentSeedMapperWorldKey();
+        boolean shouldRefresh = seedMapperLastMarkerQueryKey == null
+                || !seedMapperLastMarkerQueryKey.equals(key)
+                || now - seedMapperLastMarkerQueryMs >= minIntervalMs;
+        if (shouldRefresh) {
+            SeedMapperLocatorService.QueryResult result = SeedMapperLocatorService.get().queryWithStatus(
+                    seed,
+                    dimension,
+                    SeedMapperCompat.getMcVersion(),
+                    generatorFlags,
+                    minX,
+                    maxX,
+                    minZ,
+                    maxZ,
+                    seedMapperOptions,
+                    datapackWorldKey);
+            if (result.exact() || seedMapperLastMarkerResult.isEmpty()) {
+                seedMapperLastMarkerResult = result.markers();
+                seedMapperLastMarkerQueryKey = key;
+            }
+            seedMapperLastMarkerQueryMs = now;
+        }
+        List<SeedMapperMarker> markers = new ArrayList<>(seedMapperLastMarkerResult);
+        boolean showNetherPortals = mapOptions.showNetherPortalMarkers && seedMapperOptions.isFeatureEnabled(SeedMapperFeature.NETHER_PORTAL);
+        boolean showEndPortals = mapOptions.showEndPortalMarkers && seedMapperOptions.isFeatureEnabled(SeedMapperFeature.END_PORTAL);
+        boolean showEndBeacons = mapOptions.showEndGatewayMarkers && seedMapperOptions.isFeatureEnabled(SeedMapperFeature.END_BEACON);
+        if (showNetherPortals || showEndPortals || showEndBeacons) {
+            for (com.mamiyaotaru.voxelmap.PortalMarkersManager.PortalMarker marker :
+                    VoxelConstants.getVoxelMapInstance().getPortalMarkersManager()
+                            .getMarkersInBounds(minX, maxX, minZ, maxZ, showNetherPortals, showEndPortals, showEndBeacons)) {
+                SeedMapperFeature feature = switch (marker.type()) {
+                    case NETHER -> SeedMapperFeature.NETHER_PORTAL;
+                    case END -> SeedMapperFeature.END_PORTAL;
+                    case END_BEACON -> SeedMapperFeature.END_BEACON;
+                };
+                if (feature == SeedMapperFeature.END_BEACON && !showEndBeacons) {
+                    continue;
+                }
+                markers.add(new SeedMapperMarker(feature, marker.pos().getX(), marker.pos().getZ()));
+            }
+        }
+
+        boolean lowDetail = mapToGui < 0.35F;
+        int maxTotal = currentDragging ? 180 : 420;
+        int maxDense = currentDragging ? 36 : 100;
+        int denseDrawn = 0;
+        int totalDrawn = 0;
+        int scanned = 0;
+        int maxScanned = currentDragging ? 1800 : 3200;
+        double visibleHalfX = (this.centerX + ICON_WIDTH + 12.0D) / Math.max(0.0001D, this.mapToGui);
+        double visibleHalfZ = (this.centerY + ICON_HEIGHT + 12.0D) / Math.max(0.0001D, this.mapToGui);
+        for (SeedMapperMarker marker : markers) {
+            if (++scanned > maxScanned || totalDrawn >= maxTotal) {
+                break;
+            }
+            if (Math.abs(marker.blockX() - this.mapCenterX) > visibleHalfX
+                    || Math.abs(marker.blockZ() - this.mapCenterZ) > visibleHalfZ) {
+                continue;
+            }
+            if (lowDetail && (marker.feature() == SeedMapperFeature.SLIME_CHUNK
+                    || marker.feature() == SeedMapperFeature.IRON_ORE_VEIN
+                    || marker.feature() == SeedMapperFeature.COPPER_ORE_VEIN)) {
+                if (denseDrawn >= maxDense) {
+                    continue;
+                }
+                denseDrawn++;
+            }
+            drawSeedMapperMarker(graphics, marker, mouseX, mouseY);
+            totalDrawn++;
+        }
+    }
+
+    private void drawSeedMapperFeatureStrip(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
+        seedMapperIconHitboxes.clear();
+        int currentDimension = getCurrentCubiomesDimension();
+        int startX = this.sideMargin;
+        int y = 32;
+        int iconSize = 14;
+        int gap = 3;
+        int barHeight = iconSize + 8;
+        int barWidth = Math.max(180, this.width - this.sideMargin * 2);
+        graphics.fill(startX - 2, y - 2, startX + barWidth + 2, y + barHeight + 2, 0xAA000000);
+        graphics.text(this.getFont(), Component.translatable("options.seedmapper.tab"), startX + 3, y + 2, 0xFFFFFFFF);
+
+        int x = startX + this.getFont().width(Component.translatable("options.seedmapper.tab")) + 12;
+        int contentEnd = startX + barWidth - 40;
+        int perPage = Math.max(1, (contentEnd - x) / (iconSize + gap));
+        List<SeedMapperFeature> visibleFeatures = new ArrayList<>();
+        for (SeedMapperFeature feature : SeedMapperFeature.values()) {
+            if (featureMatchesDimension(feature, currentDimension) && isSeedMapperFeatureVisible(feature)) {
+                visibleFeatures.add(feature);
+            }
+        }
+        SeedMapperFeature[] all = visibleFeatures.toArray(SeedMapperFeature[]::new);
+        seedMapperLegendMaxPage = Math.max(0, (all.length - 1) / perPage);
+        if (seedMapperLegendPage > seedMapperLegendMaxPage) {
+            seedMapperLegendPage = seedMapperLegendMaxPage;
+        }
+
+        int startIndex = seedMapperLegendPage * perPage;
+        int endIndex = Math.min(all.length, startIndex + perPage);
+        for (int i = startIndex; i < endIndex; i++) {
+            SeedMapperFeature feature = all[i];
+            boolean enabled = seedMapperOptions.isFeatureEnabled(feature);
+            int color = enabled ? 0xFFFFFFFF : 0x55FFFFFF;
+            VoxelMapGuiGraphics.blitFloat(graphics, RenderPipelines.GUI_TEXTURED, feature.icon(), x, y, iconSize, iconSize, 0, 1, 0, 1, color);
+
+            if (mouseX >= x && mouseX <= x + iconSize && mouseY >= y && mouseY <= y + iconSize) {
+                graphics.requestCursor(CursorTypes.CROSSHAIR);
+                Component tooltip = Component.translatable(feature.translationKey())
+                        .append(Component.literal(enabled ? " (ON)" : " (OFF)"));
+                renderTooltip(graphics, tooltip, mouseX, mouseY);
+            }
+
+            seedMapperIconHitboxes.add(new FeatureIconHitbox(feature, x, y, iconSize));
+            x += iconSize + gap;
+        }
+
+        legendArrowSize = 12;
+        legendPrevX = startX + barWidth - 32;
+        legendPrevY = y + 1;
+        legendNextX = startX + barWidth - 16;
+        legendNextY = y + 1;
+
+        int prevColor = seedMapperLegendPage > 0 ? 0xFFFFFFFF : 0x55FFFFFF;
+        int nextColor = seedMapperLegendPage < seedMapperLegendMaxPage ? 0xFFFFFFFF : 0x55FFFFFF;
+        graphics.text(this.getFont(), "<", legendPrevX, legendPrevY + 2, prevColor);
+        graphics.text(this.getFont(), ">", legendNextX, legendNextY + 2, nextColor);
+        graphics.text(this.getFont(), Component.literal((seedMapperLegendPage + 1) + "/" + (seedMapperLegendMaxPage + 1)), startX + barWidth - 68, y + 2, 0xFFAAAAAA);
+    }
+
+    private boolean handleSeedMapperIconClick(int mouseX, int mouseY) {
+        if (!seedMapperOptions.enabled || seedMapperIconHitboxes.isEmpty()) {
+            return false;
+        }
+        if (mouseX >= legendPrevX && mouseX <= legendPrevX + legendArrowSize && mouseY >= legendPrevY && mouseY <= legendPrevY + legendArrowSize) {
+            if (seedMapperLegendPage > 0) {
+                seedMapperLegendPage--;
+            }
+            return true;
+        }
+        if (mouseX >= legendNextX && mouseX <= legendNextX + legendArrowSize && mouseY >= legendNextY && mouseY <= legendNextY + legendArrowSize) {
+            if (seedMapperLegendPage < seedMapperLegendMaxPage) {
+                seedMapperLegendPage++;
+            }
+            return true;
+        }
+        for (FeatureIconHitbox hitbox : seedMapperIconHitboxes) {
+            if (hitbox.contains(mouseX, mouseY)) {
+                boolean ctrlDown = isCtrlDown();
+                SeedMapperFeature clicked = hitbox.feature();
+                if (ctrlDown) {
+                    int currentHash = enabledFeatureSetHash();
+                    if (seedMapperSavedToggles != null
+                            && seedMapperIsolatedFeature == clicked
+                            && currentHash == enabledFeatureSetHash(EnumSet.of(clicked))) {
+                        if (enabledFeatureSetHash(seedMapperSavedToggles) == seedMapperIsolationBaseHash) {
+                            seedMapperOptions.setEnabledFeatures(seedMapperSavedToggles);
+                        }
+                        seedMapperSavedToggles = null;
+                        seedMapperIsolatedFeature = null;
+                    } else {
+                        if (seedMapperSavedToggles == null) {
+                            seedMapperSavedToggles = seedMapperOptions.getEnabledFeaturesSnapshot();
+                            seedMapperIsolationBaseHash = enabledFeatureSetHash(seedMapperSavedToggles);
+                        }
+                        seedMapperOptions.setOnlyFeatureEnabled(clicked);
+                        seedMapperIsolatedFeature = clicked;
+                        if (clicked == SeedMapperFeature.WORLD_SPAWN) {
+                            centerOnWorldSpawn();
+                        }
+                    }
+                } else {
+                    seedMapperSavedToggles = null;
+                    seedMapperIsolatedFeature = null;
+                    seedMapperOptions.toggleFeature(clicked);
+                }
+                MapSettingsManager.instance.saveAll();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isSeedMapperFeatureVisible(SeedMapperFeature feature) {
+        if (feature == SeedMapperFeature.NETHER_PORTAL) {
+            return mapOptions.showNetherPortalMarkers;
+        }
+        if (feature == SeedMapperFeature.END_PORTAL) {
+            return mapOptions.showEndPortalMarkers;
+        }
+        if (feature == SeedMapperFeature.END_BEACON) {
+            return mapOptions.showEndGatewayMarkers;
+        }
+        return true;
+    }
+
+    private void drawSeedMapperMarker(GuiGraphicsExtractor graphics, SeedMapperMarker marker, int mouseX, int mouseY) {
+        float ptX = marker.blockX() + 0.5F;
+        float ptZ = marker.blockZ() + 0.5F;
+
+        boolean datapackStructure = marker.feature() == SeedMapperFeature.DATAPACK_STRUCTURE;
+        int iconWidth = datapackStructure ? SeedMapperImportedDatapackManager.iconSizeForPersistentMap() : ICON_WIDTH;
+        int iconHeight = datapackStructure ? SeedMapperImportedDatapackManager.iconSizeForPersistentMap() : ICON_HEIGHT;
+        int x = this.width / 2;
+        int y = this.height / 2;
+        int borderX = this.centerX + iconWidth / 2;
+        int borderY = this.centerY + iconHeight / 2;
+
+        double wayX = this.mapCenterX - (this.oldNorth ? -ptZ : ptX);
+        double wayY = this.mapCenterZ - (this.oldNorth ? ptX : ptZ);
+        float locate = (float) Math.atan2(wayX, wayY);
+        float hypot = (float) Math.sqrt(wayX * wayX + wayY * wayY) * mapToGui;
+
+        double dispX = hypot * Math.sin(locate);
+        double dispY = hypot * Math.cos(locate);
+        boolean far = Math.abs(dispX) > borderX || Math.abs(dispY) > borderY;
+        if (far) {
+            return;
+        }
+
+        graphics.pose().pushMatrix();
+        graphics.pose().rotate(-locate);
+        graphics.pose().translate(0.0F, -hypot);
+        graphics.pose().rotate(locate);
+
+        Vector2f guiVector = graphics.pose().transformPosition(new Vector2f(x, y));
+        float screenX = guiVector.x();
+        float screenY = guiVector.y();
+        // SeedMapper parity: never render offscreen icons on persistent map.
+        if (screenX < iconWidth / 2.0F
+                || screenX > this.width - iconWidth / 2.0F
+                || screenY < this.top + iconHeight / 2.0F
+                || screenY > this.bottom - iconHeight / 2.0F) {
+            graphics.pose().popMatrix();
+            return;
+        }
+        String worldKey = currentSeedMapperWorldKey();
+        boolean completed = seedMapperOptions.isCompleted(worldKey, marker.feature(), marker.blockX(), marker.blockZ());
+        Waypoint linkedWaypoint = findWaypointForMarker(marker);
+        seedMapperMarkerHitboxes.add(new SeedMapperMarkerHitbox(marker, worldKey, screenX, screenY, iconWidth, iconHeight));
+
+        boolean isHovered = mouseX >= screenX - iconWidth / 2.0F && mouseX <= screenX + iconWidth / 2.0F
+                && mouseY >= screenY - iconHeight / 2.0F && mouseY <= screenY + iconHeight / 2.0F;
+        if (isHovered && popupOpen()) {
+            graphics.requestCursor(CursorTypes.CROSSHAIR);
+            Component tooltip = Component.translatable(marker.feature().translationKey())
+                    .append(marker.label() == null || marker.label().isBlank() ? Component.empty() : Component.literal(" [" + marker.label() + "]"))
+                    .append(Component.literal(" (X: " + marker.blockX() + ", Z: " + marker.blockZ() + ")"))
+                    .append(Component.literal(completed ? " [Completed]" : ""));
+            renderTooltip(graphics, tooltip, this.mouseX, this.mouseY);
+        }
+
+        int iconColor = datapackStructure
+                ? SeedMapperImportedDatapackManager.colorForStructureId(marker.label())
+                : 0xFFFFFFFF;
+        if (datapackStructure) {
+            drawDatapackMarker(graphics, x, y, iconWidth, iconHeight, iconColor);
+        } else {
+            Identifier icon = marker.feature().icon();
+            VoxelMapGuiGraphics.blitFloat(graphics, RenderPipelines.GUI_TEXTURED, icon, x - iconWidth / 2.0F, y - iconHeight / 2.0F, iconWidth, iconHeight, 0, 1, 0, 1, iconColor);
+        }
+        if (linkedWaypoint != null) {
+            drawIconStroke(graphics, Math.round(x - iconWidth / 2.0F), Math.round(y - iconHeight / 2.0F), iconWidth, iconHeight, linkedWaypoint.getUnifiedColor());
+        }
+        if (completed) {
+            drawCompletedTick(graphics, Math.round(x - iconWidth / 2.0F), Math.round(y - iconHeight / 2.0F), iconWidth, iconHeight);
+        }
+        graphics.pose().popMatrix();
+    }
+
+    private void drawDatapackMarker(GuiGraphicsExtractor graphics, int x, int y, int iconWidth, int iconHeight, int color) {
+        float left = x - iconWidth / 2.0F;
+        float top = y - iconHeight / 2.0F;
+        if (SeedMapperImportedDatapackManager.usesPotionIcon()) {
+            Identifier potion = SeedMapperImportedDatapackManager.iconForStructureId("");
+            Identifier overlay = SeedMapperImportedDatapackManager.iconOverlayForStructureId("");
+            VoxelMapGuiGraphics.blitFloat(graphics, RenderPipelines.GUI_TEXTURED, potion, left, top, iconWidth, iconHeight, 0, 1, 0, 1, 0xFFFFFFFF);
+            VoxelMapGuiGraphics.blitFloat(graphics, RenderPipelines.GUI_TEXTURED, overlay, left, top, iconWidth, iconHeight, 0, 1, 0, 1, color);
+            return;
+        }
+
+        graphics.fill(Math.round(left) - 1, Math.round(top) - 1, Math.round(left + iconWidth) + 1, Math.round(top + iconHeight) + 1, 0xFF000000);
+        graphics.fill(Math.round(left), Math.round(top), Math.round(left + iconWidth), Math.round(top + iconHeight), color);
+    }
+
+    private int getCurrentCubiomesDimension() {
+        Level currentLevel = GameVariableAccessShim.getWorld();
+        if (currentLevel == null) {
+            return Integer.MIN_VALUE;
+        }
+        if (currentLevel.dimension() == Level.NETHER) {
+            return com.github.cubiomes.Cubiomes.DIM_NETHER();
+        }
+        if (currentLevel.dimension() == Level.END) {
+            return com.github.cubiomes.Cubiomes.DIM_END();
+        }
+        return com.github.cubiomes.Cubiomes.DIM_OVERWORLD();
+    }
+
+    private boolean handleSeedMapperMarkerRightClick(int mouseX, int mouseY) {
+        for (SeedMapperMarkerHitbox hitbox : seedMapperMarkerHitboxes) {
+            if (hitbox.contains(mouseX, mouseY)) {
+                selectedSeedMapperMarker = hitbox.marker();
+                selectedSeedMapperWorldKey = hitbox.worldKey();
+                selectedSeedMapperAssociatedWaypoint = findWaypointForMarker(selectedSeedMapperMarker);
+                selectedSeedMapperWaypoint = selectedSeedMapperAssociatedWaypoint != null ? selectedSeedMapperAssociatedWaypoint : createTransientStructureWaypoint(selectedSeedMapperMarker);
+                selectedWaypoint = selectedSeedMapperWaypoint;
+                int mouseDirectX = (int) minecraft.mouseHandler.xpos();
+                int mouseDirectY = (int) minecraft.mouseHandler.ypos();
+                createStructurePopup(mouseX, mouseY, mouseDirectX, mouseDirectY);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean handleSeedMapperMarkerLeftClick(int mouseX, int mouseY) {
+        for (SeedMapperMarkerHitbox hitbox : seedMapperMarkerHitboxes) {
+            if (!hitbox.contains(mouseX, mouseY)) {
+                continue;
+            }
+
+            SeedMapperMarker marker = hitbox.marker();
+            if (!marker.feature().lootable()) {
+                return false;
+            }
+
+            long seed;
+            try {
+                seed = seedMapperOptions.resolveSeed(VoxelConstants.getVoxelMapInstance().getWorldSeed());
+            } catch (IllegalArgumentException ignored) {
+                return true;
+            }
+
+            int dimension = getCurrentCubiomesDimension();
+            int generatorFlags = 0;
+            List<SeedMapperChestLootData> chestData = SeedMapperLootService.buildStructureChestLoot(
+                    seed,
+                    dimension,
+                    SeedMapperCompat.getMcVersion(),
+                    generatorFlags,
+                    marker.feature(),
+                    marker.blockX(),
+                    marker.blockZ()
+            );
+            if (chestData.isEmpty()) {
+                minecraft.gui.getChat().addClientSystemMessage(Component.literal("[SeedMapper] No chest loot data available for this structure."));
+                return true;
+            }
+
+            int widgetX = Mth.clamp(mouseX + 10, 4, this.width - SeedMapperChestLootWidget.WIDTH - 4);
+            int widgetY = Mth.clamp(mouseY + 10, this.top + 4, this.bottom - SeedMapperChestLootWidget.HEIGHT - 4);
+            seedMapperChestLootWidget = new SeedMapperChestLootWidget(widgetX, widgetY, chestData);
+            return true;
+        }
+        return false;
+    }
+
+    private void drawCompletedTick(GuiGraphicsExtractor graphics, int x, int y, int width, int height) {
+        int size = Math.max(8, Math.min(width, height) - 4);
+        int baseX = x + (width - size) / 2;
+        int baseY = y + (height - size) / 2;
+        int startX = baseX + size / 5;
+        int startY = baseY + size * 3 / 5;
+        int midX = baseX + size * 2 / 5;
+        int midY = baseY + size * 4 / 5;
+        int endX = baseX + size * 4 / 5;
+        int endY = baseY + size / 5;
+        drawLine(graphics, startX, startY, midX, midY, 3, COMPLETED_TICK_OUTLINE_COLOR);
+        drawLine(graphics, midX, midY, endX, endY, 3, COMPLETED_TICK_OUTLINE_COLOR);
+        drawLine(graphics, startX, startY, midX, midY, 1, COMPLETED_TICK_COLOR);
+        drawLine(graphics, midX, midY, endX, endY, 1, COMPLETED_TICK_COLOR);
+    }
+
+    private void drawLine(GuiGraphicsExtractor graphics, int x1, int y1, int x2, int y2, int thickness, int color) {
+        int dx = x2 - x1;
+        int dy = y2 - y1;
+        int steps = Math.max(Math.abs(dx), Math.abs(dy));
+        if (steps == 0) {
+            graphics.fill(x1 - thickness / 2, y1 - thickness / 2, x1 + thickness / 2 + 1, y1 + thickness / 2 + 1, color);
+            return;
+        }
+        int radius = thickness / 2;
+        for (int i = 0; i <= steps; i++) {
+            int px = x1 + dx * i / steps;
+            int py = y1 + dy * i / steps;
+            graphics.fill(px - radius, py - radius, px + radius + 1, py + radius + 1, color);
+        }
+    }
+
+    private boolean isCtrlDown() {
+        long window = minecraft.getWindow().handle();
+        return GLFW.glfwGetKey(window, GLFW.GLFW_KEY_LEFT_CONTROL) == GLFW.GLFW_PRESS
+                || GLFW.glfwGetKey(window, GLFW.GLFW_KEY_RIGHT_CONTROL) == GLFW.GLFW_PRESS;
+    }
+
+    private boolean isShiftDown() {
+        long window = minecraft.getWindow().handle();
+        return GLFW.glfwGetKey(window, GLFW.GLFW_KEY_LEFT_SHIFT) == GLFW.GLFW_PRESS
+                || GLFW.glfwGetKey(window, GLFW.GLFW_KEY_RIGHT_SHIFT) == GLFW.GLFW_PRESS;
+    }
+
+    private boolean featureMatchesDimension(SeedMapperFeature feature, int dimension) {
+        if (feature == null) {
+            return false;
+        }
+
+        if (dimension == Integer.MIN_VALUE) {
+            return true;
+        }
+
+        if (feature == SeedMapperFeature.END_GATEWAY) {
+            return dimension == com.github.cubiomes.Cubiomes.DIM_END();
+        }
+
+        if (feature == SeedMapperFeature.END_PORTAL) {
+            return dimension != com.github.cubiomes.Cubiomes.DIM_NETHER();
+        }
+
+        if (feature == SeedMapperFeature.NETHER_PORTAL) {
+            return dimension == com.github.cubiomes.Cubiomes.DIM_OVERWORLD()
+                    || dimension == com.github.cubiomes.Cubiomes.DIM_NETHER();
+        }
+
+        if (feature == SeedMapperFeature.END_BEACON) {
+            return dimension == com.github.cubiomes.Cubiomes.DIM_END();
+        }
+
+        return feature.availableInDimension(dimension);
+    }
+
+    private void createSeedMapperWaypoint(SeedMapperMarker marker) {
+        if (marker == null || marker.feature() == null) {
+            return;
+        }
+
+        TreeSet<DimensionContainer> dimensions = new TreeSet<>();
+        DimensionContainer currentDimension = VoxelConstants.getVoxelMapInstance().getDimensionManager().getDimensionContainerByWorld(VoxelConstants.getPlayer().level());
+        dimensions.add(currentDimension);
+
+        double dimensionScale = VoxelConstants.getPlayer().level().dimensionType().coordinateScale();
+        int y = this.persistentMap.getHeightAt(marker.blockX(), marker.blockZ());
+        if (y < VoxelConstants.getPlayer().level().getMinY()) {
+            y = VoxelConstants.getPlayer().level().dimensionType().hasCeiling() ? 64 : VoxelConstants.getPlayer().level().getMaxY();
+        }
+
+        String name = Component.translatable(marker.feature().translationKey()).getString();
+        if (marker.label() != null && !marker.label().isBlank()) {
+            name = name + " [" + marker.label() + "]";
+        }
+        name = name + " (" + marker.blockX() + ", " + marker.blockZ() + ")";
+
+        Waypoint waypoint = new Waypoint(
+                name,
+                (int) Math.round(marker.blockX() * dimensionScale),
+                (int) Math.round(marker.blockZ() * dimensionScale),
+                y,
+                true,
+                0.20F,
+                0.85F,
+                1.0F,
+                "temple",
+                waypointManager.getCurrentSubworldDescriptor(false),
+                dimensions
+        );
+        waypointManager.addWaypoint(waypoint);
+        minecraft.gui.getChat().addClientSystemMessage(Component.literal("[SeedMapper] Waypoint created for " + name));
+    }
+
+    private Waypoint createTransientStructureWaypoint(SeedMapperMarker marker) {
+        TreeSet<DimensionContainer> dimensions = new TreeSet<>();
+        dimensions.add(VoxelConstants.getVoxelMapInstance().getDimensionManager().getDimensionContainerByWorld(VoxelConstants.getPlayer().level()));
+        int y = this.persistentMap.getHeightAt(marker.blockX(), marker.blockZ());
+        if (y < VoxelConstants.getPlayer().level().getMinY()) {
+            y = VoxelConstants.getPlayer().level().dimensionType().hasCeiling() ? 64 : VoxelConstants.getPlayer().level().getMaxY();
+        }
+        return new Waypoint(
+                displayMarkerName(marker),
+                marker.blockX(),
+                marker.blockZ(),
+                y,
+                true,
+                0.20F,
+                0.85F,
+                1.0F,
+                "temple",
+                waypointManager.getCurrentSubworldDescriptor(false),
+                dimensions
+        );
+    }
+
+    private String displayMarkerName(SeedMapperMarker marker) {
+        String name = Component.translatable(marker.feature().translationKey()).getString();
+        if (marker.label() != null && !marker.label().isBlank()) {
+            name = name + " [" + marker.label() + "]";
+        }
+        return name + " (" + marker.blockX() + ", " + marker.blockZ() + ")";
+    }
+
+    private void toggleSeedMapperMarkerCompleted(SeedMapperMarker marker, String worldKey) {
+        if (marker == null || worldKey == null) {
+            return;
+        }
+        boolean completed = seedMapperOptions.isCompleted(worldKey, marker.feature(), marker.blockX(), marker.blockZ());
+        seedMapperOptions.setCompleted(worldKey, marker.feature(), marker.blockX(), marker.blockZ(), !completed);
+        MapSettingsManager.instance.saveAll();
+    }
+
+    private Waypoint findWaypointForMarker(SeedMapperMarker marker) {
+        if (marker == null) {
+            return null;
+        }
+        for (Waypoint waypoint : waypointManager.getWaypoints()) {
+            if (!waypoint.inWorld || !waypoint.inDimension) continue;
+            if (waypoint.getX() == marker.blockX() && waypoint.getZ() == marker.blockZ()) {
+                return waypoint;
+            }
+        }
+        return null;
+    }
+
+    private boolean hasVisibleSeedMapperMarkerAt(int x, int z) {
+        for (SeedMapperMarker marker : seedMapperLastMarkerResult) {
+            if (marker.blockX() == x && marker.blockZ() == z) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void drawIconStroke(GuiGraphicsExtractor graphics, int x, int y, int width, int height, int color) {
+        graphics.fill(x - 1, y - 1, x + width + 1, y, color);
+        graphics.fill(x - 1, y + height, x + width + 1, y + height + 1, color);
+        graphics.fill(x - 1, y, x, y + height, color);
+        graphics.fill(x + width, y, x + width + 1, y + height, color);
+    }
+
+    private int enabledFeatureSetHash() {
+        return enabledFeatureSetHash(seedMapperOptions.getEnabledFeaturesSnapshot());
+    }
+
+    private int enabledFeatureSetHash(Set<SeedMapperFeature> features) {
+        int hash = 1;
+        if (features != null) {
+            for (SeedMapperFeature feature : features) {
+                hash = 31 * hash + feature.ordinal();
+            }
+        }
+        return hash;
+    }
+
+    private String currentSeedMapperWorldKey() {
+        String world = waypointManager.getCurrentWorldName();
+        String sub = waypointManager.getCurrentSubworldDescriptor(false);
+        Level level = GameVariableAccessShim.getWorld();
+        String dim = level == null ? "unknown" : level.dimension().identifier().toString();
+        return (world == null ? "unknown" : world) + "|" + (sub == null ? "" : sub) + "|" + dim;
+    }
+
+    private void centerOnWorldSpawn() {
+        int dimension = getCurrentCubiomesDimension();
+        if (dimension != com.github.cubiomes.Cubiomes.DIM_OVERWORLD()) {
+            return;
+        }
+        long seed;
+        try {
+            seed = seedMapperOptions.resolveSeed(VoxelConstants.getVoxelMapInstance().getWorldSeed());
+        } catch (IllegalArgumentException ignored) {
+            return;
+        }
+        List<SeedMapperMarker> markers = SeedMapperLocatorService.get().queryBlocking(
+                seed,
+                com.github.cubiomes.Cubiomes.DIM_OVERWORLD(),
+                SeedMapperCompat.getMcVersion(),
+                0,
+                -8192,
+                8192,
+                -8192,
+                8192,
+                seedMapperOptions,
+                currentSeedMapperWorldKey()
+        );
+        for (SeedMapperMarker marker : markers) {
+            if (marker.feature() == SeedMapperFeature.WORLD_SPAWN) {
+                centerAt(marker.blockX(), marker.blockZ());
+                return;
+            }
+        }
+    }
+
+    private record FeatureIconHitbox(SeedMapperFeature feature, int x, int y, int size) {
+        private boolean contains(int mouseX, int mouseY) {
+            return mouseX >= x && mouseX <= x + size && mouseY >= y && mouseY <= y + size;
+        }
+    }
+
+    private record SeedMapperMarkerHitbox(SeedMapperMarker marker, String worldKey, float centerX, float centerY, int width, int height) {
+        private boolean contains(int mouseX, int mouseY) {
+            return mouseX >= centerX - width / 2.0F && mouseX <= centerX + width / 2.0F
+                    && mouseY >= centerY - height / 2.0F && mouseY <= centerY + height / 2.0F;
+        }
+    }
+
+    private record SeedMapperQueryCacheKey(long seed, int dimension, int generatorFlags, int minX, int maxX, int minZ, int maxZ, boolean lootOnly, int enabledFeatureHash, int datapackHash, String lootSearch, String datapackWorldKey) {
+    }
+
     public void renderBackground(GuiGraphicsExtractor graphics) {
         graphics.fill(0, 0, this.getWidth(), this.getHeight(), 0xFF000000);
     }
@@ -1022,6 +1794,8 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     }
 
     private void createPopup(int x, int y, int directX, int directY) {
+        selectedSeedMapperMarker = null;
+        selectedSeedMapperWorldKey = null;
         ArrayList<Popup.PopupEntry> entries = new ArrayList<>();
         float cursorX = directX;
         float cursorY = directY - this.top * this.guiToDirectMouse;
@@ -1052,11 +1826,36 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         entries.add(entry);
         entry = new Popup.PopupEntry(I18n.get("minimap.waypoints.share"), 2, true, true);
         entries.add(entry);
+        entry = new Popup.PopupEntry("Export Visible SeedMap", 6, true, seedMapperOptions.enabled);
+        entries.add(entry);
 
         this.createPopup(x, y, directX, directY, 60, entries);
         if (VoxelConstants.DEBUG) {
             persistentMap.debugLog((int) cursorCoordX, (int) cursorCoordZ);
         }
+    }
+
+    private void createStructurePopup(int x, int y, int directX, int directY) {
+        if (selectedSeedMapperMarker == null) {
+            return;
+        }
+        ArrayList<Popup.PopupEntry> entries = new ArrayList<>();
+        boolean completed = selectedSeedMapperWorldKey != null
+                && seedMapperOptions.isCompleted(selectedSeedMapperWorldKey, selectedSeedMapperMarker.feature(), selectedSeedMapperMarker.blockX(), selectedSeedMapperMarker.blockZ());
+        if (selectedSeedMapperAssociatedWaypoint != null) {
+            entries.add(new Popup.PopupEntry(I18n.get("selectServer.edit"), 4, true, true));
+            entries.add(new Popup.PopupEntry(I18n.get("selectServer.delete"), 5, true, true));
+        } else {
+            entries.add(new Popup.PopupEntry("Create Waypoint", 7, true, true));
+        }
+        entries.add(new Popup.PopupEntry(I18n.get(selectedWaypoint != waypointManager.getHighlightedWaypoint() ? "minimap.waypoints.highlight" : "minimap.waypoints.removeHighlight"), 1, true, true));
+        entries.add(new Popup.PopupEntry(I18n.get("minimap.waypoints.teleportTo"), 3, true, true));
+        entries.add(new Popup.PopupEntry(I18n.get("minimap.waypoints.share"), 2, true, true));
+        entries.add(new Popup.PopupEntry(completed ? "Mark Incomplete" : "Mark Complete", 8, true, true));
+        if (selectedSeedMapperMarker.feature().lootable()) {
+            entries.add(new Popup.PopupEntry("Open Loot", 9, true, true));
+        }
+        this.createPopup(x, y, directX, directY, 110, entries);
     }
 
     private Waypoint getHoveredWaypoint() {
@@ -1154,16 +1953,69 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             }
             case 5 -> {
                 if (selectedWaypoint != null) {
-                    this.deleteClicked = true;
-                    Component title = Component.translatable("minimap.waypoints.deleteConfirm");
-                    Component explanation = Component.translatable("selectServer.deleteWarning", selectedWaypoint.name);
-                    Component affirm = Component.translatable("selectServer.deleteButton");
-                    Component deny = Component.translatable("gui.cancel");
-                    ConfirmScreen confirmScreen = new ConfirmScreen(this, title, explanation, affirm, deny);
-                    minecraft.setScreen(confirmScreen);
+                    pendingDeleteWaypoint = selectedWaypoint;
+                    if (mapOptions.confirmWaypointDelete) {
+                        createDeleteConfirmationPopup();
+                    } else {
+                        deleteSelectedWaypoint();
+                    }
                 }
             }
+            case 6 -> {
+                int minX = (int) Math.floor(this.mapCenterX - this.centerX * this.guiToMap);
+                int maxX = (int) Math.ceil(this.mapCenterX + this.centerX * this.guiToMap);
+                int minZ = (int) Math.floor(this.mapCenterZ - this.centerY * this.guiToMap);
+                int maxZ = (int) Math.ceil(this.mapCenterZ + this.centerY * this.guiToMap);
+                SeedMapperCommandHandler.exportBounds(minX, maxX, minZ, maxZ, "persistent_map_visible");
+            }
+            case 7 -> {
+                if (selectedSeedMapperMarker != null) {
+                    createSeedMapperWaypoint(selectedSeedMapperMarker);
+                }
+            }
+            case 8 -> {
+                if (selectedSeedMapperMarker != null && selectedSeedMapperWorldKey != null) {
+                    toggleSeedMapperMarkerCompleted(selectedSeedMapperMarker, selectedSeedMapperWorldKey);
+                }
+            }
+            case 9 -> {
+                if (selectedSeedMapperMarker != null) {
+                    long seed;
+                    try {
+                        seed = seedMapperOptions.resolveSeed(VoxelConstants.getVoxelMapInstance().getWorldSeed());
+                    } catch (IllegalArgumentException ignored) {
+                        break;
+                    }
+
+                    int dimension = getCurrentCubiomesDimension();
+                    List<SeedMapperChestLootData> chestData = SeedMapperLootService.buildStructureChestLoot(
+                            seed,
+                            dimension,
+                            SeedMapperCompat.getMcVersion(),
+                            0,
+                            selectedSeedMapperMarker.feature(),
+                            selectedSeedMapperMarker.blockX(),
+                            selectedSeedMapperMarker.blockZ()
+                    );
+                    if (chestData.isEmpty()) {
+                        minecraft.gui.getChat().addClientSystemMessage(Component.literal("[SeedMapper] No chest loot data available for this structure."));
+                    } else {
+                        int widgetX = Mth.clamp((int) popup.getClickedDirectX() / (int) this.guiToDirectMouse + 10, 4, this.width - SeedMapperChestLootWidget.WIDTH - 4);
+                        int widgetY = Mth.clamp((int) (popup.getClickedDirectY() / this.guiToDirectMouse) + 10, this.top + 4, this.bottom - SeedMapperChestLootWidget.HEIGHT - 4);
+                        seedMapperChestLootWidget = new SeedMapperChestLootWidget(widgetX, widgetY, chestData);
+                    }
+                }
+            }
+            case 10 -> deleteSelectedWaypoint();
+            case 11 -> pendingDeleteWaypoint = null;
             default -> VoxelConstants.getLogger().warn("unimplemented command");
+        }
+
+        if (action >= 7 && action <= 9) {
+            selectedSeedMapperMarker = null;
+            selectedSeedMapperWorldKey = null;
+            selectedSeedMapperWaypoint = null;
+            selectedSeedMapperAssociatedWaypoint = null;
         }
 
     }
@@ -1178,8 +2030,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         if (this.deleteClicked) {
             this.deleteClicked = false;
             if (b) {
-                this.waypointManager.deleteWaypoint(this.selectedWaypoint);
-                this.selectedWaypoint = null;
+                deleteSelectedWaypoint();
             }
         }
 
@@ -1198,6 +2049,29 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         }
 
         minecraft.setScreen(this);
+    }
+
+    private void createDeleteConfirmationPopup() {
+        // Remove the previous context popup so the confirmation dialog receives all clicks.
+        clearPopups();
+        ArrayList<Popup.PopupEntry> entries = new ArrayList<>();
+        entries.add(new Popup.PopupEntry("Confirm Delete?", -1, false, false));
+        entries.add(new Popup.PopupEntry(I18n.get("selectServer.deleteButton"), 10, true, true));
+        entries.add(new Popup.PopupEntry(I18n.get("gui.cancel"), 11, true, true));
+        createPopup(this.width / 2 - 45, this.height / 2 - 20, this.mouseX, this.mouseY, 90, entries);
+    }
+
+    private void deleteSelectedWaypoint() {
+        Waypoint toDelete = this.selectedWaypoint != null ? this.selectedWaypoint : this.pendingDeleteWaypoint;
+        if (toDelete == null) {
+            return;
+        }
+
+        this.waypointManager.deleteWaypoint(toDelete);
+        if (this.selectedWaypoint == toDelete) {
+            this.selectedWaypoint = null;
+        }
+        this.pendingDeleteWaypoint = null;
     }
 
     private int textWidth(String string) {
@@ -1222,5 +2096,13 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
     private void writeCentered(GuiGraphicsExtractor graphics, Component text, float x, float y, int color, boolean shadow) {
         graphics.text(minecraft.font, text, (int) x - (textWidth(text) / 2), (int) y, color, shadow);
+    }
+
+    public void exportVisibleSeedMap() {
+        int minX = (int) Math.floor(this.mapCenterX - this.centerX * this.guiToMap);
+        int maxX = (int) Math.ceil(this.mapCenterX + this.centerX * this.guiToMap);
+        int minZ = (int) Math.floor(this.mapCenterZ - this.centerY * this.guiToMap);
+        int maxZ = (int) Math.ceil(this.mapCenterZ + this.centerY * this.guiToMap);
+        SeedMapperCommandHandler.exportBounds(minX, maxX, minZ, maxZ, "persistent_map_visible");
     }
 }

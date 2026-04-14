@@ -14,6 +14,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.event.AddClientReloadListenersEvent;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
+import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
 import net.neoforged.neoforge.client.event.RenderGuiLayerEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import net.neoforged.neoforge.client.network.event.RegisterClientPayloadHandlersEvent;
@@ -37,6 +38,7 @@ public class NeoForgeEvents implements Events {
         VoxelmapNeoForgeMod.getModEventBus().addListener(this::registerClientPayloadHandlers);
         VoxelmapNeoForgeMod.getModEventBus().addListener(this::registerResourcePacks);
         VoxelmapNeoForgeMod.getModEventBus().addListener(this::registerReloadListener);
+        VoxelmapNeoForgeMod.getModEventBus().addListener(NeoForgeSeedMapperClientCommands::register);
         NeoForge.EVENT_BUS.register(new NeoForgeEventListener(map));
     }
 

@@ -1,12 +1,21 @@
 package com.mamiyaotaru.voxelmap;
 
 import com.mamiyaotaru.voxelmap.gui.GuiAddWaypoint;
+import com.mamiyaotaru.voxelmap.gui.GuiMinimapOptions;
+import com.mamiyaotaru.voxelmap.gui.GuiSeedMapperLootViewer;
 import com.mamiyaotaru.voxelmap.gui.GuiWaypoints;
 import com.mamiyaotaru.voxelmap.gui.GuiWelcomeScreen;
 import com.mamiyaotaru.voxelmap.gui.overridden.EnumOptionsMinimap;
 import com.mamiyaotaru.voxelmap.interfaces.AbstractMapData;
 import com.mamiyaotaru.voxelmap.interfaces.IChangeObserver;
 import com.mamiyaotaru.voxelmap.persistent.GuiPersistentMap;
+import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperLocatorService;
+import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperMarker;
+import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperEspManager;
+import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperCommandHandler;
+import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperSettingsManager;
+import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperCompat;
+import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperImportedDatapackManager;
 import com.mamiyaotaru.voxelmap.textures.Sprite;
 import com.mamiyaotaru.voxelmap.textures.TextureAtlas;
 import com.mamiyaotaru.voxelmap.util.BiomeRepository;
@@ -48,6 +57,7 @@ import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.client.renderer.texture.TextureContents;
 import net.minecraft.client.resources.language.I18n;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
@@ -59,6 +69,7 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.level.CardinalLighting;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LightLayer;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.AirBlock;
 import net.minecraft.world.level.block.Block;
@@ -78,26 +89,35 @@ import org.joml.Vector4f;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 import java.util.TreeSet;
 
 public class Map implements Runnable, IChangeObserver {
     private final Minecraft minecraft = Minecraft.getInstance();
     private final MapSettingsManager options;
+    private final SeedMapperSettingsManager seedMapperOptions;
     private final ColorManager colorManager;
     private final WaypointManager waypointManager;
     private final MinimapContext minimapContext;
     private final Random generator = new Random();
+    private long seedMapperLastMinimapQueryMs = 0L;
+    private SeedMapperMinimapQueryKey seedMapperLastMinimapQueryKey;
+    private List<SeedMapperMarker> seedMapperLastMinimapMarkers = List.of();
 
     // Map UI
     private static final float MAP_IMAGE_DEPTH = 0.0F;
     private static final float MAP_OVERLAY_DEPTH = 100.0F;
     private static final float MAP_TEXT_DEPTH = 200.0F;
-    private final Identifier resourceArrow = Identifier.fromNamespaceAndPath(VoxelConstants.MOD_ID, "images/minimap/minimap_arrow.png");
+    private static final String COMPLETED_TICK_GLYPH = "\u2714";
+    private final Identifier resourceArrow = Identifier.fromNamespaceAndPath(VoxelConstants.MOD_ID, "images/seedmapper/arrow.png");
     private final Identifier resourceSquareMapFrame = Identifier.fromNamespaceAndPath(VoxelConstants.MOD_ID, "images/minimap/square_map_frame.png");
     private final Identifier resourceSquareMapStencil = Identifier.fromNamespaceAndPath(VoxelConstants.MOD_ID, "images/minimap/square_map_stencil.png");
     private final Identifier resourceRoundMapFrame = Identifier.fromNamespaceAndPath(VoxelConstants.MOD_ID, "images/minimap/round_map_frame.png");
     private final Identifier resourceRoundMapStencil = Identifier.fromNamespaceAndPath(VoxelConstants.MOD_ID, "images/minimap/round_map_stencil.png");
+    private final Identifier resourceObsidian = Identifier.fromNamespaceAndPath("minecraft", "textures/block/obsidian.png");
+    private final Identifier resourceEndPortalFrame = Identifier.fromNamespaceAndPath("minecraft", "textures/block/end_portal_frame_top.png");
+    private final Identifier resourceBedrock = Identifier.fromNamespaceAndPath("minecraft", "textures/block/bedrock.png");
     private int scWidth;
     private int scHeight;
     private String message = "";
@@ -174,9 +194,13 @@ public class Map implements Runnable, IChangeObserver {
     private final VoxelMapRenderTarget hudRenderTarget; // Used for entire VoxelMap HUD rendering
     private final VoxelMapRenderTarget baseMapRenderTarget; // Used for minimap rendering before masking
     private final VoxelMapRenderTarget finalMapRenderTarget; // Used for minimap rendering after masking
+    private float lastStableMinimapScaleProj = 1.0F;
+    private float pendingMinimapScaleProj = 1.0F;
+    private int pendingMinimapScaleProjFrames = 0;
 
     public Map() {
         this.options = VoxelConstants.getVoxelMapInstance().getMapOptions();
+        this.seedMapperOptions = VoxelConstants.getVoxelMapInstance().getSeedMapperOptions();
         this.colorManager = VoxelConstants.getVoxelMapInstance().getColorManager();
         this.waypointManager = VoxelConstants.getVoxelMapInstance().getWaypointManager();
         this.minimapContext = new MinimapContext();
@@ -386,6 +410,74 @@ public class Map implements Runnable, IChangeObserver {
             this.options.toggleBooleanValue(EnumOptionsMinimap.HIDE_MINIMAP);
         }
 
+        if (minecraft.screen == null && this.options.keyBindSeedMapperToggleOverlay.consumeClick()) {
+            seedMapperOptions.enabled = !seedMapperOptions.enabled;
+            this.options.saveAll();
+            this.showMessage("SeedMapper Overlay: " + (seedMapperOptions.enabled ? "ON" : "OFF"));
+        }
+
+        if (minecraft.screen == null && this.options.keyBindSeedMapperBlockHighlightEsp.consumeClick()) {
+            if (seedMapperOptions.espEnabled) {
+                seedMapperOptions.espEnabled = false;
+                this.options.saveAll();
+                this.showMessage("SeedMapper Block Highlight ESP: OFF");
+            } else {
+                seedMapperOptions.espEnabled = true;
+                this.options.saveAll();
+                int chunks = Math.max(0, Math.min(8, seedMapperOptions.espDefaultChunks));
+                String target = seedMapperOptions.espTarget == null ? "" : seedMapperOptions.espTarget.trim();
+                if (!target.isBlank()) {
+                    SeedMapperCommandHandler.handleChatCommand("seedmap highlight ore " + target + " " + chunks);
+                }
+                this.showMessage("SeedMapper Block Highlight ESP: ON");
+            }
+        }
+
+        if (minecraft.screen == null && this.options.keyBindSeedMapperClearEsp.consumeClick()) {
+            SeedMapperEspManager.clear();
+            this.showMessage("SeedMapper ESP cleared");
+        }
+
+        if (minecraft.screen == null && this.options.keyBindSeedMapperOreVeinEsp.consumeClick()) {
+            int chunks = Math.max(0, Math.min(8, seedMapperOptions.espDefaultChunks));
+            seedMapperOptions.espEnabled = true;
+            this.options.saveAll();
+            SeedMapperCommandHandler.handleChatCommand("seedmap highlight orevein " + chunks);
+            this.showMessage("SeedMapper ore vein ESP run");
+        }
+
+        if (minecraft.screen == null && this.options.keyBindSeedMapperCanyonEsp.consumeClick()) {
+            int chunks = Math.max(0, Math.min(8, seedMapperOptions.espDefaultChunks));
+            seedMapperOptions.espEnabled = true;
+            this.options.saveAll();
+            SeedMapperCommandHandler.handleChatCommand("seedmap highlight canyon " + chunks);
+            this.showMessage("SeedMapper canyon ESP run");
+        }
+
+        if (minecraft.screen == null && this.options.keyBindSeedMapperCaveEsp.consumeClick()) {
+            int chunks = Math.max(0, Math.min(8, seedMapperOptions.espDefaultChunks));
+            seedMapperOptions.espEnabled = true;
+            this.options.saveAll();
+            SeedMapperCommandHandler.handleChatCommand("seedmap highlight cave " + chunks);
+            this.showMessage("SeedMapper cave ESP run");
+        }
+
+        if (minecraft.screen == null && this.options.keyBindSeedMapperTerrainEsp.consumeClick()) {
+            int chunks = Math.max(0, Math.min(8, seedMapperOptions.espDefaultChunks));
+            seedMapperOptions.espEnabled = true;
+            this.options.saveAll();
+            SeedMapperCommandHandler.handleChatCommand("seedmap highlight terrain " + chunks);
+            this.showMessage("SeedMapper terrain ESP run");
+        }
+
+        if (minecraft.screen == null && this.options.keyBindSeedMapperLootViewer.consumeClick()) {
+            minecraft.setScreen(new GuiSeedMapperLootViewer(null));
+        }
+
+        if (minecraft.screen == null && this.options.keyBindSeedMapperSettings.consumeClick()) {
+            minecraft.setScreen(new GuiMinimapOptions(null, 5));
+        }
+
         this.checkForChanges();
         if (options.deathWaypointAllowed && minecraft.screen instanceof DeathScreen && !(this.lastGuiScreen instanceof DeathScreen)) {
             this.waypointManager.handleDeath();
@@ -588,12 +680,19 @@ public class Map implements Runnable, IChangeObserver {
             ++scScaleOrig;
         }
 
-        int scScale = Math.max(1, scScaleOrig + (this.fullscreenMap ? 0 : this.options.sizeModifier));
+        int safeSizeModifier = Mth.clamp(this.options.sizeModifier, -1, 4);
+        int scScale = Math.max(1, scScaleOrig + (this.fullscreenMap ? 0 : safeSizeModifier));
         double scaledWidthD = (double) minecraft.getWindow().getWidth() / scScale;
         double scaledHeightD = (double) minecraft.getWindow().getHeight() / scScale;
         this.scWidth = Mth.ceil(scaledWidthD);
         this.scHeight = Mth.ceil(scaledHeightD);
-        float scaleProj = (float) (scScale) / minecraft.getWindow().getGuiScale();
+        int guiScale = Math.max(1, minecraft.getWindow().getGuiScale());
+        float scaleProj = (float) (scScale) / guiScale;
+        if (!this.fullscreenMap) {
+            scaleProj = Mth.clamp(scaleProj, 0.5F, 2.0F);
+            scaleProj = stabilizeMinimapScaleProjection(scaleProj);
+        }
+        final float finalScaleProj = scaleProj;
 
         int mapX;
         if (this.options.mapCorner != 0 && this.options.mapCorner != 3) {
@@ -638,27 +737,67 @@ public class Map implements Runnable, IChangeObserver {
                 this.zoomScaleAdjusted
         );
 
+        // Hard reset every frame so transient push/pop mismatches can't accumulate into giant minimap transforms.
+        renderMatrixStack.clear();
+        renderMatrixStack.identity();
+
         int mapY2 = mapY;
         RenderUtils.renderWithFullscreenProjection(hudRenderTarget, () -> {
             renderMatrixStack.pushMatrix();
-
-            if (!this.options.hide) {
-                if (this.fullscreenMap) {
-                    this.renderMapFull(renderMatrixStack, scWidth, scHeight, scaleProj);
-                    this.drawArrow(renderMatrixStack, scWidth / 2, scHeight / 2, scaleProj);
-                } else {
-                    this.renderMap(renderMatrixStack, mapX, mapY2, scScale, scaleProj);
-                    this.drawArrow(renderMatrixStack, mapX, mapY2, scaleProj);
-                    this.drawDirections(renderMatrixStack, mapX, mapY2, scaleProj);
+            try {
+                if (!this.options.hide) {
+                    if (this.fullscreenMap) {
+                        this.renderMapFull(renderMatrixStack, scWidth, scHeight, finalScaleProj);
+                        this.drawArrow(renderMatrixStack, scWidth / 2, scHeight / 2, finalScaleProj);
+                    } else {
+                        this.renderMap(renderMatrixStack, mapX, mapY2, scScale, finalScaleProj);
+                        this.drawArrow(renderMatrixStack, mapX, mapY2, finalScaleProj);
+                        this.drawDirections(renderMatrixStack, mapX, mapY2, finalScaleProj);
+                    }
                 }
+                this.showCoords(renderMatrixStack, mapX, mapY2, finalScaleProj);
+            } finally {
+                renderMatrixStack.popMatrix();
+                renderMatrixStack.clear();
+                renderMatrixStack.identity();
+                renderBufferSource.endBatch();
             }
-            this.showCoords(renderMatrixStack, mapX, mapY2, scaleProj);
-
-            renderMatrixStack.popMatrix();
-            renderBufferSource.endBatch();
         });
 
         VoxelMapGuiGraphics.blitFloat(graphics, RenderPipelines.GUI_TEXTURED, hudRenderTarget.colorTextureId, 0.0F, 0.0F, RenderUtils.getGuiWidth(), RenderUtils.getGuiHeight(), 0.0F, 1.0F, 0.0F, 1.0F, 0xFFFFFFFF);
+    }
+
+    private float stabilizeMinimapScaleProjection(float rawScaleProj) {
+        if (!Float.isFinite(rawScaleProj)) {
+            return this.lastStableMinimapScaleProj;
+        }
+
+        boolean strictMode = VoxelConstants.getVoxelMapInstance().getRadarOptions().showNewerNewChunks;
+        float immediateDeltaThreshold = strictMode ? 0.02F : 0.35F;
+        int persistFramesRequired = strictMode ? 8 : 3;
+
+        float delta = Math.abs(rawScaleProj - this.lastStableMinimapScaleProj);
+        if (delta <= immediateDeltaThreshold) {
+            this.lastStableMinimapScaleProj = rawScaleProj;
+            this.pendingMinimapScaleProj = rawScaleProj;
+            this.pendingMinimapScaleProjFrames = 0;
+            return this.lastStableMinimapScaleProj;
+        }
+
+        if (Math.abs(rawScaleProj - this.pendingMinimapScaleProj) <= 0.01F) {
+            this.pendingMinimapScaleProjFrames++;
+        } else {
+            this.pendingMinimapScaleProj = rawScaleProj;
+            this.pendingMinimapScaleProjFrames = 1;
+        }
+
+        // Accept only if the jump persists, so one-frame spikes are ignored.
+        if (this.pendingMinimapScaleProjFrames >= persistFramesRequired) {
+            this.lastStableMinimapScaleProj = this.pendingMinimapScaleProj;
+            this.pendingMinimapScaleProjFrames = 0;
+        }
+
+        return this.lastStableMinimapScaleProj;
     }
 
     private void checkForChanges() {
@@ -823,7 +962,7 @@ public class Map implements Runnable, IChangeObserver {
     }
 
     @Override
-    public void handleChangeInWorld(int chunkX, int chunkZ) {
+    public void handleChangeInWorld(int chunkX, int sectionY, int chunkZ) {
         try {
             this.chunkCache[this.zoom].registerChangeAt(chunkX, chunkZ);
         } catch (Exception e) {
@@ -833,6 +972,8 @@ public class Map implements Runnable, IChangeObserver {
 
     @Override
     public void processChunk(LevelChunk chunk) {
+        VoxelConstants.getVoxelMapInstance().getNewerNewChunksManager().processChunk(chunk);
+        VoxelConstants.getVoxelMapInstance().getPortalMarkersManager().processChunk(chunk);
         this.rectangleCalc(chunk.getPos().x() * 16, chunk.getPos().z() * 16, chunk.getPos().x() * 16 + 15, chunk.getPos().z() * 16 + 15);
     }
 
@@ -1487,104 +1628,113 @@ public class Map implements Runnable, IChangeObserver {
 
     private void renderMap(Matrix4fStack matrixStack, int x, int y, int scScale, float scaleProj) {
         matrixStack.pushMatrix();
-        matrixStack.scale(scaleProj, scaleProj, 1.0F);
+        try {
+            matrixStack.scale(scaleProj, scaleProj, 1.0F);
 
-        synchronized (this.coordinateLock) {
-            if (this.imageChanged) {
-                this.imageChanged = false;
-                this.mapImages[this.zoom].upload();
-                this.lastImageX = this.lastX;
-                this.lastImageZ = this.lastZ;
-            }
-        }
-
-        renderBufferSource.endBatch(); // Flush previous batches
-
-        // Draw map, radar, etc.
-        RenderUtils.renderWithCustomProjection(baseMapRenderTarget, mapProjection.getBuffer(), -2000.0F, () -> {
-            float scale = 1.0F;
-            if (this.options.squareMap && this.options.rotates) {
-                scale = 1.4142F;
-            }
-            float multi = (float) (1.0 / this.zoomScale);
-            float percentX = (float) (GameVariableAccessShim.xCoordDouble() - this.lastImageX) * multi;
-            float percentY = (float) (GameVariableAccessShim.zCoordDouble() - this.lastImageZ) * multi;
-
-            matrixStack.pushMatrix();
-            matrixStack.identity();
-
-            matrixStack.pushMatrix();
-            if (!options.rotates) {
-                matrixStack.rotate(Axis.ZP.rotationDegrees(rotationFactor));
-            } else {
-                matrixStack.rotate(Axis.ZP.rotationDegrees(-direction));
-            }
-            matrixStack.scale(scale, scale, 1.0F);
-            matrixStack.translate(-percentX * 512.0F / 64.0F, -percentY * 512.0F / 64.0F, 0.0F);
-
-            RenderType mapRenderType = VoxelMapRenderTypes.GUI_TEXTURED_LEQUAL_DEPTH_TEST.apply(mapResources[zoom]);
-            VertexConsumer mapBuffer = renderBufferSource.getBuffer(mapRenderType);
-            RenderUtils.drawTexturedModalRect(matrixStack, mapBuffer, -256.0F, -256.0F, -10.0F, 512.0F, 512.0F, 0xFFFFFFFF);
-            matrixStack.popMatrix();
-
-            if (VoxelConstants.getVoxelMapInstance().getRadar() != null) {
-                VoxelConstants.getVoxelMapInstance().getRadar().onTickInGame(matrixStack, minimapContext);
-                VoxelConstants.getVoxelMapInstance().getRadar().renderMapMobs(matrixStack, renderBufferSource, Contact.DisplayState.BELOW_FRAME, 0, 0, scScale, 512.0F / 64.0F);
-            }
-
-            matrixStack.popMatrix();
-            renderBufferSource.endBatch();
-        });
-
-        // Masking the drawn map
-        RenderUtils.renderWithCustomProjection(finalMapRenderTarget, mapProjection.getBuffer(), -2000.0F, () -> {
-            matrixStack.pushMatrix();
-            matrixStack.identity();
-
-            RenderType stencilRenderType = VoxelMapRenderTypes.GUI_TEXTURED_NO_DEPTH_TEST.apply(options.squareMap ? resourceSquareMapStencil : resourceRoundMapStencil);
-            VertexConsumer stencilBuffer = renderBufferSource.getBuffer(stencilRenderType);
-            RenderUtils.drawTexturedModalRect(matrixStack, stencilBuffer, -256.0F, -256.0F, 0.0F, 512.0F, 512.0F,0xFFFFFFFF);
-
-            RenderType mapRenderType = VoxelMapRenderTypes.GUI_TEXTURED_MASKED_NO_DEPTH_TEST.apply(baseMapRenderTarget.colorTextureId);
-            VertexConsumer mapBuffer = renderBufferSource.getBuffer(mapRenderType);
-            RenderUtils.drawTexturedModalRect(matrixStack, mapBuffer, -256.0F, -256.0F, 0.0F, 512.0F, 512.0F, 0xFFFFFFFF);
-
-            matrixStack.popMatrix();
-            renderBufferSource.endBatch();
-        });
-
-        double guiScale = (double) minecraft.getWindow().getWidth() / this.scWidth;
-        minTablistOffset = guiScale * 63;
-
-        RenderType mapRenderType = VoxelMapRenderTypes.GUI_TEXTURED_LEQUAL_DEPTH_TEST.apply(finalMapRenderTarget.colorTextureId);
-        VertexConsumer mapBuffer = renderBufferSource.getBuffer(mapRenderType);
-        RenderUtils.drawTexturedModalRect(matrixStack, mapBuffer, x - 32.0F, y - 32.0F, MAP_IMAGE_DEPTH, 64.0F, 64.0F, 0xFFFFFFFF);
-
-        RenderType frameRenderType = VoxelMapRenderTypes.GUI_TEXTURED_LEQUAL_DEPTH_TEST.apply(options.squareMap ? resourceSquareMapFrame : resourceRoundMapFrame);
-        VertexConsumer frameBuffer = renderBufferSource.getBuffer(frameRenderType);
-        RenderUtils.drawTexturedModalRect(matrixStack, frameBuffer, x - 32.0F, y - 32.0F, MAP_OVERLAY_DEPTH, 64.0F, 64.0F, 0xFFFFFFFF);
-
-        double lastXDouble = GameVariableAccessShim.xCoordDouble();
-        double lastZDouble = GameVariableAccessShim.zCoordDouble();
-        TextureAtlas textureAtlas = VoxelConstants.getVoxelMapInstance().getWaypointManager().getTextureAtlas();
-        if (options.waypointsAllowed) {
-            for (Waypoint waypoint : waypointManager.getWaypoints()) {
-                boolean isHighlighted = waypointManager.isHighlightedWaypoint(waypoint);
-                if (waypoint.isActive() || isHighlighted) {
-                    double distanceSq = waypoint.getDistanceSqToEntity(minecraft.getCameraEntity());
-                    boolean isOutOfRange = options.maxWaypointDisplayDistance >= 0 && distanceSq >= (options.maxWaypointDisplayDistance * options.maxWaypointDisplayDistance);
-                    if (!isOutOfRange || isHighlighted) {
-                        drawWaypoint(matrixStack, x, y, waypoint, textureAtlas, null, isHighlighted, -1, lastXDouble, lastZDouble);
-                    }
+            synchronized (this.coordinateLock) {
+                if (this.imageChanged) {
+                    this.imageChanged = false;
+                    this.mapImages[this.zoom].upload();
+                    this.lastImageX = this.lastX;
+                    this.lastImageZ = this.lastZ;
                 }
             }
 
-            Waypoint highlightedPoint = waypointManager.getHighlightedWaypoint();
-            if (highlightedPoint != null) {
-                drawWaypoint(matrixStack, x, y, highlightedPoint, textureAtlas, textureAtlas.getAtlasSprite("marker/target"), true, 0xFFFF0000, lastXDouble, lastZDouble);
+            renderBufferSource.endBatch(); // Flush previous batches
+
+            // Draw map, radar, etc.
+            RenderUtils.renderWithCustomProjection(baseMapRenderTarget, mapProjection.getBuffer(), -2000.0F, () -> {
+                float scale = 1.0F;
+                if (this.options.squareMap && this.options.rotates) {
+                    scale = 1.4142F;
+                }
+                float multi = (float) (1.0 / this.zoomScale);
+                float percentX = (float) (GameVariableAccessShim.xCoordDouble() - this.lastImageX) * multi;
+                float percentY = (float) (GameVariableAccessShim.zCoordDouble() - this.lastImageZ) * multi;
+
+                matrixStack.pushMatrix();
+                matrixStack.identity();
+
+                matrixStack.pushMatrix();
+                if (!options.rotates) {
+                    matrixStack.rotate(Axis.ZP.rotationDegrees(rotationFactor));
+                } else {
+                    matrixStack.rotate(Axis.ZP.rotationDegrees(-direction));
+                }
+                matrixStack.scale(scale, scale, 1.0F);
+                matrixStack.translate(-percentX * 512.0F / 64.0F, -percentY * 512.0F / 64.0F, 0.0F);
+
+                RenderType mapRenderType = VoxelMapRenderTypes.GUI_TEXTURED_LEQUAL_DEPTH_TEST.apply(mapResources[zoom]);
+                VertexConsumer mapBuffer = renderBufferSource.getBuffer(mapRenderType);
+                RenderUtils.drawTexturedModalRect(matrixStack, mapBuffer, -256.0F, -256.0F, -10.0F, 512.0F, 512.0F, 0xFFFFFFFF);
+                matrixStack.popMatrix();
+                matrixStack.pushMatrix();
+                matrixStack.scale(512.0F / 64.0F, 512.0F / 64.0F, 1.0F);
+                drawChunkOverlayMinimap(matrixStack, 0, 0, GameVariableAccessShim.xCoordDouble(), GameVariableAccessShim.zCoordDouble());
+                matrixStack.popMatrix();
+
+                if (VoxelConstants.getVoxelMapInstance().getRadar() != null) {
+                    VoxelConstants.getVoxelMapInstance().getRadar().onTickInGame(matrixStack, minimapContext);
+                    VoxelConstants.getVoxelMapInstance().getRadar().renderMapMobs(matrixStack, renderBufferSource, Contact.DisplayState.BELOW_FRAME, 0, 0, scScale, 512.0F / 64.0F);
+                }
+
+                matrixStack.popMatrix();
+                renderBufferSource.endBatch();
+            });
+
+            // Masking the drawn map
+            RenderUtils.renderWithCustomProjection(finalMapRenderTarget, mapProjection.getBuffer(), -2000.0F, () -> {
+                matrixStack.pushMatrix();
+                matrixStack.identity();
+
+                RenderType stencilRenderType = VoxelMapRenderTypes.GUI_TEXTURED_NO_DEPTH_TEST.apply(options.squareMap ? resourceSquareMapStencil : resourceRoundMapStencil);
+                VertexConsumer stencilBuffer = renderBufferSource.getBuffer(stencilRenderType);
+                RenderUtils.drawTexturedModalRect(matrixStack, stencilBuffer, -256.0F, -256.0F, 0.0F, 512.0F, 512.0F,0xFFFFFFFF);
+
+                RenderType mapRenderType = VoxelMapRenderTypes.GUI_TEXTURED_MASKED_NO_DEPTH_TEST.apply(baseMapRenderTarget.colorTextureId);
+                VertexConsumer mapBuffer = renderBufferSource.getBuffer(mapRenderType);
+                RenderUtils.drawTexturedModalRect(matrixStack, mapBuffer, -256.0F, -256.0F, 0.0F, 512.0F, 512.0F, 0xFFFFFFFF);
+
+                matrixStack.popMatrix();
+                renderBufferSource.endBatch();
+            });
+
+            double guiScale = (double) minecraft.getWindow().getWidth() / this.scWidth;
+            minTablistOffset = guiScale * 63;
+
+            RenderType mapRenderType = VoxelMapRenderTypes.GUI_TEXTURED_LEQUAL_DEPTH_TEST.apply(finalMapRenderTarget.colorTextureId);
+            VertexConsumer mapBuffer = renderBufferSource.getBuffer(mapRenderType);
+            RenderUtils.drawTexturedModalRect(matrixStack, mapBuffer, x - 32.0F, y - 32.0F, MAP_IMAGE_DEPTH, 64.0F, 64.0F, 0xFFFFFFFF);
+
+            RenderType frameRenderType = VoxelMapRenderTypes.GUI_TEXTURED_LEQUAL_DEPTH_TEST.apply(options.squareMap ? resourceSquareMapFrame : resourceRoundMapFrame);
+            VertexConsumer frameBuffer = renderBufferSource.getBuffer(frameRenderType);
+            RenderUtils.drawTexturedModalRect(matrixStack, frameBuffer, x - 32.0F, y - 32.0F, MAP_OVERLAY_DEPTH, 64.0F, 64.0F, 0xFFFFFFFF);
+
+            double lastXDouble = GameVariableAccessShim.xCoordDouble();
+            double lastZDouble = GameVariableAccessShim.zCoordDouble();
+            TextureAtlas textureAtlas = VoxelConstants.getVoxelMapInstance().getWaypointManager().getTextureAtlas();
+            if (options.waypointsAllowed) {
+                for (Waypoint waypoint : waypointManager.getWaypoints()) {
+                    boolean isHighlighted = waypointManager.isHighlightedWaypoint(waypoint);
+                    if (waypoint.isActive() || isHighlighted) {
+                        double distanceSq = waypoint.getDistanceSqToEntity(minecraft.getCameraEntity());
+                        boolean isOutOfRange = options.maxWaypointDisplayDistance >= 0 && distanceSq >= (options.maxWaypointDisplayDistance * options.maxWaypointDisplayDistance);
+                        if (!isOutOfRange || isHighlighted) {
+                            drawWaypoint(matrixStack, x, y, waypoint, textureAtlas, null, isHighlighted, -1, lastXDouble, lastZDouble);
+                        }
+                    }
+                }
+
+                Waypoint highlightedPoint = waypointManager.getHighlightedWaypoint();
+                if (highlightedPoint != null) {
+                    drawWaypoint(matrixStack, x, y, highlightedPoint, textureAtlas, textureAtlas.getAtlasSprite("marker/target"), true, 0xFFFF0000, lastXDouble, lastZDouble);
+                }
             }
+            drawPortalMarkersMinimap(matrixStack, x, y, lastXDouble, lastZDouble);
+            drawSeedMapperMinimapMarkers(matrixStack, x, y, lastXDouble, lastZDouble);
+        } finally {
+            matrixStack.popMatrix();
         }
-        matrixStack.popMatrix();
     }
 
     private void drawWaypoint(Matrix4fStack matrixStack, int x, int y, Waypoint waypoint, TextureAtlas textureAtlas, Sprite icon, boolean isHighlighted, int color, double baseX, double baseZ) {
@@ -1670,7 +1820,438 @@ public class Map implements Runnable, IChangeObserver {
         }
     }
 
+    private void drawSeedMapperMinimapMarkers(Matrix4fStack matrixStack, int x, int y, double baseX, double baseZ) {
+        if (!seedMapperOptions.enabled) {
+            return;
+        }
+
+        int dimension = getCurrentCubiomesDimension();
+        if (dimension == Integer.MIN_VALUE) {
+            return;
+        }
+
+        long seed;
+        try {
+            seed = seedMapperOptions.resolveSeed(VoxelConstants.getVoxelMapInstance().getWorldSeed());
+        } catch (IllegalArgumentException ignored) {
+            return;
+        }
+
+        int centerX = Mth.floor(baseX);
+        int centerZ = Mth.floor(baseZ);
+        int queryRadius = Math.max(256, (int) Math.ceil(40.0D * zoomScaleAdjusted)) + 64;
+        int keySnap = Math.max(64, queryRadius / 4);
+        int queryCenterX = Math.floorDiv(centerX, keySnap) * keySnap;
+        int queryCenterZ = Math.floorDiv(centerZ, keySnap) * keySnap;
+        int generatorFlags = 0;
+        int mcVersion = SeedMapperCompat.getMcVersion();
+        String datapackWorldKey = currentSeedMapperWorldKey();
+        SeedMapperMinimapQueryKey key = new SeedMapperMinimapQueryKey(seed, dimension, mcVersion, generatorFlags, queryCenterX, queryCenterZ, queryRadius, seedMapperOptions.showLootableOnly, seedMapperOptions.getDatapackMarkerHash(), datapackWorldKey);
+        long now = System.currentTimeMillis();
+        long minIntervalMs = 750L;
+        boolean shouldRefresh = seedMapperLastMinimapQueryKey == null
+                || !seedMapperLastMinimapQueryKey.equals(key)
+                || now - seedMapperLastMinimapQueryMs >= minIntervalMs;
+        if (shouldRefresh) {
+            SeedMapperLocatorService.QueryResult result = SeedMapperLocatorService.get().queryWithStatus(
+                    seed,
+                    dimension,
+                    mcVersion,
+                    generatorFlags,
+                    queryCenterX - queryRadius,
+                    queryCenterX + queryRadius,
+                    queryCenterZ - queryRadius,
+                    queryCenterZ + queryRadius,
+                    seedMapperOptions,
+                    datapackWorldKey
+            );
+            if (result.exact() || seedMapperLastMinimapMarkers.isEmpty()) {
+                seedMapperLastMinimapMarkers = result.markers();
+                seedMapperLastMinimapQueryKey = key;
+            }
+            seedMapperLastMinimapQueryMs = now;
+        }
+        List<SeedMapperMarker> markers = seedMapperLastMinimapMarkers;
+
+        boolean lowDetail = zoomScaleAdjusted > 2.0D;
+        double maxBlockDistance = (options.squareMap ? 42.0D : 34.0D) * zoomScaleAdjusted + 8.0D;
+        int denseDrawn = 0;
+        int totalDrawn = 0;
+        int scanned = 0;
+        int maxScanned = lowDetail ? 1400 : 2200;
+        String worldKey = currentSeedMapperWorldKey();
+        for (SeedMapperMarker marker : markers) {
+            if (++scanned > maxScanned || totalDrawn >= 220) {
+                break;
+            }
+            double dx = Math.abs(baseX - marker.blockX() - 0.5D);
+            double dz = Math.abs(baseZ - marker.blockZ() - 0.5D);
+            if (dx > maxBlockDistance || dz > maxBlockDistance) {
+                continue;
+            }
+            if (lowDetail && (marker.feature() == com.mamiyaotaru.voxelmap.seedmapper.SeedMapperFeature.SLIME_CHUNK
+                    || marker.feature() == com.mamiyaotaru.voxelmap.seedmapper.SeedMapperFeature.IRON_ORE_VEIN
+                    || marker.feature() == com.mamiyaotaru.voxelmap.seedmapper.SeedMapperFeature.COPPER_ORE_VEIN)) {
+                if (denseDrawn >= 40) {
+                    continue;
+                }
+                denseDrawn++;
+            }
+            drawSeedMapperMinimapMarker(matrixStack, x, y, marker, baseX, baseZ, worldKey);
+            totalDrawn++;
+        }
+    }
+
+    private void drawSeedMapperMinimapMarker(Matrix4fStack matrixStack, int x, int y, SeedMapperMarker marker, double baseX, double baseZ, String worldKey) {
+        double wayX = baseX - marker.blockX() - 0.5;
+        double wayY = baseZ - marker.blockZ() - 0.5;
+        float locate = (float) Math.toDegrees(Math.atan2(wayX, wayY));
+        float hypot = (float) (Math.sqrt(wayX * wayX + wayY * wayY) / zoomScaleAdjusted);
+        if (this.options.rotates) {
+            locate += this.direction;
+        } else {
+            locate -= this.rotationFactor;
+        }
+
+        boolean far;
+        if (this.options.squareMap) {
+            double radLocate = Math.toRadians(locate);
+            double dispX = hypot * Math.sin(radLocate);
+            double dispY = -hypot * Math.cos(radLocate);
+            far = Math.abs(dispX) > 28.5 || Math.abs(dispY) > 28.5;
+            if (far) {
+                return;
+            }
+        } else {
+            far = hypot >= 31.0f;
+            if (far) {
+                return;
+            }
+        }
+
+        boolean datapackStructure = marker.feature() == com.mamiyaotaru.voxelmap.seedmapper.SeedMapperFeature.DATAPACK_STRUCTURE;
+        int iconColor = datapackStructure
+                ? SeedMapperImportedDatapackManager.colorForStructureId(marker.label())
+                : 0xFFFFFFFF;
+        float iconSize = datapackStructure
+                ? SeedMapperImportedDatapackManager.iconSizeForMinimap()
+                : 8.0F;
+
+        try {
+            matrixStack.pushMatrix();
+            matrixStack.rotate(Axis.ZP.rotationDegrees(-locate));
+            matrixStack.translate(0.0F, -hypot, 0.0F);
+            matrixStack.rotate(Axis.ZP.rotationDegrees(locate));
+            if (datapackStructure) {
+                drawDatapackMinimapMarker(matrixStack, renderBufferSource, x, y, iconSize, iconColor);
+            } else {
+                Identifier icon = marker.feature().icon();
+                RenderType markerRenderType = VoxelMapRenderTypes.GUI_TEXTURED_LEQUAL_DEPTH_TEST.apply(icon);
+                VertexConsumer markerBuffer = renderBufferSource.getBuffer(markerRenderType);
+                RenderUtils.drawTexturedModalRect(matrixStack, markerBuffer, x - iconSize / 2.0F, y - iconSize / 2.0F, MAP_OVERLAY_DEPTH, iconSize, iconSize, iconColor);
+            }
+            if (seedMapperOptions.isCompleted(worldKey, marker.feature(), marker.blockX(), marker.blockZ())) {
+                float tickScale = 0.30F;
+                int tickWidth = this.minecraft.font.width(COMPLETED_TICK_GLYPH);
+                int tickHeight = this.minecraft.font.lineHeight;
+                matrixStack.pushMatrix();
+                matrixStack.scale(tickScale, tickScale, 1.0F);
+                float drawX = (x - tickWidth / 2.0F) / tickScale;
+                float drawY = (y - tickHeight / 2.0F + 0.5F) / tickScale;
+                RenderUtils.drawString(matrixStack, renderBufferSource, COMPLETED_TICK_GLYPH, drawX, drawY, MAP_TEXT_DEPTH + 1.0F, 0xFF22C84A, false);
+                matrixStack.popMatrix();
+            }
+        } catch (Exception ignored) {
+        } finally {
+            matrixStack.popMatrix();
+        }
+    }
+
+    private void drawDatapackMinimapMarker(Matrix4fStack matrixStack, MultiBufferSource.BufferSource renderBufferSource, float x, float y, float iconSize, int color) {
+        if (SeedMapperImportedDatapackManager.usesPotionIcon()) {
+            Identifier potion = SeedMapperImportedDatapackManager.iconForStructureId("");
+            Identifier overlay = SeedMapperImportedDatapackManager.iconOverlayForStructureId("");
+            RenderType potionRenderType = VoxelMapRenderTypes.GUI_TEXTURED_LEQUAL_DEPTH_TEST.apply(potion);
+            RenderType overlayRenderType = VoxelMapRenderTypes.GUI_TEXTURED_LEQUAL_DEPTH_TEST.apply(overlay);
+            VertexConsumer potionBuffer = renderBufferSource.getBuffer(potionRenderType);
+            VertexConsumer overlayBuffer = renderBufferSource.getBuffer(overlayRenderType);
+            RenderUtils.drawTexturedModalRect(matrixStack, potionBuffer, x - iconSize / 2.0F, y - iconSize / 2.0F, MAP_OVERLAY_DEPTH, iconSize, iconSize, 0xFFFFFFFF);
+            RenderUtils.drawTexturedModalRect(matrixStack, overlayBuffer, x - iconSize / 2.0F, y - iconSize / 2.0F, MAP_OVERLAY_DEPTH, iconSize, iconSize, color);
+            return;
+        }
+
+        float outerHalf = iconSize / 2.0F + 1.0F;
+        float innerHalf = iconSize / 2.0F;
+        VertexConsumer buffer = renderBufferSource.getBuffer(VoxelMapRenderTypes.WAYPOINT_TEXT_BACKGROUND);
+        float borderRed = ARGB.redFloat(0xFF000000);
+        float borderGreen = ARGB.greenFloat(0xFF000000);
+        float borderBlue = ARGB.blueFloat(0xFF000000);
+        buffer.addVertex(matrixStack, x - outerHalf, y - outerHalf, MAP_OVERLAY_DEPTH).setColor(borderRed, borderGreen, borderBlue, 1.0F);
+        buffer.addVertex(matrixStack, x - outerHalf, y + outerHalf, MAP_OVERLAY_DEPTH).setColor(borderRed, borderGreen, borderBlue, 1.0F);
+        buffer.addVertex(matrixStack, x + outerHalf, y + outerHalf, MAP_OVERLAY_DEPTH).setColor(borderRed, borderGreen, borderBlue, 1.0F);
+        buffer.addVertex(matrixStack, x + outerHalf, y - outerHalf, MAP_OVERLAY_DEPTH).setColor(borderRed, borderGreen, borderBlue, 1.0F);
+
+        float red = ARGB.redFloat(color);
+        float green = ARGB.greenFloat(color);
+        float blue = ARGB.blueFloat(color);
+        float alpha = ARGB.alphaFloat(color);
+        buffer.addVertex(matrixStack, x - innerHalf, y - innerHalf, MAP_OVERLAY_DEPTH + 0.01F).setColor(red, green, blue, alpha);
+        buffer.addVertex(matrixStack, x - innerHalf, y + innerHalf, MAP_OVERLAY_DEPTH + 0.01F).setColor(red, green, blue, alpha);
+        buffer.addVertex(matrixStack, x + innerHalf, y + innerHalf, MAP_OVERLAY_DEPTH + 0.01F).setColor(red, green, blue, alpha);
+        buffer.addVertex(matrixStack, x + innerHalf, y - innerHalf, MAP_OVERLAY_DEPTH + 0.01F).setColor(red, green, blue, alpha);
+    }
+
+    private String currentSeedMapperWorldKey() {
+        String world = waypointManager.getCurrentWorldName();
+        String sub = waypointManager.getCurrentSubworldDescriptor(false);
+        Level level = GameVariableAccessShim.getWorld();
+        String dim = level == null ? "unknown" : level.dimension().identifier().toString();
+        return (world == null ? "unknown" : world) + "|" + (sub == null ? "" : sub) + "|" + dim;
+    }
+
+    private int getCurrentCubiomesDimension() {
+        Level currentLevel = GameVariableAccessShim.getWorld();
+        if (currentLevel == null) {
+            return Integer.MIN_VALUE;
+        }
+        if (currentLevel.dimension() == Level.NETHER) {
+            return com.github.cubiomes.Cubiomes.DIM_NETHER();
+        }
+        if (currentLevel.dimension() == Level.END) {
+            return com.github.cubiomes.Cubiomes.DIM_END();
+        }
+        return com.github.cubiomes.Cubiomes.DIM_OVERWORLD();
+    }
+
+    private record SeedMapperMinimapQueryKey(long seed, int dimension, int mcVersion, int generatorFlags, int centerX, int centerZ, int radius, boolean lootOnly, int datapackHash, String datapackWorldKey) {
+    }
+
+    private void drawChunkOverlayMinimap(Matrix4fStack matrixStack, int x, int y, double baseX, double baseZ) {
+        RadarSettingsManager radarSettings = VoxelConstants.getVoxelMapInstance().getRadarOptions();
+        int centerChunkX = Mth.floor(baseX) >> 4;
+        int centerChunkZ = Mth.floor(baseZ) >> 4;
+        int radius = Math.max(3, (int) Math.ceil(34.0D * zoomScaleAdjusted / 16.0D) + 1);
+        if (radarSettings.showExploredChunks) {
+            for (ChunkPos chunk : VoxelConstants.getVoxelMapInstance().getExploredChunksManager().getExploredChunksInRange(centerChunkX, centerChunkZ, radius)) {
+                drawChunkSquare(matrixStack, x, y, baseX, baseZ, chunk, radarSettings.getExploredChunksColorRgb(), radarSettings.exploredChunksOpacity / 100.0F);
+            }
+        }
+        if (radarSettings.showNewerNewChunks) {
+            NewerNewChunksManager manager = VoxelConstants.getVoxelMapInstance().getNewerNewChunksManager();
+            for (ChunkPos chunk : manager.getOldChunksInRange(centerChunkX, centerChunkZ, radius)) {
+                drawChunkSquare(matrixStack, x, y, baseX, baseZ, chunk, radarSettings.getNewerNewChunksOldColorRgb(), radarSettings.newerNewChunksOldOpacity / 100.0F);
+            }
+            for (ChunkPos chunk : manager.getNewChunksInRange(centerChunkX, centerChunkZ, radius)) {
+                drawChunkSquare(matrixStack, x, y, baseX, baseZ, chunk, radarSettings.getNewerNewChunksNewColorRgb(), radarSettings.newerNewChunksNewOpacity / 100.0F);
+            }
+            for (ChunkPos chunk : manager.getBlockUpdateChunksInRange(centerChunkX, centerChunkZ, radius)) {
+                int color = switch (radarSettings.newerNewChunksDetectMode) {
+                    case 1 -> radarSettings.getNewerNewChunksOldColorRgb();
+                    case 2 -> radarSettings.getNewerNewChunksBlockColorRgb();
+                    default -> radarSettings.getNewerNewChunksNewColorRgb();
+                };
+                float opacity = switch (radarSettings.newerNewChunksDetectMode) {
+                    case 1 -> radarSettings.newerNewChunksOldOpacity / 100.0F;
+                    case 2 -> radarSettings.newerNewChunksBlockOpacity / 100.0F;
+                    default -> radarSettings.newerNewChunksNewOpacity / 100.0F;
+                };
+                drawChunkSquare(matrixStack, x, y, baseX, baseZ, chunk, color, opacity);
+            }
+        }
+    }
+
+    private void drawPortalMarkersMinimap(Matrix4fStack matrixStack, int x, int y, double baseX, double baseZ) {
+        boolean showNether = options.showNetherPortalMarkers;
+        boolean showEnd = options.showEndPortalMarkers;
+        boolean showEndBeacon = options.showEndGatewayMarkers;
+        if (!showNether && !showEnd && !showEndBeacon) {
+            return;
+        }
+
+        int centerX = Mth.floor(baseX);
+        int centerZ = Mth.floor(baseZ);
+        int radius = Math.max(128, (int) Math.ceil(44.0D * zoomScaleAdjusted));
+        for (PortalMarkersManager.PortalMarker marker : VoxelConstants.getVoxelMapInstance().getPortalMarkersManager()
+                .getMarkersInRange(centerX, centerZ, radius, showNether, showEnd, showEndBeacon)) {
+            Identifier icon = switch (marker.type()) {
+                case NETHER -> resourceObsidian;
+                case END -> resourceEndPortalFrame;
+                case END_BEACON -> resourceBedrock;
+            };
+            drawPortalMarkerMinimap(matrixStack, x, y, marker.pos(), baseX, baseZ, icon);
+        }
+    }
+
+    private void drawPortalMarkerMinimap(Matrix4fStack matrixStack, int x, int y, BlockPos markerPos, double baseX, double baseZ, Identifier icon) {
+        double wayX = baseX - markerPos.getX() - 0.5D;
+        double wayY = baseZ - markerPos.getZ() - 0.5D;
+        float locate = (float) Math.toDegrees(Math.atan2(wayX, wayY));
+        float hypot = (float) (Math.sqrt(wayX * wayX + wayY * wayY) / zoomScaleAdjusted);
+        if (this.options.rotates) {
+            locate += this.direction;
+        } else {
+            locate -= this.rotationFactor;
+        }
+
+        if (this.options.squareMap) {
+            double radLocate = Math.toRadians(locate);
+            double dispX = hypot * Math.sin(radLocate);
+            double dispY = -hypot * Math.cos(radLocate);
+            if (Math.abs(dispX) > 28.5D || Math.abs(dispY) > 28.5D) {
+                return;
+            }
+        } else if (hypot >= 31.0F) {
+            return;
+        }
+
+        float iconSize = 8.0F;
+        try {
+            matrixStack.pushMatrix();
+            matrixStack.rotate(Axis.ZP.rotationDegrees(-locate));
+            matrixStack.translate(0.0F, -hypot, 0.0F);
+            matrixStack.rotate(Axis.ZP.rotationDegrees(locate));
+            RenderType markerRenderType = VoxelMapRenderTypes.GUI_TEXTURED_LEQUAL_DEPTH_TEST.apply(icon);
+            VertexConsumer markerBuffer = renderBufferSource.getBuffer(markerRenderType);
+            RenderUtils.drawTexturedModalRect(matrixStack, markerBuffer, x - iconSize / 2.0F, y - iconSize / 2.0F, MAP_OVERLAY_DEPTH, iconSize, iconSize, 0xFFFFFFFF);
+        } catch (Exception ignored) {
+        } finally {
+            matrixStack.popMatrix();
+        }
+    }
+
+    private void drawChunkSquare(Matrix4fStack matrixStack, int x, int y, double baseX, double baseZ, ChunkPos chunk, int rgb, float alpha) {
+        double minX = chunk.getMinBlockX();
+        double minZ = chunk.getMinBlockZ();
+        double maxX = minX + 16.0D;
+        double maxZ = minZ + 16.0D;
+
+        float[] p0 = projectChunkPoint(baseX, baseZ, minX, minZ);
+        float[] p1 = projectChunkPoint(baseX, baseZ, minX, maxZ);
+        float[] p2 = projectChunkPoint(baseX, baseZ, maxX, maxZ);
+        float[] p3 = projectChunkPoint(baseX, baseZ, maxX, minZ);
+
+        if (isChunkOutsideMinimap(p0, p1, p2, p3)) {
+            return;
+        }
+
+        int color = ((int) (alpha * 255.0F) << 24) | (rgb & 0x00FFFFFF);
+        float red = ARGB.redFloat(color);
+        float green = ARGB.greenFloat(color);
+        float blue = ARGB.blueFloat(color);
+        float overlayAlpha = ARGB.alphaFloat(color);
+        VertexConsumer overlayBuffer = renderBufferSource.getBuffer(VoxelMapRenderTypes.WAYPOINT_TEXT_BACKGROUND);
+        overlayBuffer.addVertex(matrixStack, x + p0[0], y + p0[1], MAP_OVERLAY_DEPTH - 1.0F).setColor(red, green, blue, overlayAlpha);
+        overlayBuffer.addVertex(matrixStack, x + p1[0], y + p1[1], MAP_OVERLAY_DEPTH - 1.0F).setColor(red, green, blue, overlayAlpha);
+        overlayBuffer.addVertex(matrixStack, x + p2[0], y + p2[1], MAP_OVERLAY_DEPTH - 1.0F).setColor(red, green, blue, overlayAlpha);
+        overlayBuffer.addVertex(matrixStack, x + p3[0], y + p3[1], MAP_OVERLAY_DEPTH - 1.0F).setColor(red, green, blue, overlayAlpha);
+    }
+
+    private float[] projectChunkPoint(double baseX, double baseZ, double worldX, double worldZ) {
+        double wayX = baseX - worldX;
+        double wayZ = baseZ - worldZ;
+        float locate = (float) Math.toDegrees(Math.atan2(wayX, wayZ));
+        float hypot = (float) (Math.sqrt(wayX * wayX + wayZ * wayZ) / zoomScaleAdjusted);
+        if (this.options.rotates) {
+            locate += this.direction;
+        } else {
+            locate -= this.rotationFactor;
+        }
+
+        double radLocate = Math.toRadians(locate);
+        return new float[] {
+                (float) (-hypot * Math.sin(radLocate)),
+                (float) (-hypot * Math.cos(radLocate))
+        };
+    }
+
+    private boolean isChunkOutsideMinimap(float[] p0, float[] p1, float[] p2, float[] p3) {
+        if (this.options.squareMap) {
+            return quadOutsideSquare(p0, p1, p2, p3);
+        }
+        float radius = 31.5F;
+        float radiusSq = radius * radius;
+        return quadOutsideCircle(p0, p1, p2, p3, radiusSq);
+    }
+
+    private static boolean quadOutsideSquare(float[] p0, float[] p1, float[] p2, float[] p3) {
+        float min = -31.5F;
+        float max = 31.5F;
+        float[][] points = new float[][] {p0, p1, p2, p3};
+
+        boolean allLeft = true;
+        boolean allRight = true;
+        boolean allTop = true;
+        boolean allBottom = true;
+        for (float[] p : points) {
+            allLeft &= p[0] < min;
+            allRight &= p[0] > max;
+            allTop &= p[1] < min;
+            allBottom &= p[1] > max;
+        }
+
+        return allLeft || allRight || allTop || allBottom;
+    }
+
+    private static boolean outsideCircle(float[] point, float radiusSq) {
+        return point[0] * point[0] + point[1] * point[1] > radiusSq;
+    }
+
+    private static boolean quadOutsideCircle(float[] p0, float[] p1, float[] p2, float[] p3, float radiusSq) {
+        if (!outsideCircle(p0, radiusSq) || !outsideCircle(p1, radiusSq) || !outsideCircle(p2, radiusSq) || !outsideCircle(p3, radiusSq)) {
+            return false;
+        }
+
+        float[][] points = new float[][] {p0, p1, p2, p3};
+        if (polygonContainsOrigin(points)) {
+            return false;
+        }
+
+        for (int i = 0; i < points.length; i++) {
+            float[] a = points[i];
+            float[] b = points[(i + 1) % points.length];
+            if (segmentIntersectsCircle(a, b, radiusSq)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static boolean polygonContainsOrigin(float[][] points) {
+        boolean inside = false;
+        for (int i = 0, j = points.length - 1; i < points.length; j = i++) {
+            float xi = points[i][0];
+            float yi = points[i][1];
+            float xj = points[j][0];
+            float yj = points[j][1];
+            boolean crosses = (yi > 0.0F) != (yj > 0.0F);
+            if (crosses) {
+                float xAtYAxis = (xj - xi) * (-yi) / (yj - yi) + xi;
+                if (xAtYAxis > 0.0F) {
+                    inside = !inside;
+                }
+            }
+        }
+        return inside;
+    }
+
+    private static boolean segmentIntersectsCircle(float[] a, float[] b, float radiusSq) {
+        float dx = b[0] - a[0];
+        float dy = b[1] - a[1];
+        float lenSq = dx * dx + dy * dy;
+        if (lenSq == 0.0F) {
+            return !outsideCircle(a, radiusSq);
+        }
+        float t = -(a[0] * dx + a[1] * dy) / lenSq;
+        t = Mth.clamp(t, 0.0F, 1.0F);
+        float closestX = a[0] + t * dx;
+        float closestY = a[1] + t * dy;
+        return closestX * closestX + closestY * closestY <= radiusSq;
+    }
+
+
     private void drawArrow(Matrix4fStack matrixStack, int x, int y, float scaleProj) {
+        final float arrowSize = 6.0F;
         matrixStack.pushMatrix();
         matrixStack.scale(scaleProj, scaleProj, 1.0F);
 
@@ -1680,7 +2261,7 @@ public class Map implements Runnable, IChangeObserver {
 
         RenderType renderType = VoxelMapRenderTypes.GUI_TEXTURED_LEQUAL_DEPTH_TEST.apply(resourceArrow);
         VertexConsumer buffer = renderBufferSource.getBuffer(renderType);
-        RenderUtils.drawTexturedModalRect(matrixStack, buffer, x - 4.0F, y - 4.0F, MAP_OVERLAY_DEPTH, 8.0F, 8.0F, 0xFFFFFFFF);
+        RenderUtils.drawTexturedModalRect(matrixStack, buffer, x - arrowSize / 2.0F, y - arrowSize / 2.0F, MAP_OVERLAY_DEPTH, arrowSize, arrowSize, 0xFFFFFFFF);
 
         matrixStack.popMatrix();
     }

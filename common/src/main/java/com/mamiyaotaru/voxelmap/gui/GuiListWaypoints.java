@@ -108,6 +108,19 @@ class GuiListWaypoints extends AbstractSelectionList<GuiListWaypoints.WaypointIt
         waypointsFiltered.forEach(x -> addEntry((WaypointItem) x));
     }
 
+    protected void removeWaypoint(Waypoint waypoint) {
+        if (waypoint == null) {
+            return;
+        }
+
+        if (getSelected() != null && getSelected().waypoint == waypoint) {
+            super.setSelected(null);
+        }
+
+        waypoints.removeIf(item -> item.waypoint == waypoint);
+        updateFilter(filterString);
+    }
+
     @Override
     protected void updateWidgetNarration(NarrationElementOutput narrationElementOutput) {
     }

@@ -65,11 +65,24 @@ public class WaypointContainer {
         if (waypointManager == null) return;
         if (renderables.isEmpty()) return;
 
+        if (options.highlightTracerEnabled) {
+            renderHighlightTracers(poseStack, bufferSource, camera);
+        }
+
         if (options.showWaypointBeacons) {
             renderWaypointBeams(partialTick, poseStack, bufferSource, camera);
         }
         if (options.showWaypointSigns) {
             renderWaypointSigns(partialTick, poseStack, bufferSource, camera);
+        }
+    }
+
+    private void renderHighlightTracers(PoseStack poseStack, BufferSource bufferSource, Camera camera) {
+        for (RenderableWaypoint renderable : renderables) {
+            if (!renderable.isHighlighted()) {
+                continue;
+            }
+            renderHighlightTracer(poseStack, bufferSource, renderable.getWaypoint(), camera);
         }
     }
 
@@ -114,7 +127,6 @@ public class WaypointContainer {
             int z = waypoint.getZ();
             int y = waypoint.getY();
             double distance = Math.sqrt(waypoint.getDistanceSqToCamera(camera));
-
             boolean isOutOfRange = options.maxWaypointDisplayDistance >= 0 && distance >= options.maxWaypointDisplayDistance;
             isEffectivelyActive = !isOutOfRange || isHighlighted;
             if (!isEffectivelyActive) {
@@ -132,6 +144,33 @@ public class WaypointContainer {
             }
             renderSign(poseStack, bufferSource, waypoint, textureAtlas, isPointedAt, isHighlighted, distance, x - cameraPos.x, y - cameraPos.y + 1.12, z - cameraPos.z);
         }
+    }
+
+    private void renderHighlightTracer(PoseStack poseStack, BufferSource bufferSource, Waypoint waypoint, Camera camera) {
+        Vec3 cameraPos = camera.position();
+        Vec3 target = new Vec3(waypoint.getX() + 0.5D, waypoint.getY() + 0.5D, waypoint.getZ() + 0.5D).subtract(cameraPos);
+        Vec3 normal = target.normalize();
+        if (!Double.isFinite(normal.x) || !Double.isFinite(normal.y) || !Double.isFinite(normal.z)) {
+            return;
+        }
+        Vec3 start = Vec3.ZERO;
+
+        int rgb = options.getHighlightTracerColorRgb();
+        float r = ((rgb >> 16) & 0xFF) / 255.0F;
+        float g = ((rgb >> 8) & 0xFF) / 255.0F;
+        float b = (rgb & 0xFF) / 255.0F;
+        float width = Mth.clamp(options.highlightTracerThickness, 1.0F, 6.0F);
+
+        VertexConsumer lineBuffer = bufferSource.getBuffer(VoxelMapRenderTypes.SEEDMAPPER_LINES_NO_DEPTH);
+        lineBuffer.addVertex(poseStack.last(), (float) start.x, (float) start.y, (float) start.z)
+                .setColor(r, g, b, 1.0F)
+                .setNormal(poseStack.last(), (float) normal.x, (float) normal.y, (float) normal.z)
+                .setLineWidth(width);
+        lineBuffer.addVertex(poseStack.last(), (float) target.x, (float) target.y, (float) target.z)
+                .setColor(r, g, b, 1.0F)
+                .setNormal(poseStack.last(), (float) normal.x, (float) normal.y, (float) normal.z)
+                .setLineWidth(width);
+        bufferSource.endBatch(VoxelMapRenderTypes.SEEDMAPPER_LINES_NO_DEPTH);
     }
 
     private float getCenterOffset(Waypoint waypoint, double distance, Camera camera) {

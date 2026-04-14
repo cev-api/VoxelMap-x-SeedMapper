@@ -836,10 +836,12 @@ public class PersistentMap implements IChangeObserver {
     }
 
     @Override
-    public void handleChangeInWorld(int chunkX, int chunkZ) {
+    public void handleChangeInWorld(int chunkX, int sectionY, int chunkZ) {
         if (this.world != null) {
             LevelChunk chunk = this.world.getChunk(chunkX, chunkZ);
             if (chunk != null && !chunk.isEmpty()) {
+                // Keep portal discovery active even when minimap rendering is disabled.
+                VoxelConstants.getVoxelMapInstance().getPortalMarkersManager().queueChunkScan(chunkX, chunkZ);
                 if (this.isChunkReady(this.world, chunk)) {
                     this.processChunk(chunk);
                 }
