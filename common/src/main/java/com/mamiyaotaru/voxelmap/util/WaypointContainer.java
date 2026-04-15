@@ -5,6 +5,7 @@ import com.mamiyaotaru.voxelmap.VoxelConstants;
 import com.mamiyaotaru.voxelmap.WaypointManager;
 import com.mamiyaotaru.voxelmap.textures.Sprite;
 import com.mamiyaotaru.voxelmap.textures.TextureAtlas;
+import com.mamiyaotaru.voxelmap.util.VoxelMapRenderTypes;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
@@ -63,10 +64,14 @@ public class WaypointContainer {
 
     public void renderWaypoints(float partialTick, PoseStack poseStack, BufferSource bufferSource, Camera camera) {
         if (waypointManager == null) return;
-        if (renderables.isEmpty()) return;
+        if (renderables.isEmpty() && waypointManager.getHighlightedWaypoint() == null) return;
 
         if (options.highlightTracerEnabled) {
             renderHighlightTracers(poseStack, bufferSource, camera);
+        }
+
+        if (!options.waypointsAllowed) {
+            return;
         }
 
         if (options.showWaypointBeacons) {
@@ -78,11 +83,19 @@ public class WaypointContainer {
     }
 
     private void renderHighlightTracers(PoseStack poseStack, BufferSource bufferSource, Camera camera) {
+        Waypoint highlightedWaypoint = waypointManager.getHighlightedWaypoint();
+        boolean renderedHighlightedWaypoint = false;
         for (RenderableWaypoint renderable : renderables) {
             if (!renderable.isHighlighted()) {
                 continue;
             }
+            if (renderable.getWaypoint() == highlightedWaypoint) {
+                renderedHighlightedWaypoint = true;
+            }
             renderHighlightTracer(poseStack, bufferSource, renderable.getWaypoint(), camera);
+        }
+        if (highlightedWaypoint != null && !renderedHighlightedWaypoint) {
+            renderHighlightTracer(poseStack, bufferSource, highlightedWaypoint, camera);
         }
     }
 
@@ -153,7 +166,7 @@ public class WaypointContainer {
         if (!Double.isFinite(normal.x) || !Double.isFinite(normal.y) || !Double.isFinite(normal.z)) {
             return;
         }
-        Vec3 start = Vec3.ZERO;
+        Vec3 start = new Vec3(camera.forwardVector()).scale(2.0D);
 
         int rgb = options.getHighlightTracerColorRgb();
         float r = ((rgb >> 16) & 0xFF) / 255.0F;
@@ -171,6 +184,56 @@ public class WaypointContainer {
                 .setNormal(poseStack.last(), (float) normal.x, (float) normal.y, (float) normal.z)
                 .setLineWidth(width);
         bufferSource.endBatch(VoxelMapRenderTypes.SEEDMAPPER_LINES_NO_DEPTH);
+
+        renderHighlightTracerPrism(poseStack, bufferSource, start, target, r, g, b, width);
+    }
+
+    private void renderHighlightTracerPrism(PoseStack poseStack, BufferSource bufferSource, Vec3 start, Vec3 end, float r, float g, float b, float width) {
+        Vec3 direction = end.subtract(start);
+        double lengthSq = direction.lengthSqr();
+        if (!Double.isFinite(lengthSq) || lengthSq <= 1.0E-6D) {
+            return;
+        }
+
+        Vec3 forward = direction.normalize();
+        Vec3 referenceUp = Math.abs(forward.y) > 0.9D ? new Vec3(0.0D, 0.0D, 1.0D) : new Vec3(0.0D, 1.0D, 0.0D);
+        Vec3 right = forward.cross(referenceUp);
+        if (right.lengthSqr() <= 1.0E-6D) {
+            referenceUp = new Vec3(1.0D, 0.0D, 0.0D);
+            right = forward.cross(referenceUp);
+        }
+        double thickness = Math.max(0.03D, width * 0.02D);
+        right = right.normalize().scale(thickness);
+        Vec3 up = right.cross(forward).normalize().scale(thickness);
+
+        Vec3 p0 = start.add(right).add(up);
+        Vec3 p1 = start.add(right).subtract(up);
+        Vec3 p2 = start.subtract(right).subtract(up);
+        Vec3 p3 = start.subtract(right).add(up);
+        Vec3 p4 = end.add(right).add(up);
+        Vec3 p5 = end.add(right).subtract(up);
+        Vec3 p6 = end.subtract(right).subtract(up);
+        Vec3 p7 = end.subtract(right).add(up);
+
+        PoseStack.Pose pose = poseStack.last();
+        VertexConsumer quadBuffer = bufferSource.getBuffer(VoxelMapRenderTypes.SEEDMAPPER_QUADS_NO_DEPTH);
+
+        drawTracerFace(quadBuffer, pose, p0, p1, p5, p4, r, g, b);
+        drawTracerFace(quadBuffer, pose, p1, p2, p6, p5, r, g, b);
+        drawTracerFace(quadBuffer, pose, p2, p3, p7, p6, r, g, b);
+        drawTracerFace(quadBuffer, pose, p3, p0, p4, p7, r, g, b);
+        drawTracerFace(quadBuffer, pose, p0, p3, p2, p1, r, g, b);
+        drawTracerFace(quadBuffer, pose, p4, p5, p6, p7, r, g, b);
+
+        bufferSource.endBatch(VoxelMapRenderTypes.SEEDMAPPER_QUADS_NO_DEPTH);
+    }
+
+    private void drawTracerFace(VertexConsumer buffer, PoseStack.Pose pose, Vec3 a, Vec3 b, Vec3 c, Vec3 d, float r, float g, float bColor) {
+        Vec3 normal = b.subtract(a).cross(c.subtract(a)).normalize();
+        buffer.addVertex(pose, (float) a.x, (float) a.y, (float) a.z).setColor(r, g, bColor, 0.85F).setNormal(pose, (float) normal.x, (float) normal.y, (float) normal.z);
+        buffer.addVertex(pose, (float) b.x, (float) b.y, (float) b.z).setColor(r, g, bColor, 0.85F).setNormal(pose, (float) normal.x, (float) normal.y, (float) normal.z);
+        buffer.addVertex(pose, (float) c.x, (float) c.y, (float) c.z).setColor(r, g, bColor, 0.85F).setNormal(pose, (float) normal.x, (float) normal.y, (float) normal.z);
+        buffer.addVertex(pose, (float) d.x, (float) d.y, (float) d.z).setColor(r, g, bColor, 0.85F).setNormal(pose, (float) normal.x, (float) normal.y, (float) normal.z);
     }
 
     private float getCenterOffset(Waypoint waypoint, double distance, Camera camera) {

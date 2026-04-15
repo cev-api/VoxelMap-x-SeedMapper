@@ -54,6 +54,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.entity.player.PlayerModelPart;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
@@ -63,8 +64,10 @@ import org.lwjgl.glfw.GLFW;
 
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
@@ -144,6 +147,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     String selectedSeedMapperWorldKey;
     Waypoint selectedSeedMapperWaypoint;
     Waypoint selectedSeedMapperAssociatedWaypoint;
+    private final Map<String, String> seedMapperHighlightWaypoints = new HashMap<>();
     private PopupGuiButton buttonWaypoints;
     private final Minecraft minecraft = Minecraft.getInstance();
     private final Identifier voxelmapSkinLocation = Identifier.fromNamespaceAndPath(VoxelConstants.MOD_ID, "persistentmap/playerskin");
@@ -1467,7 +1471,10 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 selectedSeedMapperMarker = hitbox.marker();
                 selectedSeedMapperWorldKey = hitbox.worldKey();
                 selectedSeedMapperAssociatedWaypoint = findWaypointForMarker(selectedSeedMapperMarker);
-                selectedSeedMapperWaypoint = selectedSeedMapperAssociatedWaypoint != null ? selectedSeedMapperAssociatedWaypoint : createTransientStructureWaypoint(selectedSeedMapperMarker);
+                selectedSeedMapperWaypoint = findSelectedSeedMapperWaypoint(selectedSeedMapperMarker);
+                if (selectedSeedMapperWaypoint == null) {
+                    selectedSeedMapperWaypoint = createTransientStructureWaypoint(selectedSeedMapperMarker);
+                }
                 selectedWaypoint = selectedSeedMapperWaypoint;
                 int mouseDirectX = (int) minecraft.mouseHandler.xpos();
                 int mouseDirectY = (int) minecraft.mouseHandler.ypos();
@@ -1603,10 +1610,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         dimensions.add(currentDimension);
 
         double dimensionScale = VoxelConstants.getPlayer().level().dimensionType().coordinateScale();
-        int y = this.persistentMap.getHeightAt(marker.blockX(), marker.blockZ());
-        if (y < VoxelConstants.getPlayer().level().getMinY()) {
-            y = VoxelConstants.getPlayer().level().dimensionType().hasCeiling() ? 64 : VoxelConstants.getPlayer().level().getMaxY();
-        }
+        int y = terrainHighlightY(marker.blockX(), marker.blockZ());
 
         String name = Component.translatable(marker.feature().translationKey()).getString();
         if (marker.label() != null && !marker.label().isBlank()) {
@@ -1634,10 +1638,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     private Waypoint createTransientStructureWaypoint(SeedMapperMarker marker) {
         TreeSet<DimensionContainer> dimensions = new TreeSet<>();
         dimensions.add(VoxelConstants.getVoxelMapInstance().getDimensionManager().getDimensionContainerByWorld(VoxelConstants.getPlayer().level()));
-        int y = this.persistentMap.getHeightAt(marker.blockX(), marker.blockZ());
-        if (y < VoxelConstants.getPlayer().level().getMinY()) {
-            y = VoxelConstants.getPlayer().level().dimensionType().hasCeiling() ? 64 : VoxelConstants.getPlayer().level().getMaxY();
-        }
+        int y = terrainHighlightY(marker.blockX(), marker.blockZ());
         return new Waypoint(
                 displayMarkerName(marker),
                 marker.blockX(),
@@ -1651,6 +1652,140 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 waypointManager.getCurrentSubworldDescriptor(false),
                 dimensions
         );
+    }
+
+    private int terrainHighlightY(int x, int z) {
+        Level level = VoxelConstants.getPlayer().level();
+        int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) + 1;
+        if (y < level.getMinY()) {
+            y = this.persistentMap.getHeightAt(x, z);
+        }
+        return Math.max(y, 64);
+    }
+
+    private Waypoint findSeedMapperHighlightWaypoint(SeedMapperMarker marker) {
+        if (marker == null) {
+            return null;
+        }
+
+        String key = seedMapperHighlightKey(marker);
+        String waypointName = seedMapperHighlightWaypoints.get(key);
+        if (waypointName != null) {
+            for (Waypoint waypoint : waypointManager.getWaypoints()) {
+                if (waypointName.equals(waypoint.name)) {
+                    return waypoint;
+                }
+            }
+        }
+
+        Waypoint highlighted = waypointManager.getHighlightedWaypoint();
+        if (highlighted != null
+                && highlighted.getX() == marker.blockX()
+                && highlighted.getZ() == marker.blockZ()
+                && isSeedMapperHighlightName(highlighted.name)) {
+            return highlighted;
+        }
+
+        return null;
+    }
+
+    private Waypoint findSelectedSeedMapperWaypoint(SeedMapperMarker marker) {
+        if (marker == null) {
+            return null;
+        }
+
+        Waypoint highlighted = waypointManager.getHighlightedWaypoint();
+        if (isMarkerHighlighted(marker, highlighted)) {
+            return highlighted;
+        }
+
+        Waypoint associated = findWaypointForMarker(marker);
+        if (associated != null) {
+            return associated;
+        }
+
+        return findSeedMapperHighlightWaypoint(marker);
+    }
+
+    private boolean isSeedMapperHighlightWaypoint(Waypoint waypoint) {
+        return waypoint != null && isSeedMapperHighlightName(waypoint.name);
+    }
+
+    private boolean isMarkerHighlighted(SeedMapperMarker marker, Waypoint waypoint) {
+        if (marker == null || waypoint == null) {
+            return false;
+        }
+
+        return waypoint.getX() == marker.blockX()
+                && waypoint.getZ() == marker.blockZ()
+                && waypoint.inWorld
+                && waypoint.inDimension;
+    }
+
+    private boolean isMarkerHighlighted(SeedMapperMarker marker) {
+        if (marker == null) {
+            return false;
+        }
+
+        if (isMarkerHighlighted(marker, waypointManager.getHighlightedWaypoint())) {
+            return true;
+        }
+
+        String key = seedMapperHighlightKey(marker);
+        String waypointName = seedMapperHighlightWaypoints.get(key);
+        if (waypointName == null) {
+            return false;
+        }
+
+        for (Waypoint waypoint : waypointManager.getWaypoints()) {
+            if (waypointName.equals(waypoint.name)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private boolean isSeedMapperHighlightName(String name) {
+        return name != null && name.startsWith("SeedMapper Highlight ");
+    }
+
+    private String seedMapperHighlightKey(SeedMapperMarker marker) {
+        return marker.feature().id() + "|" + marker.blockX() + "|" + marker.blockZ();
+    }
+
+    private String seedMapperHighlightName(SeedMapperMarker marker) {
+        return "SeedMapper Highlight " + displayMarkerName(marker);
+    }
+
+    private void rememberSeedMapperHighlight(SeedMapperMarker marker, String waypointName) {
+        if (marker == null || waypointName == null) {
+            return;
+        }
+        seedMapperHighlightWaypoints.put(seedMapperHighlightKey(marker), waypointName);
+    }
+
+    private void deleteSeedMapperHighlight(SeedMapperMarker marker) {
+        if (marker == null) {
+            return;
+        }
+
+        String key = seedMapperHighlightKey(marker);
+        String waypointName = seedMapperHighlightWaypoints.remove(key);
+        if (waypointName == null) {
+            Waypoint waypoint = findSeedMapperHighlightWaypoint(marker);
+            waypointName = waypoint != null ? waypoint.name : null;
+        }
+        if (waypointName == null) {
+            return;
+        }
+
+        for (Waypoint waypoint : new ArrayList<>(waypointManager.getWaypoints())) {
+            if (waypointName.equals(waypoint.name)) {
+                waypointManager.deleteWaypoint(waypoint);
+                break;
+            }
+        }
     }
 
     private String displayMarkerName(SeedMapperMarker marker) {
@@ -1673,6 +1808,12 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     private Waypoint findWaypointForMarker(SeedMapperMarker marker) {
         if (marker == null) {
             return null;
+        }
+        for (Waypoint waypoint : waypointManager.getWaypoints()) {
+            if (!waypoint.inWorld || !waypoint.inDimension) continue;
+            if (waypoint.getX() == marker.blockX() && waypoint.getZ() == marker.blockZ() && isSeedMapperHighlightWaypoint(waypoint)) {
+                return waypoint;
+            }
         }
         for (Waypoint waypoint : waypointManager.getWaypoints()) {
             if (!waypoint.inWorld || !waypoint.inDimension) continue;
@@ -1842,13 +1983,14 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         ArrayList<Popup.PopupEntry> entries = new ArrayList<>();
         boolean completed = selectedSeedMapperWorldKey != null
                 && seedMapperOptions.isCompleted(selectedSeedMapperWorldKey, selectedSeedMapperMarker.feature(), selectedSeedMapperMarker.blockX(), selectedSeedMapperMarker.blockZ());
-        if (selectedSeedMapperAssociatedWaypoint != null) {
+        boolean highlightActive = isMarkerHighlighted(selectedSeedMapperMarker);
+        if (selectedSeedMapperAssociatedWaypoint != null && !highlightActive) {
             entries.add(new Popup.PopupEntry(I18n.get("selectServer.edit"), 4, true, true));
             entries.add(new Popup.PopupEntry(I18n.get("selectServer.delete"), 5, true, true));
         } else {
             entries.add(new Popup.PopupEntry("Create Waypoint", 7, true, true));
         }
-        entries.add(new Popup.PopupEntry(I18n.get(selectedWaypoint != waypointManager.getHighlightedWaypoint() ? "minimap.waypoints.highlight" : "minimap.waypoints.removeHighlight"), 1, true, true));
+        entries.add(new Popup.PopupEntry(I18n.get(highlightActive ? "minimap.waypoints.removeHighlight" : "minimap.waypoints.highlight"), 1, true, true));
         entries.add(new Popup.PopupEntry(I18n.get("minimap.waypoints.teleportTo"), 3, true, true));
         entries.add(new Popup.PopupEntry(I18n.get("minimap.waypoints.share"), 2, true, true));
         entries.add(new Popup.PopupEntry(completed ? "Mark Incomplete" : "Mark Complete", 8, true, true));
@@ -1910,19 +2052,37 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 }
                 TreeSet<DimensionContainer> dimensions = new TreeSet<>();
                 dimensions.add(VoxelConstants.getVoxelMapInstance().getDimensionManager().getDimensionContainerByWorld(VoxelConstants.getPlayer().level()));
-                y = y > VoxelConstants.getPlayer().level().getMinY() ? y : 64;
+                y = terrainHighlightY(x, z);
                 this.newWaypoint = new Waypoint("", (int) (x * dimensionScale), (int) (z * dimensionScale), y, true, r, g, b, "", VoxelConstants.getVoxelMapInstance().getWaypointManager().getCurrentSubworldDescriptor(false), dimensions);
                 minecraft.setScreen(new GuiAddWaypoint(this, this.newWaypoint, false));
             }
             case 1 -> {
-                if (selectedWaypoint != null) {
+                if (selectedSeedMapperMarker != null) {
+                    if (isMarkerHighlighted(selectedSeedMapperMarker)) {
+                        deleteSeedMapperHighlight(selectedSeedMapperMarker);
+                        this.waypointManager.setHighlightedWaypoint(null, false);
+                    } else if (selectedWaypoint != null) {
+                        this.waypointManager.setHighlightedWaypoint(selectedWaypoint, true);
+                    } else {
+                        TreeSet<DimensionContainer> dimensions2 = new TreeSet<>();
+                        dimensions2.add(VoxelConstants.getVoxelMapInstance().getDimensionManager().getDimensionContainerByWorld(VoxelConstants.getPlayer().level()));
+                        Waypoint highlightWaypoint = new Waypoint(seedMapperHighlightName(selectedSeedMapperMarker), (int) (x * dimensionScale), (int) (z * dimensionScale), terrainHighlightY(x, z), true, 1.0F, 0.0F, 0.0F, "target", VoxelConstants.getVoxelMapInstance().getWaypointManager().getCurrentSubworldDescriptor(false), dimensions2);
+                        this.waypointManager.addWaypoint(highlightWaypoint);
+                        this.waypointManager.setHighlightedWaypoint(highlightWaypoint, false);
+                        rememberSeedMapperHighlight(selectedSeedMapperMarker, highlightWaypoint.name);
+                        selectedSeedMapperWaypoint = highlightWaypoint;
+                        selectedWaypoint = highlightWaypoint;
+                    }
+                } else if (selectedWaypoint != null) {
                     this.waypointManager.setHighlightedWaypoint(selectedWaypoint, true);
                 } else {
-                    y = y > VoxelConstants.getPlayer().level().getMinY() ? y : 64;
+                    y = terrainHighlightY(x, z);
                     TreeSet<DimensionContainer> dimensions2 = new TreeSet<>();
                     dimensions2.add(VoxelConstants.getVoxelMapInstance().getDimensionManager().getDimensionContainerByWorld(VoxelConstants.getPlayer().level()));
-                    Waypoint fakePoint = new Waypoint("", (int) (x * dimensionScale), (int) (z * dimensionScale), y, true, 1.0F, 0.0F, 0.0F, "", VoxelConstants.getVoxelMapInstance().getWaypointManager().getCurrentSubworldDescriptor(false), dimensions2);
-                    this.waypointManager.setHighlightedWaypoint(fakePoint, true);
+                    Waypoint highlightWaypoint = new Waypoint("", (int) (x * dimensionScale), (int) (z * dimensionScale), y, true, 1.0F, 0.0F, 0.0F, "", VoxelConstants.getVoxelMapInstance().getWaypointManager().getCurrentSubworldDescriptor(false), dimensions2);
+                    this.waypointManager.setHighlightedWaypoint(highlightWaypoint, false);
+                    selectedSeedMapperWaypoint = highlightWaypoint;
+                    selectedWaypoint = highlightWaypoint;
                 }
             }
             case 2 -> {
