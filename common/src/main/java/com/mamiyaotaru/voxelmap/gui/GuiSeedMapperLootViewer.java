@@ -4,7 +4,6 @@ import com.github.cubiomes.Cubiomes;
 import com.mamiyaotaru.voxelmap.VoxelConstants;
 import com.mamiyaotaru.voxelmap.WaypointManager;
 import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperCompat;
-import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperEspManager;
 import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperLocatorService;
 import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperLootService;
 import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperMarker;
@@ -28,6 +27,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
 import net.minecraft.resources.Identifier;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.ItemStack;
@@ -225,6 +225,7 @@ public final class GuiSeedMapperLootViewer extends Screen {
         scrollDownButton.visible = false;
 
         onSearchChanged("");
+        refreshHighlightsFromState();
         rebuildRowButtons();
     }
 
@@ -391,12 +392,12 @@ public final class GuiSeedMapperLootViewer extends Screen {
             rebuildRowButtons();
             return;
         }
+        clearHighlightStates();
         BlockPos highlightPos = getActionPos(entry);
         SeedMapperSettingsManager settings = VoxelConstants.getVoxelMapInstance().getSeedMapperOptions();
-        SeedMapperEspManager.setHighlightTimeoutMinutes(settings.espTimeoutMinutes);
-        SeedMapperEspManager.drawBoxes(List.of(highlightPos), 0xFFFFCC00);
         long timeoutMs = (long) Math.max(0.0, settings.espTimeoutMinutes * 60_000.0);
-        GLOBAL_HIGHLIGHTS.put(key, new HighlightRecord(highlightPos, System.currentTimeMillis() + timeoutMs));
+        GLOBAL_HIGHLIGHTS.put(key, new HighlightRecord(createHighlightWaypoint(entry, highlightPos), System.currentTimeMillis(), System.currentTimeMillis() + timeoutMs));
+        refreshHighlightsFromState();
         rebuildRowButtons();
     }
 
@@ -512,11 +513,16 @@ public final class GuiSeedMapperLootViewer extends Screen {
     }
 
     private BlockPos getActionPos(SeedMapperLootService.LootEntry entry) {
-        int y = 64;
-        if (this.minecraft.player != null) {
-            y = this.minecraft.player.blockPosition().getY();
+        Level level = GameVariableAccessShim.getWorld();
+        if (level == null) {
+            return new BlockPos(entry.pos().getX(), 64, entry.pos().getZ());
         }
-        return new BlockPos(entry.pos().getX(), y, entry.pos().getZ());
+
+        int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, entry.pos().getX(), entry.pos().getZ()) + 1;
+        if (y < level.getMinY()) {
+            y = 64;
+        }
+        return new BlockPos(entry.pos().getX(), Math.max(y, 64), entry.pos().getZ());
     }
 
     private String highlightKey(SeedMapperLootService.LootEntry entry) {
@@ -564,6 +570,14 @@ public final class GuiSeedMapperLootViewer extends Screen {
         return changed;
     }
 
+    private static void clearHighlightStates() {
+        if (GLOBAL_HIGHLIGHTS.isEmpty()) {
+            return;
+        }
+        GLOBAL_HIGHLIGHTS.clear();
+        refreshHighlightsFromState();
+    }
+
     private static void removeHighlightState(String key) {
         if (GLOBAL_HIGHLIGHTS.remove(key) != null) {
             refreshHighlightsFromState();
@@ -571,9 +585,8 @@ public final class GuiSeedMapperLootViewer extends Screen {
     }
 
     private static void refreshHighlightsFromState() {
-        SeedMapperEspManager.clear();
         long now = System.currentTimeMillis();
-        List<BlockPos> active = new ArrayList<>();
+        HighlightRecord latest = null;
         List<String> expired = new ArrayList<>();
         for (Map.Entry<String, HighlightRecord> entry : GLOBAL_HIGHLIGHTS.entrySet()) {
             HighlightRecord record = entry.getValue();
@@ -581,24 +594,54 @@ public final class GuiSeedMapperLootViewer extends Screen {
                 expired.add(entry.getKey());
                 continue;
             }
-            active.add(record.pos);
+            if (latest == null || record.createdAt > latest.createdAt) {
+                latest = record;
+            }
         }
         for (String key : expired) {
             GLOBAL_HIGHLIGHTS.remove(key);
         }
-        if (!active.isEmpty()) {
-            SeedMapperEspManager.drawBoxes(active, 0xFFFFCC00);
+        WaypointManager waypointManager = VoxelConstants.getVoxelMapInstance().getWaypointManager();
+        if (latest != null) {
+            waypointManager.setHighlightedWaypoint(latest.waypoint, false);
+        } else {
+            waypointManager.setHighlightedWaypoint(null, false);
         }
     }
 
     private static final class HighlightRecord {
-        final BlockPos pos;
+        final Waypoint waypoint;
+        final long createdAt;
         final long expiresAt;
 
-        HighlightRecord(BlockPos pos, long expiresAt) {
-            this.pos = pos;
+        HighlightRecord(Waypoint waypoint, long createdAt, long expiresAt) {
+            this.waypoint = waypoint;
+            this.createdAt = createdAt;
             this.expiresAt = expiresAt;
         }
+    }
+
+    private Waypoint createHighlightWaypoint(SeedMapperLootService.LootEntry entry, BlockPos highlightPos) {
+        Level level = GameVariableAccessShim.getWorld();
+        if (level == null) {
+            return null;
+        }
+
+        TreeSet<DimensionContainer> dimensions = new TreeSet<>();
+        dimensions.add(VoxelConstants.getVoxelMapInstance().getDimensionManager().getDimensionContainerByWorld(level));
+        return new Waypoint(
+                "Loot " + entry.pos().getX() + "," + entry.pos().getZ(),
+                highlightPos.getX(),
+                highlightPos.getZ(),
+                highlightPos.getY(),
+                true,
+                1.0F,
+                0.85F,
+                0.1F,
+                "target",
+                VoxelConstants.getVoxelMapInstance().getWaypointManager().getCurrentSubworldDescriptor(false),
+                dimensions
+        );
     }
 
     private boolean isWaypointActive(SeedMapperLootService.LootEntry entry) {

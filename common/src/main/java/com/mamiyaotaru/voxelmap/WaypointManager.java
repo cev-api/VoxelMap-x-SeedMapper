@@ -783,9 +783,15 @@ public class WaypointManager {
     }
 
     public void renderWaypoints(float gameTimeDeltaPartialTick, PoseStack poseStack, BufferSource bufferSource, Camera camera) {
-        if (options.waypointsAllowed && this.waypointContainer != null) {
-            this.waypointContainer.renderWaypoints(gameTimeDeltaPartialTick, poseStack, bufferSource, camera);
+        if (this.waypointContainer == null) {
+            return;
         }
+
+        if (!options.waypointsAllowed && !options.highlightTracerEnabled) {
+            return;
+        }
+
+        this.waypointContainer.renderWaypoints(gameTimeDeltaPartialTick, poseStack, bufferSource, camera);
     }
 
     private void loadBackgroundMapImage() {
