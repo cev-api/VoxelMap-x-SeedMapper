@@ -627,12 +627,13 @@ public final class GuiSeedMapperLootViewer extends Screen {
             return null;
         }
 
+        double scale = level.dimensionType().coordinateScale();
         TreeSet<DimensionContainer> dimensions = new TreeSet<>();
         dimensions.add(VoxelConstants.getVoxelMapInstance().getDimensionManager().getDimensionContainerByWorld(level));
         return new Waypoint(
                 "Loot " + entry.pos().getX() + "," + entry.pos().getZ(),
-                highlightPos.getX(),
-                highlightPos.getZ(),
+                (int)Math.round(highlightPos.getX() * scale),
+                (int)Math.round(highlightPos.getZ() * scale),
                 highlightPos.getY(),
                 true,
                 1.0F,

@@ -20,6 +20,7 @@ import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.level.Level;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -60,6 +61,7 @@ public class GuiSeedMapperLocator extends GuiScreenMinimap {
     private Button locateButton;
     private Button copyButton;
     private Button addWaypointButton;
+    private Button addHighlightButton;
     private Button doneButton;
     private Button clearFromButton;
     private EditBox fromXInput;
@@ -114,16 +116,23 @@ public class GuiSeedMapperLocator extends GuiScreenMinimap {
         }
 
         int left = listX();
-        int buttonWidth = 94;
+        int buttonGap = 6;
+        int locateWidth = 60;
+        int copyWidth = 52;
+        int waypointWidth = 82;
+        int highlightWidth = 88;
 
         locateButton = addRenderableWidget(Button.builder(Component.literal("Locate"), button -> locateSelected())
-                .bounds(left, buttonY, buttonWidth, 20)
+                .bounds(left, buttonY, locateWidth, 20)
                 .build());
         copyButton = addRenderableWidget(Button.builder(Component.literal("Copy"), button -> copyResult())
-                .bounds(left + 103, buttonY, buttonWidth, 20)
+                .bounds(left + locateWidth + buttonGap, buttonY, copyWidth, 20)
                 .build());
         addWaypointButton = addRenderableWidget(Button.builder(Component.literal("Add Waypoint"), button -> addWaypoint())
-                .bounds(left + 206, buttonY, buttonWidth, 20)
+                .bounds(left + locateWidth + buttonGap + copyWidth + buttonGap, buttonY, waypointWidth, 20)
+                .build());
+        addHighlightButton = addRenderableWidget(Button.builder(Component.literal("Add Highlight"), button -> addHighlight())
+                .bounds(left + locateWidth + buttonGap + copyWidth + buttonGap + waypointWidth + buttonGap, buttonY, highlightWidth, 20)
                 .build());
 
         fromXInput = new EditBox(font, left + 138, fromY, 54, 20, Component.literal("X"));
@@ -257,14 +266,15 @@ public class GuiSeedMapperLocator extends GuiScreenMinimap {
     private void addWaypoint() {
         if (locateResult == null) return;
 
+        Level level = GameVariableAccessShim.getWorld();
+        if (level == null) {
+            return;
+        }
+
         TreeSet<DimensionContainer> dimensions = new TreeSet<>();
-        dimensions.add(VoxelConstants.getVoxelMapInstance().getDimensionManager().getDimensionContainerByWorld(VoxelConstants.getPlayer().level()));
-        String name = switch (mode) {
-            case STRUCTURE -> displayStructureName(selectedQuery);
-            case BIOME -> "Biome: " + selectedQuery;
-            case LOOT -> "Loot: " + selectedQuery;
-        };
-        double scale = VoxelConstants.getPlayer().level().dimensionType().coordinateScale();
+        dimensions.add(VoxelConstants.getVoxelMapInstance().getDimensionManager().getDimensionContainerByWorld(level));
+        String name = getResultLabel();
+        double scale = level.dimensionType().coordinateScale();
         Waypoint waypoint = new Waypoint(
                 name,
                 (int)Math.round(locateResult.x() * scale),
@@ -283,6 +293,44 @@ public class GuiSeedMapperLocator extends GuiScreenMinimap {
         statusColor = 0xFF8FE38F;
     }
 
+    private void addHighlight() {
+        if (locateResult == null) return;
+
+        Level level = GameVariableAccessShim.getWorld();
+        if (level == null) {
+            return;
+        }
+
+        TreeSet<DimensionContainer> dimensions = new TreeSet<>();
+        dimensions.add(VoxelConstants.getVoxelMapInstance().getDimensionManager().getDimensionContainerByWorld(level));
+        String name = getResultLabel();
+        double scale = level.dimensionType().coordinateScale();
+        Waypoint waypoint = new Waypoint(
+                name,
+                (int)Math.round(locateResult.x() * scale),
+                (int)Math.round(locateResult.z() * scale),
+                Math.max(GameVariableAccessShim.yCoord(), 64),
+                true,
+                1.0F,
+                0.85F,
+                0.1F,
+                "target",
+                VoxelConstants.getVoxelMapInstance().getWaypointManager().getCurrentSubworldDescriptor(false),
+                dimensions
+        );
+        VoxelConstants.getVoxelMapInstance().getWaypointManager().setHighlightedWaypoint(waypoint, false);
+        statusText = "Added highlight for " + name;
+        statusColor = 0xFF8FE38F;
+    }
+
+    private String getResultLabel() {
+        return switch (mode) {
+            case STRUCTURE -> displayStructureName(selectedQuery);
+            case BIOME -> "Biome: " + selectedQuery;
+            case LOOT -> "Loot: " + selectedQuery;
+        };
+    }
+
     private String displayStructureName(String query) {
         for (SeedMapperFeature feature : SeedMapperFeature.values()) {
             if (feature.id().equalsIgnoreCase(query)) {
@@ -298,6 +346,7 @@ public class GuiSeedMapperLocator extends GuiScreenMinimap {
         if (locateButton != null) locateButton.active = hasSelection;
         if (copyButton != null) copyButton.active = hasResult;
         if (addWaypointButton != null) addWaypointButton.active = hasResult;
+        if (addHighlightButton != null) addHighlightButton.active = hasResult;
     }
 
     @Override
