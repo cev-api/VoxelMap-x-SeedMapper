@@ -51,6 +51,7 @@ public class GuiRadarChunkOverlays extends GuiScreenMinimap {
     private Button colorPickerApplyButton;
     private Button colorPickerCancelButton;
     private Button clearExploredButton;
+    private Button clearNewerNewChunksButton;
     private ColorTarget activeColorTarget;
     private boolean swallowNextMouseRelease;
 
@@ -88,7 +89,10 @@ public class GuiRadarChunkOverlays extends GuiScreenMinimap {
         y += 24;
         clearExploredButton = addRenderableWidget(new Button.Builder(Component.literal("Clear Explored Chunks"), button -> {
             VoxelConstants.getVoxelMapInstance().getExploredChunksManager().clearCurrentWorld();
-        }).bounds(this.width / 2 - 75, y, 150, 20).build());
+        }).bounds(left, y, 150, 20).build());
+        clearNewerNewChunksButton = addRenderableWidget(new Button.Builder(Component.literal("Clear NewerNewChunks"), button -> {
+            VoxelConstants.getVoxelMapInstance().getNewerNewChunksManager().clearCurrentWorldData();
+        }).bounds(right, y, 150, 20).build());
 
         y += 24;
         detectModeButton = addRenderableWidget(new Button.Builder(Component.empty(), button -> {
@@ -179,6 +183,9 @@ public class GuiRadarChunkOverlays extends GuiScreenMinimap {
         blockOpacitySlider.setActualValue(settings.newerNewChunksBlockOpacity);
         if (clearExploredButton != null) {
             clearExploredButton.active = settings.showExploredChunks;
+        }
+        if (clearNewerNewChunksButton != null) {
+            clearNewerNewChunksButton.active = settings.showNewerNewChunks;
         }
     }
 

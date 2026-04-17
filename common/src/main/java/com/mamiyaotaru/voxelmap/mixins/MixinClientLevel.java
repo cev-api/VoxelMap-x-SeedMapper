@@ -1,6 +1,5 @@
 package com.mamiyaotaru.voxelmap.mixins;
 
-import com.mamiyaotaru.voxelmap.RadarSettingsManager;
 import com.mamiyaotaru.voxelmap.VoxelConstants;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
@@ -18,25 +17,13 @@ public abstract class MixinClientLevel {
             return;
         }
 
-        RadarSettingsManager radarOptions = VoxelConstants.getVoxelMapInstance().getRadarOptions();
-        if (radarOptions == null) {
-            return;
-        }
         var mapOptions = VoxelConstants.getVoxelMapInstance().getMapOptions();
 
-        boolean useChunkExploits = radarOptions.newerNewChunksBlockUpdateExploit || radarOptions.newerNewChunksLiquidExploit;
         boolean usePortalMarkers = mapOptions.showNetherPortalMarkers || mapOptions.showEndPortalMarkers || mapOptions.showEndGatewayMarkers;
-        if (!useChunkExploits && !usePortalMarkers) {
+        if (!usePortalMarkers) {
             return;
         }
 
-        if (useChunkExploits) {
-            VoxelConstants.getVoxelMapInstance().getNewerNewChunksManager().onBlockUpdated(
-                    pos,
-                    radarOptions.newerNewChunksBlockUpdateExploit,
-                    radarOptions.newerNewChunksLiquidExploit
-            );
-        }
         if (usePortalMarkers) {
             VoxelConstants.getVoxelMapInstance().getPortalMarkersManager().onBlockUpdated(pos);
         }
