@@ -94,6 +94,7 @@ import java.util.Random;
 import java.util.TreeSet;
 
 public class Map implements Runnable, IChangeObserver {
+
     private final Minecraft minecraft = Minecraft.getInstance();
     private final MapSettingsManager options;
     private final SeedMapperSettingsManager seedMapperOptions;
@@ -689,7 +690,8 @@ public class Map implements Runnable, IChangeObserver {
         int guiScale = Math.max(1, minecraft.getWindow().getGuiScale());
         float scaleProj = (float) (scScale) / guiScale;
         if (!this.fullscreenMap) {
-            scaleProj = Mth.clamp(scaleProj, 0.5F, 2.0F);
+            // Allow larger minimap sizes from the "Map Size" setting.
+            scaleProj = Mth.clamp(scaleProj, 0.5F, 4.0F);
             scaleProj = stabilizeMinimapScaleProjection(scaleProj);
         }
         final float finalScaleProj = scaleProj;
@@ -1027,6 +1029,17 @@ public class Map implements Runnable, IChangeObserver {
     }
 
     private int getPixelColor(boolean needBiome, boolean needHeightAndID, boolean needTint, boolean needLight, boolean nether, boolean caves, ClientLevel world, int zoom, int multi, int startX, int startZ, int imageX, int imageY) {
+        int blockX = startX + imageX;
+        int blockZ = startZ + imageY;
+        int chunkX = blockX >> 4;
+        int chunkZ = blockZ >> 4;
+        LevelChunk loadedChunk = world.getChunkSource().getChunk(chunkX, chunkZ, false);
+        if (loadedChunk == null || loadedChunk.isEmpty()) {
+            // Use deterministic fallback color for unloaded chunks so texture
+            // rows/columns don't keep stale copied data during moveX/moveY.
+            return MapUtils.doSlimeAndGrid(this.colorManager.getAirColor(), world, blockX, blockZ);
+        }
+
         int surfaceHeight = Short.MIN_VALUE;
         int seafloorHeight = Short.MIN_VALUE;
         int transparentHeight = Short.MIN_VALUE;
@@ -1077,7 +1090,7 @@ public class Map implements Runnable, IChangeObserver {
             boolean solid = false;
             if (needHeightAndID) {
                 if (!nether && !caves) {
-                    LevelChunk chunk = world.getChunkAt(blockPos);
+                    LevelChunk chunk = loadedChunk;
                     transparentHeight = chunk.getHeight(Heightmap.Types.MOTION_BLOCKING, blockPos.getX() & 15, blockPos.getZ() & 15) + 1;
                     this.transparentBlockState = world.getBlockState(blockPos.withXYZ(startX + imageX, transparentHeight - 1, startZ + imageY));
                     FluidState fluidState = this.transparentBlockState.getFluidState();
@@ -1410,10 +1423,17 @@ public class Map implements Runnable, IChangeObserver {
     }
 
     private int getBlockHeight(boolean nether, boolean caves, Level world, int x, int z) {
+        if (!world.hasChunk(x >> 4, z >> 4)) {
+            return Short.MIN_VALUE;
+        }
         MutableBlockPos blockPos = MutableBlockPosCache.get();
         int playerHeight = GameVariableAccessShim.yCoord();
         blockPos.setXYZ(x, playerHeight, z);
-        LevelChunk chunk = (LevelChunk) world.getChunk(blockPos);
+        LevelChunk chunk = world.getChunkSource().getChunk(x >> 4, z >> 4, false);
+        if (chunk == null || chunk.isEmpty()) {
+            MutableBlockPosCache.release(blockPos);
+            return Short.MIN_VALUE;
+        }
         int height = chunk.getHeight(Heightmap.Types.MOTION_BLOCKING, blockPos.getX() & 15, blockPos.getZ() & 15) + 1;
         BlockState blockState = world.getBlockState(blockPos.withXYZ(x, height - 1, z));
         FluidState fluidState = this.transparentBlockState.getFluidState();
