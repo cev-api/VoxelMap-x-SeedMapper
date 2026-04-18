@@ -32,6 +32,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class NewerNewChunksManager {
     public enum DetectMode {
@@ -78,11 +79,12 @@ public class NewerNewChunksManager {
     private static final Set<Path> DATA_FILES = Set.of(NEW_CHUNK_DATA, OLD_CHUNK_DATA, BLOCK_EXPLOIT_CHUNK_DATA,
             BEING_UPDATED_CHUNK_DATA, OLD_GENERATION_CHUNK_DATA);
 
-    private final Set<ChunkPos> newChunks = new HashSet<>();
-    private final Set<ChunkPos> oldChunks = new HashSet<>();
-    private final Set<ChunkPos> tickExploitChunks = new HashSet<>();
-    private final Set<ChunkPos> beingUpdatedOldChunks = new HashSet<>();
-    private final Set<ChunkPos> oldGenerationChunks = new HashSet<>();
+    private final Set<ChunkPos> newChunks = ConcurrentHashMap.newKeySet();
+    private final Set<ChunkPos> oldChunks = ConcurrentHashMap.newKeySet();
+    private final Set<ChunkPos> tickExploitChunks = ConcurrentHashMap.newKeySet();
+    private final Set<ChunkPos> beingUpdatedOldChunks = ConcurrentHashMap.newKeySet();
+    private final Set<ChunkPos> oldGenerationChunks = ConcurrentHashMap.newKeySet();
+    private final Object chunkSetLock = new Object();
 
     private String loadedWorldKey = "";
 
@@ -94,6 +96,8 @@ public class NewerNewChunksManager {
     }
 
     public void processChunk(LevelChunk chunk) {
+        // Keep map-chunk callbacks conservative; packet path and startup rescan
+        // perform authoritative reclassification.
         classifyChunkInternal(chunk, false);
     }
 
@@ -185,8 +189,8 @@ public class NewerNewChunksManager {
         if (chunk == null || chunk.isEmpty()) {
             return;
         }
-        // Packet path sees final server-verified chunk data; let it override stale/early labels.
-        classifyChunkInternal(chunk, true);
+        // Keep packet path conservative: do not overwrite already-classified chunks.
+        classifyChunkInternal(chunk, false);
     }
 
     private void handleBlockLikeUpdate(BlockPos pos, BlockState state, boolean blockUpdateExploit, boolean liquidExploit) {
@@ -210,7 +214,9 @@ public class NewerNewChunksManager {
             BlockPos neighborPos = pos.relative(dir);
             FluidState neighborFluid = level.getBlockState(neighborPos).getFluidState();
             if (!neighborFluid.isEmpty() && neighborFluid.isSource()) {
-                tickExploitChunks.remove(chunkPos);
+                synchronized (chunkSetLock) {
+                    tickExploitChunks.remove(chunkPos);
+                }
                 markNew(chunkPos);
                 return;
             }
@@ -249,56 +255,83 @@ public class NewerNewChunksManager {
 
     private Set<ChunkPos> getChunksInRange(Set<ChunkPos> source, int centerChunkX, int centerChunkZ, int radius) {
         Set<ChunkPos> result = new HashSet<>();
-        for (ChunkPos chunk : source) {
-            if (Math.abs(chunk.x() - centerChunkX) <= radius && Math.abs(chunk.z() - centerChunkZ) <= radius) {
-                result.add(chunk);
+        synchronized (chunkSetLock) {
+            for (ChunkPos chunk : source) {
+                if (Math.abs(chunk.x() - centerChunkX) <= radius && Math.abs(chunk.z() - centerChunkZ) <= radius) {
+                    result.add(chunk);
+                }
             }
         }
         return result;
     }
 
     private void markNew(ChunkPos chunkPos) {
-        if (!newChunks.add(chunkPos)) {
-            return;
+        boolean added;
+        synchronized (chunkSetLock) {
+            added = newChunks.add(chunkPos);
+            if (added) {
+                removeFromAllSetsExcept(chunkPos, ChunkSet.NEW);
+            }
         }
-
-        removeFromAllSetsExcept(chunkPos, ChunkSet.NEW);
-        appendChunk(getDataPath(NEW_CHUNK_DATA), chunkPos);
+        if (added) {
+            appendChunk(getDataPath(NEW_CHUNK_DATA), chunkPos);
+        }
     }
 
     private void markOld(ChunkPos chunkPos) {
-        if (!oldChunks.add(chunkPos)) {
-            return;
+        boolean added;
+        synchronized (chunkSetLock) {
+            if (newChunks.contains(chunkPos) || beingUpdatedOldChunks.contains(chunkPos) || oldGenerationChunks.contains(chunkPos)) {
+                return;
+            }
+            added = oldChunks.add(chunkPos);
+            if (added) {
+                removeFromAllSetsExcept(chunkPos, ChunkSet.OLD);
+            }
         }
-
-        removeFromAllSetsExcept(chunkPos, ChunkSet.OLD);
-        appendChunk(getDataPath(OLD_CHUNK_DATA), chunkPos);
+        if (added) {
+            appendChunk(getDataPath(OLD_CHUNK_DATA), chunkPos);
+        }
     }
 
     private void markTickExploit(ChunkPos chunkPos) {
-        if (!tickExploitChunks.add(chunkPos)) {
-            return;
+        boolean added;
+        synchronized (chunkSetLock) {
+            if (newChunks.contains(chunkPos) || oldChunks.contains(chunkPos) || beingUpdatedOldChunks.contains(chunkPos)
+                    || oldGenerationChunks.contains(chunkPos)) {
+                return;
+            }
+            added = tickExploitChunks.add(chunkPos);
         }
-
-        appendChunk(getDataPath(BLOCK_EXPLOIT_CHUNK_DATA), chunkPos);
+        if (added) {
+            appendChunk(getDataPath(BLOCK_EXPLOIT_CHUNK_DATA), chunkPos);
+        }
     }
 
     private void markBeingUpdated(ChunkPos chunkPos) {
-        if (!beingUpdatedOldChunks.add(chunkPos)) {
-            return;
+        boolean added;
+        synchronized (chunkSetLock) {
+            added = beingUpdatedOldChunks.add(chunkPos);
+            if (added) {
+                removeFromAllSetsExcept(chunkPos, ChunkSet.BEING_UPDATED);
+            }
         }
-
-        removeFromAllSetsExcept(chunkPos, ChunkSet.BEING_UPDATED);
-        appendChunk(getDataPath(BEING_UPDATED_CHUNK_DATA), chunkPos);
+        if (added) {
+            appendChunk(getDataPath(BEING_UPDATED_CHUNK_DATA), chunkPos);
+        }
     }
 
     private void markOldGeneration(ChunkPos chunkPos) {
-        if (!oldGenerationChunks.add(chunkPos)) {
-            return;
+        boolean added;
+        synchronized (chunkSetLock) {
+            added = oldGenerationChunks.add(chunkPos);
+            if (added) {
+                removeFromAllSetsExcept(chunkPos, ChunkSet.OLD_GENERATION);
+            }
         }
-
-        removeFromAllSetsExcept(chunkPos, ChunkSet.OLD_GENERATION);
-        appendChunk(getDataPath(OLD_GENERATION_CHUNK_DATA), chunkPos);
+        if (added) {
+            appendChunk(getDataPath(OLD_GENERATION_CHUNK_DATA), chunkPos);
+        }
     }
 
     private enum ChunkSet {
@@ -310,29 +343,37 @@ public class NewerNewChunksManager {
     }
 
     private void removeFromAllSets(ChunkPos chunkPos) {
-        newChunks.remove(chunkPos);
-        oldChunks.remove(chunkPos);
-        tickExploitChunks.remove(chunkPos);
-        beingUpdatedOldChunks.remove(chunkPos);
-        oldGenerationChunks.remove(chunkPos);
+        synchronized (chunkSetLock) {
+            newChunks.remove(chunkPos);
+            oldChunks.remove(chunkPos);
+            tickExploitChunks.remove(chunkPos);
+            beingUpdatedOldChunks.remove(chunkPos);
+            oldGenerationChunks.remove(chunkPos);
+        }
     }
 
     private void removeFromAllSetsExcept(ChunkPos chunkPos, ChunkSet keep) {
-        if (keep != ChunkSet.NEW) newChunks.remove(chunkPos);
-        if (keep != ChunkSet.OLD) oldChunks.remove(chunkPos);
-        if (keep != ChunkSet.TICK_EXPLOIT) tickExploitChunks.remove(chunkPos);
-        if (keep != ChunkSet.BEING_UPDATED) beingUpdatedOldChunks.remove(chunkPos);
-        if (keep != ChunkSet.OLD_GENERATION) oldGenerationChunks.remove(chunkPos);
+        synchronized (chunkSetLock) {
+            if (keep != ChunkSet.NEW) newChunks.remove(chunkPos);
+            if (keep != ChunkSet.OLD) oldChunks.remove(chunkPos);
+            if (keep != ChunkSet.TICK_EXPLOIT) tickExploitChunks.remove(chunkPos);
+            if (keep != ChunkSet.BEING_UPDATED) beingUpdatedOldChunks.remove(chunkPos);
+            if (keep != ChunkSet.OLD_GENERATION) oldGenerationChunks.remove(chunkPos);
+        }
     }
 
     private boolean containsAny(ChunkPos chunkPos) {
-        return newChunks.contains(chunkPos) || oldChunks.contains(chunkPos) || tickExploitChunks.contains(chunkPos)
-                || beingUpdatedOldChunks.contains(chunkPos) || oldGenerationChunks.contains(chunkPos);
+        synchronized (chunkSetLock) {
+            return newChunks.contains(chunkPos) || oldChunks.contains(chunkPos) || tickExploitChunks.contains(chunkPos)
+                    || beingUpdatedOldChunks.contains(chunkPos) || oldGenerationChunks.contains(chunkPos);
+        }
     }
 
     private boolean containsFinalChunkType(ChunkPos chunkPos) {
-        return newChunks.contains(chunkPos) || oldChunks.contains(chunkPos) || beingUpdatedOldChunks.contains(chunkPos)
-                || oldGenerationChunks.contains(chunkPos);
+        synchronized (chunkSetLock) {
+            return newChunks.contains(chunkPos) || oldChunks.contains(chunkPos) || beingUpdatedOldChunks.contains(chunkPos)
+                    || oldGenerationChunks.contains(chunkPos);
+        }
     }
 
     private ChunkClassification classifyChunk(LevelChunk chunk) {
@@ -685,11 +726,13 @@ public class NewerNewChunksManager {
     }
 
     private void clearChunkData() {
-        newChunks.clear();
-        oldChunks.clear();
-        tickExploitChunks.clear();
-        beingUpdatedOldChunks.clear();
-        oldGenerationChunks.clear();
+        synchronized (chunkSetLock) {
+            newChunks.clear();
+            oldChunks.clear();
+            tickExploitChunks.clear();
+            beingUpdatedOldChunks.clear();
+            oldGenerationChunks.clear();
+        }
     }
 
     public void clearCurrentWorldData() {
@@ -713,37 +756,39 @@ public class NewerNewChunksManager {
         clearChunkData();
         loadedWorldKey = worldKey;
         ensureDataFiles();
-        loadPath(NEW_CHUNK_DATA, newChunks);
-        loadPath(OLD_CHUNK_DATA, oldChunks);
-        loadPath(BLOCK_EXPLOIT_CHUNK_DATA, tickExploitChunks);
-        loadPath(BEING_UPDATED_CHUNK_DATA, beingUpdatedOldChunks);
-        loadPath(OLD_GENERATION_CHUNK_DATA, oldGenerationChunks);
+        Set<ChunkPos> loadedTickExploitChunks = loadPath(BLOCK_EXPLOIT_CHUNK_DATA);
+        Set<ChunkPos> loadedOldChunks = loadPath(OLD_CHUNK_DATA);
+        Set<ChunkPos> loadedNewChunks = loadPath(NEW_CHUNK_DATA);
+        Set<ChunkPos> loadedBeingUpdatedChunks = loadPath(BEING_UPDATED_CHUNK_DATA);
+        Set<ChunkPos> loadedOldGenerationChunks = loadPath(OLD_GENERATION_CHUNK_DATA);
+
+        synchronized (chunkSetLock) {
+            tickExploitChunks.addAll(loadedTickExploitChunks);
+            oldChunks.addAll(loadedOldChunks);
+            newChunks.addAll(loadedNewChunks);
+            beingUpdatedOldChunks.addAll(loadedBeingUpdatedChunks);
+            oldGenerationChunks.addAll(loadedOldGenerationChunks);
+        }
         reconcileLoadedData();
     }
 
     private void reconcileLoadedData() {
-        for (ChunkPos chunkPos : oldGenerationChunks) {
-            newChunks.remove(chunkPos);
-            oldChunks.remove(chunkPos);
-            tickExploitChunks.remove(chunkPos);
-            beingUpdatedOldChunks.remove(chunkPos);
-        }
+        synchronized (chunkSetLock) {
+            // Precedence: old-generation > being-updated > new > old > block-exploit
+            oldChunks.removeAll(newChunks);
+            tickExploitChunks.removeAll(newChunks);
 
-        for (ChunkPos chunkPos : beingUpdatedOldChunks) {
-            newChunks.remove(chunkPos);
-            oldChunks.remove(chunkPos);
-            tickExploitChunks.remove(chunkPos);
-        }
+            newChunks.removeAll(beingUpdatedOldChunks);
+            oldChunks.removeAll(beingUpdatedOldChunks);
+            tickExploitChunks.removeAll(beingUpdatedOldChunks);
 
-        for (ChunkPos chunkPos : oldChunks) {
-            newChunks.remove(chunkPos);
-            tickExploitChunks.remove(chunkPos);
-        }
+            newChunks.removeAll(oldGenerationChunks);
+            oldChunks.removeAll(oldGenerationChunks);
+            beingUpdatedOldChunks.removeAll(oldGenerationChunks);
+            tickExploitChunks.removeAll(oldGenerationChunks);
 
-        tickExploitChunks.removeAll(newChunks);
-        tickExploitChunks.removeAll(oldChunks);
-        tickExploitChunks.removeAll(beingUpdatedOldChunks);
-        tickExploitChunks.removeAll(oldGenerationChunks);
+            tickExploitChunks.removeAll(oldChunks);
+        }
     }
 
     private void ensureDataFiles() {
@@ -760,21 +805,23 @@ public class NewerNewChunksManager {
         }
     }
 
-    private void loadPath(Path fileName, Set<ChunkPos> target) {
+    private Set<ChunkPos> loadPath(Path fileName) {
+        Set<ChunkPos> loaded = new HashSet<>();
         Path path = getDataPath(fileName);
         if (Files.notExists(path)) {
-            return;
+            return loaded;
         }
 
         try {
             for (String line : Files.readAllLines(path, StandardCharsets.UTF_8)) {
                 ChunkPos chunkPos = parseChunk(line);
-                if (chunkPos != null && !containsAny(chunkPos)) {
-                    target.add(chunkPos);
+                if (chunkPos != null) {
+                    loaded.add(chunkPos);
                 }
             }
         } catch (IOException ignored) {
         }
+        return loaded;
     }
 
     private Path getDataPath(Path fileName) {

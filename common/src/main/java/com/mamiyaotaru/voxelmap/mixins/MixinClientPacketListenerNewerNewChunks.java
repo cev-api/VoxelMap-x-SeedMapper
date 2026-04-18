@@ -21,11 +21,6 @@ public abstract class MixinClientPacketListenerNewerNewChunks {
             return;
         }
 
-        RadarSettingsManager radarOptions = VoxelConstants.getVoxelMapInstance().getRadarOptions();
-        if (radarOptions == null || !radarOptions.showNewerNewChunks) {
-            return;
-        }
-
         VoxelConstants.getVoxelMapInstance().getNewerNewChunksManager()
                 .onChunkDataPacket(packet.getX(), packet.getZ());
     }

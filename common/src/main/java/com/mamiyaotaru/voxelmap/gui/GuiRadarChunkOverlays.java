@@ -90,7 +90,7 @@ public class GuiRadarChunkOverlays extends GuiScreenMinimap {
         clearExploredButton = addRenderableWidget(new Button.Builder(Component.literal("Clear Explored Chunks"), button -> {
             VoxelConstants.getVoxelMapInstance().getExploredChunksManager().clearCurrentWorld();
         }).bounds(left, y, 150, 20).build());
-        clearNewerNewChunksButton = addRenderableWidget(new Button.Builder(Component.literal("Clear NewerNewChunks"), button -> {
+        clearNewerNewChunksButton = addRenderableWidget(new Button.Builder(Component.literal("Clear New Chunks"), button -> {
             VoxelConstants.getVoxelMapInstance().getNewerNewChunksManager().clearCurrentWorldData();
         }).bounds(right, y, 150, 20).build());
 
@@ -169,7 +169,7 @@ public class GuiRadarChunkOverlays extends GuiScreenMinimap {
 
     private void refreshLabels() {
         exploredToggle.setMessage(Component.literal("Explored Chunks: " + (settings.showExploredChunks ? "ON" : "OFF")));
-        newerToggle.setMessage(Component.literal("Newer New Chunks: " + (settings.showNewerNewChunks ? "ON" : "OFF")));
+        newerToggle.setMessage(Component.literal("New Chunk Detector: " + (settings.showNewerNewChunks ? "ON" : "OFF")));
         liquidToggle.setMessage(Component.literal("Liquid Exploit: " + (settings.newerNewChunksLiquidExploit ? "ON" : "OFF")));
         blockToggle.setMessage(Component.literal("Block Update Exploit: " + (settings.newerNewChunksBlockUpdateExploit ? "ON" : "OFF")));
         detectModeButton.setMessage(Component.literal("Detect Mode: " + switch (settings.newerNewChunksDetectMode) {
