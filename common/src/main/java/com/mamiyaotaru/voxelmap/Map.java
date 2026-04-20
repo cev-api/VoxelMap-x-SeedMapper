@@ -1676,9 +1676,9 @@ public class Map implements Runnable, IChangeObserver {
             RenderUtils.renderWithCustomProjection(baseMapRenderTarget, mapProjection.getBuffer(), -2000.0F, () -> {
                 float scale = 1.0F;
                 if (this.options.squareMap && this.options.rotates) {
-                    // Add a tiny overscan so the rotated texture always fully covers the square
-                    // minimap frame, especially at extreme zoom-out (e.g. 0.25x).
-                    scale = (float) Math.sqrt(2.0D) + 0.0125F;
+                    // Keep world coverage effectively unchanged while adding a minimal overscan
+                    // to prevent edge gaps at extreme rotation/zoom-out.
+                    scale = (float) Math.sqrt(2.0D) + 0.0025F;
                 }
                 float multi = (float) (1.0 / this.zoomScale);
                 float percentX = (float) (GameVariableAccessShim.xCoordDouble() - this.lastImageX) * multi;
@@ -1728,7 +1728,11 @@ public class Map implements Runnable, IChangeObserver {
 
                 RenderType stencilRenderType = VoxelMapRenderTypes.GUI_TEXTURED_LEQUAL_DEPTH_TEST.apply(this.options.squareMap ? resourceSquareMapStencil : resourceRoundMapStencil);
                 VertexConsumer stencilBuffer = renderBufferSource.getBuffer(stencilRenderType);
-                RenderUtils.drawTexturedModalRect(matrixStack, stencilBuffer, -256.0F, -256.0F, MAP_IMAGE_DEPTH, 512.0F, 512.0F, 0xFFFFFFFF);
+                if (this.options.squareMap) {
+                    RenderUtils.drawTexturedModalRect(matrixStack, stencilBuffer, -256.0F, -256.0F, MAP_IMAGE_DEPTH, 512.0F, 512.0F, 0xFFFFFFFF);
+                } else {
+                    RenderUtils.drawTexturedModalRect(matrixStack, stencilBuffer, -256.0F, -256.0F, MAP_IMAGE_DEPTH, 512.0F, 512.0F, 0xFFFFFFFF);
+                }
 
                 RenderType maskedMapRenderType = VoxelMapRenderTypes.GUI_TEXTURED_MASKED_NO_DEPTH_TEST.apply(baseMapRenderTarget.colorTextureId);
                 VertexConsumer maskedMapBuffer = renderBufferSource.getBuffer(maskedMapRenderType);
@@ -1781,6 +1785,15 @@ public class Map implements Runnable, IChangeObserver {
 
 
     private void drawWaypoint(Matrix4fStack matrixStack, int x, int y, Waypoint waypoint, TextureAtlas textureAtlas, Sprite icon, boolean isHighlighted, int color, double baseX, double baseZ) {
+        if (isHighlighted && options.autoHideHighlightsWhenNear) {
+            double dx = baseX - waypoint.getX() - 0.5D;
+            double dz = baseZ - waypoint.getZ() - 0.5D;
+            double maxDistance = options.autoHideHighlightsNearDistance;
+            if (dx * dx + dz * dz <= maxDistance * maxDistance) {
+                return;
+            }
+        }
+
         boolean uprightIcon = icon != null;
 
         double wayX = baseX - waypoint.getX() - 0.5;

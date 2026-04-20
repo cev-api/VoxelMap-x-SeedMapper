@@ -89,12 +89,20 @@ public class WaypointContainer {
             if (!renderable.isHighlighted()) {
                 continue;
             }
+            double distance = Math.sqrt(renderable.getWaypoint().getDistanceSqToCamera(camera));
+            if (shouldHideNearbyHighlight(distance)) {
+                continue;
+            }
             if (renderable.getWaypoint() == highlightedWaypoint) {
                 renderedHighlightedWaypoint = true;
             }
             renderHighlightTracer(poseStack, bufferSource, renderable.getWaypoint(), camera);
         }
         if (highlightedWaypoint != null && !renderedHighlightedWaypoint) {
+            double distance = Math.sqrt(highlightedWaypoint.getDistanceSqToCamera(camera));
+            if (shouldHideNearbyHighlight(distance)) {
+                return;
+            }
             renderHighlightTracer(poseStack, bufferSource, highlightedWaypoint, camera);
         }
     }
@@ -112,6 +120,9 @@ public class WaypointContainer {
             int x = waypoint.getX();
             int z = waypoint.getZ();
             double distance = Math.sqrt(waypoint.getDistanceSqToCamera(camera));
+            if (renderable.isHighlighted() && shouldHideNearbyHighlight(distance)) {
+                continue;
+            }
 
             renderBeam(poseStack, bufferSource, waypoint, distance, x - cameraPos.x, bottomOfWorld, z - cameraPos.z);
         }
@@ -351,7 +362,11 @@ public class WaypointContainer {
         poseStack.mulPose(Axis.XP.rotationDegrees(VoxelConstants.getMinecraft().getEntityRenderDispatcher().camera.xRot()));
         poseStack.scale(-scale, -scale, -scale);
 
-        float alpha = distance > 5.0 ? 1.0F : (float) distance / 5.0F;
+        if (isHighlighted && shouldHideNearbyHighlight(distance)) {
+            poseStack.popPose();
+            return;
+        }
+        float alpha = 1.0F;
         float alphaBehindWall = alpha;
         if (!isPointedAt) {
             if (!waypoint.enabled && !isHighlighted) {
@@ -479,6 +494,10 @@ public class WaypointContainer {
             bufferSource.endLastBatch();
         }
         poseStack.popPose();
+    }
+
+    private boolean shouldHideNearbyHighlight(double distance) {
+        return options.autoHideHighlightsWhenNear && distance <= options.autoHideHighlightsNearDistance;
     }
 
     public static class RenderableWaypoint implements Comparable<RenderableWaypoint> {

@@ -13,10 +13,14 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.HashSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 public class ExploredChunksManager {
+    private static final int REGION_SHIFT = 5; // 32x32 chunk buckets for fast range queries
     private final Set<ChunkPos> exploredChunks = new HashSet<>();
+    private final Map<Long, Set<ChunkPos>> exploredChunksByRegion = new HashMap<>();
     private String loadedWorldKey = "";
     private Integer lastChunkX;
     private Integer lastChunkZ;
@@ -41,9 +45,28 @@ public class ExploredChunksManager {
 
     public Set<ChunkPos> getExploredChunksInRange(int centerChunkX, int centerChunkZ, int radius) {
         Set<ChunkPos> result = new HashSet<>();
-        for (ChunkPos chunk : exploredChunks) {
-            if (Math.abs(chunk.x() - centerChunkX) <= radius && Math.abs(chunk.z() - centerChunkZ) <= radius) {
-                result.add(chunk);
+        int minChunkX = centerChunkX - radius;
+        int maxChunkX = centerChunkX + radius;
+        int minChunkZ = centerChunkZ - radius;
+        int maxChunkZ = centerChunkZ + radius;
+
+        int minRegionX = minChunkX >> REGION_SHIFT;
+        int maxRegionX = maxChunkX >> REGION_SHIFT;
+        int minRegionZ = minChunkZ >> REGION_SHIFT;
+        int maxRegionZ = maxChunkZ >> REGION_SHIFT;
+
+        for (int regionX = minRegionX; regionX <= maxRegionX; regionX++) {
+            for (int regionZ = minRegionZ; regionZ <= maxRegionZ; regionZ++) {
+                Set<ChunkPos> bucket = exploredChunksByRegion.get(regionKey(regionX, regionZ));
+                if (bucket == null || bucket.isEmpty()) {
+                    continue;
+                }
+                for (ChunkPos chunk : bucket) {
+                    if (chunk.x() >= minChunkX && chunk.x() <= maxChunkX
+                            && chunk.z() >= minChunkZ && chunk.z() <= maxChunkZ) {
+                        result.add(chunk);
+                    }
+                }
             }
         }
         return result;
@@ -51,6 +74,7 @@ public class ExploredChunksManager {
 
     public void clearCurrentWorld() {
         exploredChunks.clear();
+        exploredChunksByRegion.clear();
         lastChunkX = null;
         lastChunkZ = null;
         Path path = getDataPath();
@@ -69,12 +93,14 @@ public class ExploredChunksManager {
 
     private void markExplored(ChunkPos chunkPos) {
         if (exploredChunks.add(chunkPos)) {
+            indexChunk(chunkPos);
             appendChunk(getDataPath(), chunkPos);
         }
     }
 
     private void loadWorld(String worldKey) {
         exploredChunks.clear();
+        exploredChunksByRegion.clear();
         loadedWorldKey = worldKey;
         Path path = getDataPath();
         try {
@@ -87,10 +113,23 @@ public class ExploredChunksManager {
                 ChunkPos chunkPos = parseChunk(line);
                 if (chunkPos != null) {
                     exploredChunks.add(chunkPos);
+                    indexChunk(chunkPos);
                 }
             }
         } catch (IOException ignored) {
         }
+    }
+
+    private void indexChunk(ChunkPos chunkPos) {
+        int regionX = chunkPos.x() >> REGION_SHIFT;
+        int regionZ = chunkPos.z() >> REGION_SHIFT;
+        exploredChunksByRegion
+                .computeIfAbsent(regionKey(regionX, regionZ), ignored -> new HashSet<>())
+                .add(chunkPos);
+    }
+
+    private static long regionKey(int regionX, int regionZ) {
+        return ((long) regionX << 32) ^ (regionZ & 0xFFFFFFFFL);
     }
 
     private Path getDataPath() {

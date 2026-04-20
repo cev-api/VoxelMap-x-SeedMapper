@@ -21,8 +21,8 @@ import net.minecraft.util.Mth;
 import org.lwjgl.glfw.GLFW;
 
 public class GuiPersistentMapOptions extends GuiScreenMinimap {
-    private static final float WORLDMAP_ZOOM_POWER_MIN = -4.0F;
-    private static final float WORLDMAP_ZOOM_POWER_MAX = 5.0F;
+    private static final float WORLDMAP_ZOOM_POWER_MIN = -5.0F;
+    private static final float WORLDMAP_ZOOM_POWER_MAX = 8.0F;
     private static final float WORLDMAP_CACHE_MAX = 20000.0F;
     private final PersistentMapSettingsManager options;
     private final MapSettingsManager mapOptions;
@@ -31,6 +31,8 @@ public class GuiPersistentMapOptions extends GuiScreenMinimap {
     private final Component cacheSettings = Component.translatable("options.worldmap.cacheSettings");
     private final Component warning = Component.translatable("options.worldmap.warning").withStyle(ChatFormatting.RED);
     private Button exploredChunkLinesButton;
+    private Button clearExploredChunksButton;
+    private long clearExploredConfirmUntilMs;
     private GuiButtonText exploredChunkLineColorInput;
     private Button exploredChunkLineColorPickerButton;
     private GuiColorPickerContainer exploredChunkLineColorPicker;
@@ -86,8 +88,19 @@ public class GuiPersistentMapOptions extends GuiScreenMinimap {
         this.addRenderableWidget(this.exploredChunkLineColorInput);
         this.exploredChunkLineColorPickerButton = this.addRenderableWidget(new Button.Builder(Component.literal("..."), button -> openExploredChunkLineColorPicker())
                 .bounds(this.getWidth() / 2 + 127, exploredButtonY, 28, 20).build());
+        this.clearExploredChunksButton = this.addRenderableWidget(new Button.Builder(Component.literal("Clear Explored Chunks"), button -> {
+            long now = System.currentTimeMillis();
+            if (now > clearExploredConfirmUntilMs) {
+                clearExploredConfirmUntilMs = now + 4000L;
+                refreshExploredChunkButtons();
+                return;
+            }
+            clearExploredConfirmUntilMs = 0L;
+            VoxelConstants.getVoxelMapInstance().getExploredChunksManager().clearCurrentWorld();
+            refreshExploredChunkButtons();
+        }).bounds(this.getWidth() / 2 - 155, exploredButtonY + 24, 310, 20).build());
         refreshExploredChunkButtons();
-        counter += 2;
+        counter += 4;
 
         EnumOptionsMinimap[] relevantOptions2 = { EnumOptionsMinimap.MIN_ZOOM, EnumOptionsMinimap.MAX_ZOOM, EnumOptionsMinimap.CACHE_SIZE };
         counter += (counter % 2 == 0 ? 2 : 3);
@@ -123,6 +136,10 @@ public class GuiPersistentMapOptions extends GuiScreenMinimap {
     }
 
     private void refreshExploredChunkButtons() {
+        long now = System.currentTimeMillis();
+        if (clearExploredConfirmUntilMs > 0L && now > clearExploredConfirmUntilMs) {
+            clearExploredConfirmUntilMs = 0L;
+        }
         if (this.exploredChunkLinesButton != null) {
             this.exploredChunkLinesButton.setMessage(Component.literal("Explored Chunk Lines: " + (radarOptions.showExploredChunks ? "ON" : "OFF")));
         }
@@ -134,6 +151,12 @@ public class GuiPersistentMapOptions extends GuiScreenMinimap {
         }
         if (this.exploredChunkLineColorPickerButton != null) {
             this.exploredChunkLineColorPickerButton.active = radarOptions.showExploredChunks;
+        }
+        if (this.clearExploredChunksButton != null) {
+            this.clearExploredChunksButton.setMessage(Component.literal(clearExploredConfirmUntilMs > 0L
+                    ? "Confirm Clear Explored Chunks"
+                    : "Clear Explored Chunks"));
+            this.clearExploredChunksButton.active = radarOptions.showExploredChunks;
         }
     }
 
@@ -165,6 +188,7 @@ public class GuiPersistentMapOptions extends GuiScreenMinimap {
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
+        refreshExploredChunkButtons();
         for (Object buttonObj : this.children()) {
             if (buttonObj instanceof GuiOptionSliderMinimap slider) {
                 EnumOptionsMinimap option = slider.returnEnumOptions();

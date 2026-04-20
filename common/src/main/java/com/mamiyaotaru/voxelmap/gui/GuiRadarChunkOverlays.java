@@ -52,6 +52,8 @@ public class GuiRadarChunkOverlays extends GuiScreenMinimap {
     private Button colorPickerCancelButton;
     private Button clearExploredButton;
     private Button clearNewerNewChunksButton;
+    private long clearExploredConfirmUntilMs;
+    private long clearNewChunksConfirmUntilMs;
     private ColorTarget activeColorTarget;
     private boolean swallowNextMouseRelease;
 
@@ -88,10 +90,26 @@ public class GuiRadarChunkOverlays extends GuiScreenMinimap {
 
         y += 24;
         clearExploredButton = addRenderableWidget(new Button.Builder(Component.literal("Clear Explored Chunks"), button -> {
+            long now = System.currentTimeMillis();
+            if (now > clearExploredConfirmUntilMs) {
+                clearExploredConfirmUntilMs = now + 4000L;
+                refreshLabels();
+                return;
+            }
+            clearExploredConfirmUntilMs = 0L;
             VoxelConstants.getVoxelMapInstance().getExploredChunksManager().clearCurrentWorld();
+            refreshLabels();
         }).bounds(left, y, 150, 20).build());
         clearNewerNewChunksButton = addRenderableWidget(new Button.Builder(Component.literal("Clear New Chunks"), button -> {
+            long now = System.currentTimeMillis();
+            if (now > clearNewChunksConfirmUntilMs) {
+                clearNewChunksConfirmUntilMs = now + 4000L;
+                refreshLabels();
+                return;
+            }
+            clearNewChunksConfirmUntilMs = 0L;
             VoxelConstants.getVoxelMapInstance().getNewerNewChunksManager().clearCurrentWorldData();
+            refreshLabels();
         }).bounds(right, y, 150, 20).build());
 
         y += 24;
@@ -168,6 +186,13 @@ public class GuiRadarChunkOverlays extends GuiScreenMinimap {
     }
 
     private void refreshLabels() {
+        long now = System.currentTimeMillis();
+        if (clearExploredConfirmUntilMs > 0L && now > clearExploredConfirmUntilMs) {
+            clearExploredConfirmUntilMs = 0L;
+        }
+        if (clearNewChunksConfirmUntilMs > 0L && now > clearNewChunksConfirmUntilMs) {
+            clearNewChunksConfirmUntilMs = 0L;
+        }
         exploredToggle.setMessage(Component.literal("Explored Chunks: " + (settings.showExploredChunks ? "ON" : "OFF")));
         newerToggle.setMessage(Component.literal("New Chunk Detector: " + (settings.showNewerNewChunks ? "ON" : "OFF")));
         liquidToggle.setMessage(Component.literal("Liquid Exploit: " + (settings.newerNewChunksLiquidExploit ? "ON" : "OFF")));
@@ -182,9 +207,15 @@ public class GuiRadarChunkOverlays extends GuiScreenMinimap {
         oldOpacitySlider.setActualValue(settings.newerNewChunksOldOpacity);
         blockOpacitySlider.setActualValue(settings.newerNewChunksBlockOpacity);
         if (clearExploredButton != null) {
+            clearExploredButton.setMessage(Component.literal(clearExploredConfirmUntilMs > 0L
+                    ? "Confirm Clear Explored"
+                    : "Clear Explored Chunks"));
             clearExploredButton.active = settings.showExploredChunks;
         }
         if (clearNewerNewChunksButton != null) {
+            clearNewerNewChunksButton.setMessage(Component.literal(clearNewChunksConfirmUntilMs > 0L
+                    ? "Confirm Clear New"
+                    : "Clear New Chunks"));
             clearNewerNewChunksButton.active = settings.showNewerNewChunks;
         }
     }
@@ -306,6 +337,7 @@ public class GuiRadarChunkOverlays extends GuiScreenMinimap {
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
+        refreshLabels();
         graphics.centeredText(this.getFont(), Component.literal("Radar Chunk Overlay Options"), this.width / 2, 20, 0xFFFFFFFF);
         super.extractRenderState(graphics, isColorPickerOpen() ? 0 : mouseX, isColorPickerOpen() ? 0 : mouseY, delta);
         if (isColorPickerOpen()) {

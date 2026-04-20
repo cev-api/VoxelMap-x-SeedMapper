@@ -16,9 +16,11 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.HashMapPalette;
+import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.chunk.PalettedContainer;
+import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.level.material.FluidState;
 
 import java.io.IOException;
@@ -84,21 +86,26 @@ public class NewerNewChunksManager {
     private final Set<ChunkPos> tickExploitChunks = ConcurrentHashMap.newKeySet();
     private final Set<ChunkPos> beingUpdatedOldChunks = ConcurrentHashMap.newKeySet();
     private final Set<ChunkPos> oldGenerationChunks = ConcurrentHashMap.newKeySet();
+    private final Set<ChunkPos> pendingChunkPackets = ConcurrentHashMap.newKeySet();
     private final Object chunkSetLock = new Object();
 
     private String loadedWorldKey = "";
+    private long lastRescanGameTime = Long.MIN_VALUE;
 
     private record ChunkClassification(boolean isNewChunk, boolean isOldGeneration, boolean chunkIsBeingUpdated) {
     }
 
     public void onTick() {
         ensureTrackingWorld();
+        processPendingChunkPackets();
+        rescanLoadedChunksAroundPlayer();
     }
 
     public void processChunk(LevelChunk chunk) {
-        // Keep map-chunk callbacks conservative; packet path and startup rescan
-        // perform authoritative reclassification.
-        classifyChunkInternal(chunk, false);
+        // Intentionally no-op.
+        // MapChunk callbacks can arrive while chunk data is still in flux, which
+        // causes transient false "old" classifications while moving. We classify
+        // from chunk packets and periodic loaded-chunk rescans instead.
     }
 
     private void classifyChunkInternal(LevelChunk chunk, boolean allowReclassify) {
@@ -179,18 +186,9 @@ public class NewerNewChunksManager {
     }
 
     public void onChunkDataPacket(int chunkX, int chunkZ) {
-        ensureTrackingWorld();
-        Level level = GameVariableAccessShim.getWorld();
-        if (level == null) {
-            return;
-        }
-
-        LevelChunk chunk = level.getChunkSource().getChunk(chunkX, chunkZ, false);
-        if (chunk == null || chunk.isEmpty()) {
-            return;
-        }
-        // Keep packet path conservative: do not overwrite already-classified chunks.
-        classifyChunkInternal(chunk, false);
+        // Defer packet-driven classification to tick time and require FULL status.
+        // This avoids transient false classifications from partially realized chunks.
+        pendingChunkPackets.add(new ChunkPos(chunkX, chunkZ));
     }
 
     private void handleBlockLikeUpdate(BlockPos pos, BlockState state, boolean blockUpdateExploit, boolean liquidExploit) {
@@ -716,6 +714,7 @@ public class NewerNewChunksManager {
         if (level == null) {
             clearChunkData();
             loadedWorldKey = "";
+            lastRescanGameTime = Long.MIN_VALUE;
             return;
         }
 
@@ -732,6 +731,59 @@ public class NewerNewChunksManager {
             tickExploitChunks.clear();
             beingUpdatedOldChunks.clear();
             oldGenerationChunks.clear();
+        }
+        pendingChunkPackets.clear();
+    }
+
+    private void processPendingChunkPackets() {
+        Level level = GameVariableAccessShim.getWorld();
+        if (level == null || pendingChunkPackets.isEmpty()) {
+            return;
+        }
+
+        for (ChunkPos chunkPos : new ArrayList<>(pendingChunkPackets)) {
+            ChunkAccess chunkAccess = level.getChunkSource().getChunk(chunkPos.x(), chunkPos.z(), ChunkStatus.FULL, false);
+            if (!(chunkAccess instanceof LevelChunk chunk)) {
+                continue;
+            }
+            if (chunk == null || chunk.isEmpty()) {
+                continue;
+            }
+
+            classifyChunkInternal(chunk, false);
+            pendingChunkPackets.remove(chunkPos);
+        }
+    }
+
+    private void rescanLoadedChunksAroundPlayer() {
+        Level level = GameVariableAccessShim.getWorld();
+        if (level == null || Minecraft.getInstance().player == null) {
+            return;
+        }
+
+        long tick = level.getGameTime();
+        if (tick == lastRescanGameTime || tick % 40L != 0L) {
+            return;
+        }
+        lastRescanGameTime = tick;
+
+        int px = Minecraft.getInstance().player.chunkPosition().x();
+        int pz = Minecraft.getInstance().player.chunkPosition().z();
+        int radius = Math.max(2, Minecraft.getInstance().options.getEffectiveRenderDistance()) + 1;
+
+        for (int x = px - radius; x <= px + radius; x++) {
+            for (int z = pz - radius; z <= pz + radius; z++) {
+                if (!level.hasChunk(x, z)) {
+                    continue;
+                }
+
+                ChunkAccess chunkAccess = level.getChunkSource().getChunk(x, z, ChunkStatus.FULL, false);
+                if (!(chunkAccess instanceof LevelChunk chunk) || chunk.isEmpty()) {
+                    continue;
+                }
+
+                classifyChunkInternal(chunk, false);
+            }
         }
     }
 

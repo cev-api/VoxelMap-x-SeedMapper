@@ -64,6 +64,8 @@ public class MapSettingsManager implements ISettingsManager {
     public boolean highlightTracerEnabled = true;
     public float highlightTracerThickness = 2.0F;
     public String highlightTracerColor = "#FF0000";
+    public boolean autoHideHighlightsWhenNear = true;
+    public float autoHideHighlightsNearDistance = 5.0F;
 
     public boolean dynamicLighting = true;
     public boolean heightmap = multicore;
@@ -180,6 +182,8 @@ public class MapSettingsManager implements ISettingsManager {
                         case "Highlight Tracer Enabled" -> highlightTracerEnabled = Boolean.parseBoolean(curLine[1]);
                         case "Highlight Tracer Thickness" -> highlightTracerThickness = Mth.clamp(Float.parseFloat(curLine[1]), 1.0F, 6.0F);
                         case "Highlight Tracer Color" -> highlightTracerColor = sanitizeColor(curLine[1], highlightTracerColor);
+                        case "Auto-hide Highlights When Near" -> autoHideHighlightsWhenNear = Boolean.parseBoolean(curLine[1]);
+                        case "Auto-hide Highlights Near Distance" -> autoHideHighlightsNearDistance = Mth.clamp(Float.parseFloat(curLine[1]), 1.0F, 64.0F);
 
                         case "Dynamic Lighting" -> dynamicLighting = Boolean.parseBoolean(curLine[1]);
                         case "Height Map" -> heightmap = Boolean.parseBoolean(curLine[1]);
@@ -275,6 +279,8 @@ public class MapSettingsManager implements ISettingsManager {
             out.println("Highlight Tracer Enabled:" + highlightTracerEnabled);
             out.println("Highlight Tracer Thickness:" + highlightTracerThickness);
             out.println("Highlight Tracer Color:" + highlightTracerColor);
+            out.println("Auto-hide Highlights When Near:" + autoHideHighlightsWhenNear);
+            out.println("Auto-hide Highlights Near Distance:" + autoHideHighlightsNearDistance);
 
             out.println("Dynamic Lighting:" + dynamicLighting);
             out.println("Height Map:" + heightmap);
