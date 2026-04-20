@@ -36,6 +36,7 @@ import net.minecraft.network.chat.MutableComponent;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
+import java.util.Locale;
 import java.util.function.Consumer;
 
 public class GuiMinimapOptions extends GuiScreenMinimap {
@@ -74,8 +75,10 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
     private Button endPortalGeneralButton;
     private Button endGatewayGeneralButton;
     private Button highlightTracerGeneralButton;
+    private Button autoHideHighlightsWhenNearButton;
     private Button tracerColorPickerButton;
     private GuiValueSliderMinimap tracerThicknessSlider;
+    private GuiValueSliderMinimap autoHideHighlightsDistanceSlider;
     private GuiValueSliderMinimap minimapZoomSlider;
     private GuiButtonText tracerColorInput;
     private GuiColorPickerContainer tracerColorPicker;
@@ -152,8 +155,10 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
         endPortalGeneralButton = null;
         endGatewayGeneralButton = null;
         highlightTracerGeneralButton = null;
+        autoHideHighlightsWhenNearButton = null;
         tracerColorPickerButton = null;
         tracerThicknessSlider = null;
+        autoHideHighlightsDistanceSlider = null;
         minimapZoomSlider = null;
         tracerColorInput = null;
         tracerColorPickerOpen = false;
@@ -227,6 +232,11 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
             int localIndex = i - pageStart;
             int buttonX = getWidth() / 2 - 155 + localIndex % 2 * 160;
             int buttonY = getHeight() / 6 + 24 * (localIndex >> 1);
+            if (tabIndex == 0 && pageIndex == 1 && option == EnumOptionsMinimap.MOVE_SCOREBOARD_BELOW_MAP) {
+                // General page 2 layout: scoreboard is the left button on the last row.
+                buttonX = getWidth() / 2 - 155;
+                buttonY = getHeight() / 6 + 24 * 4;
+            }
             if (tabIndex == 0 && pageIndex == 0 && i >= 6) {
                 buttonY += 24;
             }
@@ -235,11 +245,6 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
                 buttonX = getWidth() / 2 + 5;
                 buttonY = getHeight() / 6 + 24 * 3;
             }
-            if (tabIndex == 0 && pageIndex == 1 && (pageEnd - pageStart) == 1) {
-                // Avoid a lone left-column control on page 2 by centering it.
-                buttonX = getWidth() / 2 - 75;
-            }
-
             // List / Toggle
             if (option.getType() == EnumOptionsMinimap.Type.BOOLEAN || option.getType() == EnumOptionsMinimap.Type.LIST) {
                 StringBuilder text = new StringBuilder().append(settingsManager.getKeyText(option));
@@ -268,10 +273,10 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
 
         if (relevantOptions == GENERAL_OPTIONS && pageIndex == 0) {
             int sliderY = getHeight() / 6 + 24 * 3;
-            minimapZoomSlider = new GuiValueSliderMinimap(width / 2 - 155, sliderY, 150, 20, toDisplayMinimapZoom(mapOptions.zoom), 1.0D, 4.0D, value -> {
-                voxelMap.getMap().setZoomLevel(toInternalMinimapZoom((int)Math.round(value)));
+            minimapZoomSlider = new GuiValueSliderMinimap(width / 2 - 155, sliderY, 150, 20, mapOptions.zoom, 0.0D, 4.0D, value -> {
+                voxelMap.getMap().setZoomLevel((int) Math.round(value));
                 updateMinimapZoomSlider();
-            }, value -> "Minimap Zoom: " + (int)Math.round(value));
+            }, value -> "Minimap Zoom: " + formatMinimapZoomFactor((int) Math.round(value)));
             addOptionButton(minimapZoomSlider);
         }
 
@@ -336,6 +341,22 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
             tracerColorPickerButton = new Button.Builder(Component.literal("..."), button -> openTracerColorPicker())
                     .bounds(right + 122, tracerY + 24, 28, 20).build();
             addOptionButton(tracerColorPickerButton);
+
+            autoHideHighlightsWhenNearButton = new Button.Builder(Component.empty(), button -> {
+                mapOptions.autoHideHighlightsWhenNear = !mapOptions.autoHideHighlightsWhenNear;
+                button.setMessage(Component.literal("Auto Remove Highlights: " + (mapOptions.autoHideHighlightsWhenNear ? "ON" : "OFF")));
+                updateTracerWidgets();
+                MapSettingsManager.instance.saveAll();
+            }).bounds(left, getHeight() / 6, 150, 20).build();
+            autoHideHighlightsWhenNearButton.setMessage(Component.literal("Auto Remove Highlights: " + (mapOptions.autoHideHighlightsWhenNear ? "ON" : "OFF")));
+            addOptionButton(autoHideHighlightsWhenNearButton);
+
+            autoHideHighlightsDistanceSlider = new GuiValueSliderMinimap(right, getHeight() / 6, 150, 20, mapOptions.autoHideHighlightsNearDistance, 1.0D, 64.0D, value -> {
+                mapOptions.autoHideHighlightsNearDistance = (float) value;
+                updateTracerWidgets();
+                MapSettingsManager.instance.saveAll();
+            }, value -> "Highlight Remove Radius: " + (int) Math.round(value) + " blocks");
+            addOptionButton(autoHideHighlightsDistanceSlider);
             updateTracerWidgets();
         }
         if (relevantOptions == RADAR_FULL_OPTIONS || relevantOptions == RADAR_SIMPLE_OPTIONS) {
@@ -453,8 +474,14 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
         if (highlightTracerGeneralButton != null) {
             highlightTracerGeneralButton.active = mapOptions.minimapAllowed;
         }
+        if (autoHideHighlightsWhenNearButton != null) {
+            autoHideHighlightsWhenNearButton.active = mapOptions.minimapAllowed;
+        }
         if (minimapZoomSlider != null) {
             minimapZoomSlider.active = mapOptions.minimapAllowed;
+        }
+        if (autoHideHighlightsDistanceSlider != null) {
+            autoHideHighlightsDistanceSlider.active = mapOptions.minimapAllowed && mapOptions.autoHideHighlightsWhenNear;
         }
     }
 
@@ -538,22 +565,28 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
         if (tracerColorPickerButton != null) {
             tracerColorPickerButton.active = mapOptions.highlightTracerEnabled;
         }
+        if (autoHideHighlightsWhenNearButton != null) {
+            autoHideHighlightsWhenNearButton.setMessage(Component.literal("Auto Remove Highlights: " + (mapOptions.autoHideHighlightsWhenNear ? "ON" : "OFF")));
+        }
+        if (autoHideHighlightsDistanceSlider != null) {
+            autoHideHighlightsDistanceSlider.setActualValue(mapOptions.autoHideHighlightsNearDistance);
+            autoHideHighlightsDistanceSlider.active = mapOptions.minimapAllowed && mapOptions.autoHideHighlightsWhenNear;
+        }
     }
 
     private void updateMinimapZoomSlider() {
         if (minimapZoomSlider != null) {
-            minimapZoomSlider.setActualValue(toDisplayMinimapZoom(mapOptions.zoom));
+            minimapZoomSlider.setActualValue(mapOptions.zoom);
         }
     }
 
-    private static int toDisplayMinimapZoom(int internalZoom) {
-        int clamped = Math.max(1, Math.min(4, internalZoom));
-        return 5 - clamped;
-    }
-
-    private static int toInternalMinimapZoom(int displayZoom) {
-        int clamped = Math.max(1, Math.min(4, displayZoom));
-        return 5 - clamped;
+    private static String formatMinimapZoomFactor(int internalZoom) {
+        int clamped = Math.max(0, Math.min(4, internalZoom));
+        double factor = Math.pow(2.0, 2.0 - clamped);
+        if (factor >= 1.0) {
+            return ((int) factor) + "x";
+        }
+        return String.format(Locale.ROOT, "%.2fx", factor);
     }
 
     private void openTracerColorPicker() {

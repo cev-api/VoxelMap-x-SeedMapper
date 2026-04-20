@@ -13,16 +13,16 @@ import java.io.IOException;
 import java.io.PrintWriter;
 
 public class PersistentMapSettingsManager implements ISubSettingsManager {
-    private static final int MIN_WORLDMAP_ZOOM_POWER = -4;
-    private static final int MAX_WORLDMAP_ZOOM_POWER = 5;
+    private static final int MIN_WORLDMAP_ZOOM_POWER = -5;
+    private static final int MAX_WORLDMAP_ZOOM_POWER = 8;
     private static final int MAX_WORLDMAP_CACHE_SIZE = 20000;
     protected int mapX;
     protected int mapZ;
-    protected float zoom = 4.0F;
+    protected float zoom = 8.0F;
     private float minZoomPower = -1.0F;
-    private float maxZoomPower = 4.0F;
+    private float maxZoomPower = 8.0F;
     protected float minZoom = 0.5F;
-    protected float maxZoom = 16.0F;
+    protected float maxZoom = 256.0F;
     protected int cacheSize = 500;
     protected boolean outputImages;
     public boolean showCoordinates = true;
@@ -64,6 +64,12 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
             if (Math.pow(2.0, power) == maxZoom) {
                 maxZoomPower = power;
             }
+        }
+
+        // Migrate old defaults (16x cap) so users can zoom out further immediately.
+        if (maxZoom == 16.0F) {
+            maxZoom = 256.0F;
+            maxZoomPower = 8.0F;
         }
 
         bindCacheSize();

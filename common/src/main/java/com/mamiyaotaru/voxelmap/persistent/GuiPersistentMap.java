@@ -1079,12 +1079,41 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
         int color = (alpha << 24) | (radarOptions.getExploredChunksColorRgb() & 0x00FFFFFF);
         float lineThickness = Math.max(1.0F, 1.25F / Math.max(0.0001F, this.mapToGui));
+        boolean mapInMotion = currentDragging
+                || Math.abs(this.deltaX) > 0.01F
+                || Math.abs(this.deltaY) > 0.01F
+                || this.zoom != this.zoomGoal;
+        boolean ultraLowDetail = this.mapToGui < 0.20F;
+        int decimationMask = 0;
+        if (mapInMotion) {
+            if (this.mapToGui < 0.12F) {
+                decimationMask = 0x7; // keep about 1/8 while moving
+            } else if (this.mapToGui < 0.18F) {
+                decimationMask = 0x3; // keep about 1/4 while moving
+            } else if (this.mapToGui < 0.28F) {
+                decimationMask = 0x1; // keep about 1/2 while moving
+            }
+        }
+        int maxDraw = Integer.MAX_VALUE;
+        if (ultraLowDetail) {
+            maxDraw = mapInMotion ? 700 : 5000;
+        }
+        int drawn = 0;
 
         for (ChunkPos chunk : VoxelConstants.getVoxelMapInstance().getExploredChunksManager().getExploredChunksInRange(centerChunkX, centerChunkZ, radius)) {
+            if (drawn >= maxDraw) {
+                break;
+            }
             int chunkX = chunk.x();
             int chunkZ = chunk.z();
             if (chunkX < minChunkX || chunkX > maxChunkX || chunkZ < minChunkZ || chunkZ > maxChunkZ) {
                 continue;
+            }
+            if (decimationMask != 0) {
+                int hash = (chunkX * 73428767) ^ (chunkZ * 912931);
+                if ((hash & decimationMask) != 0) {
+                    continue;
+                }
             }
 
             float minX = chunk.getMinBlockX();
@@ -1096,6 +1125,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             VoxelMapGuiGraphics.fillGradient(graphics, minX, maxZ - lineThickness, maxX, maxZ, color, color, color, color);
             VoxelMapGuiGraphics.fillGradient(graphics, minX, minZ, minX + lineThickness, maxZ, color, color, color, color);
             VoxelMapGuiGraphics.fillGradient(graphics, maxX - lineThickness, minZ, maxX, maxZ, color, color, color, color);
+            drawn++;
         }
     }
 
@@ -1277,6 +1307,14 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             return;
         }
         seedMapperMarkerHitboxes.clear();
+        boolean mapInMotion = currentDragging
+                || Math.abs(this.deltaX) > 0.01F
+                || Math.abs(this.deltaY) > 0.01F
+                || this.zoom != this.zoomGoal;
+        if (mapInMotion) {
+            // Hide structure markers while panning/zooming to avoid partial decimation artifacts.
+            return;
+        }
 
         int dimension = getCurrentCubiomesDimension();
         if (dimension == Integer.MIN_VALUE) {
@@ -1297,7 +1335,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         int rawMaxX = (int) Math.ceil(this.mapCenterX + mapHalfWidth) + margin;
         int rawMinZ = (int) Math.floor(this.mapCenterZ - mapHalfHeight) - margin;
         int rawMaxZ = (int) Math.ceil(this.mapCenterZ + mapHalfHeight) + margin;
-        int keySnap = currentDragging ? 1024 : 512;
+        int keySnap = mapInMotion ? 4096 : 512;
         int minX = Math.floorDiv(rawMinX, keySnap) * keySnap;
         int maxX = Math.floorDiv(rawMaxX + keySnap - 1, keySnap) * keySnap;
         int minZ = Math.floorDiv(rawMinZ, keySnap) * keySnap;
@@ -1333,11 +1371,14 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         );
 
         long now = System.currentTimeMillis();
-        long minIntervalMs = 1000L;
+        long minIntervalMs = mapInMotion ? 1500L : 1000L;
         String datapackWorldKey = currentSeedMapperWorldKey();
-        boolean shouldRefresh = seedMapperLastMarkerQueryKey == null
-                || !seedMapperLastMarkerQueryKey.equals(key)
-                || now - seedMapperLastMarkerQueryMs >= minIntervalMs;
+        boolean keyChanged = seedMapperLastMarkerQueryKey == null
+                || !seedMapperLastMarkerQueryKey.equals(key);
+        boolean intervalElapsed = now - seedMapperLastMarkerQueryMs >= minIntervalMs;
+        // During drag/zoom movement, keep using cached markers to avoid synchronous query hitching.
+        boolean shouldRefresh = seedMapperLastMarkerResult.isEmpty()
+                || (!mapInMotion && (keyChanged || intervalElapsed));
         if (shouldRefresh) {
             SeedMapperLocatorService.QueryResult result = SeedMapperLocatorService.get().queryWithStatus(
                     seed,
@@ -1376,7 +1417,9 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             }
         }
 
-        if (!currentDragging) {
+        boolean lowDetail = mapToGui < 0.35F;
+        boolean ultraLowDetail = mapToGui < 0.20F;
+        if (!mapInMotion && !lowDetail && markers.size() < 2000) {
             final double priorityX = GameVariableAccessShim.xCoordDouble();
             final double priorityZ = GameVariableAccessShim.zCoordDouble();
             markers.sort(Comparator.comparingDouble(marker -> {
@@ -1386,16 +1429,61 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             }));
         }
 
-        boolean lowDetail = mapToGui < 0.35F;
         int markerLimit = Math.max(200, seedMapperOptions.worldMapMarkerLimit);
+        if (mapInMotion) {
+            if (ultraLowDetail) {
+                markerLimit = Math.min(markerLimit, 180);
+            } else if (lowDetail) {
+                markerLimit = Math.min(markerLimit, 600);
+            }
+        }
         int maxTotal = markerLimit;
+        if (mapInMotion) {
+            maxTotal = Math.min(maxTotal, 1200);
+            if (ultraLowDetail) {
+                maxTotal = Math.min(maxTotal, 120);
+            }
+        }
         int maxDense = Integer.MAX_VALUE;
         int denseDrawn = 0;
         int totalDrawn = 0;
         int scanned = 0;
-        int maxScanned = currentDragging ? Math.max(12000, markerLimit * 3) : Integer.MAX_VALUE;
+        int maxScanned = mapInMotion ? Math.min(Math.max(2500, markerLimit), 6000) : Integer.MAX_VALUE;
+        if (mapInMotion && ultraLowDetail) {
+            maxScanned = Math.min(maxScanned, 1500);
+        }
+        int decimationMask = 0;
+        if (mapInMotion) {
+            if (mapToGui < 0.12F) {
+                decimationMask = 0x7; // keep about 1/8 while moving
+            } else if (mapToGui < 0.18F) {
+                decimationMask = 0x3; // keep about 1/4 while moving
+            } else if (mapToGui < 0.28F) {
+                decimationMask = 0x1; // keep about 1/2 while moving
+            }
+        }
         double visibleHalfX = (this.centerX + ICON_WIDTH + 12.0D) / Math.max(0.0001D, this.mapToGui);
         double visibleHalfZ = (this.centerY + ICON_HEIGHT + 12.0D) / Math.max(0.0001D, this.mapToGui);
+        final double playerX = GameVariableAccessShim.xCoordDouble();
+        final double playerZ = GameVariableAccessShim.zCoordDouble();
+
+        // World-map marker limit should prioritize a circular region around the player.
+        if (!mapInMotion && markers.size() > maxTotal) {
+            var visibleMarkers = new ArrayList<SeedMapperMarker>(Math.min(markers.size(), 32768));
+            for (SeedMapperMarker marker : markers) {
+                if (Math.abs(marker.blockX() - this.mapCenterX) <= visibleHalfX
+                        && Math.abs(marker.blockZ() - this.mapCenterZ) <= visibleHalfZ) {
+                    visibleMarkers.add(marker);
+                }
+            }
+            visibleMarkers.sort(Comparator.comparingDouble(marker -> {
+                double dx = marker.blockX() - playerX;
+                double dz = marker.blockZ() - playerZ;
+                return dx * dx + dz * dz;
+            }));
+            markers = visibleMarkers;
+        }
+
         for (SeedMapperMarker marker : markers) {
             if (++scanned > maxScanned || totalDrawn >= maxTotal) {
                 break;
@@ -1403,6 +1491,12 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             if (Math.abs(marker.blockX() - this.mapCenterX) > visibleHalfX
                     || Math.abs(marker.blockZ() - this.mapCenterZ) > visibleHalfZ) {
                 continue;
+            }
+            if (decimationMask != 0 && marker.feature() != SeedMapperFeature.WORLD_SPAWN) {
+                int hash = (marker.blockX() * 73428767) ^ (marker.blockZ() * 912931);
+                if ((hash & decimationMask) != 0) {
+                    continue;
+                }
             }
             if (lowDetail && (marker.feature() == SeedMapperFeature.SLIME_CHUNK
                     || marker.feature() == SeedMapperFeature.IRON_ORE_VEIN

@@ -475,40 +475,61 @@ public final class SeedMapperLootService {
             return List.of();
         }
 
-        if (item.contains("sword") || item.contains("axe")) {
+        if (item.startsWith("minecraft:")) {
+            item = item.substring("minecraft:".length());
+        }
+
+        boolean isSword = item.endsWith("_sword");
+        boolean isAxe = item.endsWith("_axe");
+        boolean isPickaxe = item.endsWith("_pickaxe");
+        boolean isShovel = item.endsWith("_shovel");
+        boolean isHoe = item.endsWith("_hoe");
+        boolean isHelmet = item.endsWith("_helmet");
+        boolean isChestplate = item.endsWith("_chestplate");
+        boolean isLeggings = item.endsWith("_leggings");
+        boolean isBoots = item.endsWith("_boots");
+        boolean isBow = item.equals("bow");
+        boolean isCrossbow = item.equals("crossbow");
+        boolean isTrident = item.equals("trident");
+        boolean isFishingRod = item.equals("fishing_rod");
+        boolean isMace = item.equals("mace");
+        boolean isEnchantedBook = item.equals("enchanted_book");
+
+        if (isSword || isAxe) {
             suggestions.addAll(Set.of("sharpness", "smite", "bane_of_arthropods", "sweeping_edge", "knockback", "fire_aspect", "looting", "unbreaking", "mending"));
         }
-        if (item.contains("pickaxe") || item.contains("shovel") || item.contains("hoe")) {
+        if (isPickaxe || isShovel || isHoe) {
             suggestions.addAll(Set.of("efficiency", "fortune", "silk_touch", "unbreaking", "mending"));
         }
-        if (item.contains("helmet") || item.contains("chestplate") || item.contains("leggings") || item.contains("boots") || item.contains("armor")) {
+        if (isHelmet || isChestplate || isLeggings || isBoots) {
             suggestions.addAll(Set.of("protection", "fire_protection", "blast_protection", "projectile_protection", "thorns", "unbreaking", "mending"));
-            if (item.contains("boots")) {
+            if (isBoots) {
                 suggestions.addAll(Set.of("feather_falling", "depth_strider", "frost_walker", "soul_speed"));
             }
-            if (item.contains("helmet")) {
+            if (isHelmet) {
                 suggestions.addAll(Set.of("respiration", "aqua_affinity"));
             }
-            if (item.contains("leggings")) {
+            if (isLeggings) {
                 suggestions.add("swift_sneak");
             }
         }
-        if (item.contains("bow")) {
+        if (isBow) {
             suggestions.addAll(Set.of("power", "punch", "flame", "infinity", "unbreaking", "mending"));
         }
-        if (item.contains("crossbow")) {
+        if (isCrossbow) {
             suggestions.addAll(Set.of("multishot", "piercing", "quick_charge", "unbreaking", "mending"));
         }
-        if (item.contains("trident")) {
+        if (isTrident) {
             suggestions.addAll(Set.of("impaling", "loyalty", "channeling", "riptide", "unbreaking", "mending"));
         }
-        if (item.contains("fishing_rod")) {
+        if (isFishingRod) {
             suggestions.addAll(Set.of("luck_of_the_sea", "lure", "unbreaking", "mending"));
         }
-        if (item.contains("mace")) {
+        if (isMace) {
             suggestions.addAll(Set.of("wind_burst", "density", "breach", "unbreaking", "mending"));
         }
-        if (item.contains("book")) {
+        // Only enchanted books should show generic enchant filters.
+        if (isEnchantedBook) {
             suggestions.addAll(COMMON_ENCHANT_SUGGESTIONS);
         }
 
