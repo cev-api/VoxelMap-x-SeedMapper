@@ -76,6 +76,7 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
     private Button highlightTracerGeneralButton;
     private Button tracerColorPickerButton;
     private GuiValueSliderMinimap tracerThicknessSlider;
+    private GuiValueSliderMinimap minimapZoomSlider;
     private GuiButtonText tracerColorInput;
     private GuiColorPickerContainer tracerColorPicker;
     private Button tracerColorPickerModeButton;
@@ -153,6 +154,7 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
         highlightTracerGeneralButton = null;
         tracerColorPickerButton = null;
         tracerThicknessSlider = null;
+        minimapZoomSlider = null;
         tracerColorInput = null;
         tracerColorPickerOpen = false;
         for (GuiEventListener widget : optionButtons) {
@@ -195,7 +197,7 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
         }
         lastTabIndex = tabIndex;
 
-        int itemCount = 10;
+        int itemCount = tabIndex == 0 ? 11 : 10;
         int pageCount = (relevantOptions.length - 1) / itemCount;
         if (pageIndex > pageCount) {
             pageIndex = 0;
@@ -204,6 +206,11 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
             pageIndex = pageCount;
         }
         pageInfo = "[ " + (pageIndex + 1) + " / " + (pageCount + 1) + " ]";
+
+        int pageLayoutOffset = tabIndex == 0 && pageIndex == 0 ? 24 : 0;
+        int pageNavY = height / 6 + 120 + pageLayoutOffset;
+        nextPageButton.setPosition(width / 2 + 140, pageNavY);
+        prevPageButton.setPosition(width / 2 - 180, pageNavY);
         int pageStart = itemCount * pageIndex;
         int pageEnd = Math.min(itemCount * (pageIndex + 1), relevantOptions.length);
 
@@ -217,8 +224,21 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
             ISettingsManager settingsManager = getSettingsManager(option);
             if (settingsManager == null) continue;
 
-            int buttonX = getWidth() / 2 - 155 + (i - pageStart) % 2 * 160;
-            int buttonY = getHeight() / 6 + 24 * ((i - pageStart) >> 1);
+            int localIndex = i - pageStart;
+            int buttonX = getWidth() / 2 - 155 + localIndex % 2 * 160;
+            int buttonY = getHeight() / 6 + 24 * (localIndex >> 1);
+            if (tabIndex == 0 && pageIndex == 0 && i >= 6) {
+                buttonY += 24;
+            }
+            if (tabIndex == 0 && pageIndex == 0 && localIndex == 10) {
+                // Fill the free slot beside the minimap zoom row with an existing option.
+                buttonX = getWidth() / 2 + 5;
+                buttonY = getHeight() / 6 + 24 * 3;
+            }
+            if (tabIndex == 0 && pageIndex == 1 && (pageEnd - pageStart) == 1) {
+                // Avoid a lone left-column control on page 2 by centering it.
+                buttonX = getWidth() / 2 - 75;
+            }
 
             // List / Toggle
             if (option.getType() == EnumOptionsMinimap.Type.BOOLEAN || option.getType() == EnumOptionsMinimap.Type.LIST) {
@@ -244,6 +264,15 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
                 teleportCommandButton.active = mapOptions.serverTeleportCommand == null;
                 addOptionButton(teleportCommandButton);
             }
+        }
+
+        if (relevantOptions == GENERAL_OPTIONS && pageIndex == 0) {
+            int sliderY = getHeight() / 6 + 24 * 3;
+            minimapZoomSlider = new GuiValueSliderMinimap(width / 2 - 155, sliderY, 150, 20, toDisplayMinimapZoom(mapOptions.zoom), 1.0D, 4.0D, value -> {
+                voxelMap.getMap().setZoomLevel(toInternalMinimapZoom((int)Math.round(value)));
+                updateMinimapZoomSlider();
+            }, value -> "Minimap Zoom: " + (int)Math.round(value));
+            addOptionButton(minimapZoomSlider);
         }
 
         int additionalButtonX = width / 2 - 75;
@@ -316,6 +345,7 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
         }
 
         setButtonsActive();
+        updateMinimapZoomSlider();
 
     }
 
@@ -423,6 +453,9 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
         if (highlightTracerGeneralButton != null) {
             highlightTracerGeneralButton.active = mapOptions.minimapAllowed;
         }
+        if (minimapZoomSlider != null) {
+            minimapZoomSlider.active = mapOptions.minimapAllowed;
+        }
     }
 
     private Tooltip createButtonTooltip(EnumOptionsMinimap option) {
@@ -449,23 +482,9 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
         }
         graphics.blit(RenderPipelines.GUI_TEXTURED, Screen.FOOTER_SEPARATOR, 0, height - layout.getFooterHeight() - 2, 0.0F, 0.0F, width, 2, 32, 2);
         if (!pageInfo.isEmpty()) {
-            int navY = height / 6 + 120;
+            int navY = height / 6 + 120 + (tabIndex == 0 && pageIndex == 0 ? 24 : 0);
             int barTop = navY + 2;
             int barBottom = navY + 18;
-
-            if (prevPageButton.visible && nextPageButton.visible) {
-                int leftBarStart = prevPageButton.getX() + prevPageButton.getWidth() + 8;
-                int leftBarEnd = width / 2 - 48;
-                int rightBarStart = width / 2 + 48;
-                int rightBarEnd = nextPageButton.getX() - 8;
-
-                if (leftBarEnd > leftBarStart) {
-                    graphics.fill(leftBarStart, barTop, leftBarEnd, barBottom, 0x66000000);
-                }
-                if (rightBarEnd > rightBarStart) {
-                    graphics.fill(rightBarStart, barTop, rightBarEnd, barBottom, 0x66000000);
-                }
-            }
 
             graphics.fill(width / 2 - 40, barTop, width / 2 + 40, barBottom, 0x88000000);
             graphics.centeredText(font, pageInfo, width / 2, navY + 6, 0xFFFFFFFF);
@@ -519,6 +538,22 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
         if (tracerColorPickerButton != null) {
             tracerColorPickerButton.active = mapOptions.highlightTracerEnabled;
         }
+    }
+
+    private void updateMinimapZoomSlider() {
+        if (minimapZoomSlider != null) {
+            minimapZoomSlider.setActualValue(toDisplayMinimapZoom(mapOptions.zoom));
+        }
+    }
+
+    private static int toDisplayMinimapZoom(int internalZoom) {
+        int clamped = Math.max(1, Math.min(4, internalZoom));
+        return 5 - clamped;
+    }
+
+    private static int toInternalMinimapZoom(int displayZoom) {
+        int clamped = Math.max(1, Math.min(4, displayZoom));
+        return 5 - clamped;
     }
 
     private void openTracerColorPicker() {
@@ -590,10 +625,16 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
             }
             return true;
         }
+
         if (keyEvent.key() == GLFW.GLFW_KEY_ESCAPE) {
+            if (embeddedTabScreen instanceof GuiMinimapControls controls
+                    && controls.unbindEditingKey()) {
+                return true;
+            }
             this.onClose();
             return true;
         }
+
         if (embeddedTabScreen != null && embeddedTabScreen.keyPressed(keyEvent)) {
             return true;
         }

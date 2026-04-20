@@ -30,6 +30,7 @@ public class GuiSeedMapperOptions extends GuiScreenMinimap {
 
     private GuiButtonText seedInput;
     private GuiButtonText espTargetInput;
+    private GuiValueSliderMinimap worldMapMarkerLimitSlider;
     private GuiValueSliderMinimap espChunksSlider;
     private GuiButtonText datapackUrlInput;
 
@@ -90,6 +91,14 @@ public class GuiSeedMapperOptions extends GuiScreenMinimap {
             MapSettingsManager.instance.saveAll();
             refreshLabels();
         }).bounds(right, y, 150, 20).build());
+
+        y += rowGap;
+
+        worldMapMarkerLimitSlider = addRenderableWidget(new GuiValueSliderMinimap(left, y, fullWidth, 20, settings.worldMapMarkerLimit, 200.0D, 20000.0D, value -> {
+            settings.worldMapMarkerLimit = Math.max(200, ((int) Math.round(value / 100.0D)) * 100);
+            MapSettingsManager.instance.saveAll();
+            refreshLabels();
+        }, value -> "WorldMap Marker Limit: " + (((int) Math.round(value / 100.0D)) * 100)));
 
         y += rowGap;
 
@@ -261,6 +270,9 @@ public class GuiSeedMapperOptions extends GuiScreenMinimap {
         if (espTargetInput != null) {
             espTargetInput.setMessage(Component.literal("ESP Target: " + espTargetInput.getText()));
         }
+        if (worldMapMarkerLimitSlider != null) {
+            worldMapMarkerLimitSlider.setActualValue(settings.worldMapMarkerLimit);
+        }
         if (espChunksSlider != null) {
             espChunksSlider.setActualValue(settings.espDefaultChunks);
         }
@@ -292,6 +304,9 @@ public class GuiSeedMapperOptions extends GuiScreenMinimap {
         }
         if (espChunksSlider != null) {
             settings.espDefaultChunks = (int) Math.round(espChunksSlider.getActualValue());
+        }
+        if (worldMapMarkerLimitSlider != null) {
+            settings.worldMapMarkerLimit = Math.max(200, ((int) Math.round(worldMapMarkerLimitSlider.getActualValue() / 100.0D)) * 100);
         }
         if (datapackUrlInput != null) {
             settings.datapackUrl = datapackUrlInput.getText().trim();

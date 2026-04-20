@@ -50,11 +50,6 @@ public abstract class PopupGuiScreen extends GuiScreenMinimap implements IPopupG
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
-        if (hasOpenPopup()) {
-            mouseX = 0;
-            mouseY = 0;
-        }
-
         super.extractRenderState(graphics, mouseX, mouseY, delta);
 
         for (Popup popup : this.popups) {

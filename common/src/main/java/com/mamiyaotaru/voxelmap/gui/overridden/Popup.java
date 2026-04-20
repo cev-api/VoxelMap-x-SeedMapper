@@ -106,6 +106,12 @@ public class Popup {
             if (hover) {
                 graphics.requestCursor(CursorTypes.POINTING_HAND);
             }
+            if (hover) {
+                int rowTop = this.y + t * 20;
+                int rowBottom = this.y + (t + 1) * 20;
+                VoxelMapGuiGraphics.fillGradient(graphics, this.x + 1, rowTop + 1, this.x + this.w - 1, rowBottom - 1,
+                        0x66404040, 0x66404040, 0x66303030, 0x66303030);
+            }
             int color = !this.entries[t].enabled ? 0xFFA0A0A0 : (hover ? 0xFFFFFFA0 : 0xFFE0E0E0);
             graphics.text(this.fontRendererObj, this.entries[t].name, (this.x + this.padding), (this.y + this.padding + t * 20), color);
         }

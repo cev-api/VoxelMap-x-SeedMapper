@@ -568,6 +568,9 @@ public class MapSettingsManager implements ISettingsManager {
     @Override
     public void setFloatValue(EnumOptionsMinimap option, float value) {
         switch (option) {
+            case ZOOM -> {
+                zoom = Mth.clamp(Math.round(value), 0, 4);
+            }
             case WAYPOINT_DISTANCE -> {
                 float distance = Mth.lerp(value, 50.0F, 10001.0F);
                 if (distance > 10000.0F) {

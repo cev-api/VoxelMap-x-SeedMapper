@@ -26,11 +26,19 @@ public class GuiMinimapControls extends GuiScreenMinimap {
 
     @Override
     public boolean keyPressed(KeyEvent keyEvent) {
-        if (this.keymapList.keyEditing()) {
-            return this.keymapList.keyPressed(keyEvent);
-        } else {
-            return super.keyPressed(keyEvent);
+        if (this.keymapList != null && keyEvent.key() == org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE && this.keymapList.unbindEditingKey()) {
+            return true;
         }
+
+        if (this.keymapList != null && this.keymapList.keyEditing()) {
+            return this.keymapList.keyPressed(keyEvent);
+        }
+
+        return super.keyPressed(keyEvent);
+    }
+
+    public boolean unbindEditingKey() {
+        return this.keymapList != null && this.keymapList.unbindEditingKey();
     }
 
     @Override

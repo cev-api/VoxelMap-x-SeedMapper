@@ -13,6 +13,9 @@ import java.io.IOException;
 import java.io.PrintWriter;
 
 public class PersistentMapSettingsManager implements ISubSettingsManager {
+    private static final int MIN_WORLDMAP_ZOOM_POWER = -4;
+    private static final int MAX_WORLDMAP_ZOOM_POWER = 5;
+    private static final int MAX_WORLDMAP_CACHE_SIZE = 20000;
     protected int mapX;
     protected int mapZ;
     protected float zoom = 4.0F;
@@ -53,7 +56,7 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
             in.close();
         } catch (IOException ignored) {}
 
-        for (int power = -3; power <= 5; ++power) {
+        for (int power = MIN_WORLDMAP_ZOOM_POWER; power <= MAX_WORLDMAP_ZOOM_POWER; ++power) {
             if (Math.pow(2.0, power) == minZoom) {
                 minZoomPower = power;
             }
@@ -158,7 +161,7 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
     public void setFloatValue(EnumOptionsMinimap option, float value) {
         switch (option) {
             case MIN_ZOOM -> {
-                minZoomPower = ((int) (value * 8.0F) - 3);
+                minZoomPower = ((int) (value * (MAX_WORLDMAP_ZOOM_POWER - MIN_WORLDMAP_ZOOM_POWER)) + MIN_WORLDMAP_ZOOM_POWER);
                 minZoom = (float) Math.pow(2.0, minZoomPower);
                 if (maxZoom < minZoom) {
                     maxZoom = minZoom;
@@ -166,7 +169,7 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
                 }
             }
             case MAX_ZOOM -> {
-                maxZoomPower = ((int) (value * 8.0F) - 3);
+                maxZoomPower = ((int) (value * (MAX_WORLDMAP_ZOOM_POWER - MIN_WORLDMAP_ZOOM_POWER)) + MIN_WORLDMAP_ZOOM_POWER);
                 maxZoom = (float) Math.pow(2.0, maxZoomPower);
                 if (minZoom > maxZoom) {
                     minZoom = maxZoom;
@@ -174,18 +177,8 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
                 }
             }
             case CACHE_SIZE -> {
-                cacheSize = (int) (value * 5000.0F);
+                cacheSize = (int) (value * MAX_WORLDMAP_CACHE_SIZE);
                 cacheSize = Math.max(cacheSize, 30);
-
-                while (cacheSize < calculateMinCacheSize()) {
-                    ++minZoomPower;
-                    minZoom = (float) Math.pow(2.0, minZoomPower);
-                }
-
-                if (maxZoom < minZoom) {
-                    maxZoom = minZoom;
-                    maxZoomPower = minZoomPower;
-                }
             }
 
             default -> throw new IllegalArgumentException("Invalid float value! Add code to handle EnumOptionMinimap: " + option.getName());
