@@ -41,6 +41,7 @@ public class SeedMapperSettingsManager implements ISubSettingsManager {
     public boolean espEnabled = false;
     public int espDefaultChunks = 4;
     public double espTimeoutMinutes = 5.0D;
+    public int worldMapMarkerLimit = 5000;
 
     private final Set<SeedMapperFeature> enabledFeatures = EnumSet.allOf(SeedMapperFeature.class);
     private final Set<String> completedFeatureEntries = new HashSet<>();
@@ -86,6 +87,7 @@ public class SeedMapperSettingsManager implements ISubSettingsManager {
                     case "SeedMapper ESP Enabled" -> espEnabled = Boolean.parseBoolean(curLine[1]);
                     case "SeedMapper ESP Default Chunks" -> espDefaultChunks = Mth.clamp(Integer.parseInt(curLine[1]), 0, 8);
                     case "SeedMapper ESP Timeout Minutes" -> espTimeoutMinutes = Math.max(0.0D, Double.parseDouble(curLine[1]));
+                    case "SeedMapper WorldMap Marker Limit" -> worldMapMarkerLimit = Mth.clamp(Integer.parseInt(curLine[1]), 200, 20000);
                     case "SeedMapper Datapack Random Colors" -> loadIntList(curLine[1], datapackRandomColors);
                     case "SeedMapper Datapack Saved URLs" -> loadMap(curLine[1], datapackSavedUrls);
                     case "SeedMapper Datapack Saved Cache Paths" -> loadMap(curLine[1], datapackSavedCachePaths);
@@ -164,6 +166,7 @@ public class SeedMapperSettingsManager implements ISubSettingsManager {
         out.println("SeedMapper ESP Enabled:" + espEnabled);
         out.println("SeedMapper ESP Default Chunks:" + espDefaultChunks);
         out.println("SeedMapper ESP Timeout Minutes:" + espTimeoutMinutes);
+        out.println("SeedMapper WorldMap Marker Limit:" + worldMapMarkerLimit);
         out.println("SeedMapper Datapack Random Colors:" + saveIntList(datapackRandomColors));
         out.println("SeedMapper Datapack Saved URLs:" + saveMap(datapackSavedUrls));
         out.println("SeedMapper Datapack Saved Cache Paths:" + saveMap(datapackSavedCachePaths));

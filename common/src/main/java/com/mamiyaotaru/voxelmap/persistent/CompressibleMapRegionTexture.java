@@ -36,6 +36,7 @@ public class CompressibleMapRegionTexture extends AbstractTexture {
     private final GpuSampler samplerLarge;
 
     private byte[] bytes;
+    private long lastAllocationWarnMs = 0L;
 
     public CompressibleMapRegionTexture() {
         this.compressNotDelete = VoxelConstants.getVoxelMapInstance().getPersistentMapOptions().outputImages;
@@ -48,10 +49,8 @@ public class CompressibleMapRegionTexture extends AbstractTexture {
     }
 
     public NativeImage getData() {
-        if (pixels == null) {
-            this.decompress();
-        }
-        return pixels;
+        ensurePixelsAllocated();
+        return this.pixels;
     }
 
     public Identifier getTextureLocation(float zoom) {
@@ -80,8 +79,9 @@ public class CompressibleMapRegionTexture extends AbstractTexture {
             return;
         }
 
-        if (pixels == null) {
-            this.decompress();
+        ensurePixelsAllocated();
+        if (this.pixels == null) {
+            return;
         }
 
         if (texture == null) {
@@ -105,13 +105,19 @@ public class CompressibleMapRegionTexture extends AbstractTexture {
         this.compress();
     }
 
-    public void setRGB(int x, int y, int color) {
-        if (pixels == null) {
-            this.decompress();
+    public synchronized void setRGB(int x, int y, int color) {
+        ensurePixelsAllocated();
+        NativeImage localPixels = this.pixels;
+        if (localPixels == null) {
+            return;
         }
-        NativeImage localPixels = pixels;
-        if (localPixels != null) {
+        try {
             localPixels.setPixel(x, y, ColorUtils.premultiplyWithAlpha(color));
+        } catch (IllegalStateException e) {
+            resetImageAllocation();
+            if (this.pixels != null) {
+                this.pixels.setPixel(x, y, ColorUtils.premultiplyWithAlpha(color));
+            }
         }
     }
 
@@ -130,9 +136,17 @@ public class CompressibleMapRegionTexture extends AbstractTexture {
         }
     }
 
-    public void generateMipmaps() {
+    public synchronized void generateMipmaps() {
         clearMipmaps();
-        pixelsMipmapped = MipmapGenerator.generateMipLevels(location, new NativeImage[] { pixels }, MIP_LEVELS, MipmapStrategy.MEAN, 0.0F, Transparency.TRANSPARENT_AND_TRANSLUCENT);
+        ensurePixelsAllocated();
+        if (this.pixels == null) {
+            return;
+        }
+        try {
+            pixelsMipmapped = MipmapGenerator.generateMipLevels(location, new NativeImage[] { pixels }, MIP_LEVELS, MipmapStrategy.MEAN, 0.0F, Transparency.TRANSPARENT_AND_TRANSLUCENT);
+        } catch (IllegalStateException e) {
+            resetImageAllocation();
+        }
     }
 
     private synchronized void decompress() {
@@ -171,12 +185,46 @@ public class CompressibleMapRegionTexture extends AbstractTexture {
     }
 
     @Override
-    public void close() {
+    public synchronized void close() {
         clearMipmaps();
         if (this.pixels != null) {
             this.pixels.close();
             this.pixels = null;
         }
         super.close();
+    }
+
+    private synchronized void ensurePixelsAllocated() {
+        if (this.pixels == null) {
+            this.decompress();
+            return;
+        }
+        try {
+            this.pixels.getWidth();
+        } catch (IllegalStateException e) {
+            resetImageAllocation();
+        }
+    }
+
+    private synchronized void resetImageAllocation() {
+        clearMipmaps();
+        if (this.pixels != null) {
+            try {
+                this.pixels.close();
+            } catch (Exception ignored) {
+            }
+            this.pixels = null;
+        }
+        try {
+            this.pixels = new NativeImage(CachedRegion.REGION_WIDTH, CachedRegion.REGION_WIDTH, false);
+            clearImage(this.pixels);
+        } catch (OutOfMemoryError oom) {
+            this.pixels = null;
+            long now = System.currentTimeMillis();
+            if (now - this.lastAllocationWarnMs > 5000L) {
+                this.lastAllocationWarnMs = now;
+                VoxelConstants.getLogger().warn("VoxelMap: low memory while recreating map texture; skipping this frame.");
+            }
+        }
     }
 }

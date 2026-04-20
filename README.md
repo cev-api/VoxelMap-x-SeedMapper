@@ -35,6 +35,7 @@ This fork brings SeedMapper directly into VoxelMap, including:
 - Datapack URL and structure management
 - Loot viewer search and per-result actions
 - Structure icons, arrow assets, and completion markers
+- Can add tracer highlights to located results and loot results
 
 ![SeedMapMenu](https://i.imgur.com/jMBkgbm.png)
 
@@ -128,12 +129,18 @@ Alias:
 - Right-click waypoint menus were updated so delete confirmation behaves correctly
 - SeedMapper markers, loot actions, and completion state are integrated into the map popup flow
 - Visible map bounds can be exported through SeedMapper
+- Able to view any area of the map by entering its coordinates, input is revealed when clicking on current coordinates
+- Can recenter the map to the player in the context menu
+- Able to see chunk trial overlay 
 
 #### SeedMapper integration
-![LargeMap](https://i.imgur.com/tx17YeF.png)
+![LargeMap](https://i.imgur.com/qDZdMvs.png)
 
 #### Marking Nether portal as complete
 ![MarkComplete](https://i.imgur.com/F6f8TF6.png)
+
+#### View other coordinates
+![View](https://i.imgur.com/q0XYZRF.png)
 
 ## Minimap
 
@@ -142,8 +149,8 @@ Alias:
 - Display new chunks
 - Added support for displaying and clearing explored chunks directly
 
-#### New chunk detection and village detection
-![NewChunks](https://i.imgur.com/jUdodCL.png)
+#### New chunk detection and structure detection
+![NewChunks](https://i.imgur.com/oggJc4d.png)
 
 #### Explored chunks (breadcrumbs) and portal detection
 ![ExploredChunks+PortalDetection](https://i.imgur.com/c1Q41xy.png)

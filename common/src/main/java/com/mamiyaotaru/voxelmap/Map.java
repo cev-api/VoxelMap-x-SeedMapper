@@ -404,6 +404,8 @@ public class Map implements Runnable, IChangeObserver {
 
         if (minecraft.screen == null && this.options.keyBindFullscreen.consumeClick()) {
             this.fullscreenMap = !this.fullscreenMap;
+            this.doFullRender = true;
+            this.imageChanged = true;
             this.showMessage(I18n.get("minimap.ui.zoomLevel", 2.0 / this.zoomScale));
         }
 
@@ -547,13 +549,23 @@ public class Map implements Runnable, IChangeObserver {
         if (--this.zoom < 0) {
             this.zoom = this.mapDataCount - 1;
         }
-        this.options.zoom = this.zoom;
+        this.setZoomLevel(this.zoom);
+        this.showMessage(I18n.get("minimap.ui.zoomLevel", 2.0 / this.zoomScale));
+
+    }
+
+    public void setZoomLevel(int zoom) {
+        int clampedZoom = Mth.clamp(zoom, 0, this.mapDataCount - 1);
+        if (this.zoom == clampedZoom && this.options.zoom == clampedZoom) {
+            return;
+        }
+
+        this.zoom = clampedZoom;
+        this.options.zoom = clampedZoom;
         this.options.saveAll();
         this.zoomChanged = true;
         this.setZoomScale();
         this.doFullRender = true;
-        this.showMessage(I18n.get("minimap.ui.zoomLevel", 2.0 / this.zoomScale));
-
     }
 
     private void setZoomScale() {
@@ -1664,7 +1676,9 @@ public class Map implements Runnable, IChangeObserver {
             RenderUtils.renderWithCustomProjection(baseMapRenderTarget, mapProjection.getBuffer(), -2000.0F, () -> {
                 float scale = 1.0F;
                 if (this.options.squareMap && this.options.rotates) {
-                    scale = 1.4142F;
+                    // Add a tiny overscan so the rotated texture always fully covers the square
+                    // minimap frame, especially at extreme zoom-out (e.g. 0.25x).
+                    scale = (float) Math.sqrt(2.0D) + 0.0125F;
                 }
                 float multi = (float) (1.0 / this.zoomScale);
                 float percentX = (float) (GameVariableAccessShim.xCoordDouble() - this.lastImageX) * multi;
@@ -2059,7 +2073,14 @@ public class Map implements Runnable, IChangeObserver {
         RadarSettingsManager radarSettings = VoxelConstants.getVoxelMapInstance().getRadarOptions();
         int centerChunkX = Mth.floor(baseX) >> 4;
         int centerChunkZ = Mth.floor(baseZ) >> 4;
-        int radius = Math.max(3, (int) Math.ceil(34.0D * zoomScaleAdjusted / 16.0D) + 1);
+        // Cover full minimap footprint at extreme zoom-out. Chunk overlays need a slightly
+        // larger sampling radius than entity markers because rotated square maps and texture
+        // overscan can otherwise leave a 1-2 chunk border near the frame.
+        double footprintBlocks = this.options.squareMap ? 44.0D : 34.0D;
+        if (this.options.squareMap && this.options.rotates) {
+            footprintBlocks += 6.0D;
+        }
+        int radius = Math.max(4, (int) Math.ceil(footprintBlocks * zoomScaleAdjusted / 16.0D) + 2);
 
         if (radarSettings.showExploredChunks) {
             List<ChunkPos> exploredChunks = new ArrayList<>(VoxelConstants.getVoxelMapInstance().getExploredChunksManager().getExploredChunksInRange(centerChunkX, centerChunkZ, radius));
@@ -2333,15 +2354,17 @@ public class Map implements Runnable, IChangeObserver {
         matrixStack.translate(scWidth / 2.0F, scHeight / 2.0F, 0.0F);
         matrixStack.rotate(Axis.ZP.rotationDegrees(rotationFactor));
         matrixStack.translate(-(scWidth / 2.0F), -(scHeight / 2.0F), 0.0F);
-        int left = scWidth / 2 - 128;
-        int top = scHeight / 2 - 128;
+        int mapSize = Math.max(256, Mth.ceil(Mth.sqrt((float) (scWidth * scWidth + scHeight * scHeight))) + 24);
+        int left = scWidth / 2 - mapSize / 2;
+        int top = scHeight / 2 - mapSize / 2;
         RenderType mapRenderType = VoxelMapRenderTypes.GUI_TEXTURED_LEQUAL_DEPTH_TEST.apply(mapResources[zoom]);
         VertexConsumer mapBuffer = renderBufferSource.getBuffer(mapRenderType);
-        RenderUtils.drawTexturedModalRect(matrixStack, mapBuffer, left, top, MAP_IMAGE_DEPTH, 256.0f, 256.0F, 0xFFFFFFFF);
+        RenderUtils.drawTexturedModalRect(matrixStack, mapBuffer, left, top, MAP_IMAGE_DEPTH, mapSize, mapSize, 0xFFFFFFFF);
         matrixStack.popMatrix();
 
         if (this.options.biomeOverlay != 0) {
             double factor = Math.pow(2.0, 3 - this.zoom);
+            float mapScale = mapSize / 256.0F;
             int minimumSize = (int) Math.pow(2.0, this.zoom);
             minimumSize *= minimumSize;
             ArrayList<AbstractMapData.BiomeLabel> labels = this.mapData[this.zoom].getBiomeLabels();
@@ -2353,9 +2376,9 @@ public class Map implements Runnable, IChangeObserver {
                     float x = (float) (o.x * factor);
                     float z = (float) (o.z * factor);
                     if (this.options.oldNorth) {
-                        RenderUtils.drawCenteredString(matrixStack, renderBufferSource, name, (left + 256) - z, top + x - 3.0F, MAP_TEXT_DEPTH, 0xFFFFFFFF, true);
+                        RenderUtils.drawCenteredString(matrixStack, renderBufferSource, name, (left + mapSize) - z * mapScale, top + x * mapScale - 3.0F, MAP_TEXT_DEPTH, 0xFFFFFFFF, true);
                     } else {
-                        RenderUtils.drawCenteredString(matrixStack, renderBufferSource, name, left + x, top + z - 3.0F, MAP_TEXT_DEPTH, 0xFFFFFFFF, true);
+                        RenderUtils.drawCenteredString(matrixStack, renderBufferSource, name, left + x * mapScale, top + z * mapScale - 3.0F, MAP_TEXT_DEPTH, 0xFFFFFFFF, true);
                     }
                 }
             }

@@ -48,6 +48,18 @@ public class GuiListKeys extends AbstractSelectionList<GuiListKeys.RowItem> {
         return this.keyForEdit != null;
     }
 
+    public boolean unbindEditingKey() {
+        if (!this.keyEditing()) {
+            return false;
+        }
+
+        this.options.setKeyBinding(this.keyForEdit, InputConstants.UNKNOWN);
+        this.keyForEdit = null;
+        this.checkDuplicateKeys();
+        KeyMapping.resetMapping();
+        return true;
+    }
+
     private void resetKeyMapping(int index) {
         KeyMapping key = this.options.keyBindings[index];
         this.options.setKeyBinding(key, key.getDefaultKey());
@@ -72,7 +84,7 @@ public class GuiListKeys extends AbstractSelectionList<GuiListKeys.RowItem> {
     public boolean keyPressed(KeyEvent keyEvent) {
         if (this.keyEditing()) {
             if (keyEvent.key() == GLFW.GLFW_KEY_ESCAPE) {
-                this.options.setKeyBinding(this.keyForEdit, InputConstants.UNKNOWN);
+                return unbindEditingKey();
             } else {
                 this.options.setKeyBinding(this.keyForEdit, InputConstants.getKey(keyEvent));
             }
