@@ -132,6 +132,13 @@ Alias:
 - Able to view any area of the map by entering its coordinates, input is revealed when clicking on current coordinates
 - Can recenter the map to the player in the context menu
 - Able to see chunk trial overlay 
+- Deep zoom-out support on the large map (extended minimum zoom range)
+- Performance mode for far zoom with configurable threshold
+- Performance mode can optionally keep waypoints visible (`Waypoints In Performance Mode`)
+- Explored chunk line rendering supports `Solid Chunk Line Mode`
+- Explored chunk line thickness can be tuned with `Chunk Line Thickness`
+- Clicking the `SeedMapper` title on the large map toggles all SeedMapper locations on/off
+- Active zoom level can be shown while zooming
 
 #### SeedMapper integration
 ![LargeMap](https://i.imgur.com/qDZdMvs.png)

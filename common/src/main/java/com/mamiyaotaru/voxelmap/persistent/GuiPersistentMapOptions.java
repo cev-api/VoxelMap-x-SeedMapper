@@ -21,7 +21,7 @@ import net.minecraft.util.Mth;
 import org.lwjgl.glfw.GLFW;
 
 public class GuiPersistentMapOptions extends GuiScreenMinimap {
-    private static final float WORLDMAP_ZOOM_POWER_MIN = -5.0F;
+    private static final float WORLDMAP_ZOOM_POWER_MIN = -9.0F;
     private static final float WORLDMAP_ZOOM_POWER_MAX = 8.0F;
     private static final float WORLDMAP_CACHE_MAX = 20000.0F;
     private final PersistentMapSettingsManager options;
@@ -58,6 +58,8 @@ public class GuiPersistentMapOptions extends GuiScreenMinimap {
                 EnumOptionsMinimap.SHOW_WAYPOINTS,
                 EnumOptionsMinimap.SHOW_WAYPOINT_NAMES,
                 EnumOptionsMinimap.SHOW_DISTANT_WAYPOINTS,
+                EnumOptionsMinimap.WORLDMAP_SHOW_WAYPOINTS_IN_PERFORMANCE_MODE,
+                EnumOptionsMinimap.WORLDMAP_LITERAL_LINE_MODE,
                 EnumOptionsMinimap.CONFIRM_WAYPOINT_DELETE
         };
 
@@ -102,7 +104,13 @@ public class GuiPersistentMapOptions extends GuiScreenMinimap {
         refreshExploredChunkButtons();
         counter += 4;
 
-        EnumOptionsMinimap[] relevantOptions2 = { EnumOptionsMinimap.MIN_ZOOM, EnumOptionsMinimap.MAX_ZOOM, EnumOptionsMinimap.CACHE_SIZE };
+        EnumOptionsMinimap[] relevantOptions2 = {
+                EnumOptionsMinimap.MIN_ZOOM,
+                EnumOptionsMinimap.MAX_ZOOM,
+                EnumOptionsMinimap.WORLDMAP_PERFORMANCE_MODE_THRESHOLD,
+                EnumOptionsMinimap.WORLDMAP_CHUNK_LINE_THICKNESS,
+                EnumOptionsMinimap.CACHE_SIZE
+        };
         counter += (counter % 2 == 0 ? 2 : 3);
 
         for (EnumOptionsMinimap option : relevantOptions2) {
@@ -111,6 +119,16 @@ public class GuiPersistentMapOptions extends GuiScreenMinimap {
 
                 this.addRenderableWidget(new GuiOptionSliderMinimap(this.getWidth() / 2 - 155 + counter % 2 * 160, this.getHeight() / 6 + 24 * (counter >> 1), option, switch (option) {
                     case MIN_ZOOM, MAX_ZOOM -> Mth.clamp((sValue - WORLDMAP_ZOOM_POWER_MIN) / (WORLDMAP_ZOOM_POWER_MAX - WORLDMAP_ZOOM_POWER_MIN), 0.0F, 1.0F);
+                    case WORLDMAP_PERFORMANCE_MODE_THRESHOLD -> Mth.clamp(
+                            (sValue - PersistentMapSettingsManager.MIN_PERFORMANCE_MODE_THRESHOLD)
+                                    / (PersistentMapSettingsManager.MAX_PERFORMANCE_MODE_THRESHOLD - PersistentMapSettingsManager.MIN_PERFORMANCE_MODE_THRESHOLD),
+                            0.0F,
+                            1.0F);
+                    case WORLDMAP_CHUNK_LINE_THICKNESS -> Mth.clamp(
+                            (sValue - PersistentMapSettingsManager.MIN_CHUNK_LINE_THICKNESS)
+                                    / (PersistentMapSettingsManager.MAX_CHUNK_LINE_THICKNESS - PersistentMapSettingsManager.MIN_CHUNK_LINE_THICKNESS),
+                            0.0F,
+                            1.0F);
                     case CACHE_SIZE -> Mth.clamp(sValue / WORLDMAP_CACHE_MAX, 0.0F, 1.0F);
                     default ->
                             throw new IllegalArgumentException("Add code to handle EnumOptionMinimap: " + option.getName() + ". (possibly not a float value applicable to persistent map)");
@@ -197,6 +215,16 @@ public class GuiPersistentMapOptions extends GuiScreenMinimap {
 
                 fValue = switch (option) {
                     case MIN_ZOOM, MAX_ZOOM -> Mth.clamp((sValue - WORLDMAP_ZOOM_POWER_MIN) / (WORLDMAP_ZOOM_POWER_MAX - WORLDMAP_ZOOM_POWER_MIN), 0.0F, 1.0F);
+                    case WORLDMAP_PERFORMANCE_MODE_THRESHOLD -> Mth.clamp(
+                            (sValue - PersistentMapSettingsManager.MIN_PERFORMANCE_MODE_THRESHOLD)
+                                    / (PersistentMapSettingsManager.MAX_PERFORMANCE_MODE_THRESHOLD - PersistentMapSettingsManager.MIN_PERFORMANCE_MODE_THRESHOLD),
+                            0.0F,
+                            1.0F);
+                    case WORLDMAP_CHUNK_LINE_THICKNESS -> Mth.clamp(
+                            (sValue - PersistentMapSettingsManager.MIN_CHUNK_LINE_THICKNESS)
+                                    / (PersistentMapSettingsManager.MAX_CHUNK_LINE_THICKNESS - PersistentMapSettingsManager.MIN_CHUNK_LINE_THICKNESS),
+                            0.0F,
+                            1.0F);
                     case CACHE_SIZE -> Mth.clamp(sValue / WORLDMAP_CACHE_MAX, 0.0F, 1.0F);
                     default -> throw new IllegalArgumentException("Add code to handle EnumOptionMinimap: " + option.getName() + ". (possibly not a float value applicable to persistent map)");
                 };

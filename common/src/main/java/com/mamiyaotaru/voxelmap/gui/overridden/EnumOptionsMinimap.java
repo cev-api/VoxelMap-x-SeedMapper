@@ -67,8 +67,12 @@ public enum EnumOptionsMinimap {
     SHOW_WAYPOINTS("options.worldmap.showWaypoints", Type.BOOLEAN),
     SHOW_WAYPOINT_NAMES("options.worldmap.showWaypointNames", Type.BOOLEAN),
     SHOW_DISTANT_WAYPOINTS("options.worldmap.showDistantWaypoints", Type.BOOLEAN),
+    WORLDMAP_SHOW_WAYPOINTS_IN_PERFORMANCE_MODE("options.worldmap.showWaypointsInPerformanceMode", Type.BOOLEAN),
+    WORLDMAP_LITERAL_LINE_MODE("options.worldmap.literalLineMode", Type.BOOLEAN),
     MIN_ZOOM("options.worldmap.minZoom", Type.FLOAT),
     MAX_ZOOM("options.worldmap.maxZoom", Type.FLOAT),
+    WORLDMAP_PERFORMANCE_MODE_THRESHOLD("options.worldmap.performanceModeThreshold", Type.FLOAT),
+    WORLDMAP_CHUNK_LINE_THICKNESS("options.worldmap.chunkLineThickness", Type.FLOAT),
     CACHE_SIZE("options.worldmap.cacheSize", Type.FLOAT);
 
     public enum Type { NONE, BOOLEAN, LIST, FLOAT }
