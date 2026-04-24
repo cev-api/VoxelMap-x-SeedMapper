@@ -19,6 +19,7 @@ import java.util.Set;
 
 public class ExploredChunksManager {
     private static final int REGION_SHIFT = 5; // 32x32 chunk buckets for fast range queries
+    private static final int MAX_INTERPOLATED_GAP_CHUNKS = 8;
     private final Set<ChunkPos> exploredChunks = new HashSet<>();
     private final Map<Long, Set<ChunkPos>> exploredChunksByRegion = new HashMap<>();
     private String loadedWorldKey = "";
@@ -37,7 +38,11 @@ public class ExploredChunksManager {
         int chunkX = GameVariableAccessShim.xCoord() >> 4;
         int chunkZ = GameVariableAccessShim.zCoord() >> 4;
         if (lastChunkX == null || lastChunkX != chunkX || lastChunkZ == null || lastChunkZ != chunkZ) {
-            markExplored(new ChunkPos(chunkX, chunkZ));
+            if (lastChunkX == null || lastChunkZ == null) {
+                markExplored(new ChunkPos(chunkX, chunkZ));
+            } else {
+                markExploredPath(lastChunkX, lastChunkZ, chunkX, chunkZ, true);
+            }
             lastChunkX = chunkX;
             lastChunkZ = chunkZ;
         }
@@ -109,14 +114,68 @@ public class ExploredChunksManager {
                 Files.createFile(path);
                 return;
             }
+            ChunkPos previousChunk = null;
             for (String line : Files.readAllLines(path, StandardCharsets.UTF_8)) {
                 ChunkPos chunkPos = parseChunk(line);
                 if (chunkPos != null) {
-                    exploredChunks.add(chunkPos);
-                    indexChunk(chunkPos);
+                    if (previousChunk == null) {
+                        addExploredToMemory(chunkPos);
+                    } else {
+                        markExploredPath(previousChunk.x(), previousChunk.z(), chunkPos.x(), chunkPos.z(), false);
+                    }
+                    previousChunk = chunkPos;
                 }
             }
         } catch (IOException ignored) {
+        }
+    }
+
+    private void addExploredToMemory(ChunkPos chunkPos) {
+        if (exploredChunks.add(chunkPos)) {
+            indexChunk(chunkPos);
+        }
+    }
+
+    private void markExploredPath(int startX, int startZ, int endX, int endZ, boolean persist) {
+        int dx = Math.abs(endX - startX);
+        int dz = Math.abs(endZ - startZ);
+        if (Math.max(dx, dz) > MAX_INTERPOLATED_GAP_CHUNKS) {
+            ChunkPos endChunk = new ChunkPos(endX, endZ);
+            if (persist) {
+                markExplored(endChunk);
+            } else {
+                addExploredToMemory(endChunk);
+            }
+            return;
+        }
+
+        int stepX = Integer.compare(endX, startX);
+        int stepZ = Integer.compare(endZ, startZ);
+        int error = dx - dz;
+        int x = startX;
+        int z = startZ;
+
+        while (true) {
+            ChunkPos chunkPos = new ChunkPos(x, z);
+            if (persist) {
+                markExplored(chunkPos);
+            } else {
+                addExploredToMemory(chunkPos);
+            }
+
+            if (x == endX && z == endZ) {
+                break;
+            }
+
+            int doubleError = error * 2;
+            if (doubleError > -dz) {
+                error -= dz;
+                x += stepX;
+            }
+            if (doubleError < dx) {
+                error += dx;
+                z += stepZ;
+            }
         }
     }
 
