@@ -1818,22 +1818,22 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         seedMapperTitleTop = -1;
         seedMapperTitleBottom = -1;
         int currentDimension = getCurrentCubiomesDimension();
-        int startX = this.sideMargin;
-        int y = this.top + 2;
+        int startX = 0;
+        int y = this.top;
         int iconSize = 14;
         int gap = 3;
-        int barHeight = iconSize + 8;
+        int barHeight = iconSize + 6;
         int stripPad = 6;
         Component legendTitle = Component.translatable("options.seedmapper.tab");
         int titleX = startX + stripPad;
-        int titleY = y + 2;
+        int titleY = y + (barHeight - this.getFont().lineHeight) / 2;
         int titleWidth = this.getFont().width(legendTitle);
         seedMapperTitleLeft = titleX;
         seedMapperTitleRight = titleX + titleWidth;
         seedMapperTitleTop = titleY;
         seedMapperTitleBottom = titleY + this.getFont().lineHeight;
 
-        int x = startX + titleWidth + 12;
+        int x = startX + titleWidth + stripPad + 8;
         int contentEnd = this.width - this.sideMargin - 6;
         int perPage = Math.max(1, (contentEnd - x) / (iconSize + gap));
         List<SeedMapperFeature> visibleFeatures = new ArrayList<>();
@@ -1852,13 +1852,13 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         int endIndex = Math.min(all.length, startIndex + perPage);
         for (int i = startIndex; i < endIndex; i++) {
             SeedMapperFeature feature = all[i];
-            seedMapperIconHitboxes.add(new FeatureIconHitbox(feature, x, y, iconSize));
+            seedMapperIconHitboxes.add(new FeatureIconHitbox(feature, x, y + (barHeight - iconSize) / 2, iconSize));
             x += iconSize + gap;
         }
 
         legendArrowSize = 12;
-        legendPrevY = y + 1;
-        legendNextY = y + 1;
+        legendPrevY = y + (barHeight - legendArrowSize) / 2;
+        legendNextY = legendPrevY;
         boolean multiPage = seedMapperLegendMaxPage > 0;
         int contentRight = Math.max(titleX + titleWidth, x - gap);
         if (multiPage) {
@@ -1870,9 +1870,10 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
             int prevColor = seedMapperLegendPage > 0 ? 0xFFFFFFFF : 0x55FFFFFF;
             int nextColor = seedMapperLegendPage < seedMapperLegendMaxPage ? 0xFFFFFFFF : 0x55FFFFFF;
-            graphics.text(this.getFont(), pageText, pageTextX, y + 2, 0xFFAAAAAA);
-            graphics.text(this.getFont(), "<", legendPrevX, legendPrevY + 2, prevColor);
-            graphics.text(this.getFont(), ">", legendNextX, legendNextY + 2, nextColor);
+            int textY = y + (barHeight - this.getFont().lineHeight) / 2;
+            graphics.text(this.getFont(), pageText, pageTextX, textY, 0xFFAAAAAA);
+            graphics.text(this.getFont(), "<", legendPrevX, textY, prevColor);
+            graphics.text(this.getFont(), ">", legendNextX, textY, nextColor);
             contentRight = legendNextX + legendArrowSize;
         } else {
             legendPrevX = -1;
@@ -1910,11 +1911,12 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             if (multiPage) {
                 Component pageText = Component.literal((seedMapperLegendPage + 1) + "/" + (seedMapperLegendMaxPage + 1));
                 int pageTextX = x + 4;
-                graphics.text(this.getFont(), pageText, pageTextX, y + 2, 0xFFAAAAAA);
+                int textY = y + (barHeight - this.getFont().lineHeight) / 2;
+                graphics.text(this.getFont(), pageText, pageTextX, textY, 0xFFAAAAAA);
                 int prevColor = seedMapperLegendPage > 0 ? 0xFFFFFFFF : 0x55FFFFFF;
                 int nextColor = seedMapperLegendPage < seedMapperLegendMaxPage ? 0xFFFFFFFF : 0x55FFFFFF;
-                graphics.text(this.getFont(), "<", legendPrevX, legendPrevY + 2, prevColor);
-                graphics.text(this.getFont(), ">", legendNextX, legendNextY + 2, nextColor);
+                graphics.text(this.getFont(), "<", legendPrevX, textY, prevColor);
+                graphics.text(this.getFont(), ">", legendNextX, textY, nextColor);
             }
         }
     }

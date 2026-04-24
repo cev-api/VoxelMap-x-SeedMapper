@@ -18,6 +18,9 @@ import net.minecraft.client.server.IntegratedServer;
 import net.minecraft.network.chat.Component;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.TreeSet;
@@ -42,10 +45,14 @@ public class GuiWaypoints extends PopupGuiScreen implements IGuiWaypoints {
     private boolean addClicked;
     private Component tooltip;
     protected Waypoint selectedWaypoint;
+    private final LinkedHashSet<Waypoint> selectedWaypoints = new LinkedHashSet<>();
+    private List<Waypoint> pendingDeleteWaypoints = List.of();
+    protected Waypoint selectionAnchor;
     protected Waypoint highlightedWaypoint;
     protected Waypoint newWaypoint;
     private final Random generator = new Random();
     private boolean changedSort;
+    private Component importStatus;
 
     public GuiWaypoints(Screen parentScreen) {
         lastScreen = parentScreen;
@@ -81,17 +88,17 @@ public class GuiWaypoints extends PopupGuiScreen implements IGuiWaypoints {
         addRenderableWidget(buttonEdit = new Button.Builder(Component.translatable("selectServer.edit"), button -> editWaypoint(selectedWaypoint)).bounds(getWidth() / 2 - 76, getHeight() - 50, 74, 20).build());
         addRenderableWidget(buttonDelete = new Button.Builder(Component.translatable("selectServer.delete"), button -> deleteClicked()).bounds(getWidth() / 2 + 2, getHeight() - 50, 74, 20).build());
         addRenderableWidget(buttonHighlight = new Button.Builder(Component.translatable("minimap.waypoints.highlight"), button -> setHighlightedWaypoint()).bounds(getWidth() / 2 + 80, getHeight() - 50, 74, 20).build());
-        addRenderableWidget(buttonTeleport = new Button.Builder(Component.translatable("minimap.waypoints.teleportTo"), button -> teleportClicked()).bounds(getWidth() / 2 - 154, getHeight() - 26, 74, 20).build());
-        addRenderableWidget(buttonShare = new Button.Builder(Component.translatable("minimap.waypoints.share"), button -> CommandUtils.sendWaypoint(selectedWaypoint)).bounds(getWidth() / 2 - 76, getHeight() - 26, 74, 20).build());
-        addRenderableWidget(new Button.Builder(Component.translatable("menu.options"), button -> VoxelConstants.getMinecraft().setScreen(new GuiWaypointsOptions(this, options))).bounds(getWidth() / 2 + 2, getHeight() - 26, 74, 20).build());
-        addRenderableWidget(new Button.Builder(Component.translatable("gui.done"), button -> onClose()).bounds(getWidth() / 2 + 80, getHeight() - 26, 74, 20).build());
+        int bottomButtonWidth = 74;
+        int bottomGap = 4;
+        int bottomLeft = getWidth() / 2 - (bottomButtonWidth * 6 + bottomGap * 5) / 2;
+        addRenderableWidget(buttonTeleport = new Button.Builder(Component.translatable("minimap.waypoints.teleportTo"), button -> teleportClicked()).bounds(bottomLeft, getHeight() - 26, bottomButtonWidth, 20).build());
+        addRenderableWidget(buttonShare = new Button.Builder(Component.translatable("minimap.waypoints.share"), button -> CommandUtils.sendWaypoint(selectedWaypoint)).bounds(bottomLeft + (bottomButtonWidth + bottomGap), getHeight() - 26, bottomButtonWidth, 20).build());
+        addRenderableWidget(new Button.Builder(Component.literal("Import Xaero"), button -> importWaypoints(true)).bounds(bottomLeft + (bottomButtonWidth + bottomGap) * 2, getHeight() - 26, bottomButtonWidth, 20).build());
+        addRenderableWidget(new Button.Builder(Component.literal("Import Wurst"), button -> importWaypoints(false)).bounds(bottomLeft + (bottomButtonWidth + bottomGap) * 3, getHeight() - 26, bottomButtonWidth, 20).build());
+        addRenderableWidget(new Button.Builder(Component.translatable("menu.options"), button -> VoxelConstants.getMinecraft().setScreen(new GuiWaypointsOptions(this, options))).bounds(bottomLeft + (bottomButtonWidth + bottomGap) * 4, getHeight() - 26, bottomButtonWidth, 20).build());
+        addRenderableWidget(new Button.Builder(Component.translatable("gui.done"), button -> onClose()).bounds(bottomLeft + (bottomButtonWidth + bottomGap) * 5, getHeight() - 26, bottomButtonWidth, 20).build());
 
-        boolean isSomethingSelected = selectedWaypoint != null;
-        buttonEdit.active = isSomethingSelected;
-        buttonDelete.active = isSomethingSelected;
-        buttonHighlight.active = isSomethingSelected;
-        buttonShare.active = isSomethingSelected;
-        buttonTeleport.active = isSomethingSelected && canTeleport();
+        updateSelectionButtons();
 
         sort();
     }
@@ -128,8 +135,8 @@ public class GuiWaypoints extends PopupGuiScreen implements IGuiWaypoints {
     }
 
     private void deleteClicked() {
-        String waypointName = selectedWaypoint.name;
-        if (waypointName != null) {
+        if (!selectedWaypoints.isEmpty()) {
+            pendingDeleteWaypoints = new ArrayList<>(selectedWaypoints);
             if (!options.confirmWaypointDelete) {
                 deleteSelectedWaypoint();
                 return;
@@ -197,15 +204,51 @@ public class GuiWaypoints extends PopupGuiScreen implements IGuiWaypoints {
     }
 
     protected void setSelectedWaypoint(Waypoint waypoint) {
+        selectedWaypoints.clear();
+        if (waypoint != null) {
+            selectedWaypoints.add(waypoint);
+            selectionAnchor = waypoint;
+        }
         selectedWaypoint = waypoint;
-        boolean isSomethingSelected = selectedWaypoint != null;
+        updateSelectionButtons();
+    }
 
-        buttonEdit.active = isSomethingSelected;
+    protected void toggleSelectedWaypoint(Waypoint waypoint) {
+        if (selectedWaypoints.contains(waypoint)) {
+            selectedWaypoints.remove(waypoint);
+        } else {
+            selectedWaypoints.add(waypoint);
+        }
+        selectionAnchor = waypoint;
+        selectedWaypoint = selectedWaypoints.isEmpty() ? null : waypoint;
+        updateSelectionButtons();
+    }
+
+    protected void setSelectedWaypointRange(Collection<Waypoint> waypoints, boolean additive, Waypoint activeWaypoint) {
+        if (!additive) {
+            selectedWaypoints.clear();
+        }
+        selectedWaypoints.addAll(waypoints);
+        selectedWaypoint = activeWaypoint;
+        updateSelectionButtons();
+    }
+
+    protected boolean isWaypointSelected(Waypoint waypoint) {
+        return selectedWaypoints.contains(waypoint);
+    }
+
+    private void updateSelectionButtons() {
+        int selectionCount = selectedWaypoints.size();
+        boolean isSomethingSelected = selectionCount > 0;
+        boolean isSingleSelected = selectionCount == 1;
+
+        buttonEdit.active = isSingleSelected;
         buttonDelete.active = isSomethingSelected;
-        buttonHighlight.active = isSomethingSelected;
-        buttonHighlight.setMessage(Component.translatable(isSomethingSelected && selectedWaypoint == highlightedWaypoint ? "minimap.waypoints.removeHighlight" : "minimap.waypoints.highlight"));
-        buttonShare.active = isSomethingSelected;
-        buttonTeleport.active = isSomethingSelected && canTeleport();
+        buttonDelete.setMessage(selectionCount > 1 ? Component.literal("Delete (" + selectionCount + ")") : Component.translatable("selectServer.delete"));
+        buttonHighlight.active = isSingleSelected;
+        buttonHighlight.setMessage(Component.translatable(isSingleSelected && selectedWaypoint == highlightedWaypoint ? "minimap.waypoints.removeHighlight" : "minimap.waypoints.highlight"));
+        buttonShare.active = isSingleSelected;
+        buttonTeleport.active = isSingleSelected && canTeleport();
     }
 
     protected void setHighlightedWaypoint() {
@@ -253,12 +296,18 @@ public class GuiWaypoints extends PopupGuiScreen implements IGuiWaypoints {
         waypointManager.saveWaypoints();
     }
 
+    private void importWaypoints(boolean xaero) {
+        WaypointManager.ImportResult result = xaero ? waypointManager.importXaeroWaypoints() : waypointManager.importWurstWaypoints();
+        importStatus = Component.literal(result.message());
+        clearWidgets();
+        init();
+    }
+
     @Override
     public void popupAction(Popup popup, int action) {
         switch (action) {
             case 10 -> deleteSelectedWaypoint();
-            case 11 -> {
-            }
+            case 11 -> pendingDeleteWaypoints = List.of();
         }
     }
 
@@ -270,6 +319,9 @@ public class GuiWaypoints extends PopupGuiScreen implements IGuiWaypoints {
 
         graphics.centeredText(getFont(), screenTitle, getWidth() / 2, 20, 0xFFFFFFFF);
         graphics.text(getFont(), I18n.get("minimap.waypoints.filter") + ":", getWidth() / 2 - 153, getHeight() - 73, 0xFFA0A0A0);
+        if (importStatus != null) {
+            graphics.centeredText(getFont(), importStatus, getWidth() / 2, getHeight() - 96, 0xFFE0E0E0);
+        }
 
         if (tooltip != null) {
             renderTooltip(graphics, tooltip, mouseX, mouseY);
@@ -278,20 +330,24 @@ public class GuiWaypoints extends PopupGuiScreen implements IGuiWaypoints {
 
     private void createDeleteConfirmationPopup() {
         ArrayList<Popup.PopupEntry> entries = new ArrayList<>();
-        entries.add(new Popup.PopupEntry("Confirm Delete?", -1, false, false));
+        String title = pendingDeleteWaypoints.size() > 1 ? "Confirm Delete " + pendingDeleteWaypoints.size() + " Waypoints?" : "Confirm Delete?";
+        entries.add(new Popup.PopupEntry(title, -1, false, false));
         entries.add(new Popup.PopupEntry(I18n.get("selectServer.deleteButton"), 10, true, true));
         entries.add(new Popup.PopupEntry(I18n.get("gui.cancel"), 11, true, true));
         createPopup(getWidth() / 2 - 45, getHeight() / 2 - 20, buttonDelete.getX(), buttonDelete.getY(), 100, entries);
     }
 
     private void deleteSelectedWaypoint() {
-        if (selectedWaypoint == null) {
+        List<Waypoint> waypointsToDelete = pendingDeleteWaypoints.isEmpty() ? new ArrayList<>(selectedWaypoints) : new ArrayList<>(pendingDeleteWaypoints);
+        pendingDeleteWaypoints = List.of();
+        if (waypointsToDelete.isEmpty()) {
             return;
         }
 
-        Waypoint waypointToDelete = selectedWaypoint;
-        waypointManager.deleteWaypoint(waypointToDelete);
-        waypointList.removeWaypoint(waypointToDelete);
+        waypointManager.deleteWaypoints(waypointsToDelete);
+        for (Waypoint waypoint : waypointsToDelete) {
+            waypointList.removeWaypoint(waypoint);
+        }
         setSelectedWaypoint(null);
     }
 

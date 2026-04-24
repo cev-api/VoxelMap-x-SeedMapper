@@ -242,6 +242,11 @@ public class GuiSeedMapperOptions extends GuiScreenMinimap {
                 minecraft.setScreen(new GuiSeedMapperSavedSeeds(this)))
                 .bounds(right, y, 150, 20).build());
 
+        addRenderableWidget(new Button.Builder(Component.literal("Seed Cracking"), button -> {
+            applyTextValues();
+            minecraft.setScreen(new GuiSeedMapperCrackingMods(this));
+        }).bounds(this.width / 2 - 75, this.height - 98, 150, 20).build());
+
         addRenderableWidget(new Button.Builder(Component.translatable("gui.done"), button -> onClose())
                 .bounds(this.width / 2 - 100, this.height - 26, 200, 20).build());
 

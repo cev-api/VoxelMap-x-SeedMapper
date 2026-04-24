@@ -47,6 +47,7 @@ public class GuiAddWaypoint extends GuiScreenMinimap implements IPopupGuiScreen 
     private EditBox waypointY;
     private EditBox waypointZ;
     private PopupGuiButton buttonEnabled;
+    private PopupGuiButton buttonBeacon;
     private final Waypoint waypoint;
     private boolean choosingColor;
     private boolean choosingIcon;
@@ -63,6 +64,7 @@ public class GuiAddWaypoint extends GuiScreenMinimap implements IPopupGuiScreen 
     private float blue;
     private String suffix;
     private boolean enabled;
+    private boolean beacon;
     protected TreeSet<DimensionContainer> dimensions;
 
     public GuiAddWaypoint(IGuiWaypoints parentGui, Waypoint waypoint, boolean editing) {
@@ -80,6 +82,7 @@ public class GuiAddWaypoint extends GuiScreenMinimap implements IPopupGuiScreen 
         blue = waypoint.blue;
         suffix = waypoint.imageSuffix;
         enabled = waypoint.enabled;
+        beacon = waypoint.showBeacon;
         dimensions = new TreeSet<>(waypoint.dimensions);
 
         pickedSuffix = suffix;
@@ -116,8 +119,9 @@ public class GuiAddWaypoint extends GuiScreenMinimap implements IPopupGuiScreen 
 
         int buttonListY = getHeight() / 6 + 82 + 6;
         addRenderableWidget(buttonEnabled = new PopupGuiButton(getWidth() / 2 - 101, buttonListY, 100, 20, Component.empty(), button -> enabled = !enabled, this));
-        addRenderableWidget(new PopupGuiButton(getWidth() / 2 - 101, buttonListY + 24, 100, 20, Component.literal(I18n.get("minimap.waypoints.sortByColor") + ":     "), button -> choosingColor = true, this));
-        addRenderableWidget(new PopupGuiButton(getWidth() / 2 - 101, buttonListY + 48, 100, 20, Component.literal(I18n.get("minimap.waypoints.sortByIcon") + ":     "), button -> choosingIcon = true, this));
+        addRenderableWidget(buttonBeacon = new PopupGuiButton(getWidth() / 2 - 101, buttonListY + 24, 100, 20, Component.empty(), button -> beacon = !beacon, this));
+        addRenderableWidget(new PopupGuiButton(getWidth() / 2 - 101, buttonListY + 48, 100, 20, Component.literal(I18n.get("minimap.waypoints.sortByColor") + ":     "), button -> choosingColor = true, this));
+        addRenderableWidget(new PopupGuiButton(getWidth() / 2 - 101, buttonListY + 72, 100, 20, Component.literal(I18n.get("minimap.waypoints.sortByIcon") + ":     "), button -> choosingIcon = true, this));
         addRenderableWidget(doneButton = new PopupGuiButton(getWidth() / 2 - 155, getHeight() - 26, 150, 20, Component.translatable("gui.done"), button -> acceptWaypoint(), this));
         addRenderableWidget(new PopupGuiButton(getWidth() / 2 + 5, getHeight() - 26, 150, 20, Component.translatable("gui.cancel"), button -> cancelWaypoint(), this));
         doneButton.active = !waypointName.getValue().isEmpty();
@@ -161,6 +165,7 @@ public class GuiAddWaypoint extends GuiScreenMinimap implements IPopupGuiScreen 
         waypoint.blue = blue;
         waypoint.imageSuffix = suffix;
         waypoint.enabled = enabled;
+        waypoint.showBeacon = beacon;
         waypoint.dimensions.clear();
         waypoint.dimensions.addAll(dimensions);
 
@@ -355,18 +360,19 @@ public class GuiAddWaypoint extends GuiScreenMinimap implements IPopupGuiScreen 
         graphics.text(getFont(), "Z", getWidth() / 2 + 44, getHeight() / 6 + 41, 0xFFFFFFFF);
 
         buttonEnabled.setMessage(Component.literal(I18n.get("minimap.waypoints.enabled") + " " + (enabled ? I18n.get("options.on") : I18n.get("options.off"))));
+        buttonBeacon.setMessage(Component.literal("Beacon " + (beacon ? I18n.get("options.on") : I18n.get("options.off"))));
 
         int buttonListY = getHeight() / 6 + 88;
         int color = ARGB.colorFromFloat(1.0F, red, green, blue);
 
-        graphics.fill(getWidth() / 2 - 25, buttonListY + 24 + 5, getWidth() / 2 - 25 + 16, buttonListY + 24 + 5 + 10, color);
+        graphics.fill(getWidth() / 2 - 25, buttonListY + 48 + 5, getWidth() / 2 - 25 + 16, buttonListY + 48 + 5 + 10, color);
 
         TextureAtlas chooser = waypointManager.getTextureAtlasChooser();
         Sprite icon = chooser.getAtlasSprite("selectable/" + suffix);
         if (icon == chooser.getMissingImage()) {
             icon = chooser.getAtlasSprite(WaypointManager.fallbackIconLocation);
         }
-        icon.blit(graphics, RenderPipelines.GUI_TEXTURED, getWidth() / 2 - 25, buttonListY + 48 + 2, 16, 16, color);
+        icon.blit(graphics, RenderPipelines.GUI_TEXTURED, getWidth() / 2 - 25, buttonListY + 72 + 2, 16, 16, color);
 
         if (popupOpen()) {
             graphics.nextStratum();

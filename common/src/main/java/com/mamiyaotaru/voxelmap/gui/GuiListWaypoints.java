@@ -7,6 +7,7 @@ import com.mamiyaotaru.voxelmap.textures.Sprite;
 import com.mamiyaotaru.voxelmap.textures.TextureAtlas;
 import com.mamiyaotaru.voxelmap.util.TextUtils;
 import com.mamiyaotaru.voxelmap.util.Waypoint;
+import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.GameNarrator;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractSelectionList;
@@ -15,12 +16,14 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
+import org.lwjgl.glfw.GLFW;
 
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.List;
 
 class GuiListWaypoints extends AbstractSelectionList<GuiListWaypoints.WaypointItem> {
     private final ArrayList<WaypointItem> waypoints;
@@ -56,12 +59,25 @@ class GuiListWaypoints extends AbstractSelectionList<GuiListWaypoints.WaypointIt
     @Override
     public void setSelected(WaypointItem entry) {
         super.setSelected(entry);
+        if (entry == null) {
+            parentGui.setSelectedWaypoint(null);
+            return;
+        }
+
         if (getSelected() != null) {
             GameNarrator narratorManager = new GameNarrator(VoxelConstants.getMinecraft());
             narratorManager.sayChatQueued(Component.translatable("narrator.select", getSelected().waypoint.name));
         }
 
+        if (isCtrlDown() || isShiftDown()) {
+            return;
+        }
+
         parentGui.setSelectedWaypoint(entry.waypoint);
+    }
+
+    private void setListSelectedOnly(WaypointItem entry) {
+        super.setSelected(entry);
     }
 
     protected void sortBy(int sortKey, boolean ascending) {
@@ -121,6 +137,44 @@ class GuiListWaypoints extends AbstractSelectionList<GuiListWaypoints.WaypointIt
         updateFilter(filterString);
     }
 
+    private List<Waypoint> getVisibleRange(Waypoint from, Waypoint to) {
+        int fromIndex = -1;
+        int toIndex = -1;
+        for (int i = 0; i < waypointsFiltered.size(); i++) {
+            Waypoint waypoint = ((WaypointItem) waypointsFiltered.get(i)).waypoint;
+            if (waypoint == from) {
+                fromIndex = i;
+            }
+            if (waypoint == to) {
+                toIndex = i;
+            }
+        }
+
+        if (fromIndex == -1 || toIndex == -1) {
+            return List.of(to);
+        }
+
+        int start = Math.min(fromIndex, toIndex);
+        int end = Math.max(fromIndex, toIndex);
+        ArrayList<Waypoint> range = new ArrayList<>();
+        for (int i = start; i <= end; i++) {
+            range.add(((WaypointItem) waypointsFiltered.get(i)).waypoint);
+        }
+        return range;
+    }
+
+    private boolean isCtrlDown() {
+        var window = VoxelConstants.getMinecraft().getWindow();
+        return InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_CONTROL)
+                || InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_CONTROL);
+    }
+
+    private boolean isShiftDown() {
+        var window = VoxelConstants.getMinecraft().getWindow();
+        return InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_SHIFT)
+                || InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_SHIFT);
+    }
+
     @Override
     protected void updateWidgetNarration(NarrationElementOutput narrationElementOutput) {
     }
@@ -148,6 +202,10 @@ class GuiListWaypoints extends AbstractSelectionList<GuiListWaypoints.WaypointIt
 
         @Override
         public void extractContent(GuiGraphicsExtractor graphics, int mouseX, int mouseY, boolean hovered, float tickDelta) {
+            if (parentGui.isWaypointSelected(waypoint)) {
+                graphics.fill(getX(), getY(), getX() + getWidth(), getY() + getHeight(), 0x553C7DFF);
+            }
+
             int color = waypoint.getUnifiedColor();
             graphics.centeredText(parentGui.getFont(), waypoint.name, parentGui.getWidth() / 2, getY() + 5, color);
 
@@ -188,7 +246,18 @@ class GuiListWaypoints extends AbstractSelectionList<GuiListWaypoints.WaypointIt
                 return false;
             }
 
-            setSelected(this);
+            boolean shiftDown = isShiftDown();
+            boolean ctrlDown = isCtrlDown();
+            if (shiftDown && parentGui.selectionAnchor != null) {
+                parentGui.setSelectedWaypointRange(getVisibleRange(parentGui.selectionAnchor, waypoint), ctrlDown, waypoint);
+                GuiListWaypoints.this.setListSelectedOnly(this);
+            } else if (ctrlDown) {
+                parentGui.toggleSelectedWaypoint(waypoint);
+                GuiListWaypoints.this.setListSelectedOnly(this);
+            } else {
+                parentGui.setSelectedWaypoint(waypoint);
+                GuiListWaypoints.this.setListSelectedOnly(this);
+            }
 
             boolean clicked = waypointIcon.mouseClicked(mouseButtonEvent, doubleClick) || waypointToggle.mouseClicked(mouseButtonEvent, doubleClick);
 
