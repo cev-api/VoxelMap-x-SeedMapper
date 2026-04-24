@@ -87,6 +87,15 @@ public class MapSettingsManager implements ISettingsManager {
     public int waypointSort = 1;
     public int maxWaypointDisplayDistance = -1;
     public float waypointSignScale = 1.0F;
+    public boolean waypointCompass = false;
+    public boolean waypointCompassShowCoords = true;
+    public boolean waypointCompassTextOutline = true;
+    public int waypointCompassIconRange = -1;
+    public int waypointCompassX = 50;
+    public int waypointCompassY = 3;
+    public int waypointCompassTextOpacity = 100;
+    public int waypointCompassOutlineOpacity = 100;
+    public int waypointCompassBackgroundOpacity = 26;
     public boolean confirmWaypointDelete = true;
     public int deathpoints = 1;
     public int waypointDistanceConversion = 1;
@@ -207,6 +216,15 @@ public class MapSettingsManager implements ISettingsManager {
                         case "Waypoint Sort By" -> waypointSort = Mth.clamp(Integer.parseInt(curLine[1]), 1, 4);
                         case "Waypoint Max Distance" -> maxWaypointDisplayDistance = Mth.clamp(Integer.parseInt(curLine[1]), -1, 10000);
                         case "Waypoint Sign Scale" -> waypointSignScale = Mth.clamp(Float.parseFloat(curLine[1]), 0.5F, 1.5F);
+                        case "Waypoint Compass" -> waypointCompass = Boolean.parseBoolean(curLine[1]);
+                        case "Waypoint Compass Show Coords" -> waypointCompassShowCoords = Boolean.parseBoolean(curLine[1]);
+                        case "Waypoint Compass Text Outline" -> waypointCompassTextOutline = Boolean.parseBoolean(curLine[1]);
+                        case "Waypoint Compass Icon Range" -> waypointCompassIconRange = Mth.clamp(Integer.parseInt(curLine[1]), -1, 10000);
+                        case "Waypoint Compass X" -> waypointCompassX = Mth.clamp(Integer.parseInt(curLine[1]), 0, 100);
+                        case "Waypoint Compass Y" -> waypointCompassY = Mth.clamp(Integer.parseInt(curLine[1]), 0, 40);
+                        case "Waypoint Compass Text Opacity" -> waypointCompassTextOpacity = Mth.clamp(Integer.parseInt(curLine[1]), 0, 100);
+                        case "Waypoint Compass Outline Opacity" -> waypointCompassOutlineOpacity = Mth.clamp(Integer.parseInt(curLine[1]), 0, 100);
+                        case "Waypoint Compass Background Opacity" -> waypointCompassBackgroundOpacity = Mth.clamp(Integer.parseInt(curLine[1]), 0, 100);
                         case "Confirm Waypoint Delete" -> confirmWaypointDelete = Boolean.parseBoolean(curLine[1]);
                         case "Deathpoints" -> deathpoints = Mth.clamp(Integer.parseInt(curLine[1]), 0, 2);
                         case "Waypoint Distance Unit Conversion" -> waypointDistanceConversion = Mth.clamp(Integer.parseInt(curLine[1]), 0, 2);
@@ -307,6 +325,15 @@ public class MapSettingsManager implements ISettingsManager {
             out.println("Waypoint Sort By:" + waypointSort);
             out.println("Waypoint Max Distance:" + maxWaypointDisplayDistance);
             out.println("Waypoint Sign Scale:" + waypointSignScale);
+            out.println("Waypoint Compass:" + waypointCompass);
+            out.println("Waypoint Compass Show Coords:" + waypointCompassShowCoords);
+            out.println("Waypoint Compass Text Outline:" + waypointCompassTextOutline);
+            out.println("Waypoint Compass Icon Range:" + waypointCompassIconRange);
+            out.println("Waypoint Compass X:" + waypointCompassX);
+            out.println("Waypoint Compass Y:" + waypointCompassY);
+            out.println("Waypoint Compass Text Opacity:" + waypointCompassTextOpacity);
+            out.println("Waypoint Compass Outline Opacity:" + waypointCompassOutlineOpacity);
+            out.println("Waypoint Compass Background Opacity:" + waypointCompassBackgroundOpacity);
             out.println("Confirm Waypoint Delete:" + confirmWaypointDelete);
             out.println("Deathpoints:" + deathpoints);
             out.println("Waypoint Distance Unit Conversion:" + waypointDistanceConversion);
@@ -371,6 +398,8 @@ public class MapSettingsManager implements ISettingsManager {
 
                     case WAYPOINT_DISTANCE -> s + (value < 0.0F ? I18n.get("options.minimap.waypoints.infinite") : (int) value);
                     case WAYPOINT_SIGN_SCALE -> s + String.format("%.2fx", value);
+                    case WAYPOINT_COMPASS_ICON_RANGE -> s + (value < 0.0F ? I18n.get("options.minimap.waypoints.infinite") : (int) value);
+                    case WAYPOINT_COMPASS_X, WAYPOINT_COMPASS_Y, WAYPOINT_COMPASS_TEXT_OPACITY, WAYPOINT_COMPASS_OUTLINE_OPACITY, WAYPOINT_COMPASS_BACKGROUND_OPACITY -> s + (int) value;
 
                     default -> s + (value <= 0.0F ? I18n.get("options.off") : (int) value + "%");
                 };
@@ -406,6 +435,10 @@ public class MapSettingsManager implements ISettingsManager {
             case FILTERING -> filtering;
 
             case CONFIRM_WAYPOINT_DELETE -> confirmWaypointDelete;
+            case WAYPOINT_BEACONS -> waypointsAllowed && showWaypointBeacons;
+            case WAYPOINT_COMPASS -> waypointCompass;
+            case WAYPOINT_COMPASS_SHOW_COORDS -> waypointCompassShowCoords;
+            case WAYPOINT_COMPASS_TEXT_OUTLINE -> waypointCompassTextOutline;
 
             default -> throw new IllegalArgumentException("Invalid boolean value! Add code to handle EnumOptionMinimap: " + option.getName());
         };
@@ -437,6 +470,10 @@ public class MapSettingsManager implements ISettingsManager {
             case FILTERING -> filtering = !filtering;
 
             case CONFIRM_WAYPOINT_DELETE -> confirmWaypointDelete = !confirmWaypointDelete;
+            case WAYPOINT_BEACONS -> showWaypointBeacons = !showWaypointBeacons;
+            case WAYPOINT_COMPASS -> waypointCompass = !waypointCompass;
+            case WAYPOINT_COMPASS_SHOW_COORDS -> waypointCompassShowCoords = !waypointCompassShowCoords;
+            case WAYPOINT_COMPASS_TEXT_OUTLINE -> waypointCompassTextOutline = !waypointCompassTextOutline;
 
             default -> throw new IllegalArgumentException("Invalid boolean value! Add code to handle EnumOptionMinimap: " + option.getName());
         }
@@ -599,6 +636,12 @@ public class MapSettingsManager implements ISettingsManager {
 
             case WAYPOINT_DISTANCE -> maxWaypointDisplayDistance;
             case WAYPOINT_SIGN_SCALE -> waypointSignScale;
+            case WAYPOINT_COMPASS_ICON_RANGE -> waypointCompassIconRange;
+            case WAYPOINT_COMPASS_X -> waypointCompassX;
+            case WAYPOINT_COMPASS_Y -> waypointCompassY;
+            case WAYPOINT_COMPASS_TEXT_OPACITY -> waypointCompassTextOpacity;
+            case WAYPOINT_COMPASS_OUTLINE_OPACITY -> waypointCompassOutlineOpacity;
+            case WAYPOINT_COMPASS_BACKGROUND_OPACITY -> waypointCompassBackgroundOpacity;
 
             default -> throw new IllegalArgumentException("Invalid float value! Add code to handle EnumOptionMinimap: " + option.getName());
         };
@@ -624,6 +667,15 @@ public class MapSettingsManager implements ISettingsManager {
 
                 waypointSignScale = Mth.lerp(value2, 0.5F, 1.5F);
             }
+            case WAYPOINT_COMPASS_ICON_RANGE -> {
+                float distance = Mth.lerp(value, 100.0F, 10001.0F);
+                waypointCompassIconRange = distance > 10000.0F ? -1 : (int) distance;
+            }
+            case WAYPOINT_COMPASS_X -> waypointCompassX = Mth.clamp(Math.round(value * 100.0F), 0, 100);
+            case WAYPOINT_COMPASS_Y -> waypointCompassY = Mth.clamp(Math.round(value * 40.0F), 0, 40);
+            case WAYPOINT_COMPASS_TEXT_OPACITY -> waypointCompassTextOpacity = Mth.clamp(Math.round(value * 100.0F), 0, 100);
+            case WAYPOINT_COMPASS_OUTLINE_OPACITY -> waypointCompassOutlineOpacity = Mth.clamp(Math.round(value * 100.0F), 0, 100);
+            case WAYPOINT_COMPASS_BACKGROUND_OPACITY -> waypointCompassBackgroundOpacity = Mth.clamp(Math.round(value * 100.0F), 0, 100);
 
             default -> throw new IllegalArgumentException("Invalid float value! Add code to handle EnumOptionMinimap: " + option.getName());
         }

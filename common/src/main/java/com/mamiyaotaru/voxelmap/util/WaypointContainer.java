@@ -116,6 +116,7 @@ public class WaypointContainer {
             boolean isEffectivelyActive = waypoint.isActive() || renderable.isHighlighted();
 
             if (!isEffectivelyActive) continue;
+            if (!waypoint.showBeacon) continue;
 
             int x = waypoint.getX();
             int z = waypoint.getZ();

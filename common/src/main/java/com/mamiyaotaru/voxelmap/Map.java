@@ -60,6 +60,7 @@ import net.minecraft.client.resources.language.I18n;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.ARGB;
@@ -542,7 +543,103 @@ public class Map implements Runnable, IChangeObserver {
             this.drawMinimap(graphics);
         }
 
+        if (enabled && options.waypointsAllowed && options.waypointCompass) {
+            this.drawWaypointCompass(graphics);
+        }
+
         this.updateTimer = this.updateTimer > 5000 ? 0 : this.updateTimer + 1;
+    }
+
+    private void drawWaypointCompass(GuiGraphicsExtractor graphics) {
+        if (minecraft.player == null) {
+            return;
+        }
+
+        int width = minecraft.getWindow().getGuiScaledWidth();
+        int height = minecraft.getWindow().getGuiScaledHeight();
+        int centerX = Mth.clamp(Math.round(width * options.waypointCompassX / 100.0F), 80, Math.max(80, width - 80));
+        int barWidth = Math.min(504, Math.max(180, width - 80));
+        int barLeft = centerX - barWidth / 2;
+        int barRight = centerX + barWidth / 2;
+        int barY = Mth.clamp(Math.round(height * options.waypointCompassY / 100.0F), 2, Math.max(2, height - 36));
+        int backgroundAlpha = Mth.clamp(Math.round(options.waypointCompassBackgroundOpacity * 255.0F / 100.0F), 0, 255);
+        if (backgroundAlpha > 0) {
+            graphics.fill(barLeft, barY + 6, barRight, barY + 15, backgroundAlpha << 24);
+        }
+
+        if (options.waypointCompassShowCoords) {
+            String coords = "X: " + Mth.floor(playerX()) + " Y: " + Mth.floor(playerY()) + " Z: " + Mth.floor(playerZ());
+            drawCompassText(graphics, coords, centerX, barY - 12, 0xFFFFFFFF, true);
+        }
+
+        int rendered = 0;
+        double playerX = minecraft.player.getX();
+        double playerY = minecraft.player.getY();
+        double playerZ = minecraft.player.getZ();
+        float playerYaw = minecraft.player.getYRot();
+        int maxDistance = options.waypointCompassIconRange;
+
+        for (Waypoint waypoint : waypointManager.getWaypoints()) {
+            if (!waypoint.isActive()) {
+                continue;
+            }
+
+            double dx = waypoint.getX() + 0.5D - playerX;
+            double dz = waypoint.getZ() + 0.5D - playerZ;
+            double distanceSq = dx * dx + dz * dz + Math.pow(waypoint.getY() + 0.5D - playerY, 2.0D);
+            if (maxDistance > -1 && distanceSq > maxDistance * maxDistance) {
+                continue;
+            }
+
+            float targetYaw = (float) Math.toDegrees(Math.atan2(dz, dx)) - 90.0F;
+            float deltaYaw = Mth.wrapDegrees(targetYaw - playerYaw);
+            if (Math.abs(deltaYaw) > 90.0F) {
+                continue;
+            }
+
+            int x = centerX + Math.round(deltaYaw / 90.0F * (barWidth / 2.0F));
+            int distance = (int) Math.sqrt(distanceSq);
+            String label = waypoint.name;
+            String distanceLabel = distance + "m";
+            int textWidth = minecraft.font.width(label);
+            int textX = Mth.clamp(x, barLeft + textWidth / 2 + 2, barRight - textWidth / 2 - 2);
+            int color = withOpacity(waypoint.getUnifiedColor(), options.waypointCompassTextOpacity);
+            drawCompassText(graphics, "♦", x, barY + 6, color, false);
+            drawCompassText(graphics, label, textX, barY + 22, color, true);
+            drawCompassText(graphics, distanceLabel, textX, barY + 32, color, true);
+
+            if (++rendered >= 8) {
+                break;
+            }
+        }
+    }
+
+    private double playerX() {
+        return minecraft.player == null ? 0.0D : minecraft.player.getX();
+    }
+
+    private double playerY() {
+        return minecraft.player == null ? 0.0D : minecraft.player.getY();
+    }
+
+    private double playerZ() {
+        return minecraft.player == null ? 0.0D : minecraft.player.getZ();
+    }
+
+    private void drawCompassText(GuiGraphicsExtractor graphics, String text, int x, int y, int color, boolean outline) {
+        if (outline && options.waypointCompassTextOutline) {
+            int outlineColor = withOpacity(0xFF000000, options.waypointCompassOutlineOpacity);
+            graphics.centeredText(minecraft.font, Component.literal(text), x - 1, y, outlineColor);
+            graphics.centeredText(minecraft.font, Component.literal(text), x + 1, y, outlineColor);
+            graphics.centeredText(minecraft.font, Component.literal(text), x, y - 1, outlineColor);
+            graphics.centeredText(minecraft.font, Component.literal(text), x, y + 1, outlineColor);
+        }
+        graphics.centeredText(minecraft.font, Component.literal(text), x, y, color);
+    }
+
+    private int withOpacity(int color, int opacity) {
+        int alpha = Mth.clamp(Math.round(opacity * 255.0F / 100.0F), 0, 255);
+        return (color & 0x00FFFFFF) | (alpha << 24);
     }
 
     private void cycleZoomLevel() {

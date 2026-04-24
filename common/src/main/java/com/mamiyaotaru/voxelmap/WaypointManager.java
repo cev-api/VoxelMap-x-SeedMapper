@@ -1,5 +1,9 @@
 package com.mamiyaotaru.voxelmap;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.mamiyaotaru.voxelmap.textures.IIconCreator;
 import com.mamiyaotaru.voxelmap.textures.Sprite;
 import com.mamiyaotaru.voxelmap.textures.TextureAtlas;
@@ -47,11 +51,14 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -168,6 +175,69 @@ public class WaypointManager {
 
     public ArrayList<Waypoint> getWaypoints() {
         return this.wayPts;
+    }
+
+    public ImportResult importXaeroWaypoints() {
+        File xaeroMinimapDir = new File(minecraft.gameDirectory, "xaero/minimap");
+        if (!xaeroMinimapDir.isDirectory()) {
+            return new ImportResult(0, 0, "No Xaero minimap folder found");
+        }
+
+        List<File> worldDirs = findMatchingWorldDirectories(xaeroMinimapDir, "Multiplayer_");
+        if (worldDirs.isEmpty()) {
+            return new ImportResult(0, 0, "No Xaero waypoints for this server");
+        }
+
+        int imported = 0;
+        int skipped = 0;
+        for (File worldDir : worldDirs) {
+            try (var paths = Files.walk(worldDir.toPath())) {
+                List<Path> files = paths.filter(Files::isRegularFile)
+                        .filter(path -> path.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".txt"))
+                        .toList();
+                for (Path file : files) {
+                    ImportCounts counts = importXaeroFile(file.toFile());
+                    imported += counts.imported;
+                    skipped += counts.skipped;
+                }
+            } catch (IOException exception) {
+                VoxelConstants.getLogger().error("Failed scanning Xaero waypoint folder " + worldDir.getPath(), exception);
+            }
+        }
+
+        if (imported > 0) {
+            saveWaypoints();
+            waypointContainer.refreshRenderables();
+        }
+
+        return new ImportResult(imported, skipped, imported == 0 ? "No new Xaero waypoints found" : "Imported " + imported + " Xaero waypoints");
+    }
+
+    public ImportResult importWurstWaypoints() {
+        File wurstWaypointDir = new File(minecraft.gameDirectory, "wurst/waypoints");
+        if (!wurstWaypointDir.isDirectory()) {
+            return new ImportResult(0, 0, "No Wurst waypoint folder found");
+        }
+
+        List<File> files = findMatchingFiles(wurstWaypointDir, ".json");
+        if (files.isEmpty()) {
+            return new ImportResult(0, 0, "No Wurst waypoint file for this server");
+        }
+
+        int imported = 0;
+        int skipped = 0;
+        for (File file : files) {
+            ImportCounts counts = importWurstFile(file);
+            imported += counts.imported;
+            skipped += counts.skipped;
+        }
+
+        if (imported > 0) {
+            saveWaypoints();
+            waypointContainer.refreshRenderables();
+        }
+
+        return new ImportResult(imported, skipped, imported == 0 ? "No new Wurst waypoints found" : "Imported " + imported + " Wurst waypoints");
     }
 
     public void newWorld(Level world) {
@@ -538,7 +608,7 @@ public class WaypointManager {
                         dimensionsString.append(VoxelConstants.getVoxelMapInstance().getDimensionManager().getDimensionContainerByIdentifier(BuiltinDimensionTypes.OVERWORLD.identifier()).getStorageName());
                     }
 
-                    out.println("name:" + TextUtils.scrubName(pt.name) + ",x:" + pt.x + ",z:" + pt.z + ",y:" + pt.y + ",enabled:" + pt.enabled + ",red:" + pt.red + ",green:" + pt.green + ",blue:" + pt.blue + ",suffix:" + pt.imageSuffix + ",world:" + TextUtils.scrubName(pt.world) + ",dimensions:" + dimensionsString);
+                    out.println("name:" + TextUtils.scrubName(pt.name) + ",x:" + pt.x + ",z:" + pt.z + ",y:" + pt.y + ",enabled:" + pt.enabled + ",beacon:" + pt.showBeacon + ",red:" + pt.red + ",green:" + pt.green + ",blue:" + pt.blue + ",suffix:" + pt.imageSuffix + ",world:" + TextUtils.scrubName(pt.world) + ",dimensions:" + dimensionsString);
                 }
             }
 
@@ -651,6 +721,7 @@ public class WaypointManager {
                                 int z = 0;
                                 int y = -1;
                                 boolean enabled = false;
+                                boolean beacon = false;
                                 float red = 0.5F;
                                 float green = 0.0F;
                                 float blue = 0.0F;
@@ -669,6 +740,7 @@ public class WaypointManager {
                                             case "z" -> z = Integer.parseInt(value);
                                             case "y" -> y = Integer.parseInt(value);
                                             case "enabled" -> enabled = Boolean.parseBoolean(value);
+                                            case "beacon" -> beacon = Boolean.parseBoolean(value);
                                             case "red" -> red = Float.parseFloat(value);
                                             case "green" -> green = Float.parseFloat(value);
                                             case "blue" -> blue = Float.parseFloat(value);
@@ -689,7 +761,7 @@ public class WaypointManager {
                                 }
 
                                 if (!name.isEmpty()) {
-                                    this.loadWaypoint(name, x, z, y, enabled, red, green, blue, suffix, world, dimensions);
+                                    this.loadWaypoint(name, x, z, y, enabled, beacon, red, green, blue, suffix, world, dimensions);
                                     if (!world.isEmpty()) {
                                         this.knownSubworldNames.add(TextUtils.descrubName(world));
                                     }
@@ -713,12 +785,285 @@ public class WaypointManager {
         }
     }
 
-    private void loadWaypoint(String name, int x, int z, int y, boolean enabled, float red, float green, float blue, String suffix, String world, TreeSet<DimensionContainer> dimensions) {
+    private void loadWaypoint(String name, int x, int z, int y, boolean enabled, boolean beacon, float red, float green, float blue, String suffix, String world, TreeSet<DimensionContainer> dimensions) {
         Waypoint newWaypoint = new Waypoint(name, x, z, y, enabled, red, green, blue, suffix, world, dimensions);
+        newWaypoint.showBeacon = beacon;
         if (!this.wayPts.contains(newWaypoint)) {
             this.wayPts.add(newWaypoint);
         }
 
+    }
+
+    private ImportCounts importXaeroFile(File file) {
+        int imported = 0;
+        int skipped = 0;
+        TreeSet<DimensionContainer> dimensions = dimensionsForXaeroPath(file.toPath());
+
+        try (BufferedReader reader = Files.newBufferedReader(file.toPath(), StandardCharsets.UTF_8)) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (!line.startsWith("waypoint:")) {
+                    continue;
+                }
+
+                String[] fields = line.split(":", -1);
+                if (fields.length < 9) {
+                    ++skipped;
+                    continue;
+                }
+
+                try {
+                    String name = humanizeXaeroName(fields[1]);
+                    int x = Integer.parseInt(fields[3]);
+                    int y = Integer.parseInt(fields[4]);
+                    int z = Integer.parseInt(fields[5]);
+                    float[] color = xaeroColor(Integer.parseInt(fields[6]));
+                    boolean enabled = !Boolean.parseBoolean(fields[7]);
+                    String suffix = xaeroIcon(fields[1], fields[8]);
+                    if (addImportedWaypoint(new Waypoint(name, x, z, y, enabled, color[0], color[1], color[2], suffix, getCurrentSubworldDescriptor(false), new TreeSet<>(dimensions)))) {
+                        ++imported;
+                    } else {
+                        ++skipped;
+                    }
+                } catch (RuntimeException exception) {
+                    ++skipped;
+                    VoxelConstants.getLogger().warn("Skipping invalid Xaero waypoint in " + file.getPath() + ": " + line);
+                }
+            }
+        } catch (IOException exception) {
+            VoxelConstants.getLogger().error("Failed importing Xaero waypoints from " + file.getPath(), exception);
+        }
+
+        return new ImportCounts(imported, skipped);
+    }
+
+    private ImportCounts importWurstFile(File file) {
+        int imported = 0;
+        int skipped = 0;
+
+        try (BufferedReader reader = Files.newBufferedReader(file.toPath(), StandardCharsets.UTF_8)) {
+            JsonElement rootElement = JsonParser.parseReader(reader);
+            if (!rootElement.isJsonObject()) {
+                return new ImportCounts(0, 0);
+            }
+
+            JsonArray waypointArray = rootElement.getAsJsonObject().getAsJsonArray("waypoints");
+            if (waypointArray == null) {
+                return new ImportCounts(0, 0);
+            }
+
+            for (JsonElement element : waypointArray) {
+                if (!element.isJsonObject()) {
+                    ++skipped;
+                    continue;
+                }
+
+                JsonObject object = element.getAsJsonObject();
+                JsonObject pos = object.getAsJsonObject("pos");
+                if (pos == null) {
+                    ++skipped;
+                    continue;
+                }
+
+                try {
+                    String name = getString(object, "name", "Wurst Waypoint");
+                    String icon = wurstIcon(getString(object, "icon", ""));
+                    int color = getInt(object, "color", -1);
+                    float[] rgb = rgbFromPackedColor(color);
+                    boolean enabled = getBoolean(object, "visible", true);
+                    int x = getInt(pos, "x", 0);
+                    int y = getInt(pos, "y", 0);
+                    int z = getInt(pos, "z", 0);
+                    TreeSet<DimensionContainer> dimensions = dimensionsForWurstName(getString(object, "dimension", ""));
+                    if (addImportedWaypoint(new Waypoint(name, x, z, y, enabled, rgb[0], rgb[1], rgb[2], icon, getCurrentSubworldDescriptor(false), dimensions))) {
+                        ++imported;
+                    } else {
+                        ++skipped;
+                    }
+                } catch (RuntimeException exception) {
+                    ++skipped;
+                    VoxelConstants.getLogger().warn("Skipping invalid Wurst waypoint in " + file.getPath());
+                }
+            }
+        } catch (IOException | RuntimeException exception) {
+            VoxelConstants.getLogger().error("Failed importing Wurst waypoints from " + file.getPath(), exception);
+        }
+
+        return new ImportCounts(imported, skipped);
+    }
+
+    private boolean addImportedWaypoint(Waypoint waypoint) {
+        synchronized (waypointLock) {
+            if (this.wayPts.contains(waypoint)) {
+                return false;
+            }
+
+            waypoint.inWorld = waypoint.world.isEmpty() || TextUtils.scrubName(getCurrentSubworldDescriptor(false)).equals(waypoint.world);
+            waypoint.inDimension = waypoint.dimensions.isEmpty() || waypoint.dimensions.contains(this.currentDimension);
+            this.wayPts.add(waypoint);
+            return true;
+        }
+    }
+
+    private List<File> findMatchingWorldDirectories(File root, String prefix) {
+        String serverKey = normalizedServerKey();
+        File[] children = root.listFiles(File::isDirectory);
+        if (children == null) {
+            return List.of();
+        }
+
+        List<File> matches = new ArrayList<>();
+        for (File child : children) {
+            String name = child.getName();
+            if (name.toLowerCase(Locale.ROOT).startsWith(prefix.toLowerCase(Locale.ROOT))) {
+                name = name.substring(prefix.length());
+            }
+
+            if (serverKey.equals(normalizeServerCandidate(name))) {
+                matches.add(child);
+            }
+        }
+
+        return matches;
+    }
+
+    private List<File> findMatchingFiles(File root, String extension) {
+        String serverKey = normalizedServerKey();
+        File[] children = root.listFiles((dir, name) -> name.toLowerCase(Locale.ROOT).endsWith(extension));
+        if (children == null) {
+            return List.of();
+        }
+
+        List<File> matches = new ArrayList<>();
+        for (File child : children) {
+            String name = child.getName();
+            name = name.substring(0, name.length() - extension.length());
+            if (serverKey.equals(normalizeServerCandidate(name))) {
+                matches.add(child);
+            }
+        }
+
+        return matches;
+    }
+
+    private String normalizedServerKey() {
+        return normalizeServerCandidate(getCurrentWorldName());
+    }
+
+    private String normalizeServerCandidate(String value) {
+        String normalized = value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
+        if (normalized.endsWith(":25565")) {
+            normalized = normalized.substring(0, normalized.length() - 6);
+        }
+        int portSeparator = normalized.lastIndexOf(':');
+        if (portSeparator > -1 && normalized.indexOf(':') == portSeparator) {
+            String possiblePort = normalized.substring(portSeparator + 1);
+            if (possiblePort.chars().allMatch(Character::isDigit)) {
+                normalized = normalized.substring(0, portSeparator);
+            }
+        }
+        return normalized.replaceAll("[^a-z0-9.\\-]", "");
+    }
+
+    private TreeSet<DimensionContainer> dimensionsForXaeroPath(Path path) {
+        String normalized = path.toString().replace('\\', '/').toLowerCase(Locale.ROOT);
+        if (normalized.contains("dim%-1") || normalized.contains("minecraft$the_nether") || normalized.contains("minecraft$nether")) {
+            return singleDimension(Level.NETHER.identifier());
+        }
+        if (normalized.contains("dim%1") || normalized.contains("minecraft$the_end") || normalized.contains("minecraft$end")) {
+            return singleDimension(Level.END.identifier());
+        }
+        return singleDimension(Level.OVERWORLD.identifier());
+    }
+
+    private TreeSet<DimensionContainer> dimensionsForWurstName(String name) {
+        String normalized = name == null ? "" : name.toLowerCase(Locale.ROOT);
+        if (normalized.contains("nether")) {
+            return singleDimension(Level.NETHER.identifier());
+        }
+        if (normalized.contains("end")) {
+            return singleDimension(Level.END.identifier());
+        }
+        return singleDimension(Level.OVERWORLD.identifier());
+    }
+
+    private TreeSet<DimensionContainer> singleDimension(Identifier identifier) {
+        TreeSet<DimensionContainer> dimensions = new TreeSet<>();
+        dimensions.add(VoxelConstants.getVoxelMapInstance().getDimensionManager().getDimensionContainerByIdentifier(identifier));
+        return dimensions;
+    }
+
+    private String humanizeXaeroName(String rawName) {
+        String name = rawName == null || rawName.isBlank() ? "Xaero Waypoint" : rawName;
+        if (name.startsWith("gui.xaero_")) {
+            name = name.substring("gui.xaero_".length());
+        }
+        name = name.replace('_', ' ').trim();
+        if (name.isEmpty()) {
+            return "Xaero Waypoint";
+        }
+
+        StringBuilder builder = new StringBuilder();
+        for (String part : name.split(" ")) {
+            if (!part.isEmpty()) {
+                builder.append(Character.toUpperCase(part.charAt(0))).append(part.substring(1)).append(' ');
+            }
+        }
+        return builder.toString().trim();
+    }
+
+    private String xaeroIcon(String name, String type) {
+        String lowerName = name == null ? "" : name.toLowerCase(Locale.ROOT);
+        if (lowerName.contains("death") || "1".equals(type) || "2".equals(type)) {
+            return "skull";
+        }
+        return "point";
+    }
+
+    private String wurstIcon(String icon) {
+        return switch ((icon == null ? "" : icon).toLowerCase(Locale.ROOT)) {
+            case "diamond" -> "diamond";
+            case "star" -> "star";
+            case "home", "house" -> "house";
+            case "skull", "death" -> "skull";
+            case "pickaxe" -> "pickaxe";
+            case "portal", "fire" -> "fire";
+            default -> "point";
+        };
+    }
+
+    private float[] xaeroColor(int index) {
+        int[] colors = {
+                0xFF5555, 0x55FF55, 0x5555FF, 0xFFFF55,
+                0xFF55FF, 0x55FFFF, 0xFFFFFF, 0xAAAAAA,
+                0xAA0000, 0x00AA00, 0x0000AA, 0xFFAA00,
+                0xAA00AA, 0x00AAAA, 0x000000, 0x555555
+        };
+        return rgbFromPackedColor(colors[Math.floorMod(index, colors.length)]);
+    }
+
+    private float[] rgbFromPackedColor(int color) {
+        int rgb = color & 0xFFFFFF;
+        return new float[] {
+                ((rgb >> 16) & 0xFF) / 255.0F,
+                ((rgb >> 8) & 0xFF) / 255.0F,
+                (rgb & 0xFF) / 255.0F
+        };
+    }
+
+    private String getString(JsonObject object, String key, String fallback) {
+        JsonElement element = object.get(key);
+        return element == null || element.isJsonNull() ? fallback : element.getAsString();
+    }
+
+    private int getInt(JsonObject object, String key, int fallback) {
+        JsonElement element = object.get(key);
+        return element == null || element.isJsonNull() ? fallback : element.getAsInt();
+    }
+
+    private boolean getBoolean(JsonObject object, String key, boolean fallback) {
+        JsonElement element = object.get(key);
+        return element == null || element.isJsonNull() ? fallback : element.getAsBoolean();
     }
 
     public void deleteWaypoint(Waypoint point) {
@@ -728,6 +1073,20 @@ public class WaypointManager {
             this.setHighlightedWaypoint(null, false);
         }
 
+        this.waypointContainer.refreshRenderables();
+    }
+
+    public void deleteWaypoints(List<Waypoint> points) {
+        if (points == null || points.isEmpty()) {
+            return;
+        }
+
+        this.wayPts.removeAll(points);
+        if (points.contains(this.highlightedWaypoint)) {
+            this.highlightedWaypoint = null;
+        }
+
+        this.saveWaypoints();
         this.waypointContainer.refreshRenderables();
     }
 
@@ -846,5 +1205,11 @@ public class WaypointManager {
 
     public BackgroundImageInfo getBackgroundImageInfo() {
         return this.backgroundImageInfo;
+    }
+
+    private record ImportCounts(int imported, int skipped) {
+    }
+
+    public record ImportResult(int imported, int skipped, String message) {
     }
 }
