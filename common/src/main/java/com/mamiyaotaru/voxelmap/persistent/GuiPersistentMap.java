@@ -197,6 +197,9 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     private long exploredLinesLastQueryMs = 0L;
     private ExploredLinesQueryCacheKey exploredLinesLastQueryKey;
     private List<ChunkPos> exploredLinesLastResult = List.of();
+    private ExploredLineRenderCacheKey exploredLineRenderCacheKey;
+    private List<ExploredLineSegment> exploredLineSegments = List.of();
+    private List<ExploredLineNode> exploredLineNodes = List.of();
     private SeedMapperChestLootWidget seedMapperChestLootWidget;
     private Set<SeedMapperFeature> seedMapperAllFeaturesSaved;
     private boolean currentDragging;
@@ -209,13 +212,6 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     private static final int ICON_HEIGHT = 16;
     private static final int COMPLETED_TICK_COLOR = 0xFF22C84A;
     private static final int COMPLETED_TICK_OUTLINE_COLOR = 0xFF000000;
-    private static final int SOLID_LINE_MAX_GAP_CHUNKS = 40;
-    private static final int[][] SOLID_LINE_BRIDGE_DIRECTIONS = new int[][] {
-            {1, 0}, {0, 1}, {1, 1}, {1, -1},
-            {2, 1}, {1, 2}, {2, -1}, {1, -2},
-            {3, 1}, {1, 3}, {3, -1}, {1, -3}
-    };
-
     public GuiPersistentMap(Screen parent) {
         this.lastScreen = parent;
 
@@ -1155,43 +1151,31 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         if (!literalLineMode && !mapInMotion && this.mapToGui < 0.10F) {
             decimationMask = Math.max(decimationMask, 0x3); // keep about 1/4 while still
         }
-        if (this.mapToGui < 0.06F && !farZoomPerformanceMode) {
+        if (!literalLineMode && this.mapToGui < 0.06F && !farZoomPerformanceMode) {
             decimationMask = Math.max(decimationMask, 0x1F); // keep about 1/32 at extreme zoom-out
         }
         int maxDraw = Integer.MAX_VALUE;
-        if (ultraLowDetail) {
-            maxDraw = mapInMotion ? 700 : 5000;
-        }
-        if (literalLineMode) {
-            if (this.mapToGui < 0.015F) {
-                maxDraw = mapInMotion ? 2_500 : 5_000;
-            } else if (this.mapToGui < 0.03F) {
-                maxDraw = mapInMotion ? 4_000 : 8_000;
-            } else {
-                maxDraw = mapInMotion ? 7_500 : 15_000;
+        if (!literalLineMode) {
+            if (ultraLowDetail) {
+                maxDraw = mapInMotion ? 700 : 5000;
             }
-        } else if (farZoomPerformanceMode) {
-            maxDraw = Math.min(maxDraw, mapInMotion ? 6000 : 12000);
-        } else if (this.mapToGui < 0.10F) {
-            maxDraw = Math.min(maxDraw, mapInMotion ? 1200 : 3000);
-        } else if (this.mapToGui < 0.06F) {
-            maxDraw = Math.min(maxDraw, mapInMotion ? 800 : 1800);
+            if (farZoomPerformanceMode) {
+                maxDraw = Math.min(maxDraw, mapInMotion ? 6000 : 12000);
+            } else if (this.mapToGui < 0.10F) {
+                maxDraw = Math.min(maxDraw, mapInMotion ? 1200 : 3000);
+            } else if (this.mapToGui < 0.06F) {
+                maxDraw = Math.min(maxDraw, mapInMotion ? 800 : 1800);
+            }
         }
         int maxScanned = Integer.MAX_VALUE;
-        if (literalLineMode) {
-            if (this.mapToGui < 0.02F) {
-                maxScanned = mapInMotion ? 120_000 : 220_000;
-            } else if (this.mapToGui < 0.05F) {
-                maxScanned = mapInMotion ? 200_000 : 400_000;
-            } else {
-                maxScanned = mapInMotion ? 350_000 : 650_000;
+        if (!literalLineMode) {
+            if (farZoomPerformanceMode) {
+                maxScanned = mapInMotion ? 250_000 : 500_000;
+            } else if (this.mapToGui < 0.10F) {
+                maxScanned = 120_000;
+            } else if (this.mapToGui < 0.06F) {
+                maxScanned = 80_000;
             }
-        } else if (farZoomPerformanceMode) {
-            maxScanned = mapInMotion ? 250_000 : 500_000;
-        } else if (this.mapToGui < 0.10F) {
-            maxScanned = 120_000;
-        } else if (this.mapToGui < 0.06F) {
-            maxScanned = 80_000;
         }
         int scanned = 0;
         int drawn = 0;
@@ -1241,13 +1225,11 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         }
 
         int cellChunkSize = 1;
-        int bridgeGapCells = SOLID_LINE_MAX_GAP_CHUNKS;
         ArrayList<ChunkPos> visibleChunks = literalLineMode ? null : new ArrayList<>();
         java.util.HashSet<Long> visibleChunkSet = literalLineMode ? new java.util.HashSet<>() : null;
         if (literalLineMode) {
             float chunkScreenSize = 16.0F * this.mapToGui;
             cellChunkSize = Math.max(1, (int) Math.ceil(0.45F / Math.max(0.0001F, chunkScreenSize)));
-            bridgeGapCells = Math.max(3, Math.min(28, SOLID_LINE_MAX_GAP_CHUNKS / Math.max(1, cellChunkSize)));
         }
 
         for (ChunkPos chunk : exploredLinesLastResult) {
@@ -1293,34 +1275,21 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             float cellWorldSize = cellChunkSize * 16.0F;
             float nodeHalf = Math.max(lineThickness * 0.55F, cellWorldSize * 0.04F);
             boolean ultraFarLiteral = this.mapToGui < 0.03F;
-            float playerX = (float) GameVariableAccessShim.xCoordDouble();
-            float playerZ = (float) GameVariableAccessShim.zCoordDouble();
-            int playerCellX = Math.floorDiv(Mth.floor(playerX / 16.0F), cellChunkSize);
-            int playerCellZ = Math.floorDiv(Mth.floor(playerZ / 16.0F), cellChunkSize);
+            ExploredLineRenderCacheKey renderCacheKey = new ExploredLineRenderCacheKey(queryKey, cellChunkSize, visibleChunkSet.size(), visibleChunkSet.hashCode());
+            if (!renderCacheKey.equals(exploredLineRenderCacheKey)) {
+                rebuildExploredLineRenderCache(visibleChunkSet, cellChunkSize);
+                exploredLineRenderCacheKey = renderCacheKey;
+            }
 
-            for (long key : visibleChunkSet) {
-                int cellX = (int) (key >> 32);
-                int cellZ = (int) key;
-                float cx = (cellX + 0.5F) * cellWorldSize;
-                float cz = (cellZ + 0.5F) * cellWorldSize;
-                boolean anchorToPlayer = cellX == playerCellX && cellZ == playerCellZ;
-                float sourceX = anchorToPlayer ? playerX : cx;
-                float sourceZ = anchorToPlayer ? playerZ : cz;
-                boolean linked = false;
-                linked |= drawBridgeToNeighborIfPresent(graphics, visibleChunkSet, cellX, cellZ, cellX + 1, cellZ, cellChunkSize, lineThickness, color, sourceX, sourceZ);
-                linked |= drawBridgeToNeighborIfPresent(graphics, visibleChunkSet, cellX, cellZ, cellX, cellZ + 1, cellChunkSize, lineThickness, color, sourceX, sourceZ);
-                if (!ultraFarLiteral) {
-                    linked |= drawBridgeToNeighborIfPresent(graphics, visibleChunkSet, cellX, cellZ, cellX + 1, cellZ + 1, cellChunkSize, lineThickness, color, sourceX, sourceZ);
-                    linked |= drawBridgeToNeighborIfPresent(graphics, visibleChunkSet, cellX, cellZ, cellX + 1, cellZ - 1, cellChunkSize, lineThickness, color, sourceX, sourceZ);
-                }
-                if (!ultraFarLiteral || !linked) {
+            for (ExploredLineSegment segment : exploredLineSegments) {
+                drawThickInterpolatedLine(graphics, segment.x1(), segment.z1(), segment.x2(), segment.z2(), lineThickness, color);
+            }
+            for (ExploredLineNode node : exploredLineNodes) {
+                if (!ultraFarLiteral || !node.linked()) {
                     VoxelMapGuiGraphics.fillGradient(graphics,
-                            cx - nodeHalf, cz - nodeHalf,
-                            cx + nodeHalf, cz + nodeHalf,
+                            node.x() - nodeHalf, node.z() - nodeHalf,
+                            node.x() + nodeHalf, node.z() + nodeHalf,
                             color, color, color, color);
-                }
-                if (!linked) {
-                    drawNearestBridge(graphics, visibleChunkSet, cellX, cellZ, cellChunkSize, bridgeGapCells, lineThickness, color);
                 }
             }
         }
@@ -1330,49 +1299,95 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         return (((long) x) << 32) ^ (z & 0xFFFFFFFFL);
     }
 
-    private boolean drawBridgeToNeighborIfPresent(GuiGraphicsExtractor graphics, java.util.HashSet<Long> chunkSet, int x, int z, int nx, int nz, int cellChunkSize, float thickness, int color, float sourceX, float sourceZ) {
-        if (!chunkSet.contains(chunkKey(nx, nz))) {
-            return false;
+    private void rebuildExploredLineRenderCache(java.util.HashSet<Long> chunkSet, int cellChunkSize) {
+        ArrayList<ExploredLineSegment> segments = new ArrayList<>();
+        ArrayList<ExploredLineNode> nodes = new ArrayList<>();
+
+        for (long key : chunkSet) {
+            int cellX = (int) (key >> 32);
+            int cellZ = (int) key;
+            boolean linked = hasExploredLineNeighbor(chunkSet, cellX, cellZ);
+            nodes.add(new ExploredLineNode(cellCenter(cellX, cellChunkSize), cellCenter(cellZ, cellChunkSize), linked));
         }
-        float x1 = sourceX;
-        float z1 = sourceZ;
-        float x2 = (nx * cellChunkSize + cellChunkSize * 0.5F) * 16.0F;
-        float z2 = (nz * cellChunkSize + cellChunkSize * 0.5F) * 16.0F;
-        drawThickInterpolatedLine(graphics, x1, z1, x2, z2, thickness, color);
-        return true;
-    }
 
-    private void drawNearestBridge(GuiGraphicsExtractor graphics, java.util.HashSet<Long> chunkSet, int x, int z, int cellChunkSize, int maxGapCells, float thickness, int color) {
-        int bestX = Integer.MAX_VALUE;
-        int bestZ = Integer.MAX_VALUE;
-        int bestDistanceSq = Integer.MAX_VALUE;
+        for (long key : chunkSet) {
+            int cellX = (int) (key >> 32);
+            int cellZ = (int) key;
 
-        for (int[] direction : SOLID_LINE_BRIDGE_DIRECTIONS) {
-            int dx = direction[0];
-            int dz = direction[1];
-            for (int step = 1; step <= maxGapCells; step++) {
-                int nx = x + dx * step;
-                int nz = z + dz * step;
-                if (!chunkSet.contains(chunkKey(nx, nz))) {
-                    continue;
+            if (hasCell(chunkSet, cellX + 1, cellZ) && !hasCell(chunkSet, cellX - 1, cellZ)) {
+                int endX = cellX + 1;
+                while (hasCell(chunkSet, endX + 1, cellZ)) {
+                    endX++;
                 }
-                int distanceSq = (dx * step) * (dx * step) + (dz * step) * (dz * step);
-                if (distanceSq < bestDistanceSq) {
-                    bestDistanceSq = distanceSq;
-                    bestX = nx;
-                    bestZ = nz;
+                addExploredLineSegment(segments, cellX, cellZ, endX, cellZ, cellChunkSize);
+            }
+
+            if (hasCell(chunkSet, cellX, cellZ + 1) && !hasCell(chunkSet, cellX, cellZ - 1)) {
+                int endZ = cellZ + 1;
+                while (hasCell(chunkSet, cellX, endZ + 1)) {
+                    endZ++;
                 }
-                break;
+                addExploredLineSegment(segments, cellX, cellZ, cellX, endZ, cellChunkSize);
+            }
+
+            if (hasSouthEastExploredLine(chunkSet, cellX, cellZ) && !hasSouthEastExploredLine(chunkSet, cellX - 1, cellZ - 1)) {
+                int endX = cellX + 1;
+                int endZ = cellZ + 1;
+                while (hasSouthEastExploredLine(chunkSet, endX, endZ)) {
+                    endX++;
+                    endZ++;
+                }
+                addExploredLineSegment(segments, cellX, cellZ, endX, endZ, cellChunkSize);
+            }
+
+            if (hasNorthEastExploredLine(chunkSet, cellX, cellZ) && !hasNorthEastExploredLine(chunkSet, cellX - 1, cellZ + 1)) {
+                int endX = cellX + 1;
+                int endZ = cellZ - 1;
+                while (hasNorthEastExploredLine(chunkSet, endX, endZ)) {
+                    endX++;
+                    endZ--;
+                }
+                addExploredLineSegment(segments, cellX, cellZ, endX, endZ, cellChunkSize);
             }
         }
 
-        if (bestX != Integer.MAX_VALUE) {
-            float x1 = (x * cellChunkSize + cellChunkSize * 0.5F) * 16.0F;
-            float z1 = (z * cellChunkSize + cellChunkSize * 0.5F) * 16.0F;
-            float x2 = (bestX * cellChunkSize + cellChunkSize * 0.5F) * 16.0F;
-            float z2 = (bestZ * cellChunkSize + cellChunkSize * 0.5F) * 16.0F;
-            drawThickInterpolatedLine(graphics, x1, z1, x2, z2, thickness, color);
-        }
+        exploredLineSegments = segments;
+        exploredLineNodes = nodes;
+    }
+
+    private void addExploredLineSegment(ArrayList<ExploredLineSegment> segments, int startX, int startZ, int endX, int endZ, int cellChunkSize) {
+        segments.add(new ExploredLineSegment(cellCenter(startX, cellChunkSize), cellCenter(startZ, cellChunkSize), cellCenter(endX, cellChunkSize), cellCenter(endZ, cellChunkSize)));
+    }
+
+    private float cellCenter(int cellCoordinate, int cellChunkSize) {
+        return (cellCoordinate * cellChunkSize + cellChunkSize * 0.5F) * 16.0F;
+    }
+
+    private boolean hasExploredLineNeighbor(java.util.HashSet<Long> chunkSet, int x, int z) {
+        return hasCell(chunkSet, x - 1, z)
+                || hasCell(chunkSet, x + 1, z)
+                || hasCell(chunkSet, x, z - 1)
+                || hasCell(chunkSet, x, z + 1)
+                || hasSouthEastExploredLine(chunkSet, x, z)
+                || hasSouthEastExploredLine(chunkSet, x - 1, z - 1)
+                || hasNorthEastExploredLine(chunkSet, x, z)
+                || hasNorthEastExploredLine(chunkSet, x - 1, z + 1);
+    }
+
+    private boolean hasSouthEastExploredLine(java.util.HashSet<Long> chunkSet, int x, int z) {
+        return hasCell(chunkSet, x + 1, z + 1)
+                && !hasCell(chunkSet, x + 1, z)
+                && !hasCell(chunkSet, x, z + 1);
+    }
+
+    private boolean hasNorthEastExploredLine(java.util.HashSet<Long> chunkSet, int x, int z) {
+        return hasCell(chunkSet, x + 1, z - 1)
+                && !hasCell(chunkSet, x + 1, z)
+                && !hasCell(chunkSet, x, z - 1);
+    }
+
+    private boolean hasCell(java.util.HashSet<Long> chunkSet, int x, int z) {
+        return chunkSet.contains(chunkKey(x, z));
     }
 
     private void drawThickInterpolatedLine(GuiGraphicsExtractor graphics, float x1, float z1, float x2, float z2, float thickness, int color) {
@@ -2651,6 +2666,15 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     }
 
     private record ExploredLinesQueryCacheKey(int minChunkX, int maxChunkX, int minChunkZ, int maxChunkZ, int snap) {
+    }
+
+    private record ExploredLineRenderCacheKey(ExploredLinesQueryCacheKey queryKey, int cellChunkSize, int chunkCount, int chunkHash) {
+    }
+
+    private record ExploredLineSegment(float x1, float z1, float x2, float z2) {
+    }
+
+    private record ExploredLineNode(float x, float z, boolean linked) {
     }
 
     public void renderBackground(GuiGraphicsExtractor graphics) {
