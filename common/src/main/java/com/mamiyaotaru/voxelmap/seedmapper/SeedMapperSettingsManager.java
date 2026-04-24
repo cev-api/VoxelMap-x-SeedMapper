@@ -230,7 +230,9 @@ public class SeedMapperSettingsManager implements ISubSettingsManager {
     public void loadSavedSeedForCurrentServer() {
         String saved = getSavedSeed(getCurrentServerKey());
         if (saved != null && !saved.isBlank()) {
-            manualSeed = saved;
+            manualSeed = saved.trim();
+        } else {
+            manualSeed = "";
         }
     }
 
