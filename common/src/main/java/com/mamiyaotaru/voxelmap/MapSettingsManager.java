@@ -46,6 +46,9 @@ public class MapSettingsManager implements ISettingsManager {
     public boolean updateNotifier = true;
     public boolean showBiome = false;
     public int coordsMode = 1;
+    public boolean showFacingDegrees = false;
+    public boolean showFacingCardinal = false;
+    public float radarTextScale = 1.0F;
     public int mapCorner = 1;
     public int sizeModifier = 1;
     public boolean squareMap = false;
@@ -166,6 +169,9 @@ public class MapSettingsManager implements ISettingsManager {
                         case "Update Notifier" -> updateNotifier = Boolean.parseBoolean(curLine[1]);
                         case "Display Biome" -> showBiome = Boolean.parseBoolean(curLine[1]);
                         case "Display Coordinates" -> coordsMode = Mth.clamp(Integer.parseInt(curLine[1]), 0, 2);
+                        case "Display Facing Degrees" -> showFacingDegrees = Boolean.parseBoolean(curLine[1]);
+                        case "Display Facing Cardinal" -> showFacingCardinal = Boolean.parseBoolean(curLine[1]);
+                        case "Radar Text Scale" -> radarTextScale = Mth.clamp(Float.parseFloat(curLine[1]), 0.5F, 2.0F);
                         case "Map Corner" -> mapCorner = Mth.clamp(Integer.parseInt(curLine[1]), 0, 3);
                         case "Map Size" -> sizeModifier = Mth.clamp(Integer.parseInt(curLine[1]), -1, 4);
                         case "Square Map" -> squareMap = Boolean.parseBoolean(curLine[1]);
@@ -263,6 +269,9 @@ public class MapSettingsManager implements ISettingsManager {
             out.println("Update Notifier:" + updateNotifier);
             out.println("Display Biome:" + showBiome);
             out.println("Display Coordinates:" + coordsMode);
+            out.println("Display Facing Degrees:" + showFacingDegrees);
+            out.println("Display Facing Cardinal:" + showFacingCardinal);
+            out.println("Radar Text Scale:" + radarTextScale);
             out.println("Map Corner:" + mapCorner);
             out.println("Map Size:" + sizeModifier);
             out.println("Square Map:" + squareMap);
@@ -336,6 +345,15 @@ public class MapSettingsManager implements ISettingsManager {
     @Override
     public String getKeyText(EnumOptionsMinimap option) {
         String s = I18n.get(option.getName()) + ": ";
+        if (option == EnumOptionsMinimap.SHOW_FACING_DEGREES) {
+            if (!showFacingDegrees) {
+                return s + I18n.get("options.off");
+            }
+            if (showFacingCardinal) {
+                return s + I18n.get("options.minimap.showFacingDegrees.degreesAndCardinal");
+            }
+            return s + I18n.get("options.minimap.showFacingDegrees.degreesOnly");
+        }
 
         switch (option.getType()) {
             case BOOLEAN -> {
@@ -371,6 +389,7 @@ public class MapSettingsManager implements ISettingsManager {
             case HIDE_MINIMAP -> hide || !minimapAllowed;
             case UPDATE_NOTIFIER -> updateNotifier;
             case SHOW_BIOME -> showBiome;
+            case SHOW_FACING_DEGREES -> showFacingDegrees;
             case SQUARE_MAP -> squareMap;
             case ROTATES -> rotates;
             case CAVE_MODE -> cavesAllowed && showCaves;
@@ -401,6 +420,7 @@ public class MapSettingsManager implements ISettingsManager {
             case HIDE_MINIMAP -> hide = !hide;
             case UPDATE_NOTIFIER -> updateNotifier = !updateNotifier;
             case SHOW_BIOME -> showBiome = !showBiome;
+            case SHOW_FACING_DEGREES -> showFacingDegrees = !showFacingDegrees;
             case SQUARE_MAP -> squareMap = !squareMap;
             case ROTATES -> rotates = !rotates;
             case CAVE_MODE -> showCaves = !showCaves;
@@ -421,6 +441,19 @@ public class MapSettingsManager implements ISettingsManager {
             default -> throw new IllegalArgumentException("Invalid boolean value! Add code to handle EnumOptionMinimap: " + option.getName());
         }
 
+        somethingChanged = true;
+    }
+
+    public void cycleFacingDisplayMode() {
+        if (!showFacingDegrees) {
+            showFacingDegrees = true;
+            showFacingCardinal = false;
+        } else if (!showFacingCardinal) {
+            showFacingCardinal = true;
+        } else {
+            showFacingDegrees = false;
+            showFacingCardinal = false;
+        }
         somethingChanged = true;
     }
 

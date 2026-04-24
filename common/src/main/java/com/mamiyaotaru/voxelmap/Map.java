@@ -2401,7 +2401,10 @@ public class Map implements Runnable, IChangeObserver {
     }
 
     private void drawDirections(Matrix4fStack matrixStack, int x, int y, float scaleProj) {
-        float scale = 0.5F;
+        if (this.options.showFacingDegrees && this.options.showFacingCardinal) {
+            return;
+        }
+        float scale = 0.5F * this.options.radarTextScale;
         float rotate;
         if (this.options.rotates) {
             rotate = -this.direction - 90.0F - this.rotationFactor;
@@ -2448,19 +2451,52 @@ public class Map implements Runnable, IChangeObserver {
 
     private void showCoords(Matrix4fStack matrixStack, int x, int y, float scaleProj) {
         if (!this.options.hide && !this.fullscreenMap) {
+            int displayLineCount = 0;
+            if (this.options.showFacingDegrees) {
+                displayLineCount++;
+            }
+            if (this.options.coordsMode == 1) {
+                displayLineCount += 2;
+            } else if (this.options.coordsMode == 2) {
+                displayLineCount++;
+            }
+            if (this.options.showBiome) {
+                displayLineCount++;
+            }
+            if (!this.message.isEmpty()) {
+                displayLineCount++;
+            }
+            if (displayLineCount == 0) {
+                return;
+            }
+
             int textStart;
-            if (y > this.scHeight - 37 - 32 - 4 - 15) {
-                textStart = y - 32 - 4 - 9;
+            int lineHeight = 10;
+            int belowStart = y + 32 + 4;
+            int belowEnd = belowStart + lineHeight * (displayLineCount - 1) + 9;
+            boolean placeAbove = belowEnd > this.scHeight - 15;
+            if (placeAbove) {
+                textStart = y - 32 - 4 - 9 - lineHeight * (displayLineCount - 1);
+                if (textStart < 5) {
+                    textStart = 5;
+                }
             } else {
-                textStart = y + 32 + 4;
+                textStart = belowStart;
             }
             int lineCount = 0;
-            int lineHeight = 10;
-            float scale = 0.5F;
+            float scale = 0.5F * this.options.radarTextScale;
             matrixStack.pushMatrix();
             matrixStack.scale(scale * scaleProj, scale * scaleProj, 1.0F);
 
             String coords;
+            if (this.options.showFacingDegrees) {
+                int heading = normalizeHeading((int) (this.direction + this.rotationFactor));
+                coords = this.options.showFacingCardinal
+                        ? heading + "° " + getCompassAbbreviation(heading)
+                        : heading + "°";
+                RenderUtils.drawCenteredString(matrixStack, renderBufferSource, coords, x / scale, textStart / scale + lineHeight * lineCount, MAP_TEXT_DEPTH, 0xFFFFFFFF, true);
+                lineCount++;
+            }
 
             if (this.options.coordsMode == 1) {
                 coords = this.dCoord(GameVariableAccessShim.xCoord()) + ", " + this.dCoord(GameVariableAccessShim.zCoord());
@@ -2529,6 +2565,20 @@ public class Map implements Runnable, IChangeObserver {
         } else {
             return paramInt1 > 0 ? "+" + paramInt1 : Integer.toString(paramInt1);
         }
+    }
+
+    private static int normalizeHeading(int heading) {
+        int normalized = heading % 360;
+        if (normalized < 0) {
+            normalized += 360;
+        }
+        return normalized;
+    }
+
+    private static String getCompassAbbreviation(int heading) {
+        String[] directions = { "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW" };
+        int index = (int) Math.round(heading / 22.5D) & 15;
+        return directions[index];
     }
 
     private void showMessage(String str) {
