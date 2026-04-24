@@ -20,6 +20,8 @@ import net.minecraft.util.ARGB;
 import net.minecraft.util.Mth;
 import org.lwjgl.glfw.GLFW;
 
+import java.util.ArrayList;
+
 public class GuiPersistentMapOptions extends GuiScreenMinimap {
     private static final float WORLDMAP_ZOOM_POWER_MIN = -9.0F;
     private static final float WORLDMAP_ZOOM_POWER_MAX = 8.0F;
@@ -41,6 +43,10 @@ public class GuiPersistentMapOptions extends GuiScreenMinimap {
     private Button exploredChunkLineColorPickerCancelButton;
     private boolean exploredChunkLineColorPickerOpen;
     private boolean swallowExploredChunkLineColorMouseRelease;
+    private final ArrayList<OptionSection> optionSections = new ArrayList<>();
+    private static final int OPTION_BUTTON_WIDTH = 190;
+    private static final int OPTION_COLUMN_GAP = 10;
+    private static final int FULL_ROW_WIDTH = OPTION_BUTTON_WIDTH * 2 + OPTION_COLUMN_GAP;
 
     public GuiPersistentMapOptions(Screen parent) {
         this.lastScreen = parent;
@@ -52,45 +58,34 @@ public class GuiPersistentMapOptions extends GuiScreenMinimap {
 
     @Override
     public void init() {
-        EnumOptionsMinimap[] relevantOptions = {
-                EnumOptionsMinimap.SHOW_WORLDMAP_COORDS,
-                EnumOptionsMinimap.SHOW_WORLDMAP_PLAYER_DIRECTION_ARROW,
-                EnumOptionsMinimap.SHOW_WAYPOINTS,
-                EnumOptionsMinimap.SHOW_WAYPOINT_NAMES,
-                EnumOptionsMinimap.SHOW_DISTANT_WAYPOINTS,
-                EnumOptionsMinimap.WORLDMAP_SHOW_WAYPOINTS_IN_PERFORMANCE_MODE,
-                EnumOptionsMinimap.WORLDMAP_LITERAL_LINE_MODE,
-                EnumOptionsMinimap.CONFIRM_WAYPOINT_DELETE
-        };
+        optionSections.clear();
 
-        int counter = 0;
+        addSection("Map Display", 0, 1);
+        addMappedOption(EnumOptionsMinimap.SHOW_WORLDMAP_COORDS, 0, 0);
+        addMappedOption(EnumOptionsMinimap.SHOW_WORLDMAP_PLAYER_DIRECTION_ARROW, 0, 1);
+        addMappedOption(EnumOptionsMinimap.WORLDMAP_LITERAL_LINE_MODE, 1, 0);
+        addMappedOption(EnumOptionsMinimap.CONFIRM_WAYPOINT_DELETE, 1, 1);
 
-        for (EnumOptionsMinimap option : relevantOptions) {
-            GuiOptionButtonMinimap optionButton = new GuiOptionButtonMinimap(this.getWidth() / 2 - 155 + counter % 2 * 160, this.getHeight() / 6 + 24 * (counter >> 1), option, Component.literal(this.getKeyText(option)), this::optionClicked);
-            this.addRenderableWidget(optionButton);
+        addSection("Waypoints", 3, 4);
+        addMappedOption(EnumOptionsMinimap.SHOW_WAYPOINTS, 3, 0);
+        addMappedOption(EnumOptionsMinimap.SHOW_WAYPOINT_NAMES, 3, 1);
+        addMappedOption(EnumOptionsMinimap.SHOW_DISTANT_WAYPOINTS, 4, 0);
+        addMappedOption(EnumOptionsMinimap.WORLDMAP_SHOW_WAYPOINTS_IN_PERFORMANCE_MODE, 4, 1);
 
-            if (option == EnumOptionsMinimap.SHOW_WAYPOINTS) {
-                optionButton.active = mapOptions.waypointsAllowed;
-            }
-            if (option == EnumOptionsMinimap.SHOW_WAYPOINT_NAMES) {
-                optionButton.active = mapOptions.waypointsAllowed;
-            }
-            counter++;
-        }
-
-        int exploredButtonY = this.getHeight() / 6 + 24 * (counter >> 1);
-        this.exploredChunkLinesButton = this.addRenderableWidget(new Button.Builder(Component.empty(), button -> {
+        addSection("Explored Chunks", 6, 7);
+        int exploredButtonY = fromSlot(6, 0)[1];
+        this.exploredChunkLinesButton = this.addRenderableWidget(new GuiOptionButtonMinimap(fromSlot(6, 0)[0], exploredButtonY, OPTION_BUTTON_WIDTH, null, Component.empty(), button -> {
             radarOptions.showExploredChunks = !radarOptions.showExploredChunks;
             mapOptions.saveAll();
             refreshExploredChunkButtons();
-        }).bounds(this.getWidth() / 2 - 155, exploredButtonY, 150, 20).build());
-        this.exploredChunkLineColorInput = new GuiButtonText(this.getFont(), this.getWidth() / 2 + 5, exploredButtonY, 118, 20, Component.literal("Line Color"), button -> {});
+        }));
+        int colorInputWidth = OPTION_BUTTON_WIDTH - 32;
+        this.exploredChunkLineColorInput = new GuiButtonText(this.getFont(), fromSlot(6, 1)[0], exploredButtonY, colorInputWidth, 20, Component.literal("Line Color"), button -> {});
         this.exploredChunkLineColorInput.active = false;
         this.exploredChunkLineColorInput.setText(normalizeHexColor(radarOptions.exploredChunksColor));
         this.addRenderableWidget(this.exploredChunkLineColorInput);
-        this.exploredChunkLineColorPickerButton = this.addRenderableWidget(new Button.Builder(Component.literal("..."), button -> openExploredChunkLineColorPicker())
-                .bounds(this.getWidth() / 2 + 127, exploredButtonY, 28, 20).build());
-        this.clearExploredChunksButton = this.addRenderableWidget(new Button.Builder(Component.literal("Clear Explored Chunks"), button -> {
+        this.exploredChunkLineColorPickerButton = this.addRenderableWidget(new GuiOptionButtonMinimap(fromSlot(6, 1)[0] + colorInputWidth + 4, exploredButtonY, 28, null, Component.literal("..."), button -> openExploredChunkLineColorPicker()));
+        this.clearExploredChunksButton = this.addRenderableWidget(new GuiOptionButtonMinimap(this.getWidth() / 2 - FULL_ROW_WIDTH / 2, fromSlot(7, 0)[1], FULL_ROW_WIDTH, null, Component.literal("Clear Explored Chunks"), button -> {
             long now = System.currentTimeMillis();
             if (now > clearExploredConfirmUntilMs) {
                 clearExploredConfirmUntilMs = now + 4000L;
@@ -100,49 +95,68 @@ public class GuiPersistentMapOptions extends GuiScreenMinimap {
             clearExploredConfirmUntilMs = 0L;
             VoxelConstants.getVoxelMapInstance().getExploredChunksManager().clearCurrentWorld();
             refreshExploredChunkButtons();
-        }).bounds(this.getWidth() / 2 - 155, exploredButtonY + 24, 310, 20).build());
+        }));
         refreshExploredChunkButtons();
-        counter += 4;
 
-        EnumOptionsMinimap[] relevantOptions2 = {
-                EnumOptionsMinimap.MIN_ZOOM,
-                EnumOptionsMinimap.MAX_ZOOM,
-                EnumOptionsMinimap.WORLDMAP_PERFORMANCE_MODE_THRESHOLD,
-                EnumOptionsMinimap.WORLDMAP_CHUNK_LINE_THICKNESS,
-                EnumOptionsMinimap.CACHE_SIZE
-        };
-        counter += (counter % 2 == 0 ? 2 : 3);
-
-        for (EnumOptionsMinimap option : relevantOptions2) {
-            if (option.getType() == EnumOptionsMinimap.Type.FLOAT) {
-                float sValue = this.options.getFloatValue(option);
-
-                this.addRenderableWidget(new GuiOptionSliderMinimap(this.getWidth() / 2 - 155 + counter % 2 * 160, this.getHeight() / 6 + 24 * (counter >> 1), option, switch (option) {
-                    case MIN_ZOOM, MAX_ZOOM -> Mth.clamp((sValue - WORLDMAP_ZOOM_POWER_MIN) / (WORLDMAP_ZOOM_POWER_MAX - WORLDMAP_ZOOM_POWER_MIN), 0.0F, 1.0F);
-                    case WORLDMAP_PERFORMANCE_MODE_THRESHOLD -> Mth.clamp(
-                            (sValue - PersistentMapSettingsManager.MIN_PERFORMANCE_MODE_THRESHOLD)
-                                    / (PersistentMapSettingsManager.MAX_PERFORMANCE_MODE_THRESHOLD - PersistentMapSettingsManager.MIN_PERFORMANCE_MODE_THRESHOLD),
-                            0.0F,
-                            1.0F);
-                    case WORLDMAP_CHUNK_LINE_THICKNESS -> Mth.clamp(
-                            (sValue - PersistentMapSettingsManager.MIN_CHUNK_LINE_THICKNESS)
-                                    / (PersistentMapSettingsManager.MAX_CHUNK_LINE_THICKNESS - PersistentMapSettingsManager.MIN_CHUNK_LINE_THICKNESS),
-                            0.0F,
-                            1.0F);
-                    case CACHE_SIZE -> Mth.clamp(sValue / WORLDMAP_CACHE_MAX, 0.0F, 1.0F);
-                    default ->
-                            throw new IllegalArgumentException("Add code to handle EnumOptionMinimap: " + option.getName() + ". (possibly not a float value applicable to persistent map)");
-                }, this.options));
-            } else {
-                this.addRenderableWidget(new GuiOptionButtonMinimap(this.getWidth() / 2 - 155 + counter % 2 * 160, this.getHeight() / 6 + 24 * (counter >> 1), option, Component.literal(this.options.getKeyText(option)), this::optionClicked));
-            }
-
-            counter++;
-        }
+        addSection("Zoom & Performance", 9, 11);
+        addMappedOption(EnumOptionsMinimap.MIN_ZOOM, 9, 0);
+        addMappedOption(EnumOptionsMinimap.MAX_ZOOM, 9, 1);
+        addMappedOption(EnumOptionsMinimap.WORLDMAP_PERFORMANCE_MODE_THRESHOLD, 10, 0);
+        addMappedOption(EnumOptionsMinimap.WORLDMAP_CHUNK_LINE_THICKNESS, 10, 1);
+        addMappedOption(EnumOptionsMinimap.CACHE_SIZE, 11, -1);
 
         this.addRenderableWidget(new Button.Builder(Component.translatable("gui.done"), buttonx -> this.onClose()).bounds(this.getWidth() / 2 - 100, this.getHeight() - 26, 200, 20).build());
 
         setButtonsActive();
+    }
+
+    private void addMappedOption(EnumOptionsMinimap option, int row, int col) {
+        int x;
+        int y = fromSlot(row, 0)[1];
+        int width = OPTION_BUTTON_WIDTH;
+        if (col < 0) {
+            x = this.getWidth() / 2 - FULL_ROW_WIDTH / 2;
+            width = FULL_ROW_WIDTH;
+        } else {
+            x = fromSlot(row, col)[0];
+        }
+
+        if (option.getType() == EnumOptionsMinimap.Type.FLOAT) {
+            float sValue = this.options.getFloatValue(option);
+            float sliderValue = switch (option) {
+                case MIN_ZOOM, MAX_ZOOM -> Mth.clamp((sValue - WORLDMAP_ZOOM_POWER_MIN) / (WORLDMAP_ZOOM_POWER_MAX - WORLDMAP_ZOOM_POWER_MIN), 0.0F, 1.0F);
+                case WORLDMAP_PERFORMANCE_MODE_THRESHOLD -> Mth.clamp(
+                        (sValue - PersistentMapSettingsManager.MIN_PERFORMANCE_MODE_THRESHOLD)
+                                / (PersistentMapSettingsManager.MAX_PERFORMANCE_MODE_THRESHOLD - PersistentMapSettingsManager.MIN_PERFORMANCE_MODE_THRESHOLD),
+                        0.0F,
+                        1.0F);
+                case WORLDMAP_CHUNK_LINE_THICKNESS -> Mth.clamp(
+                        (sValue - PersistentMapSettingsManager.MIN_CHUNK_LINE_THICKNESS)
+                                / (PersistentMapSettingsManager.MAX_CHUNK_LINE_THICKNESS - PersistentMapSettingsManager.MIN_CHUNK_LINE_THICKNESS),
+                        0.0F,
+                        1.0F);
+                case CACHE_SIZE -> Mth.clamp(sValue / WORLDMAP_CACHE_MAX, 0.0F, 1.0F);
+                default -> throw new IllegalArgumentException("Add code to handle EnumOptionMinimap: " + option.getName() + ". (possibly not a float value applicable to persistent map)");
+            };
+            this.addRenderableWidget(new GuiOptionSliderMinimap(x, y, width, option, sliderValue, this.options));
+        } else {
+            GuiOptionButtonMinimap optionButton = new GuiOptionButtonMinimap(x, y, width, option, Component.literal(this.getKeyText(option)), this::optionClicked);
+            this.addRenderableWidget(optionButton);
+        }
+    }
+
+    private int[] fromSlot(int row, int col) {
+        int x = this.getWidth() / 2 - FULL_ROW_WIDTH / 2 + col * (OPTION_BUTTON_WIDTH + OPTION_COLUMN_GAP);
+        int y = this.getHeight() / 6 + 22 * row;
+        return new int[] { x, y };
+    }
+
+    private void addSection(String title, int firstRow, int lastRow) {
+        int panelX = this.getWidth() / 2 - FULL_ROW_WIDTH / 2 - 12;
+        int panelY = fromSlot(firstRow, 0)[1] - 15;
+        int panelWidth = FULL_ROW_WIDTH + 24;
+        int panelHeight = (lastRow - firstRow + 1) * 22 + 16;
+        optionSections.add(new OptionSection(title, panelX, panelY, panelWidth, panelHeight));
     }
 
     protected void optionClicked(Button par1GuiButton) {
@@ -197,6 +211,7 @@ public class GuiPersistentMapOptions extends GuiScreenMinimap {
     private void setButtonsActive() {
         for (GuiEventListener renderable : this.children()) {
             if (!(renderable instanceof GuiOptionButtonMinimap button)) continue;
+            if (button.returnEnumOptions() == null) continue;
 
             switch (button.returnEnumOptions()) {
                 case SHOW_WAYPOINT_NAMES, SHOW_DISTANT_WAYPOINTS -> button.active = options.showWaypoints && mapOptions.waypointsAllowed;
@@ -236,10 +251,9 @@ public class GuiPersistentMapOptions extends GuiScreenMinimap {
 
         if (!isEmbeddedInParent()) {
             graphics.centeredText(this.getFont(), this.screenTitle, this.getWidth() / 2, 20, 0xFFFFFFFF);
-            graphics.centeredText(this.getFont(), this.cacheSettings, this.getWidth() / 2, this.getHeight() / 6 + 49, 0xFFFFFFFF);
-            graphics.centeredText(this.getFont(), this.warning, this.getWidth() / 2, this.getHeight() / 6 + 59, 0xFFFFFFFF);
         }
 
+        renderOptionSections(graphics);
         super.extractRenderState(graphics, mouseX, mouseY, delta);
 
         if (exploredChunkLineColorPickerOpen) {
@@ -271,6 +285,20 @@ public class GuiPersistentMapOptions extends GuiScreenMinimap {
             exploredChunkLineColorPickerApplyButton.extractRenderState(graphics, mouseX, mouseY, delta);
             exploredChunkLineColorPickerCancelButton.extractRenderState(graphics, mouseX, mouseY, delta);
         }
+    }
+
+    private void renderOptionSections(GuiGraphicsExtractor graphics) {
+        for (OptionSection section : optionSections) {
+            int x = section.x();
+            int y = section.y();
+            int right = x + section.width();
+            int bottom = y + section.height();
+            graphics.fill(x + 12, y + 9, x + 30, y + 10, 0xFFA9B4C3);
+            graphics.text(this.getFont(), section.title(), x + 36, y + 5, 0xFFE6EAF0, false);
+        }
+    }
+
+    private record OptionSection(String title, int x, int y, int width, int height) {
     }
 
     private void openExploredChunkLineColorPicker() {

@@ -10,7 +10,11 @@ public class GuiOptionSliderMinimap extends AbstractSliderButton {
     private final EnumOptionsMinimap option;
 
     public GuiOptionSliderMinimap(int x, int y, EnumOptionsMinimap optionIn, float value, ISettingsManager options) {
-        super (x, y, 150, 20, Component.literal(options.getKeyText(optionIn)), Mth.clamp(value, 0.0F, 1.0F));
+        this(x, y, 150, optionIn, value, options);
+    }
+
+    public GuiOptionSliderMinimap(int x, int y, int width, EnumOptionsMinimap optionIn, float value, ISettingsManager options) {
+        super (x, y, width, 20, Component.literal(options.getKeyText(optionIn)), Mth.clamp(value, 0.0F, 1.0F));
         this.options = options;
         this.option = optionIn;
     }

@@ -12,6 +12,7 @@ public enum EnumOptionsMinimap {
     UPDATE_NOTIFIER("options.minimap.updateNotifier", Type.BOOLEAN),
     SHOW_BIOME("options.minimap.showBiome", Type.BOOLEAN),
     SHOW_COORDS("options.minimap.showCoordinates", Type.LIST),
+    SHOW_FACING_DEGREES("options.minimap.showFacingDegrees", Type.BOOLEAN),
     LOCATION("options.minimap.location", Type.LIST),
     SIZE("options.minimap.size", Type.LIST),
     SQUARE_MAP("options.minimap.squareMap", Type.BOOLEAN),

@@ -54,12 +54,14 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
     private String pageInfo = "";
     private int tabIndex = 0;
     private int lastTabIndex = 0;
+    private int pageNavY = 0;
     private Button nextPageButton;
     private Button prevPageButton;
     private GuiScreenMinimap embeddedTabScreen;
     private int embeddedTabIndex = -1;
+    private final ArrayList<OptionSection> optionSections = new ArrayList<>();
 
-    private static final EnumOptionsMinimap[] GENERAL_OPTIONS = { EnumOptionsMinimap.HIDE_MINIMAP, EnumOptionsMinimap.UPDATE_NOTIFIER, EnumOptionsMinimap.SHOW_BIOME, EnumOptionsMinimap.SHOW_COORDS, EnumOptionsMinimap.LOCATION, EnumOptionsMinimap.SIZE, EnumOptionsMinimap.SQUARE_MAP, EnumOptionsMinimap.ROTATES, EnumOptionsMinimap.IN_GAME_WAYPOINTS, EnumOptionsMinimap.CAVE_MODE, EnumOptionsMinimap.MOVE_MAP_BELOW_STATUS_EFFECT_ICONS, EnumOptionsMinimap.MOVE_SCOREBOARD_BELOW_MAP};
+    private static final EnumOptionsMinimap[] GENERAL_OPTIONS = { EnumOptionsMinimap.HIDE_MINIMAP, EnumOptionsMinimap.UPDATE_NOTIFIER, EnumOptionsMinimap.SHOW_BIOME, EnumOptionsMinimap.SHOW_COORDS, EnumOptionsMinimap.SHOW_FACING_DEGREES, EnumOptionsMinimap.LOCATION, EnumOptionsMinimap.SIZE, EnumOptionsMinimap.SQUARE_MAP, EnumOptionsMinimap.ROTATES, EnumOptionsMinimap.IN_GAME_WAYPOINTS, EnumOptionsMinimap.CAVE_MODE, EnumOptionsMinimap.MOVE_MAP_BELOW_STATUS_EFFECT_ICONS, EnumOptionsMinimap.MOVE_SCOREBOARD_BELOW_MAP};
     private static final EnumOptionsMinimap[] PERFORMANCE_OPTIONS = { EnumOptionsMinimap.DYNAMIC_LIGHTING, EnumOptionsMinimap.TERRAIN_DEPTH, EnumOptionsMinimap.WATER_TRANSPARENCY, EnumOptionsMinimap.BLOCK_TRANSPARENCY, EnumOptionsMinimap.BIOMES, EnumOptionsMinimap.BIOME_OVERLAY, EnumOptionsMinimap.CHUNK_GRID, EnumOptionsMinimap.SLIME_CHUNKS, EnumOptionsMinimap.WORLD_BORDER,  EnumOptionsMinimap.FILTERING, EnumOptionsMinimap.TELEPORT_COMMAND };
     private static final EnumOptionsMinimap[] RADAR_FULL_OPTIONS = { EnumOptionsMinimap.SHOW_RADAR, EnumOptionsMinimap.RADAR_MODE, EnumOptionsMinimap.SHOW_MOBS, EnumOptionsMinimap.SHOW_PLAYERS, EnumOptionsMinimap.SHOW_MOB_NAMES, EnumOptionsMinimap.SHOW_PLAYER_NAMES, EnumOptionsMinimap.SHOW_MOB_HELMETS, EnumOptionsMinimap.SHOW_PLAYER_HELMETS, EnumOptionsMinimap.RADAR_FILTERING, EnumOptionsMinimap.RADAR_OUTLINES, EnumOptionsMinimap.RADAR_CPU_RENDERING, EnumOptionsMinimap.SHOW_FULL_ENTITY_NAMES, EnumOptionsMinimap.SHOW_ENTITY_ELEVATION, EnumOptionsMinimap.HIDE_SNEAKING_PLAYERS, EnumOptionsMinimap.HIDE_INVISIBLE_ENTITIES };
     private static final EnumOptionsMinimap[] RADAR_SIMPLE_OPTIONS = { EnumOptionsMinimap.SHOW_RADAR, EnumOptionsMinimap.RADAR_MODE, EnumOptionsMinimap.SHOW_MOBS, EnumOptionsMinimap.SHOW_PLAYERS, EnumOptionsMinimap.SHOW_FACING, EnumOptionsMinimap.SHOW_ENTITY_ELEVATION, EnumOptionsMinimap.HIDE_SNEAKING_PLAYERS, EnumOptionsMinimap.HIDE_INVISIBLE_ENTITIES };
@@ -74,6 +76,7 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
     private Button netherPortalGeneralButton;
     private Button endPortalGeneralButton;
     private Button endGatewayGeneralButton;
+    private Button chunkOverlayButton;
     private Button highlightTracerGeneralButton;
     private Button autoHideHighlightsWhenNearButton;
     private Button tracerColorPickerButton;
@@ -87,6 +90,10 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
     private Button tracerColorPickerCancelButton;
     private boolean tracerColorPickerOpen;
     private boolean swallowTracerColorMouseRelease;
+    private GuiValueSliderMinimap radarTextScaleSlider;
+    private static final int OPTION_BUTTON_WIDTH = 190;
+    private static final int OPTION_COLUMN_GAP = 10;
+    private static final int FULL_ROW_WIDTH = OPTION_BUTTON_WIDTH * 2 + OPTION_COLUMN_GAP;
 
     public GuiMinimapOptions(Screen parent) {
         lastScreen = parent;
@@ -104,11 +111,11 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
         screenTitle = I18n.get("options.minimap.title");
 
         tabNavigationBar = TabNavigationBar.builder(tabManager, width).addTabs(
-                new OptionsTab(Component.translatable("stat.generalButton"), 0),
-                new OptionsTab(Component.translatable("options.minimap.tab.detailsPerformance"), 1),
-                new OptionsTab(Component.translatable("options.minimap.tab.radar"), 2),
+                new OptionsTab(Component.literal("Minimap"), 0),
+                new OptionsTab(Component.literal("Visuals"), 1),
+                new OptionsTab(Component.literal("Entities"), 2),
                 new OptionsTab(Component.translatable("controls.title"), 3),
-                new OptionsTab(Component.translatable("options.minimap.tab.worldmap"), 4),
+                new OptionsTab(Component.literal("World Map"), 4),
                 new OptionsTab(Component.translatable("options.seedmapper.tab"), 5)).build();
 
         tabNavigationBar.selectTab(tabIndex, false);
@@ -154,18 +161,21 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
         netherPortalGeneralButton = null;
         endPortalGeneralButton = null;
         endGatewayGeneralButton = null;
+        chunkOverlayButton = null;
         highlightTracerGeneralButton = null;
         autoHideHighlightsWhenNearButton = null;
         tracerColorPickerButton = null;
         tracerThicknessSlider = null;
         autoHideHighlightsDistanceSlider = null;
         minimapZoomSlider = null;
+        radarTextScaleSlider = null;
         tracerColorInput = null;
         tracerColorPickerOpen = false;
         for (GuiEventListener widget : optionButtons) {
             removeWidget(widget);
         }
         optionButtons.clear();
+        optionSections.clear();
 
         nextPageButton.visible = true;
         prevPageButton.visible = true;
@@ -201,169 +211,178 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
             pageIndex = 0;
         }
         lastTabIndex = tabIndex;
+        // Unified one-page layouts for General / Performance / Radar
+        pageInfo = "";
+        nextPageButton.active = false;
+        prevPageButton.active = false;
+        nextPageButton.visible = false;
+        prevPageButton.visible = false;
 
-        int itemCount = tabIndex == 0 ? 11 : 10;
-        int pageCount = (relevantOptions.length - 1) / itemCount;
-        if (pageIndex > pageCount) {
-            pageIndex = 0;
-        }
-        if (pageIndex < 0) {
-            pageIndex = pageCount;
-        }
-        pageInfo = "[ " + (pageIndex + 1) + " / " + (pageCount + 1) + " ]";
+        if (relevantOptions == GENERAL_OPTIONS) {
+            addSection("Essentials", 0, 1);
+            addMappedOption(EnumOptionsMinimap.HIDE_MINIMAP, 0, 0);
+            addMappedOption(EnumOptionsMinimap.UPDATE_NOTIFIER, 0, 1);
+            addMappedOption(EnumOptionsMinimap.SHOW_BIOME, 1, 0);
+            addMappedOption(EnumOptionsMinimap.SHOW_COORDS, 1, 1);
 
-        int pageLayoutOffset = tabIndex == 0 && pageIndex == 0 ? 24 : 0;
-        int pageNavY = height / 6 + 120 + pageLayoutOffset;
-        nextPageButton.setPosition(width / 2 + 140, pageNavY);
-        prevPageButton.setPosition(width / 2 - 180, pageNavY);
-        int pageStart = itemCount * pageIndex;
-        int pageEnd = Math.min(itemCount * (pageIndex + 1), relevantOptions.length);
+            addSection("Position & Shape", 3, 5);
+            addMappedOption(EnumOptionsMinimap.SHOW_FACING_DEGREES, 3, 0);
+            addMappedOption(EnumOptionsMinimap.LOCATION, 3, 1);
+            addMappedOption(EnumOptionsMinimap.SIZE, 4, 0);
+            addMappedOption(EnumOptionsMinimap.SQUARE_MAP, 4, 1);
+            addMappedOption(EnumOptionsMinimap.ROTATES, 5, 0);
+            addMappedOption(EnumOptionsMinimap.CAVE_MODE, 5, 1);
 
-        nextPageButton.active = pageCount > 0;
-        prevPageButton.active = pageCount > 0;
-
-        // Menu Buttons
-        for (int i = pageStart; i < pageEnd; i++) {
-            EnumOptionsMinimap option = relevantOptions[i];
-
-            ISettingsManager settingsManager = getSettingsManager(option);
-            if (settingsManager == null) continue;
-
-            int localIndex = i - pageStart;
-            int buttonX = getWidth() / 2 - 155 + localIndex % 2 * 160;
-            int buttonY = getHeight() / 6 + 24 * (localIndex >> 1);
-            if (tabIndex == 0 && pageIndex == 1 && option == EnumOptionsMinimap.MOVE_SCOREBOARD_BELOW_MAP) {
-                // General page 2 layout: scoreboard is the left button on the last row.
-                buttonX = getWidth() / 2 - 155;
-                buttonY = getHeight() / 6 + 24 * 4;
-            }
-            if (tabIndex == 0 && pageIndex == 0 && i >= 6) {
-                buttonY += 24;
-            }
-            if (tabIndex == 0 && pageIndex == 0 && localIndex == 10) {
-                // Fill the free slot beside the minimap zoom row with an existing option.
-                buttonX = getWidth() / 2 + 5;
-                buttonY = getHeight() / 6 + 24 * 3;
-            }
-            // List / Toggle
-            if (option.getType() == EnumOptionsMinimap.Type.BOOLEAN || option.getType() == EnumOptionsMinimap.Type.LIST) {
-                StringBuilder text = new StringBuilder().append(settingsManager.getKeyText(option));
-                if ((option == EnumOptionsMinimap.WATER_TRANSPARENCY || option == EnumOptionsMinimap.BLOCK_TRANSPARENCY || option == EnumOptionsMinimap.BIOMES) && !mapOptions.multicore && settingsManager.getBooleanValue(option)) {
-                    text.append("§c").append(text);
-                }
-
-                GuiOptionButtonMinimap optionButton = new GuiOptionButtonMinimap(buttonX, buttonY, option, Component.literal(text.toString()), this::optionClicked);
-                optionButton.setTooltip(createButtonTooltip(option));
-                addOptionButton(optionButton);
-
-                if (option == EnumOptionsMinimap.SLIME_CHUNKS) {
-                    slimeChunksButton = optionButton;
-                }
-            }
-
-            // Text Field
-            if (option == EnumOptionsMinimap.TELEPORT_COMMAND) {
-                String buttonTeleportText = I18n.get("options.minimap.teleportCommand") + ": " + mapOptions.teleportCommand;
-                teleportCommandButton = new GuiButtonText(getFont(), buttonX, buttonY, 150, 20, Component.literal(buttonTeleportText), button -> teleportCommandButton.setEditing(true));
-                teleportCommandButton.setText(mapOptions.teleportCommand);
-                teleportCommandButton.active = mapOptions.serverTeleportCommand == null;
-                addOptionButton(teleportCommandButton);
-            }
-        }
-
-        if (relevantOptions == GENERAL_OPTIONS && pageIndex == 0) {
-            int sliderY = getHeight() / 6 + 24 * 3;
-            minimapZoomSlider = new GuiValueSliderMinimap(width / 2 - 155, sliderY, 150, 20, mapOptions.zoom, 0.0D, 4.0D, value -> {
+            int sliderY = fromSlot(6, 0)[1];
+            minimapZoomSlider = new GuiValueSliderMinimap(width / 2 - FULL_ROW_WIDTH / 2, sliderY, FULL_ROW_WIDTH, 20, mapOptions.zoom, 0.0D, 4.0D, value -> {
                 voxelMap.getMap().setZoomLevel((int) Math.round(value));
                 updateMinimapZoomSlider();
             }, value -> "Minimap Zoom: " + formatMinimapZoomFactor((int) Math.round(value)));
             addOptionButton(minimapZoomSlider);
-        }
 
-        int additionalButtonX = width / 2 - 75;
-        int additionalButtonY = height / 6 + 144;
+            addSection("Map Tools", 8, 8);
+            int left = fromSlot(0, 0)[0];
+            int right = fromSlot(0, 1)[0];
+            chunkOverlayButton = createModernButton(width / 2 - FULL_ROW_WIDTH / 2, fromSlot(8, 0)[1], FULL_ROW_WIDTH, Component.literal("Chunk Overlay Options"), x -> minecraft.setScreen(new GuiRadarChunkOverlays(this)));
+            addOptionButton(chunkOverlayButton);
 
-        // Additional Buttons
-
-        if (relevantOptions == RADAR_FULL_OPTIONS) {
-            mobListButton = new Button.Builder(Component.translatable("options.minimap.radar.selectMobs"), x -> minecraft.setScreen(new GuiMobs(this, radarOptions))).bounds(additionalButtonX, additionalButtonY, 150, 20).build();
-            addOptionButton(mobListButton);
-        }
-        if (relevantOptions == GENERAL_OPTIONS && pageIndex == 1) {
-            int left = this.width / 2 - 155;
-            int right = this.width / 2 + 5;
-            netherPortalGeneralButton = new Button.Builder(Component.empty(), button -> {
-                mapOptions.showNetherPortalMarkers = !mapOptions.showNetherPortalMarkers;
-                button.setMessage(Component.literal("Nether Portal Markers: " + (mapOptions.showNetherPortalMarkers ? "ON" : "OFF")));
-                MapSettingsManager.instance.saveAll();
-            }).bounds(left, getGridButtonY(2), 150, 20).build();
-            netherPortalGeneralButton.setMessage(Component.literal("Nether Portal Markers: " + (mapOptions.showNetherPortalMarkers ? "ON" : "OFF")));
-            addOptionButton(netherPortalGeneralButton);
-
-            endPortalGeneralButton = new Button.Builder(Component.empty(), button -> {
-                mapOptions.showEndPortalMarkers = !mapOptions.showEndPortalMarkers;
-                button.setMessage(Component.literal("End Portal Markers: " + (mapOptions.showEndPortalMarkers ? "ON" : "OFF")));
-                MapSettingsManager.instance.saveAll();
-            }).bounds(right, getGridButtonY(2), 150, 20).build();
-            endPortalGeneralButton.setMessage(Component.literal("End Portal Markers: " + (mapOptions.showEndPortalMarkers ? "ON" : "OFF")));
-            addOptionButton(endPortalGeneralButton);
-
-            endGatewayGeneralButton = new Button.Builder(Component.empty(), button -> {
-                mapOptions.showEndGatewayMarkers = !mapOptions.showEndGatewayMarkers;
-                button.setMessage(Component.literal("End Gateway Markers: " + (mapOptions.showEndGatewayMarkers ? "ON" : "OFF")));
-                MapSettingsManager.instance.saveAll();
-            }).bounds(left, getGridButtonY(4), 150, 20).build();
-            endGatewayGeneralButton.setMessage(Component.literal("End Gateway Markers: " + (mapOptions.showEndGatewayMarkers ? "ON" : "OFF")));
-            addOptionButton(endGatewayGeneralButton);
-
-            // ### MODIFIED ###
-            // Move the highlight tracer controls up so they sit beside End Gateway
-            // and directly above the tracer thickness / color row.
-            int tracerY = getGridButtonY(4);
-            highlightTracerGeneralButton = new Button.Builder(Component.empty(), button -> {
-                mapOptions.highlightTracerEnabled = !mapOptions.highlightTracerEnabled;
-                updateTracerWidgets();
-                MapSettingsManager.instance.saveAll();
-            }).bounds(right, tracerY, 150, 20).build();
-            addOptionButton(highlightTracerGeneralButton);
-
-            tracerThicknessSlider = new GuiValueSliderMinimap(left, tracerY + 24, 150, 20, mapOptions.highlightTracerThickness, 1.0D, 6.0D, value -> {
-                mapOptions.highlightTracerThickness = (float) value;
-                updateTracerWidgets();
-                MapSettingsManager.instance.saveAll();
-            }, value -> "Tracer Thickness: " + String.format("%.1f", value));
-            addOptionButton(tracerThicknessSlider);
-
-            tracerColorInput = new GuiButtonText(getFont(), right, tracerY + 24, 118, 20, Component.literal("Tracer Color"), button -> {});
-            tracerColorInput.active = false;
-            tracerColorInput.setText(mapOptions.highlightTracerColor);
-            addOptionButton(tracerColorInput);
-            tracerColorPickerButton = new Button.Builder(Component.literal("..."), button -> openTracerColorPicker())
-                    .bounds(right + 122, tracerY + 24, 28, 20).build();
-            addOptionButton(tracerColorPickerButton);
-
-            autoHideHighlightsWhenNearButton = new Button.Builder(Component.empty(), button -> {
+            addSection("Waypoints & Highlights", 10, 12);
+            autoHideHighlightsWhenNearButton = createModernButton(left, fromSlot(10, 0)[1], OPTION_BUTTON_WIDTH, Component.empty(), button -> {
                 mapOptions.autoHideHighlightsWhenNear = !mapOptions.autoHideHighlightsWhenNear;
-                button.setMessage(Component.literal("Auto Remove Highlights: " + (mapOptions.autoHideHighlightsWhenNear ? "ON" : "OFF")));
                 updateTracerWidgets();
                 MapSettingsManager.instance.saveAll();
-            }).bounds(left, getHeight() / 6, 150, 20).build();
-            autoHideHighlightsWhenNearButton.setMessage(Component.literal("Auto Remove Highlights: " + (mapOptions.autoHideHighlightsWhenNear ? "ON" : "OFF")));
+            });
             addOptionButton(autoHideHighlightsWhenNearButton);
+            addMappedOption(EnumOptionsMinimap.IN_GAME_WAYPOINTS, 10, 1);
 
-            autoHideHighlightsDistanceSlider = new GuiValueSliderMinimap(right, getHeight() / 6, 150, 20, mapOptions.autoHideHighlightsNearDistance, 1.0D, 64.0D, value -> {
+            autoHideHighlightsDistanceSlider = new GuiValueSliderMinimap(right, fromSlot(11, 1)[1], OPTION_BUTTON_WIDTH, 20, mapOptions.autoHideHighlightsNearDistance, 1.0D, 64.0D, value -> {
                 mapOptions.autoHideHighlightsNearDistance = (float) value;
                 updateTracerWidgets();
                 MapSettingsManager.instance.saveAll();
             }, value -> "Highlight Remove Radius: " + (int) Math.round(value) + " blocks");
             addOptionButton(autoHideHighlightsDistanceSlider);
+
+            highlightTracerGeneralButton = createModernButton(left, fromSlot(11, 0)[1], OPTION_BUTTON_WIDTH, Component.empty(), button -> {
+                mapOptions.highlightTracerEnabled = !mapOptions.highlightTracerEnabled;
+                updateTracerWidgets();
+                MapSettingsManager.instance.saveAll();
+            });
+            addOptionButton(highlightTracerGeneralButton);
+
+            tracerThicknessSlider = new GuiValueSliderMinimap(left, fromSlot(12, 0)[1], OPTION_BUTTON_WIDTH, 20, mapOptions.highlightTracerThickness, 1.0D, 6.0D, value -> {
+                mapOptions.highlightTracerThickness = (float) value;
+                updateTracerWidgets();
+                MapSettingsManager.instance.saveAll();
+            }, value -> "Tracer Thickness: " + String.format("%.1f", value));
+            addOptionButton(tracerThicknessSlider);
+            int colorInputWidth = OPTION_BUTTON_WIDTH - 32;
+            tracerColorInput = new GuiButtonText(getFont(), right, fromSlot(12, 1)[1], colorInputWidth, 20, Component.literal("Tracer Color"), button -> {});
+            tracerColorInput.active = false;
+            tracerColorInput.setText(mapOptions.highlightTracerColor);
+            addOptionButton(tracerColorInput);
+            tracerColorPickerButton = createModernButton(right + colorInputWidth + 4, fromSlot(12, 1)[1], 28, Component.literal("..."), button -> openTracerColorPicker());
+            addOptionButton(tracerColorPickerButton);
+
+            addSection("HUD Layout", 14, 14);
+            addMappedOption(EnumOptionsMinimap.MOVE_MAP_BELOW_STATUS_EFFECT_ICONS, 14, 0);
+            addMappedOption(EnumOptionsMinimap.MOVE_SCOREBOARD_BELOW_MAP, 14, 1);
             updateTracerWidgets();
+        } else if (relevantOptions == PERFORMANCE_OPTIONS) {
+            addSection("Lighting & Terrain", 0, 2);
+            addMappedOption(EnumOptionsMinimap.DYNAMIC_LIGHTING, 0, 0);
+            addMappedOption(EnumOptionsMinimap.TERRAIN_DEPTH, 0, 1);
+            addMappedOption(EnumOptionsMinimap.WATER_TRANSPARENCY, 1, 0);
+            addMappedOption(EnumOptionsMinimap.BLOCK_TRANSPARENCY, 1, 1);
+            addMappedOption(EnumOptionsMinimap.BIOMES, 2, 0);
+            addMappedOption(EnumOptionsMinimap.BIOME_OVERLAY, 2, 1);
+
+            addSection("World Overlays", 4, 5);
+            addMappedOption(EnumOptionsMinimap.CHUNK_GRID, 4, 0);
+            addMappedOption(EnumOptionsMinimap.SLIME_CHUNKS, 4, 1);
+            addMappedOption(EnumOptionsMinimap.WORLD_BORDER, 5, 0);
+            addMappedOption(EnumOptionsMinimap.FILTERING, 5, 1);
+
+            addSection("Utility", 7, 7);
+            addMappedOption(EnumOptionsMinimap.TELEPORT_COMMAND, 7, -1);
+
+            addSection("HUD Scale", 9, 9);
+            radarTextScaleSlider = new GuiValueSliderMinimap(width / 2 - FULL_ROW_WIDTH / 2, fromSlot(9, 0)[1], FULL_ROW_WIDTH, 20, mapOptions.radarTextScale, 0.5D, 2.0D, value -> {
+                mapOptions.radarTextScale = (float) value;
+                MapSettingsManager.instance.saveAll();
+            }, value -> "Radar Text Scale: " + String.format(Locale.ROOT, "%.2fx", value));
+            addOptionButton(radarTextScaleSlider);
+        } else if (relevantOptions == RADAR_FULL_OPTIONS || relevantOptions == RADAR_SIMPLE_OPTIONS) {
+            addSection("Radar Core", 0, 1);
+            addMappedOption(EnumOptionsMinimap.SHOW_RADAR, 0, 0);
+            addMappedOption(EnumOptionsMinimap.RADAR_MODE, 0, 1);
+            addMappedOption(EnumOptionsMinimap.SHOW_MOBS, 1, 0);
+            addMappedOption(EnumOptionsMinimap.SHOW_PLAYERS, 1, 1);
+
+            addSection("Entity Labels", 3, relevantOptions == RADAR_FULL_OPTIONS ? 8 : 5);
+            int row = 3;
+            if (relevantOptions == RADAR_FULL_OPTIONS) {
+                addMappedOption(EnumOptionsMinimap.SHOW_MOB_NAMES, row, 0);
+                addMappedOption(EnumOptionsMinimap.SHOW_PLAYER_NAMES, row, 1);
+                row++;
+                addMappedOption(EnumOptionsMinimap.SHOW_MOB_HELMETS, row, 0);
+                addMappedOption(EnumOptionsMinimap.SHOW_PLAYER_HELMETS, row, 1);
+                row++;
+                addMappedOption(EnumOptionsMinimap.RADAR_FILTERING, row, 0);
+                addMappedOption(EnumOptionsMinimap.RADAR_OUTLINES, row, 1);
+                row++;
+                addMappedOption(EnumOptionsMinimap.RADAR_CPU_RENDERING, row, 0);
+                addMappedOption(EnumOptionsMinimap.SHOW_FULL_ENTITY_NAMES, row, 1);
+                row++;
+                addMappedOption(EnumOptionsMinimap.SHOW_ENTITY_ELEVATION, row, 0);
+                addMappedOption(EnumOptionsMinimap.HIDE_SNEAKING_PLAYERS, row, 1);
+                row++;
+                addMappedOption(EnumOptionsMinimap.HIDE_INVISIBLE_ENTITIES, row, -1);
+                row++;
+            } else {
+                addMappedOption(EnumOptionsMinimap.SHOW_FACING, row, 0);
+                addMappedOption(EnumOptionsMinimap.SHOW_ENTITY_ELEVATION, row, 1);
+                row++;
+                addMappedOption(EnumOptionsMinimap.HIDE_SNEAKING_PLAYERS, row, 0);
+                addMappedOption(EnumOptionsMinimap.HIDE_INVISIBLE_ENTITIES, row, 1);
+                row++;
+            }
+
+            addSection("Entity Display & Markers", row + 1, row + 4);
+            row++;
+            int actionY = fromSlot(row, 0)[1];
+            if (relevantOptions == RADAR_FULL_OPTIONS) {
+                mobListButton = createModernButton(fromSlot(row, 0)[0], actionY, OPTION_BUTTON_WIDTH, Component.translatable("options.minimap.radar.selectMobs"), x -> minecraft.setScreen(new GuiMobs(this, radarOptions)));
+                addOptionButton(mobListButton);
+            }
+
+            int left = fromSlot(0, 0)[0];
+            int right = fromSlot(0, 1)[0];
+            int netherX = relevantOptions == RADAR_FULL_OPTIONS ? right : left;
+            netherPortalGeneralButton = createModernButton(netherX, actionY, OPTION_BUTTON_WIDTH, Component.empty(), button -> {
+                mapOptions.showNetherPortalMarkers = !mapOptions.showNetherPortalMarkers;
+                button.setMessage(Component.literal("Nether Portals: " + (mapOptions.showNetherPortalMarkers ? "ON" : "OFF")));
+                MapSettingsManager.instance.saveAll();
+            });
+            netherPortalGeneralButton.setMessage(Component.literal("Nether Portals: " + (mapOptions.showNetherPortalMarkers ? "ON" : "OFF")));
+            addOptionButton(netherPortalGeneralButton);
+            actionY += relevantOptions == RADAR_FULL_OPTIONS ? 22 : 0;
+            endPortalGeneralButton = createModernButton(relevantOptions == RADAR_FULL_OPTIONS ? left : right, actionY, OPTION_BUTTON_WIDTH, Component.empty(), button -> {
+                mapOptions.showEndPortalMarkers = !mapOptions.showEndPortalMarkers;
+                button.setMessage(Component.literal("End Portals: " + (mapOptions.showEndPortalMarkers ? "ON" : "OFF")));
+                MapSettingsManager.instance.saveAll();
+            });
+            endPortalGeneralButton.setMessage(Component.literal("End Portals: " + (mapOptions.showEndPortalMarkers ? "ON" : "OFF")));
+            addOptionButton(endPortalGeneralButton);
+            endGatewayGeneralButton = createModernButton(relevantOptions == RADAR_FULL_OPTIONS ? right : left, actionY, OPTION_BUTTON_WIDTH, Component.empty(), button -> {
+                mapOptions.showEndGatewayMarkers = !mapOptions.showEndGatewayMarkers;
+                button.setMessage(Component.literal("End Gateways: " + (mapOptions.showEndGatewayMarkers ? "ON" : "OFF")));
+                MapSettingsManager.instance.saveAll();
+            });
+            endGatewayGeneralButton.setMessage(Component.literal("End Gateways: " + (mapOptions.showEndGatewayMarkers ? "ON" : "OFF")));
+            addOptionButton(endGatewayGeneralButton);
         }
-        if (relevantOptions == RADAR_FULL_OPTIONS || relevantOptions == RADAR_SIMPLE_OPTIONS) {
-            int chunkOverlayY = additionalButtonY + (relevantOptions == RADAR_FULL_OPTIONS ? 24 : 0);
-            Button chunkOverlayButton = new Button.Builder(Component.literal("Chunk Overlay Options"), x -> minecraft.setScreen(new GuiRadarChunkOverlays(this))).bounds(additionalButtonX, chunkOverlayY, 150, 20).build();
-            addOptionButton(chunkOverlayButton);
-        }
+
+        layoutPageNavigation(0);
 
         setButtonsActive();
         updateMinimapZoomSlider();
@@ -403,8 +422,79 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
         addRenderableWidget(widget);
     }
 
-    private int getGridButtonY(int slot) {
-        return getHeight() / 6 + 24 * (slot >> 1);
+    private Button createModernButton(int x, int y, int width, Component message, Button.OnPress onPress) {
+        return new GuiOptionButtonMinimap(x, y, width, null, message, onPress);
+    }
+
+    private void addSection(String title, int firstRow, int lastRow) {
+        int panelX = getWidth() / 2 - FULL_ROW_WIDTH / 2 - 12;
+        int panelY = fromSlot(firstRow, 0)[1] - 15;
+        int panelWidth = FULL_ROW_WIDTH + 24;
+        int panelHeight = (lastRow - firstRow + 1) * 22 + 16;
+        optionSections.add(new OptionSection(title, panelX, panelY, panelWidth, panelHeight));
+    }
+
+    private void addMappedOption(EnumOptionsMinimap option, int row, int col) {
+        ISettingsManager settingsManager = getSettingsManager(option);
+        if (settingsManager == null) {
+            return;
+        }
+
+        int x;
+        int y = fromSlot(row, 0)[1];
+        int width = OPTION_BUTTON_WIDTH;
+        if (col < 0) {
+            x = getWidth() / 2 - FULL_ROW_WIDTH / 2;
+            width = FULL_ROW_WIDTH;
+        } else {
+            x = fromSlot(row, col)[0];
+        }
+
+        if (option.getType() == EnumOptionsMinimap.Type.BOOLEAN || option.getType() == EnumOptionsMinimap.Type.LIST) {
+            StringBuilder text = new StringBuilder().append(settingsManager.getKeyText(option));
+            if ((option == EnumOptionsMinimap.WATER_TRANSPARENCY || option == EnumOptionsMinimap.BLOCK_TRANSPARENCY || option == EnumOptionsMinimap.BIOMES)
+                    && !mapOptions.multicore && settingsManager.getBooleanValue(option)) {
+                text.insert(0, "§c");
+            }
+            GuiOptionButtonMinimap optionButton = new GuiOptionButtonMinimap(x, y, width, option, Component.literal(text.toString()), this::optionClicked);
+            optionButton.setTooltip(createButtonTooltip(option));
+            addOptionButton(optionButton);
+            if (option == EnumOptionsMinimap.SLIME_CHUNKS) {
+                slimeChunksButton = optionButton;
+            }
+        } else if (option == EnumOptionsMinimap.TELEPORT_COMMAND) {
+            String buttonTeleportText = I18n.get("options.minimap.teleportCommand") + ": " + mapOptions.teleportCommand;
+            teleportCommandButton = new GuiButtonText(getFont(), x, y, width, 20, Component.literal(buttonTeleportText), button -> teleportCommandButton.setEditing(true));
+            teleportCommandButton.setText(mapOptions.teleportCommand);
+            teleportCommandButton.active = mapOptions.serverTeleportCommand == null;
+            addOptionButton(teleportCommandButton);
+        }
+    }
+
+    private int[] fromSlot(int row, int col) {
+        int x = getWidth() / 2 - FULL_ROW_WIDTH / 2 + col * (OPTION_BUTTON_WIDTH + OPTION_COLUMN_GAP);
+        int y = getHeight() / 6 + 22 * row;
+        return new int[] { x, y };
+    }
+
+    private void layoutPageNavigation(int pageCount) {
+        if (pageCount <= 0) {
+            pageNavY = height / 6 + 120;
+            nextPageButton.setPosition(width / 2 + 140, pageNavY);
+            prevPageButton.setPosition(width / 2 - 180, pageNavY);
+            return;
+        }
+
+        int minNavY = height / 6 + 120;
+        int maxBottom = 0;
+        for (AbstractWidget widget : optionButtons) {
+            if (widget.visible) {
+                maxBottom = Math.max(maxBottom, widget.getY() + widget.getHeight());
+            }
+        }
+        pageNavY = Math.max(minNavY, maxBottom + 4);
+        nextPageButton.setPosition(width / 2 + 140, pageNavY);
+        prevPageButton.setPosition(width / 2 - 180, pageNavY);
     }
 
     private void optionClicked(Button button) {
@@ -416,7 +506,11 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
         ISettingsManager settingsManager = getSettingsManager(option);
         if (settingsManager == null) return;
 
-        MapSettingsManager.updateBooleanOrListValue(settingsManager, option);
+        if (option == EnumOptionsMinimap.SHOW_FACING_DEGREES && settingsManager == mapOptions) {
+            mapOptions.cycleFacingDisplayMode();
+        } else {
+            MapSettingsManager.updateBooleanOrListValue(settingsManager, option);
+        }
 
         String prefix = "";
         switch (option) {
@@ -430,6 +524,7 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
         }
 
         button2.setMessage(Component.literal(prefix + settingsManager.getKeyText(option)));
+        MapSettingsManager.instance.saveAll();
         setButtonsActive();
     }
 
@@ -439,6 +534,9 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
                 continue;
             }
             EnumOptionsMinimap option = button2.returnEnumOptions();
+            if (option == null) {
+                continue;
+            }
 
             boolean radarBlocked = !radarOptions.radarAllowed && !radarOptions.radarPlayersAllowed && !radarOptions.radarMobsAllowed;
 
@@ -471,6 +569,9 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
         if (endGatewayGeneralButton != null) {
             endGatewayGeneralButton.active = mapOptions.minimapAllowed;
         }
+        if (chunkOverlayButton != null) {
+            chunkOverlayButton.active = mapOptions.minimapAllowed;
+        }
         if (highlightTracerGeneralButton != null) {
             highlightTracerGeneralButton.active = mapOptions.minimapAllowed;
         }
@@ -479,6 +580,9 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
         }
         if (minimapZoomSlider != null) {
             minimapZoomSlider.active = mapOptions.minimapAllowed;
+        }
+        if (radarTextScaleSlider != null) {
+            radarTextScaleSlider.active = mapOptions.minimapAllowed;
         }
         if (autoHideHighlightsDistanceSlider != null) {
             autoHideHighlightsDistanceSlider.active = mapOptions.minimapAllowed && mapOptions.autoHideHighlightsWhenNear;
@@ -509,12 +613,11 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
         }
         graphics.blit(RenderPipelines.GUI_TEXTURED, Screen.FOOTER_SEPARATOR, 0, height - layout.getFooterHeight() - 2, 0.0F, 0.0F, width, 2, 32, 2);
         if (!pageInfo.isEmpty()) {
-            int navY = height / 6 + 120 + (tabIndex == 0 && pageIndex == 0 ? 24 : 0);
-            int barTop = navY + 2;
-            int barBottom = navY + 18;
+            int barTop = pageNavY + 2;
+            int barBottom = pageNavY + 18;
 
             graphics.fill(width / 2 - 40, barTop, width / 2 + 40, barBottom, 0x88000000);
-            graphics.centeredText(font, pageInfo, width / 2, navY + 6, 0xFFFFFFFF);
+            graphics.centeredText(font, pageInfo, width / 2, pageNavY + 6, 0xFFFFFFFF);
         }
         if (tracerColorPickerOpen) {
             graphics.nextStratum();
@@ -643,6 +746,20 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
     public void extractMenuBackground(GuiGraphicsExtractor graphics) {
         graphics.blit(RenderPipelines.GUI_TEXTURED, CreateWorldScreen.TAB_HEADER_BACKGROUND, 0, 0, 0.0F, 0.0F, width, layout.getHeaderHeight(), 16, 16);
         extractMenuBackground(graphics, 0, layout.getHeaderHeight(), width, height);
+        if (embeddedTabScreen == null) {
+            renderOptionSections(graphics);
+        }
+    }
+
+    private void renderOptionSections(GuiGraphicsExtractor graphics) {
+        for (OptionSection section : optionSections) {
+            int x = section.x();
+            int y = section.y();
+            int right = x + section.width();
+            int bottom = y + section.height();
+            graphics.fill(x + 12, y + 9, x + 30, y + 10, 0xFFA9B4C3);
+            graphics.text(this.font, section.title(), x + 36, y + 5, 0xFFE6EAF0, false);
+        }
     }
 
     @Override
@@ -787,6 +904,9 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
         public void doLayout(ScreenRectangle screenRectangle) {
         }
 
+    }
+
+    private record OptionSection(String title, int x, int y, int width, int height) {
     }
 
     private void newSeed() {

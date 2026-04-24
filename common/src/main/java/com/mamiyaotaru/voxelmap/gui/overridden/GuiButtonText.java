@@ -19,9 +19,19 @@ public class GuiButtonText extends Button.Plain {
         this.textField = new EditBox(fontRenderer, x + 1, y + 1, width - 2, height - 2, Component.empty());
     }
 
-
     @Override
     public void extractContents(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
+        int x = this.getX();
+        int y = this.getY();
+        int right = x + this.getWidth();
+        int bottom = y + this.getHeight();
+        boolean hovered = this.active && this.isHovered();
+        int borderColor = editing ? 0xFF9CC7FF : hovered ? 0xFF8FA7C8 : 0xFF1A2028;
+
+        graphics.fill(x, y, right, bottom, 0xAA05070A);
+        graphics.fill(x + 1, y + 1, right - 1, bottom - 1, borderColor);
+        graphics.fillGradient(x + 2, y + 2, right - 2, bottom - 2, 0xFF28313B, 0xFF202832);
+        graphics.fill(x + 3, y + 3, right - 3, y + 4, 0x44FFFFFF);
         if (editing) {
             textField.extractRenderState(graphics, mouseX, mouseY, delta);
             return;
