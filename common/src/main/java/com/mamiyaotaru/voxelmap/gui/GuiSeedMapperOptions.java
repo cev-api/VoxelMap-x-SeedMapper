@@ -297,7 +297,9 @@ public class GuiSeedMapperOptions extends GuiScreenMinimap {
 
     private void applyTextValues() {
         if (seedInput != null) {
-            settings.manualSeed = seedInput.getText().trim();
+            String seed = seedInput.getText().trim();
+            settings.manualSeed = seed;
+            settings.putSavedSeed(settings.getCurrentServerKey(), seed);
         }
         if (espTargetInput != null) {
             settings.espTarget = espTargetInput.getText().trim();

@@ -267,6 +267,7 @@ public class VoxelMap implements PreparableReloadListener {
         setWorldSeed(seed);
         if (seedMapperOptions != null && (seedMapperOptions.manualSeed == null || seedMapperOptions.manualSeed.isBlank())) {
             seedMapperOptions.manualSeed = seed;
+            seedMapperOptions.putSavedSeed(seedMapperOptions.getCurrentServerKey(), seed);
         }
     }
 
