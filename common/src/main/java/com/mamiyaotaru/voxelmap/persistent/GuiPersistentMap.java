@@ -68,6 +68,7 @@ import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -173,6 +174,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     private final Identifier seedMapperDirectionArrowResource = Identifier.fromNamespaceAndPath(VoxelConstants.MOD_ID, "images/seedmapper/arrow.png");
     private final List<FeatureIconHitbox> seedMapperIconHitboxes = new ArrayList<>();
     private final List<SeedMapperMarkerHitbox> seedMapperMarkerHitboxes = new ArrayList<>();
+    private final Set<Long> visibleSeedMapperMarkerCoords = new HashSet<>();
     private Set<SeedMapperFeature> seedMapperSavedToggles;
     private SeedMapperFeature seedMapperIsolatedFeature;
     private int seedMapperIsolationBaseHash;
@@ -1601,28 +1603,22 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     }
 
     private void drawSeedMapperMarkers(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
-        if (!seedMapperOptions.enabled) {
+        seedMapperMarkerHitboxes.clear();
+        visibleSeedMapperMarkerCoords.clear();
+        boolean showNetherPortals = mapOptions.showNetherPortalMarkers;
+        boolean showEndPortals = mapOptions.showEndPortalMarkers;
+        boolean showEndBeacons = mapOptions.showEndGatewayMarkers;
+        boolean showPortalMarkers = showNetherPortals || showEndPortals || showEndBeacons;
+        if (!seedMapperOptions.enabled && !showPortalMarkers) {
             return;
         }
-        seedMapperMarkerHitboxes.clear();
         boolean mapInMotion = currentDragging
                 || Math.abs(this.deltaX) > 0.01F
                 || Math.abs(this.deltaY) > 0.01F
                 || this.zoom != this.zoomGoal;
-        if (mapInMotion) {
-            // Hide structure markers while panning/zooming to avoid partial decimation artifacts.
-            return;
-        }
 
         int dimension = getCurrentCubiomesDimension();
         if (dimension == Integer.MIN_VALUE) {
-            return;
-        }
-
-        long seed;
-        try {
-            seed = seedMapperOptions.resolveSeed(VoxelConstants.getVoxelMapInstance().getWorldSeed());
-        } catch (IllegalArgumentException ignored) {
             return;
         }
 
@@ -1652,58 +1648,64 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             maxZ = cz + maxSpan / 2;
         }
 
-        int generatorFlags = 0;
-        SeedMapperQueryCacheKey key = new SeedMapperQueryCacheKey(
-                seed,
-                dimension,
-                generatorFlags,
-                minX,
-                maxX,
-                minZ,
-                maxZ,
-                seedMapperOptions.showLootableOnly,
-                enabledFeatureSetHash(),
-                seedMapperOptions.getDatapackMarkerHash(),
-                seedMapperOptions.lootSearch == null ? "" : seedMapperOptions.lootSearch,
-                currentSeedMapperWorldKey()
-        );
+        List<SeedMapperMarker> markers = new ArrayList<>();
 
-        long now = System.currentTimeMillis();
-        long minIntervalMs = mapInMotion ? 1500L : 1000L;
-        String datapackWorldKey = currentSeedMapperWorldKey();
-        boolean keyChanged = seedMapperLastMarkerQueryKey == null
-                || !seedMapperLastMarkerQueryKey.equals(key);
-        boolean intervalElapsed = now - seedMapperLastMarkerQueryMs >= minIntervalMs;
-        // During drag/zoom movement, keep using cached markers to avoid synchronous query hitching.
-        boolean shouldRefresh = seedMapperLastMarkerResult.isEmpty()
-                || (!mapInMotion && (keyChanged || intervalElapsed));
-        if (shouldRefresh) {
-            SeedMapperLocatorService.QueryResult result = SeedMapperLocatorService.get().queryWithStatus(
-                    seed,
-                    dimension,
-                    SeedMapperCompat.getMcVersion(),
-                    generatorFlags,
-                    minX,
-                    maxX,
-                    minZ,
-                    maxZ,
-                    seedMapperOptions,
-                    datapackWorldKey);
-            if (result.exact() || seedMapperLastMarkerResult.isEmpty()) {
-                seedMapperLastMarkerResult = result.markers();
-                seedMapperLastMarkerQueryKey = key;
+        // Seed-derived structure markers require a valid seed and are hidden while dragging/zooming.
+        if (seedMapperOptions.enabled
+                && !seedMapperOptions.getEnabledFeaturesSnapshot().isEmpty()
+                && !mapInMotion) {
+            try {
+                long seed = seedMapperOptions.resolveSeed(VoxelConstants.getVoxelMapInstance().getWorldSeed());
+                int generatorFlags = 0;
+                SeedMapperQueryCacheKey key = new SeedMapperQueryCacheKey(
+                        seed,
+                        dimension,
+                        generatorFlags,
+                        minX,
+                        maxX,
+                        minZ,
+                        maxZ,
+                        seedMapperOptions.showLootableOnly,
+                        enabledFeatureSetHash(),
+                        seedMapperOptions.getDatapackMarkerHash(),
+                        seedMapperOptions.lootSearch == null ? "" : seedMapperOptions.lootSearch,
+                        currentSeedMapperWorldKey()
+                );
+
+                long now = System.currentTimeMillis();
+                long minIntervalMs = 1000L;
+                String datapackWorldKey = currentSeedMapperWorldKey();
+                boolean keyChanged = seedMapperLastMarkerQueryKey == null
+                        || !seedMapperLastMarkerQueryKey.equals(key);
+                boolean intervalElapsed = now - seedMapperLastMarkerQueryMs >= minIntervalMs;
+                boolean shouldRefresh = seedMapperLastMarkerResult.isEmpty() || keyChanged || intervalElapsed;
+                if (shouldRefresh) {
+                    SeedMapperLocatorService.QueryResult result = SeedMapperLocatorService.get().queryWithStatus(
+                            seed,
+                            dimension,
+                            SeedMapperCompat.getMcVersion(),
+                            generatorFlags,
+                            minX,
+                            maxX,
+                            minZ,
+                            maxZ,
+                            seedMapperOptions,
+                            datapackWorldKey);
+                    if (result.exact() || seedMapperLastMarkerResult.isEmpty()) {
+                        seedMapperLastMarkerResult = result.markers();
+                        seedMapperLastMarkerQueryKey = key;
+                    }
+                    seedMapperLastMarkerQueryMs = now;
+                }
+                markers.addAll(seedMapperLastMarkerResult);
+                markers.removeIf(marker -> !seedMapperOptions.isFeatureEnabled(marker.feature()));
+            } catch (IllegalArgumentException ignored) {
+                // No valid seed set: keep drawing non-seed portal markers below.
             }
-            seedMapperLastMarkerQueryMs = now;
         }
-        if (seedMapperOptions.getEnabledFeaturesSnapshot().isEmpty()) {
-            return;
-        }
-        List<SeedMapperMarker> markers = new ArrayList<>(seedMapperLastMarkerResult);
-        markers.removeIf(marker -> !seedMapperOptions.isFeatureEnabled(marker.feature()));
-        boolean showNetherPortals = mapOptions.showNetherPortalMarkers && seedMapperOptions.isFeatureEnabled(SeedMapperFeature.NETHER_PORTAL);
-        boolean showEndPortals = mapOptions.showEndPortalMarkers && seedMapperOptions.isFeatureEnabled(SeedMapperFeature.END_PORTAL);
-        boolean showEndBeacons = mapOptions.showEndGatewayMarkers && seedMapperOptions.isFeatureEnabled(SeedMapperFeature.END_BEACON);
-        if (showNetherPortals || showEndPortals || showEndBeacons) {
+
+        // Portal markers are detected from world/chunks and must not depend on seed availability.
+        if (showPortalMarkers) {
             for (com.mamiyaotaru.voxelmap.PortalMarkersManager.PortalMarker marker :
                     VoxelConstants.getVoxelMapInstance().getPortalMarkersManager()
                             .getMarkersInBounds(minX, maxX, minZ, maxZ, showNetherPortals, showEndPortals, showEndBeacons)) {
@@ -1717,6 +1719,9 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 }
                 markers.add(new SeedMapperMarker(feature, marker.pos().getX(), marker.pos().getZ()));
             }
+        }
+        if (markers.isEmpty()) {
+            return;
         }
 
         boolean lowDetail = mapToGui < 0.35F;
@@ -1899,7 +1904,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         seedMapperStripTop = y;
         seedMapperStripRight = Math.max(seedMapperStripLeft + 40, contentRight + stripPad + 8);
         seedMapperStripBottom = y + barHeight;
-        graphics.fill(seedMapperStripLeft, seedMapperStripTop, seedMapperStripRight, seedMapperStripBottom, 0xFF000000);
+        graphics.fill(seedMapperStripLeft, seedMapperStripTop, seedMapperStripRight, seedMapperStripBottom, 0xA0000000);
         boolean allLocationsEnabled = !seedMapperOptions.getEnabledFeaturesSnapshot().isEmpty();
         int titleColor = allLocationsEnabled ? 0xFFFFFFFF : 0xFF8A8A8A;
         graphics.text(this.getFont(), legendTitle, titleX, titleY, titleColor);
@@ -1913,7 +1918,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         if (!seedMapperIconHitboxes.isEmpty()) {
             for (FeatureIconHitbox hitbox : seedMapperIconHitboxes) {
                 SeedMapperFeature feature = hitbox.feature();
-                boolean enabled = seedMapperOptions.isFeatureEnabled(feature);
+                boolean enabled = isFeatureEnabledInPanel(feature);
                 int color = enabled ? 0xFFFFFFFF : 0x55FFFFFF;
                 VoxelMapGuiGraphics.blitFloat(graphics, RenderPipelines.GUI_TEXTURED, feature.icon(), hitbox.x(), hitbox.y(), iconSize, iconSize, 0, 1, 0, 1, color);
                 if (mouseX >= hitbox.x() && mouseX <= hitbox.x() + iconSize && mouseY >= hitbox.y() && mouseY <= hitbox.y() + iconSize) {
@@ -1958,6 +1963,11 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             if (hitbox.contains(mouseX, mouseY)) {
                 boolean ctrlDown = isCtrlDown();
                 SeedMapperFeature clicked = hitbox.feature();
+                if (isPortalFeature(clicked)) {
+                    setPortalFeatureEnabled(clicked, !isFeatureEnabledInPanel(clicked));
+                    MapSettingsManager.instance.saveAll();
+                    return true;
+                }
                 if (ctrlDown) {
                     int currentHash = enabledFeatureSetHash();
                     if (seedMapperSavedToggles != null
@@ -2014,6 +2024,16 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     }
 
     private boolean isSeedMapperFeatureVisible(SeedMapperFeature feature) {
+        return true;
+    }
+
+    private boolean isPortalFeature(SeedMapperFeature feature) {
+        return feature == SeedMapperFeature.NETHER_PORTAL
+                || feature == SeedMapperFeature.END_PORTAL
+                || feature == SeedMapperFeature.END_BEACON;
+    }
+
+    private boolean isFeatureEnabledInPanel(SeedMapperFeature feature) {
         if (feature == SeedMapperFeature.NETHER_PORTAL) {
             return mapOptions.showNetherPortalMarkers;
         }
@@ -2023,7 +2043,17 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         if (feature == SeedMapperFeature.END_BEACON) {
             return mapOptions.showEndGatewayMarkers;
         }
-        return true;
+        return seedMapperOptions.isFeatureEnabled(feature);
+    }
+
+    private void setPortalFeatureEnabled(SeedMapperFeature feature, boolean enabled) {
+        if (feature == SeedMapperFeature.NETHER_PORTAL) {
+            mapOptions.showNetherPortalMarkers = enabled;
+        } else if (feature == SeedMapperFeature.END_PORTAL) {
+            mapOptions.showEndPortalMarkers = enabled;
+        } else if (feature == SeedMapperFeature.END_BEACON) {
+            mapOptions.showEndGatewayMarkers = enabled;
+        }
     }
 
     private void drawSeedMapperMarker(GuiGraphicsExtractor graphics, SeedMapperMarker marker, int mouseX, int mouseY) {
@@ -2031,8 +2061,15 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         float ptZ = marker.blockZ() + 0.5F;
 
         boolean datapackStructure = marker.feature() == SeedMapperFeature.DATAPACK_STRUCTURE;
-        int iconWidth = datapackStructure ? SeedMapperImportedDatapackManager.iconSizeForPersistentMap() : ICON_WIDTH;
-        int iconHeight = datapackStructure ? SeedMapperImportedDatapackManager.iconSizeForPersistentMap() : ICON_HEIGHT;
+        boolean portalMarker = marker.feature() == SeedMapperFeature.NETHER_PORTAL
+                || marker.feature() == SeedMapperFeature.END_PORTAL
+                || marker.feature() == SeedMapperFeature.END_BEACON;
+        int iconWidth = datapackStructure
+                ? SeedMapperImportedDatapackManager.iconSizeForPersistentMap()
+                : (portalMarker ? ICON_WIDTH + 4 : ICON_WIDTH);
+        int iconHeight = datapackStructure
+                ? SeedMapperImportedDatapackManager.iconSizeForPersistentMap()
+                : (portalMarker ? ICON_HEIGHT + 4 : ICON_HEIGHT);
         int x = this.width / 2;
         int y = this.height / 2;
         int borderX = this.centerX + iconWidth / 2;
@@ -2106,6 +2143,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         if (completed) {
             drawCompletedTick(graphics, Math.round(x - iconWidth / 2.0F), Math.round(y - iconHeight / 2.0F), iconWidth, iconHeight);
         }
+        visibleSeedMapperMarkerCoords.add(packXZ(marker.blockX(), marker.blockZ()));
         graphics.pose().popMatrix();
     }
 
@@ -2581,12 +2619,11 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     }
 
     private boolean hasVisibleSeedMapperMarkerAt(int x, int z) {
-        for (SeedMapperMarker marker : seedMapperLastMarkerResult) {
-            if (marker.blockX() == x && marker.blockZ() == z) {
-                return true;
-            }
-        }
-        return false;
+        return visibleSeedMapperMarkerCoords.contains(packXZ(x, z));
+    }
+
+    private long packXZ(int x, int z) {
+        return ((long) x << 32) ^ (z & 0xFFFFFFFFL);
     }
 
     private void drawIconStroke(GuiGraphicsExtractor graphics, int x, int y, int width, int height, int color) {

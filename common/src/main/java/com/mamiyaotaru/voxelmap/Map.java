@@ -117,7 +117,7 @@ public class Map implements Runnable, IChangeObserver {
     private final Identifier resourceSquareMapStencil = Identifier.fromNamespaceAndPath(VoxelConstants.MOD_ID, "images/minimap/square_map_stencil.png");
     private final Identifier resourceRoundMapFrame = Identifier.fromNamespaceAndPath(VoxelConstants.MOD_ID, "images/minimap/round_map_frame.png");
     private final Identifier resourceRoundMapStencil = Identifier.fromNamespaceAndPath(VoxelConstants.MOD_ID, "images/minimap/round_map_stencil.png");
-    private final Identifier resourceObsidian = Identifier.fromNamespaceAndPath("minecraft", "textures/block/obsidian.png");
+    private final Identifier resourceNetherPortal = Identifier.fromNamespaceAndPath("minecraft", "textures/block/nether_portal.png");
     private final Identifier resourceEndPortalFrame = Identifier.fromNamespaceAndPath("minecraft", "textures/block/end_portal_frame_top.png");
     private final Identifier resourceBedrock = Identifier.fromNamespaceAndPath("minecraft", "textures/block/bedrock.png");
     private int scWidth;
@@ -2243,7 +2243,7 @@ public class Map implements Runnable, IChangeObserver {
         for (PortalMarkersManager.PortalMarker marker : VoxelConstants.getVoxelMapInstance().getPortalMarkersManager()
                 .getMarkersInRange(centerX, centerZ, radius, showNether, showEnd, showEndBeacon)) {
             Identifier icon = switch (marker.type()) {
-                case NETHER -> resourceObsidian;
+                case NETHER -> resourceNetherPortal;
                 case END -> resourceEndPortalFrame;
                 case END_BEACON -> resourceBedrock;
             };

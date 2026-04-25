@@ -23,6 +23,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.User;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.multiplayer.ServerData;
+import net.minecraft.core.BlockPos;
 import net.minecraft.client.renderer.MultiBufferSource.BufferSource;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.client.server.IntegratedServer;
@@ -175,6 +176,10 @@ public class WaypointManager {
 
     public ArrayList<Waypoint> getWaypoints() {
         return this.wayPts;
+    }
+
+    public WaypointContainer getWaypointContainer() {
+        return this.waypointContainer;
     }
 
     public ImportResult importXaeroWaypoints() {
@@ -1098,6 +1103,81 @@ public class WaypointManager {
         }
 
         this.waypointContainer.refreshRenderables();
+    }
+
+    public boolean addAutoPortalWaypoint(PortalMarkersManager.PortalType type, BlockPos pos) {
+        if (type == null || pos == null) {
+            return false;
+        }
+
+        if (!this.options.waypointsAllowed || !this.options.autoPortalWaypoints) {
+            return false;
+        }
+
+        synchronized (this.waypointLock) {
+            String prefix = type == PortalMarkersManager.PortalType.END ? "End Portal" : "Nether Portal";
+            if (this.hasPortalWaypointNearby(prefix, pos, 3) || this.hasWaypointAt(pos)) {
+                return false;
+            }
+
+            String icon = type == PortalMarkersManager.PortalType.END ? "diamond" : "fire";
+            int nextNumber = this.nextPortalWaypointIndex(prefix);
+            String name = prefix + " " + nextNumber;
+            TreeSet<DimensionContainer> dimensions = new TreeSet<>();
+            if (this.currentDimension != null) {
+                dimensions.add(this.currentDimension);
+            }
+
+            Waypoint waypoint = new Waypoint(name, pos.getX(), pos.getZ(), pos.getY(), true, 0.72F, 0.24F, 1.0F, icon, this.getCurrentSubworldDescriptor(false), dimensions);
+            waypoint.showBeacon = false;
+            this.wayPts.add(waypoint);
+            return true;
+        }
+    }
+
+    private boolean hasWaypointAt(BlockPos pos) {
+        for (Waypoint waypoint : this.wayPts) {
+            if (waypoint.x == pos.getX() && waypoint.y == pos.getY() && waypoint.z == pos.getZ()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean hasPortalWaypointNearby(String prefix, BlockPos pos, int distance) {
+        int maxSq = distance * distance;
+        for (Waypoint waypoint : this.wayPts) {
+            if (!waypoint.name.startsWith(prefix)) {
+                continue;
+            }
+            int dx = waypoint.x - pos.getX();
+            int dz = waypoint.z - pos.getZ();
+            if (dx * dx + dz * dz <= maxSq) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private int nextPortalWaypointIndex(String prefix) {
+        int highest = 0;
+        String base = prefix + " ";
+        for (Waypoint waypoint : this.wayPts) {
+            String name = waypoint.name;
+            if (name.equals(prefix)) {
+                highest = Math.max(highest, 1);
+                continue;
+            }
+            if (!name.startsWith(base)) {
+                continue;
+            }
+            String tail = name.substring(base.length()).trim();
+            try {
+                highest = Math.max(highest, Integer.parseInt(tail));
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return highest + 1;
     }
 
     public void setHighlightedWaypoint(Waypoint waypoint, boolean toggle) {

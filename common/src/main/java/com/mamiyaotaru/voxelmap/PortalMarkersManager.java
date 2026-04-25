@@ -31,6 +31,7 @@ import java.util.Set;
 
 public class PortalMarkersManager {
     private static final int MAX_CHUNK_SCANS_PER_TICK = 2;
+    private static final int AUTO_PORTAL_WAYPOINT_RANGE = 24;
 
     public enum PortalType {
         NETHER,
@@ -66,6 +67,7 @@ public class PortalMarkersManager {
             ticksSinceDirty = 0;
         }
         processPendingChunkScans(level);
+        syncAutoPortalWaypoints();
         if (dirty) {
             ticksSinceDirty++;
             if (ticksSinceDirty >= 20) {
@@ -85,9 +87,44 @@ public class PortalMarkersManager {
         ChunkPos chunkPos = chunk.getPos();
         long chunkKey = chunkKey(chunkPos.x(), chunkPos.z());
 
-        replaceChunkMarkers(netherMarkersByChunk, netherMarkers, chunkKey, result.netherMarkers());
-        replaceChunkMarkers(endMarkersByChunk, endMarkers, chunkKey, result.endMarkers());
-        replaceChunkMarkers(endBeaconMarkersByChunk, endBeaconMarkers, chunkKey, result.endBeaconMarkers());
+        boolean changed = false;
+        changed |= replaceChunkMarkers(netherMarkersByChunk, netherMarkers, chunkKey, result.netherMarkers());
+        changed |= replaceChunkMarkers(endMarkersByChunk, endMarkers, chunkKey, result.endMarkers());
+        changed |= replaceChunkMarkers(endBeaconMarkersByChunk, endBeaconMarkers, chunkKey, result.endBeaconMarkers());
+        if (changed) {
+            syncAutoPortalWaypoints();
+        }
+    }
+
+    public void syncAutoPortalWaypoints() {
+        if (!isAutoPortalWaypointEnabled()) {
+            return;
+        }
+
+        WaypointManager waypointManager = VoxelConstants.getVoxelMapInstance().getWaypointManager();
+        if (waypointManager == null) {
+            return;
+        }
+
+        int playerX = GameVariableAccessShim.xCoord();
+        int playerZ = GameVariableAccessShim.zCoord();
+        int rangeSq = AUTO_PORTAL_WAYPOINT_RANGE * AUTO_PORTAL_WAYPOINT_RANGE;
+        boolean added = false;
+        for (BlockPos pos : netherMarkers) {
+            if (isNearPlayer(pos, playerX, playerZ, rangeSq)) {
+                added |= waypointManager.addAutoPortalWaypoint(PortalType.NETHER, pos);
+            }
+        }
+        for (BlockPos pos : endMarkers) {
+            if (isNearPlayer(pos, playerX, playerZ, rangeSq)) {
+                added |= waypointManager.addAutoPortalWaypoint(PortalType.END, pos);
+            }
+        }
+
+        if (added) {
+            waypointManager.saveWaypoints();
+            waypointManager.getWaypointContainer().refreshRenderables();
+        }
     }
 
     public void onBlockUpdated(BlockPos pos) {
@@ -182,7 +219,7 @@ public class PortalMarkersManager {
                     Block block = state.getBlock();
                     if (block == Blocks.NETHER_PORTAL) {
                         netherBlocks.add(mutablePos.immutable());
-                    } else if (block == Blocks.END_PORTAL || block == Blocks.END_PORTAL_FRAME) {
+                    } else if (block == Blocks.END_PORTAL) {
                         endBlocks.add(mutablePos.immutable());
                     } else if (block == Blocks.END_GATEWAY) {
                         endBeaconBlocks.add(mutablePos.immutable());
@@ -241,11 +278,11 @@ public class PortalMarkersManager {
         }
     }
 
-    private void replaceChunkMarkers(Map<Long, Set<BlockPos>> byChunk, Set<BlockPos> global, long chunkKey, Set<BlockPos> latest) {
+    private boolean replaceChunkMarkers(Map<Long, Set<BlockPos>> byChunk, Set<BlockPos> global, long chunkKey, Set<BlockPos> latest) {
         Set<BlockPos> previous = byChunk.get(chunkKey);
         Set<BlockPos> normalizedLatest = latest.isEmpty() ? Set.of() : new HashSet<>(latest);
         if (previous != null && previous.equals(normalizedLatest)) {
-            return;
+            return false;
         }
         if (previous != null) {
             global.removeAll(previous);
@@ -256,6 +293,7 @@ public class PortalMarkersManager {
             global.addAll(normalizedLatest);
         }
         markDirty();
+        return true;
     }
 
     private long chunkKey(int chunkX, int chunkZ) {
@@ -345,6 +383,7 @@ public class PortalMarkersManager {
             loadArray(root.getAsJsonArray("nether"), netherMarkers, netherMarkersByChunk);
             loadArray(root.getAsJsonArray("end"), endMarkers, endMarkersByChunk);
             loadArray(root.getAsJsonArray("endBeacons"), endBeaconMarkers, endBeaconMarkersByChunk);
+            syncAutoPortalWaypoints();
         } catch (IOException ignored) {
         } catch (RuntimeException ignored) {
         }
@@ -412,6 +451,20 @@ public class PortalMarkersManager {
     private void markDirty() {
         dirty = true;
         ticksSinceDirty = 0;
+    }
+
+    private boolean isAutoPortalWaypointEnabled() {
+        if (VoxelConstants.getVoxelMapInstance() == null || VoxelConstants.getVoxelMapInstance().getMapOptions() == null) {
+            return false;
+        }
+        MapSettingsManager mapOptions = VoxelConstants.getVoxelMapInstance().getMapOptions();
+        return mapOptions.waypointsAllowed && mapOptions.autoPortalWaypoints;
+    }
+
+    private boolean isNearPlayer(BlockPos pos, int playerX, int playerZ, int rangeSq) {
+        int dx = pos.getX() - playerX;
+        int dz = pos.getZ() - playerZ;
+        return dx * dx + dz * dz <= rangeSq;
     }
 
     private record ScanResult(Set<BlockPos> netherMarkers, Set<BlockPos> endMarkers, Set<BlockPos> endBeaconMarkers) {}
