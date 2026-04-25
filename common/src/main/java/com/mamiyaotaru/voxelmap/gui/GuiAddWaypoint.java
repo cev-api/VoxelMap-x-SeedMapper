@@ -101,13 +101,13 @@ public class GuiAddWaypoint extends GuiScreenMinimap implements IPopupGuiScreen 
         waypointName.setValue(waypoint.name);
         waypointX = new EditBox(getFont(), getWidth() / 2 - 100, getHeight() / 6 + 41 + 13, 56, 20, Component.empty());
         waypointX.setMaxLength(128);
-        waypointX.setValue(String.valueOf(waypoint.getX()));
+        waypointX.setValue(String.valueOf(waypoint.getXInCurrentDimension()));
         waypointY = new EditBox(getFont(), getWidth() / 2 - 28, getHeight() / 6 + 41 + 13, 56, 20, Component.empty());
         waypointY.setMaxLength(128);
         waypointY.setValue(String.valueOf(waypoint.getY()));
         waypointZ = new EditBox(getFont(), getWidth() / 2 + 44, getHeight() / 6 + 41 + 13, 56, 20, Component.empty());
         waypointZ.setMaxLength(128);
-        waypointZ.setValue(String.valueOf(waypoint.getZ()));
+        waypointZ.setValue(String.valueOf(waypoint.getZInCurrentDimension()));
 
         addRenderableWidget(dimensionList);
         addRenderableWidget(waypointName);
@@ -157,9 +157,10 @@ public class GuiAddWaypoint extends GuiScreenMinimap implements IPopupGuiScreen 
 
     protected void acceptWaypoint() {
         waypoint.name = waypointName.getValue();
-        waypoint.setX(Integer.parseInt(waypointX.getValue()));
+        ensureCoordinateDimensionIsSelected();
+        waypoint.setXFromCurrentDimension(Integer.parseInt(waypointX.getValue()));
         waypoint.setY(Integer.parseInt(waypointY.getValue()));
-        waypoint.setZ(Integer.parseInt(waypointZ.getValue()));
+        waypoint.setZFromCurrentDimension(Integer.parseInt(waypointZ.getValue()));
         waypoint.red = red;
         waypoint.green = green;
         waypoint.blue = blue;
@@ -182,6 +183,17 @@ public class GuiAddWaypoint extends GuiScreenMinimap implements IPopupGuiScreen 
 
         waypointManager.addWaypoint(waypoint);
         onClose();
+    }
+
+    private void ensureCoordinateDimensionIsSelected() {
+        for (DimensionContainer dimension : dimensions) {
+            if (dimension.getStorageName().equals(waypoint.coordinateDimension)) {
+                return;
+            }
+        }
+
+        DimensionContainer currentDimension = VoxelConstants.getVoxelMapInstance().getDimensionManager().getDimensionContainerByWorld(VoxelConstants.getPlayer().level());
+        waypoint.coordinateDimension = currentDimension.getStorageName();
     }
 
     private void closePopupAndApplyChanges() {

@@ -989,7 +989,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
             for (Waypoint waypoint : waypointManager.getWaypoints()) {
                 if (!waypoint.inWorld || !waypoint.inDimension) continue;
-                if (hasVisibleSeedMapperMarkerAt(waypoint.getX(), waypoint.getZ())) continue;
+                if (hasVisibleSeedMapperMarkerAt(waypoint.getXInCurrentDimension(), waypoint.getZInCurrentDimension())) continue;
 
                 boolean isHighlighted = waypointManager.isHighlightedWaypoint(waypoint);
                 boolean isHovered = drawWaypoint(graphics, waypoint, textureAtlas, null, isHighlighted, -1, mouseX, mouseY);
@@ -1507,8 +1507,8 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     }
 
     private boolean drawWaypoint(GuiGraphicsExtractor graphics, Waypoint waypoint, TextureAtlas textureAtlas, Sprite icon, boolean isHighlighted, int color, int mouseX, int mouseY) {
-        float ptX = waypoint.getX() + 0.5F;
-        float ptZ = waypoint.getZ() + 0.5F;
+        float ptX = waypoint.getXInCurrentDimension() + 0.5F;
+        float ptZ = waypoint.getZInCurrentDimension() + 0.5F;
 
         int x = this.width / 2;
         int y = this.height / 2;
@@ -1538,7 +1538,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
         String name = waypoint.name;
         if (waypointManager.isCoordinateHighlight(waypoint)) {
-            name = "X:" + waypoint.getX() + ", Y:" + waypoint.getY() + ", Z:" + waypoint.getZ();
+            name = "X:" + waypoint.getXInCurrentDimension() + ", Y:" + waypoint.getY() + ", Z:" + waypoint.getZInCurrentDimension();
         }
 
         if (icon == null) {
@@ -1579,7 +1579,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         if (isHovered) {
             graphics.requestCursor(CursorTypes.CROSSHAIR);
             if (options.showCoordinates) {
-                renderTooltip(graphics, Component.literal("X: " + waypoint.getX() + ", Y: " + waypoint.getY() + ", Z: " + waypoint.getZ()), this.mouseX, this.mouseY);
+                renderTooltip(graphics, Component.literal("X: " + waypoint.getXInCurrentDimension() + ", Y: " + waypoint.getY() + ", Z: " + waypoint.getZInCurrentDimension()), this.mouseX, this.mouseY);
             }
         }
 
@@ -2403,7 +2403,6 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         DimensionContainer currentDimension = VoxelConstants.getVoxelMapInstance().getDimensionManager().getDimensionContainerByWorld(VoxelConstants.getPlayer().level());
         dimensions.add(currentDimension);
 
-        double dimensionScale = VoxelConstants.getPlayer().level().dimensionType().coordinateScale();
         int y = terrainHighlightY(marker.blockX(), marker.blockZ());
 
         String name = Component.translatable(marker.feature().translationKey()).getString();
@@ -2414,8 +2413,8 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
         Waypoint waypoint = new Waypoint(
                 name,
-                (int) Math.round(marker.blockX() * dimensionScale),
-                (int) Math.round(marker.blockZ() * dimensionScale),
+                marker.blockX(),
+                marker.blockZ(),
                 y,
                 true,
                 0.20F,
@@ -2474,8 +2473,8 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
         Waypoint highlighted = waypointManager.getHighlightedWaypoint();
         if (highlighted != null
-                && highlighted.getX() == marker.blockX()
-                && highlighted.getZ() == marker.blockZ()
+                && highlighted.getXInCurrentDimension() == marker.blockX()
+                && highlighted.getZInCurrentDimension() == marker.blockZ()
                 && isSeedMapperHighlightName(highlighted.name)) {
             return highlighted;
         }
@@ -2510,8 +2509,8 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             return false;
         }
 
-        return waypoint.getX() == marker.blockX()
-                && waypoint.getZ() == marker.blockZ()
+        return waypoint.getXInCurrentDimension() == marker.blockX()
+                && waypoint.getZInCurrentDimension() == marker.blockZ()
                 && waypoint.inWorld
                 && waypoint.inDimension;
     }
@@ -2605,13 +2604,13 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         }
         for (Waypoint waypoint : waypointManager.getWaypoints()) {
             if (!waypoint.inWorld || !waypoint.inDimension) continue;
-            if (waypoint.getX() == marker.blockX() && waypoint.getZ() == marker.blockZ() && isSeedMapperHighlightWaypoint(waypoint)) {
+            if (waypoint.getXInCurrentDimension() == marker.blockX() && waypoint.getZInCurrentDimension() == marker.blockZ() && isSeedMapperHighlightWaypoint(waypoint)) {
                 return waypoint;
             }
         }
         for (Waypoint waypoint : waypointManager.getWaypoints()) {
             if (!waypoint.inWorld || !waypoint.inDimension) continue;
-            if (waypoint.getX() == marker.blockX() && waypoint.getZ() == marker.blockZ()) {
+            if (waypoint.getXInCurrentDimension() == marker.blockX() && waypoint.getZInCurrentDimension() == marker.blockZ()) {
                 return waypoint;
             }
         }
@@ -2837,12 +2836,11 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         this.editClicked = false;
         this.addClicked = false;
         this.deleteClicked = false;
-        double dimensionScale = VoxelConstants.getPlayer().level().dimensionType().coordinateScale();
         switch (action) {
             case 0 -> {
                 if (selectedWaypoint != null) {
-                    x = selectedWaypoint.getX();
-                    z = selectedWaypoint.getZ();
+                    x = selectedWaypoint.getXInCurrentDimension();
+                    z = selectedWaypoint.getZInCurrentDimension();
                 }
                 this.addClicked = true;
                 float r;
@@ -2860,7 +2858,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 TreeSet<DimensionContainer> dimensions = new TreeSet<>();
                 dimensions.add(VoxelConstants.getVoxelMapInstance().getDimensionManager().getDimensionContainerByWorld(VoxelConstants.getPlayer().level()));
                 y = terrainHighlightY(x, z);
-                this.newWaypoint = new Waypoint("", (int) (x * dimensionScale), (int) (z * dimensionScale), y, true, r, g, b, "", VoxelConstants.getVoxelMapInstance().getWaypointManager().getCurrentSubworldDescriptor(false), dimensions);
+                this.newWaypoint = new Waypoint("", x, z, y, true, r, g, b, "", VoxelConstants.getVoxelMapInstance().getWaypointManager().getCurrentSubworldDescriptor(false), dimensions);
                 minecraft.setScreen(new GuiAddWaypoint(this, this.newWaypoint, false));
             }
             case 1 -> {
@@ -2886,7 +2884,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                     y = terrainHighlightY(x, z);
                     TreeSet<DimensionContainer> dimensions2 = new TreeSet<>();
                     dimensions2.add(VoxelConstants.getVoxelMapInstance().getDimensionManager().getDimensionContainerByWorld(VoxelConstants.getPlayer().level()));
-                    Waypoint highlightWaypoint = new Waypoint("", (int) (x * dimensionScale), (int) (z * dimensionScale), y, true, 1.0F, 0.0F, 0.0F, "", VoxelConstants.getVoxelMapInstance().getWaypointManager().getCurrentSubworldDescriptor(false), dimensions2);
+                    Waypoint highlightWaypoint = new Waypoint("", x, z, y, true, 1.0F, 0.0F, 0.0F, "", VoxelConstants.getVoxelMapInstance().getWaypointManager().getCurrentSubworldDescriptor(false), dimensions2);
                     this.waypointManager.setHighlightedWaypoint(highlightWaypoint, false);
                     selectedSeedMapperWaypoint = highlightWaypoint;
                     selectedWaypoint = highlightWaypoint;
@@ -2910,7 +2908,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 }
 
                 y = selectedWaypoint.getY() > VoxelConstants.getPlayer().level().getMinY() ? selectedWaypoint.getY() : (!(VoxelConstants.getPlayer().level().dimensionType().hasCeiling()) ? VoxelConstants.getPlayer().level().getMaxY() : 64);
-                VoxelConstants.playerRunTeleportCommand(selectedWaypoint.getX(), y, selectedWaypoint.getZ());
+                VoxelConstants.playerRunTeleportCommand(selectedWaypoint.getXInCurrentDimension(), y, selectedWaypoint.getZInCurrentDimension());
             }
             case 4 -> {
                 if (selectedWaypoint != null) {
