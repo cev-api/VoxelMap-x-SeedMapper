@@ -475,8 +475,8 @@ public final class GuiSeedMapperLootViewer extends Screen {
 
         if (name == null) {
             for (Waypoint waypoint : waypointManager.getWaypoints()) {
-                if (waypoint.getX() == entry.pos().getX()
-                        && waypoint.getZ() == entry.pos().getZ()
+                if (waypoint.getXInCurrentDimension() == entry.pos().getX()
+                        && waypoint.getZInCurrentDimension() == entry.pos().getZ()
                         && waypoint.name != null
                         && waypoint.name.startsWith("Loot")) {
                     name = waypoint.name;
@@ -627,13 +627,12 @@ public final class GuiSeedMapperLootViewer extends Screen {
             return null;
         }
 
-        double scale = level.dimensionType().coordinateScale();
         TreeSet<DimensionContainer> dimensions = new TreeSet<>();
         dimensions.add(VoxelConstants.getVoxelMapInstance().getDimensionManager().getDimensionContainerByWorld(level));
         return new Waypoint(
                 "Loot " + entry.pos().getX() + "," + entry.pos().getZ(),
-                (int)Math.round(highlightPos.getX() * scale),
-                (int)Math.round(highlightPos.getZ() * scale),
+                highlightPos.getX(),
+                highlightPos.getZ(),
                 highlightPos.getY(),
                 true,
                 1.0F,
@@ -661,7 +660,7 @@ public final class GuiSeedMapperLootViewer extends Screen {
         String baseName = sanitizeWaypointName("Loot " + entry.pos().getX() + "," + entry.pos().getZ());
         for (Waypoint waypoint : waypointManager.getWaypoints()) {
             if (baseName.equals(waypoint.name)
-                    || (waypoint.getX() == entry.pos().getX() && waypoint.getZ() == entry.pos().getZ() && waypoint.name != null && waypoint.name.startsWith("Loot"))) {
+                    || (waypoint.getXInCurrentDimension() == entry.pos().getX() && waypoint.getZInCurrentDimension() == entry.pos().getZ() && waypoint.name != null && waypoint.name.startsWith("Loot"))) {
                 name = waypoint.name;
                 activeWaypoints.put(key, name);
                 return true;

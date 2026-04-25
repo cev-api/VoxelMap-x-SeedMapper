@@ -370,8 +370,7 @@ public class WaypointManager {
         if (this.options.deathpoints != 0) {
             TreeSet<DimensionContainer> dimensions = new TreeSet<>();
             dimensions.add(VoxelConstants.getVoxelMapInstance().getDimensionManager().getDimensionContainerByWorld(VoxelConstants.getPlayer().level()));
-            double dimensionScale = VoxelConstants.getPlayer().level().dimensionType().coordinateScale();
-            this.addWaypoint(new Waypoint("Latest Death", (int) (GameVariableAccessShim.xCoord() * dimensionScale), (int) (GameVariableAccessShim.zCoord() * dimensionScale), GameVariableAccessShim.yCoord() - 1, true, 1.0F, 1.0F, 1.0F, "Skull", this.getCurrentSubworldDescriptor(false), dimensions));
+            this.addWaypoint(new Waypoint("Latest Death", GameVariableAccessShim.xCoord(), GameVariableAccessShim.zCoord(), GameVariableAccessShim.yCoord() - 1, true, 1.0F, 1.0F, 1.0F, "Skull", this.getCurrentSubworldDescriptor(false), dimensions));
         }
 
     }
@@ -613,7 +612,7 @@ public class WaypointManager {
                         dimensionsString.append(VoxelConstants.getVoxelMapInstance().getDimensionManager().getDimensionContainerByIdentifier(BuiltinDimensionTypes.OVERWORLD.identifier()).getStorageName());
                     }
 
-                    out.println("name:" + TextUtils.scrubName(pt.name) + ",x:" + pt.x + ",z:" + pt.z + ",y:" + pt.y + ",enabled:" + pt.enabled + ",beacon:" + pt.showBeacon + ",red:" + pt.red + ",green:" + pt.green + ",blue:" + pt.blue + ",suffix:" + pt.imageSuffix + ",world:" + TextUtils.scrubName(pt.world) + ",dimensions:" + dimensionsString);
+                    out.println("name:" + TextUtils.scrubName(pt.name) + ",x:" + pt.x + ",z:" + pt.z + ",y:" + pt.y + ",enabled:" + pt.enabled + ",beacon:" + pt.showBeacon + ",red:" + pt.red + ",green:" + pt.green + ",blue:" + pt.blue + ",suffix:" + pt.imageSuffix + ",world:" + TextUtils.scrubName(pt.world) + ",dimensions:" + dimensionsString + ",coordDimension:" + pt.coordinateDimension);
                 }
             }
 
@@ -732,6 +731,7 @@ public class WaypointManager {
                                 float blue = 0.0F;
                                 String suffix = "";
                                 String world = "";
+                                String coordDimension = "";
                                 TreeSet<DimensionContainer> dimensions = new TreeSet<>();
 
                                 for (String pair : pairs) {
@@ -751,6 +751,7 @@ public class WaypointManager {
                                             case "blue" -> blue = Float.parseFloat(value);
                                             case "suffix" -> suffix = value;
                                             case "world" -> world = TextUtils.descrubName(value);
+                                            case "coorddimension" -> coordDimension = value;
                                             case "dimensions" -> {
                                                 String[] dimensionStrings = value.split("#");
                                                 for (String dimensionString : dimensionStrings) {
@@ -766,7 +767,7 @@ public class WaypointManager {
                                 }
 
                                 if (!name.isEmpty()) {
-                                    this.loadWaypoint(name, x, z, y, enabled, beacon, red, green, blue, suffix, world, dimensions);
+                                    this.loadWaypoint(name, x, z, y, enabled, beacon, red, green, blue, suffix, world, dimensions, coordDimension);
                                     if (!world.isEmpty()) {
                                         this.knownSubworldNames.add(TextUtils.descrubName(world));
                                     }
@@ -790,8 +791,11 @@ public class WaypointManager {
         }
     }
 
-    private void loadWaypoint(String name, int x, int z, int y, boolean enabled, boolean beacon, float red, float green, float blue, String suffix, String world, TreeSet<DimensionContainer> dimensions) {
+    private void loadWaypoint(String name, int x, int z, int y, boolean enabled, boolean beacon, float red, float green, float blue, String suffix, String world, TreeSet<DimensionContainer> dimensions, String coordDimension) {
         Waypoint newWaypoint = new Waypoint(name, x, z, y, enabled, red, green, blue, suffix, world, dimensions);
+        if (coordDimension != null && !coordDimension.isBlank()) {
+            newWaypoint.coordinateDimension = coordDimension;
+        }
         newWaypoint.showBeacon = beacon;
         if (!this.wayPts.contains(newWaypoint)) {
             this.wayPts.add(newWaypoint);
@@ -825,7 +829,8 @@ public class WaypointManager {
                     float[] color = xaeroColor(Integer.parseInt(fields[6]));
                     boolean enabled = !Boolean.parseBoolean(fields[7]);
                     String suffix = xaeroIcon(fields[1], fields[8]);
-                    if (addImportedWaypoint(new Waypoint(name, x, z, y, enabled, color[0], color[1], color[2], suffix, getCurrentSubworldDescriptor(false), new TreeSet<>(dimensions)))) {
+                    Waypoint waypoint = new Waypoint(name, x, z, y, enabled, color[0], color[1], color[2], suffix, getCurrentSubworldDescriptor(false), new TreeSet<>(dimensions));
+                    if (addImportedWaypoint(waypoint)) {
                         ++imported;
                     } else {
                         ++skipped;
@@ -876,11 +881,14 @@ public class WaypointManager {
                     int color = getInt(object, "color", -1);
                     float[] rgb = rgbFromPackedColor(color);
                     boolean enabled = getBoolean(object, "visible", true);
+                    boolean beacon = getBoolean(object, "beacon", false);
                     int x = getInt(pos, "x", 0);
                     int y = getInt(pos, "y", 0);
                     int z = getInt(pos, "z", 0);
                     TreeSet<DimensionContainer> dimensions = dimensionsForWurstName(getString(object, "dimension", ""));
-                    if (addImportedWaypoint(new Waypoint(name, x, z, y, enabled, rgb[0], rgb[1], rgb[2], icon, getCurrentSubworldDescriptor(false), dimensions))) {
+                    Waypoint waypoint = new Waypoint(name, x, z, y, enabled, rgb[0], rgb[1], rgb[2], icon, getCurrentSubworldDescriptor(false), dimensions);
+                    waypoint.showBeacon = beacon;
+                    if (addImportedWaypoint(waypoint)) {
                         ++imported;
                     } else {
                         ++skipped;
@@ -1098,7 +1106,7 @@ public class WaypointManager {
     public void addWaypoint(Waypoint newWaypoint) {
         this.wayPts.add(newWaypoint);
         this.saveWaypoints();
-        if (this.highlightedWaypoint != null && this.highlightedWaypoint.getX() == newWaypoint.getX() && this.highlightedWaypoint.getZ() == newWaypoint.getZ()) {
+        if (this.highlightedWaypoint != null && this.highlightedWaypoint.getXInCurrentDimension() == newWaypoint.getXInCurrentDimension() && this.highlightedWaypoint.getZInCurrentDimension() == newWaypoint.getZInCurrentDimension()) {
             this.setHighlightedWaypoint(newWaypoint, false);
         }
 

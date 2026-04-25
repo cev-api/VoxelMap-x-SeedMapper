@@ -118,8 +118,8 @@ public class WaypointContainer {
             if (!isEffectivelyActive) continue;
             if (!waypoint.showBeacon) continue;
 
-            int x = waypoint.getX();
-            int z = waypoint.getZ();
+            int x = waypoint.getXInCurrentDimension();
+            int z = waypoint.getZInCurrentDimension();
             double distance = Math.sqrt(waypoint.getDistanceSqToCamera(camera));
             if (renderable.isHighlighted() && shouldHideNearbyHighlight(distance)) {
                 continue;
@@ -148,8 +148,8 @@ public class WaypointContainer {
                 continue;
             }
 
-            int x = waypoint.getX();
-            int z = waypoint.getZ();
+            int x = waypoint.getXInCurrentDimension();
+            int z = waypoint.getZInCurrentDimension();
             int y = waypoint.getY();
             double distance = Math.sqrt(waypoint.getDistanceSqToCamera(camera));
             boolean isOutOfRange = options.maxWaypointDisplayDistance >= 0 && distance >= options.maxWaypointDisplayDistance;
@@ -173,7 +173,7 @@ public class WaypointContainer {
 
     private void renderHighlightTracer(PoseStack poseStack, BufferSource bufferSource, Waypoint waypoint, Camera camera) {
         Vec3 cameraPos = camera.position();
-        Vec3 target = new Vec3(waypoint.getX() + 0.5D, waypoint.getY() + 0.5D, waypoint.getZ() + 0.5D).subtract(cameraPos);
+        Vec3 target = new Vec3(waypoint.getXInCurrentDimension() + 0.5D, waypoint.getY() + 0.5D, waypoint.getZInCurrentDimension() + 0.5D).subtract(cameraPos);
         Vec3 normal = target.normalize();
         if (!Double.isFinite(normal.x) || !Double.isFinite(normal.y) || !Double.isFinite(normal.z)) {
             return;
@@ -250,9 +250,9 @@ public class WaypointContainer {
 
     private float getCenterOffset(Waypoint waypoint, double distance, Camera camera) {
         Vec3 cameraPos = camera.position();
-        float dx = (waypoint.getX() + 0.5F) - (float) cameraPos.x();
+        float dx = (waypoint.getXInCurrentDimension() + 0.5F) - (float) cameraPos.x();
         float dy = (waypoint.getY() + 1.5F) - (float) cameraPos.y();
-        float dz = (waypoint.getZ() + 0.5F) - (float) cameraPos.z();
+        float dz = (waypoint.getZInCurrentDimension() + 0.5F) - (float) cameraPos.z();
 
         float zo = camera.forwardVector().dot(dx, dy, dz);
         if (zo < 0.0F) {
@@ -341,7 +341,7 @@ public class WaypointContainer {
         String mainLabel = waypoint.name;
         if (isHighlighted) {
             if (waypointManager.isCoordinateHighlight(waypoint)) {
-                mainLabel = "X:" + waypoint.getX() + ", Y:" + waypoint.getY() + ", Z:" + waypoint.getZ();
+                mainLabel = "X:" + waypoint.getXInCurrentDimension() + ", Y:" + waypoint.getY() + ", Z:" + waypoint.getZInCurrentDimension();
             } else {
                 isPointedAt = false;
             }

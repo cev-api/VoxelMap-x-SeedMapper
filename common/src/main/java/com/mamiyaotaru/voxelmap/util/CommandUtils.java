@@ -153,12 +153,6 @@ public final class CommandUtils {
             }
 
             if (x != null && z != null) {
-                if (dimensions.size() == 1 && (dimensions.first()).type.coordinateScale() != 1.0) {
-                    double dimensionScale = (dimensions.first()).type.coordinateScale();
-                    x = (int) ((double) x * dimensionScale);
-                    z = (int) ((double) z * dimensionScale);
-                }
-
                 waypoint = new Waypoint(name, x, z, y, enabled, red, green, blue, suffix, world, dimensions);
             }
         } catch (Exception ignored) {
@@ -174,7 +168,7 @@ public final class CommandUtils {
         Waypoint newWaypoint = createWaypointFromChat(details);
         if (newWaypoint != null) {
             for (Waypoint existingWaypoint : VoxelConstants.getVoxelMapInstance().getWaypointManager().getWaypoints()) {
-                if (newWaypoint.getX() == existingWaypoint.getX() && newWaypoint.getZ() == existingWaypoint.getZ()) {
+                if (newWaypoint.getXInCurrentDimension() == existingWaypoint.getXInCurrentDimension() && newWaypoint.getZInCurrentDimension() == existingWaypoint.getZInCurrentDimension()) {
                     if (control) {
                         VoxelConstants.getMinecraft().setScreen(new GuiAddWaypoint(null, existingWaypoint, true));
                     } else {
@@ -210,7 +204,7 @@ public final class CommandUtils {
         }
 
         String suffix = waypoint.imageSuffix;
-        Object[] args = {TextUtils.scrubNameRegex(waypoint.name), waypoint.getX(), waypoint.getY(), waypoint.getZ(), Identifier.toString()};
+        Object[] args = {TextUtils.scrubNameRegex(waypoint.name), waypoint.getXInCurrentDimension(), waypoint.getY(), waypoint.getZInCurrentDimension(), Identifier.toString()};
         String message = String.format("[name:%s, x:%s, y:%s, z:%s, dim:%s", args);
         if (world != null && !world.isEmpty()) {
             message = message + ", world:" + world;

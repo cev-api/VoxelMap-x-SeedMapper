@@ -383,8 +383,7 @@ public class Map implements Runnable, IChangeObserver {
 
                 TreeSet<DimensionContainer> dimensions = new TreeSet<>();
                 dimensions.add(VoxelConstants.getVoxelMapInstance().getDimensionManager().getDimensionContainerByWorld(VoxelConstants.getPlayer().level()));
-                double dimensionScale = VoxelConstants.getPlayer().level().dimensionType().coordinateScale();
-                Waypoint newWaypoint = new Waypoint("", (int) (GameVariableAccessShim.xCoord() * dimensionScale), (int) (GameVariableAccessShim.zCoord() * dimensionScale), GameVariableAccessShim.yCoord(), true, r, g, b, "",
+                Waypoint newWaypoint = new Waypoint("", GameVariableAccessShim.xCoord(), GameVariableAccessShim.zCoord(), GameVariableAccessShim.yCoord(), true, r, g, b, "",
                         VoxelConstants.getVoxelMapInstance().getWaypointManager().getCurrentSubworldDescriptor(false), dimensions);
                 minecraft.setScreen(new GuiAddWaypoint(null, newWaypoint, false));
             }
@@ -584,8 +583,8 @@ public class Map implements Runnable, IChangeObserver {
                 continue;
             }
 
-            double dx = waypoint.getX() + 0.5D - playerX;
-            double dz = waypoint.getZ() + 0.5D - playerZ;
+            double dx = waypoint.getXInCurrentDimension() + 0.5D - playerX;
+            double dz = waypoint.getZInCurrentDimension() + 0.5D - playerZ;
             double distanceSq = dx * dx + dz * dz + Math.pow(waypoint.getY() + 0.5D - playerY, 2.0D);
             if (maxDistance > -1 && distanceSq > maxDistance * maxDistance) {
                 continue;
@@ -1883,8 +1882,8 @@ public class Map implements Runnable, IChangeObserver {
 
     private void drawWaypoint(Matrix4fStack matrixStack, int x, int y, Waypoint waypoint, TextureAtlas textureAtlas, Sprite icon, boolean isHighlighted, int color, double baseX, double baseZ) {
         if (isHighlighted && options.autoHideHighlightsWhenNear) {
-            double dx = baseX - waypoint.getX() - 0.5D;
-            double dz = baseZ - waypoint.getZ() - 0.5D;
+            double dx = baseX - waypoint.getXInCurrentDimension() - 0.5D;
+            double dz = baseZ - waypoint.getZInCurrentDimension() - 0.5D;
             double maxDistance = options.autoHideHighlightsNearDistance;
             if (dx * dx + dz * dz <= maxDistance * maxDistance) {
                 return;
@@ -1893,8 +1892,8 @@ public class Map implements Runnable, IChangeObserver {
 
         boolean uprightIcon = icon != null;
 
-        double wayX = baseX - waypoint.getX() - 0.5;
-        double wayY = baseZ - waypoint.getZ() - 0.5;
+        double wayX = baseX - waypoint.getXInCurrentDimension() - 0.5;
+        double wayY = baseZ - waypoint.getZInCurrentDimension() - 0.5;
         float locate = (float) Math.toDegrees(Math.atan2(wayX, wayY));
         float hypot = (float) (Math.sqrt(wayX * wayX + wayY * wayY) / zoomScaleAdjusted);
         boolean far;

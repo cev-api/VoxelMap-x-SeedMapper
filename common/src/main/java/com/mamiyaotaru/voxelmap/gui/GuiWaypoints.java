@@ -152,7 +152,7 @@ public class GuiWaypoints extends PopupGuiScreen implements IGuiWaypoints {
         int maxY = VoxelConstants.getPlayer().level().getMaxY();
         int targetY = selectedWaypoint.getY() > minY ? selectedWaypoint.getY() : (!hasCeiling ? maxY : 64);
 
-        VoxelConstants.playerRunTeleportCommand(selectedWaypoint.getX(), targetY, selectedWaypoint.getZ());
+        VoxelConstants.playerRunTeleportCommand(selectedWaypoint.getXInCurrentDimension(), targetY, selectedWaypoint.getZInCurrentDimension());
         VoxelConstants.getMinecraft().setScreen(null);
     }
 
@@ -282,11 +282,7 @@ public class GuiWaypoints extends PopupGuiScreen implements IGuiWaypoints {
         TreeSet<DimensionContainer> dimensions = new TreeSet<>();
         dimensions.add(VoxelConstants.getVoxelMapInstance().getDimensionManager().getDimensionContainerByWorld(VoxelConstants.getPlayer().level()));
 
-        double dimensionScale = VoxelConstants.getPlayer().level().dimensionType().coordinateScale();
-        int scaledX = (int) (GameVariableAccessShim.xCoord() * dimensionScale);
-        int scaledZ = (int) (GameVariableAccessShim.zCoord() * dimensionScale);
-        int scaledY = (int) (GameVariableAccessShim.yCoord() * 1.0F);
-        newWaypoint = new Waypoint("", scaledX, scaledZ, scaledY, true, r, g, b, "", VoxelConstants.getVoxelMapInstance().getWaypointManager().getCurrentSubworldDescriptor(false), dimensions);
+        newWaypoint = new Waypoint("", GameVariableAccessShim.xCoord(), GameVariableAccessShim.zCoord(), GameVariableAccessShim.yCoord(), true, r, g, b, "", VoxelConstants.getVoxelMapInstance().getWaypointManager().getCurrentSubworldDescriptor(false), dimensions);
 
         VoxelConstants.getMinecraft().setScreen(new GuiAddWaypoint(this, newWaypoint, false));
     }

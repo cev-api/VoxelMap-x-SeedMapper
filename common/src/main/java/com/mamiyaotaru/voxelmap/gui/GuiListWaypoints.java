@@ -233,7 +233,7 @@ class GuiListWaypoints extends AbstractSelectionList<GuiListWaypoints.WaypointIt
                 parentGui.setTooltip(waypoint.enabled ? GuiListWaypoints.TOOLTIP_DISABLE : GuiListWaypoints.TOOLTIP_ENABLE);
 
             } else if (mouseX >= getX() && mouseX <= getX() + getWidth() && mouseY >= getY() && mouseY <= getY() + getHeight()) {
-                parentGui.setTooltip(Component.literal("X: " + waypoint.getX() + ", Y: " + waypoint.getY() + ", Z: " + waypoint.getZ()));
+                parentGui.setTooltip(Component.literal("X: " + waypoint.getXInCurrentDimension() + ", Y: " + waypoint.getY() + ", Z: " + waypoint.getZInCurrentDimension()));
 
             }
         }

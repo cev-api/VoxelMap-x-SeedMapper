@@ -274,11 +274,10 @@ public class GuiSeedMapperLocator extends GuiScreenMinimap {
         TreeSet<DimensionContainer> dimensions = new TreeSet<>();
         dimensions.add(VoxelConstants.getVoxelMapInstance().getDimensionManager().getDimensionContainerByWorld(level));
         String name = getResultLabel();
-        double scale = level.dimensionType().coordinateScale();
         Waypoint waypoint = new Waypoint(
                 name,
-                (int)Math.round(locateResult.x() * scale),
-                (int)Math.round(locateResult.z() * scale),
+                locateResult.x(),
+                locateResult.z(),
                 Math.max(GameVariableAccessShim.yCoord(), 64),
                 true,
                 0.20F,
@@ -304,11 +303,10 @@ public class GuiSeedMapperLocator extends GuiScreenMinimap {
         TreeSet<DimensionContainer> dimensions = new TreeSet<>();
         dimensions.add(VoxelConstants.getVoxelMapInstance().getDimensionManager().getDimensionContainerByWorld(level));
         String name = getResultLabel();
-        double scale = level.dimensionType().coordinateScale();
         Waypoint waypoint = new Waypoint(
                 name,
-                (int)Math.round(locateResult.x() * scale),
-                (int)Math.round(locateResult.z() * scale),
+                locateResult.x(),
+                locateResult.z(),
                 Math.max(GameVariableAccessShim.yCoord(), 64),
                 true,
                 1.0F,
