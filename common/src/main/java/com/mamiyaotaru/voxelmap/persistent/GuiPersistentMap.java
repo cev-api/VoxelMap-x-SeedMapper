@@ -2868,12 +2868,12 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                     if (isMarkerHighlighted(selectedSeedMapperMarker)) {
                         deleteSeedMapperHighlight(selectedSeedMapperMarker);
                         this.waypointManager.setHighlightedWaypoint(null, false);
-                    } else if (selectedWaypoint != null) {
-                        this.waypointManager.setHighlightedWaypoint(selectedWaypoint, true);
                     } else {
                         TreeSet<DimensionContainer> dimensions2 = new TreeSet<>();
                         dimensions2.add(VoxelConstants.getVoxelMapInstance().getDimensionManager().getDimensionContainerByWorld(VoxelConstants.getPlayer().level()));
-                        Waypoint highlightWaypoint = new Waypoint(seedMapperHighlightName(selectedSeedMapperMarker), (int) (x * dimensionScale), (int) (z * dimensionScale), terrainHighlightY(x, z), true, 1.0F, 0.0F, 0.0F, "target", VoxelConstants.getVoxelMapInstance().getWaypointManager().getCurrentSubworldDescriptor(false), dimensions2);
+                        int markerX = selectedSeedMapperMarker.blockX();
+                        int markerZ = selectedSeedMapperMarker.blockZ();
+                        Waypoint highlightWaypoint = new Waypoint(seedMapperHighlightName(selectedSeedMapperMarker), markerX, markerZ, terrainHighlightY(markerX, markerZ), true, 1.0F, 0.0F, 0.0F, "target", VoxelConstants.getVoxelMapInstance().getWaypointManager().getCurrentSubworldDescriptor(false), dimensions2);
                         this.waypointManager.addWaypoint(highlightWaypoint);
                         this.waypointManager.setHighlightedWaypoint(highlightWaypoint, false);
                         rememberSeedMapperHighlight(selectedSeedMapperMarker, highlightWaypoint.name);
