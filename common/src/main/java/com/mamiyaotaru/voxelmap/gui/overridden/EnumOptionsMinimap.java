@@ -39,6 +39,7 @@ public enum EnumOptionsMinimap {
     WAYPOINT_DISTANCE("options.minimap.waypoints.distance", Type.FLOAT),
     WAYPOINT_SIGN_SCALE("options.minimap.waypoints.waypointSignScale", Type.FLOAT),
     WAYPOINT_BEACONS("options.minimap.waypoints.beacons", Type.BOOLEAN),
+    AUTO_PORTAL_WAYPOINTS("options.minimap.waypoints.autoPortalWaypoints", Type.BOOLEAN),
     WAYPOINT_COMPASS("options.minimap.waypoints.compass", Type.BOOLEAN),
     WAYPOINT_COMPASS_SHOW_COORDS("options.minimap.waypoints.compassShowCoords", Type.BOOLEAN),
     WAYPOINT_COMPASS_TEXT_OUTLINE("options.minimap.waypoints.compassTextOutline", Type.BOOLEAN),

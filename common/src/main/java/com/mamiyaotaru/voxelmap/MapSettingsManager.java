@@ -55,6 +55,7 @@ public class MapSettingsManager implements ISettingsManager {
     public boolean rotates = true;
     public boolean showWaypointBeacons = false;
     public boolean showWaypointSigns = true;
+    public boolean autoPortalWaypoints = false;
     private boolean lastWaypointBeacons = false;
     private boolean lastWaypointSigns = true;
     protected boolean showCaves = true;
@@ -187,6 +188,7 @@ public class MapSettingsManager implements ISettingsManager {
                         case "Rotation" -> rotates = Boolean.parseBoolean(curLine[1]);
                         case "Waypoint Beacons" -> showWaypointBeacons = Boolean.parseBoolean(curLine[1]);
                         case "Waypoint Signs" -> showWaypointSigns = Boolean.parseBoolean(curLine[1]);
+                        case "Auto Portal Waypoints" -> autoPortalWaypoints = Boolean.parseBoolean(curLine[1]);
                         case "Enable Cave Mode" -> showCaves = Boolean.parseBoolean(curLine[1]);
                         case "Move Map Below Status Effect Icons" -> moveMapBelowStatusEffectIcons = Boolean.parseBoolean(curLine[1]);
                         case "Move Scoreboard Below Map" -> moveScoreboardBelowMap = Boolean.parseBoolean(curLine[1]);
@@ -296,6 +298,7 @@ public class MapSettingsManager implements ISettingsManager {
             out.println("Rotation:" + rotates);
             out.println("Waypoint Beacons:" + showWaypointBeacons);
             out.println("Waypoint Signs:" + showWaypointSigns);
+            out.println("Auto Portal Waypoints:" + autoPortalWaypoints);
             out.println("Enable Cave Mode:" + showCaves);
             out.println("Move Map Below Status Effect Icons:" + moveMapBelowStatusEffectIcons);
             out.println("Move Scoreboard Below Map:" + moveScoreboardBelowMap);
@@ -436,6 +439,7 @@ public class MapSettingsManager implements ISettingsManager {
 
             case CONFIRM_WAYPOINT_DELETE -> confirmWaypointDelete;
             case WAYPOINT_BEACONS -> waypointsAllowed && showWaypointBeacons;
+            case AUTO_PORTAL_WAYPOINTS -> waypointsAllowed && autoPortalWaypoints;
             case WAYPOINT_COMPASS -> waypointCompass;
             case WAYPOINT_COMPASS_SHOW_COORDS -> waypointCompassShowCoords;
             case WAYPOINT_COMPASS_TEXT_OUTLINE -> waypointCompassTextOutline;
@@ -471,6 +475,15 @@ public class MapSettingsManager implements ISettingsManager {
 
             case CONFIRM_WAYPOINT_DELETE -> confirmWaypointDelete = !confirmWaypointDelete;
             case WAYPOINT_BEACONS -> showWaypointBeacons = !showWaypointBeacons;
+            case AUTO_PORTAL_WAYPOINTS -> {
+                autoPortalWaypoints = !autoPortalWaypoints;
+                if (autoPortalWaypoints && VoxelConstants.getVoxelMapInstance() != null) {
+                    PortalMarkersManager portalMarkersManager = VoxelConstants.getVoxelMapInstance().getPortalMarkersManager();
+                    if (portalMarkersManager != null) {
+                        portalMarkersManager.syncAutoPortalWaypoints();
+                    }
+                }
+            }
             case WAYPOINT_COMPASS -> waypointCompass = !waypointCompass;
             case WAYPOINT_COMPASS_SHOW_COORDS -> waypointCompassShowCoords = !waypointCompassShowCoords;
             case WAYPOINT_COMPASS_TEXT_OUTLINE -> waypointCompassTextOutline = !waypointCompassTextOutline;

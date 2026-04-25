@@ -29,7 +29,7 @@ public enum SeedMapperFeature {
     SLIME_CHUNK("slime_chunk", "seedmapper.feature.slime_chunk", -1, com.github.cubiomes.Cubiomes.DIM_OVERWORLD(), "images/seedmapper/feature_icons/slime_chunk.png", false),
     DATAPACK_STRUCTURE("datapack_structure", "seedmapper.feature.datapack_structure", -1, Integer.MIN_VALUE, "images/seedmapper/feature_icons/waypoint.png", false),
     WORLD_SPAWN("world_spawn", "seedmapper.feature.world_spawn", -1, com.github.cubiomes.Cubiomes.DIM_OVERWORLD(), "images/seedmapper/cubiomes_viewer_icons/world_spawn.png", false),
-    NETHER_PORTAL("nether_portal", "seedmapper.feature.nether_portal", -1, Integer.MIN_VALUE, "minecraft:textures/block/obsidian.png", false),
+    NETHER_PORTAL("nether_portal", "seedmapper.feature.nether_portal", -1, Integer.MIN_VALUE, "minecraft:textures/block/nether_portal.png", false),
     END_PORTAL("end_portal", "seedmapper.feature.end_portal", -1, Integer.MIN_VALUE, "minecraft:textures/block/end_portal_frame_top.png", false),
     END_BEACON("end_beacon", "seedmapper.feature.end_beacon", -1, Integer.MIN_VALUE, "minecraft:textures/block/bedrock.png", false);
 

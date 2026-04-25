@@ -108,6 +108,7 @@
   "options.minimap.waypoints.distanceUnitConversion.tooltip": "If the distance to the waypoint in meters exceeds the configured value, the distance is displayed in kilometers.",
   "options.minimap.waypoints.waypointSignScale": "Sign Scale",
   "options.minimap.waypoints.beacons": "Waypoint Beams",
+  "options.minimap.waypoints.autoPortalWaypoints": "Auto Portal Waypoints",
   "options.minimap.waypoints.compass": "Waypoint Compass",
   "options.minimap.waypoints.compassShowCoords": "Compass XYZ",
   "options.minimap.waypoints.compassTextOutline": "Compass Text Outline",
