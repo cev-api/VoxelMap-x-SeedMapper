@@ -9,7 +9,7 @@ import net.minecraft.network.chat.Component;
 
 public class GuiSeedMapperCrackingMods extends GuiScreenMinimap {
     private static final Component TITLE = Component.literal("Recommended Seed Cracking Mods");
-    private static final String BEDROCK_CRACKER_URL = "https://github.com/someone12469/seed-cracking";
+    private static final String BEDROCK_CRACKER_URL = "https://github.com/xpple/seed-cracking";
     private static final String NETHER_BEDROCK_CRACKER_URL = "https://github.com/xpple/NetherBedrockCracker";
     private static final String SEEDCRACKERX_URL = "https://github.com/19MisterX98/SeedcrackerX";
 

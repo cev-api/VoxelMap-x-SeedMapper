@@ -44,16 +44,26 @@ class GuiListWaypoints extends AbstractSelectionList<GuiListWaypoints.WaypointIt
         this.parentGui = parentGui;
 
         waypoints = new ArrayList<>();
+        rebuildEntries();
+
+        textureAtlas = VoxelConstants.getVoxelMapInstance().getWaypointManager().getTextureAtlas();
+    }
+
+    protected void rebuildEntries() {
+        waypoints.clear();
+        clearEntries();
+
         for (Waypoint pt : parentGui.waypointManager.getWaypoints()) {
-            if (pt.inWorld && pt.inDimension) {
+            if (parentGui.shouldShowWaypoint(pt)) {
                 waypoints.add(new WaypointItem(parentGui, pt));
             }
         }
 
         waypointsFiltered = new ArrayList<>(waypoints);
         waypointsFiltered.forEach(x -> addEntry((WaypointItem) x));
-
-        textureAtlas = VoxelConstants.getVoxelMapInstance().getWaypointManager().getTextureAtlas();
+        if (!filterString.isEmpty()) {
+            updateFilter(filterString);
+        }
     }
 
     @Override

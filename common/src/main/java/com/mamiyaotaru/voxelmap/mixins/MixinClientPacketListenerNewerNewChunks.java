@@ -38,8 +38,11 @@ public abstract class MixinClientPacketListenerNewerNewChunks {
         var mapOptions = VoxelConstants.getVoxelMapInstance().getMapOptions();
 
         boolean useChunkExploits = radarOptions.newerNewChunksBlockUpdateExploit || radarOptions.newerNewChunksLiquidExploit;
-        boolean usePortalMarkers = mapOptions.showNetherPortalMarkers || mapOptions.showEndPortalMarkers || mapOptions.showEndGatewayMarkers;
-        if (!useChunkExploits && !usePortalMarkers) {
+        boolean usePortalTracking = mapOptions.autoPortalWaypoints
+                || mapOptions.showNetherPortalMarkers
+                || mapOptions.showEndPortalMarkers
+                || mapOptions.showEndGatewayMarkers;
+        if (!useChunkExploits && !usePortalTracking) {
             return;
         }
 
@@ -51,7 +54,7 @@ public abstract class MixinClientPacketListenerNewerNewChunks {
                     radarOptions.newerNewChunksLiquidExploit
             );
         }
-        if (usePortalMarkers) {
+        if (usePortalTracking) {
             VoxelConstants.getVoxelMapInstance().getPortalMarkersManager().onBlockUpdated(pos);
         }
     }
@@ -69,8 +72,11 @@ public abstract class MixinClientPacketListenerNewerNewChunks {
         var mapOptions = VoxelConstants.getVoxelMapInstance().getMapOptions();
 
         boolean useChunkExploits = radarOptions.newerNewChunksLiquidExploit;
-        boolean usePortalMarkers = mapOptions.showNetherPortalMarkers || mapOptions.showEndPortalMarkers || mapOptions.showEndGatewayMarkers;
-        if (!useChunkExploits && !usePortalMarkers) {
+        boolean usePortalTracking = mapOptions.autoPortalWaypoints
+                || mapOptions.showNetherPortalMarkers
+                || mapOptions.showEndPortalMarkers
+                || mapOptions.showEndGatewayMarkers;
+        if (!useChunkExploits && !usePortalTracking) {
             return;
         }
 
@@ -82,7 +88,7 @@ public abstract class MixinClientPacketListenerNewerNewChunks {
                         radarOptions.newerNewChunksLiquidExploit
                 );
             }
-            if (usePortalMarkers) {
+            if (usePortalTracking) {
                 VoxelConstants.getVoxelMapInstance().getPortalMarkersManager().onBlockUpdated(pos);
             }
         });

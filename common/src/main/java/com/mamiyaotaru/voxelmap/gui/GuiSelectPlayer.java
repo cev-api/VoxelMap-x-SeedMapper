@@ -9,6 +9,9 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 public class GuiSelectPlayer extends GuiScreenMinimap implements BooleanConsumer {
     protected Component screenTitle = Component.literal("players");
     private final boolean sharingWaypoint;
@@ -17,6 +20,9 @@ public class GuiSelectPlayer extends GuiScreenMinimap implements BooleanConsumer
     protected EditBox message;
     protected EditBox filter;
     private final String locInfo;
+    private static final Pattern X_PATTERN = Pattern.compile("(?i)\\bx\\s*:\\s*(-?\\d+)");
+    private static final Pattern Y_PATTERN = Pattern.compile("(?i)\\by\\s*:\\s*(-?\\d+)");
+    private static final Pattern Z_PATTERN = Pattern.compile("(?i)\\bz\\s*:\\s*(-?\\d+)");
 
     private static final Component SHARE_MESSAGE = Component.translatable("minimap.waypointShare.shareMessage").append(":");
     private static final Component FILTER_MESSAGE = Component.translatable("minimap.waypoints.filter").append(":");
@@ -55,7 +61,8 @@ public class GuiSelectPlayer extends GuiScreenMinimap implements BooleanConsumer
         addRenderableWidget(message);
         addRenderableWidget(filter);
         setFocused(filter);
-        addRenderableWidget(new Button.Builder(Component.translatable("gui.cancel"), button -> onClose()).bounds(getWidth() / 2 - 100, getHeight() - 28, 200, 20).build());
+        addRenderableWidget(new Button.Builder(Component.literal("Copy"), button -> copyShareTextToClipboard()).bounds(getWidth() / 2 - 100, getHeight() - 28, 98, 20).build());
+        addRenderableWidget(new Button.Builder(Component.translatable("gui.cancel"), button -> onClose()).bounds(getWidth() / 2 + 2, getHeight() - 28, 98, 20).build());
     }
 
     private void filterUpdated(String string) {
@@ -93,6 +100,30 @@ public class GuiSelectPlayer extends GuiScreenMinimap implements BooleanConsumer
         }
 
         onClose();
+    }
+
+    private void copyShareTextToClipboard() {
+        String coordinates = extractCoordinates(locInfo);
+        minecraft.keyboardHandler.setClipboard(coordinates);
+        onClose();
+    }
+
+    private String extractCoordinates(String payload) {
+        String x = findCoordinate(payload, X_PATTERN);
+        String y = findCoordinate(payload, Y_PATTERN);
+        String z = findCoordinate(payload, Z_PATTERN);
+        if (x != null && y != null && z != null) {
+            return x + ", " + y + ", " + z;
+        }
+        return payload;
+    }
+
+    private String findCoordinate(String payload, Pattern pattern) {
+        if (payload == null) {
+            return null;
+        }
+        Matcher matcher = pattern.matcher(payload);
+        return matcher.find() ? matcher.group(1) : null;
     }
 
     @Override

@@ -8,6 +8,7 @@ import com.mamiyaotaru.voxelmap.gui.overridden.PopupGuiScreen;
 import com.mamiyaotaru.voxelmap.util.CommandUtils;
 import com.mamiyaotaru.voxelmap.util.DimensionContainer;
 import com.mamiyaotaru.voxelmap.util.GameVariableAccessShim;
+import com.mamiyaotaru.voxelmap.util.TextUtils;
 import com.mamiyaotaru.voxelmap.util.Waypoint;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
@@ -37,6 +38,7 @@ public class GuiWaypoints extends PopupGuiScreen implements IGuiWaypoints {
     private Button buttonHighlight;
     private Button buttonShare;
     private Button buttonTeleport;
+    private Button buttonDimensionFilter;
     private Button buttonSortName;
     private Button buttonSortCreated;
     private Button buttonSortDistance;
@@ -53,6 +55,8 @@ public class GuiWaypoints extends PopupGuiScreen implements IGuiWaypoints {
     private final Random generator = new Random();
     private boolean changedSort;
     private Component importStatus;
+    private int dimensionFilterMode = 0; // 0=current, 1=all, 2+=specific dimension
+    private List<DimensionContainer> dimensionFilterDimensions = List.of();
 
     public GuiWaypoints(Screen parentScreen) {
         lastScreen = parentScreen;
@@ -70,6 +74,7 @@ public class GuiWaypoints extends PopupGuiScreen implements IGuiWaypoints {
     public void init() {
         screenTitle = Component.translatable("minimap.waypoints.title");
         waypointList = new GuiListWaypoints(this);
+        dimensionFilterDimensions = new ArrayList<>(VoxelConstants.getVoxelMapInstance().getDimensionManager().getDimensions());
 
         addRenderableWidget(waypointList);
         addRenderableWidget(buttonSortName = new Button.Builder(Component.translatable("minimap.waypoints.sortByName"), button -> sortClicked(2)).bounds(getWidth() / 2 - 154, 34, 77, 20).build());
@@ -84,10 +89,14 @@ public class GuiWaypoints extends PopupGuiScreen implements IGuiWaypoints {
 
         addRenderableWidget(filter);
         setFocused(filter);
-        addRenderableWidget(new Button.Builder(Component.translatable("minimap.waypoints.add"), button -> addWaypoint()).bounds(getWidth() / 2 - 154, getHeight() - 50, 74, 20).build());
-        addRenderableWidget(buttonEdit = new Button.Builder(Component.translatable("selectServer.edit"), button -> editWaypoint(selectedWaypoint)).bounds(getWidth() / 2 - 76, getHeight() - 50, 74, 20).build());
-        addRenderableWidget(buttonDelete = new Button.Builder(Component.translatable("selectServer.delete"), button -> deleteClicked()).bounds(getWidth() / 2 + 2, getHeight() - 50, 74, 20).build());
-        addRenderableWidget(buttonHighlight = new Button.Builder(Component.translatable("minimap.waypoints.highlight"), button -> setHighlightedWaypoint()).bounds(getWidth() / 2 + 80, getHeight() - 50, 74, 20).build());
+        int topButtonWidth = 74;
+        int topGap = 4;
+        int topLeft = getWidth() / 2 - (topButtonWidth * 5 + topGap * 4) / 2;
+        addRenderableWidget(new Button.Builder(Component.translatable("minimap.waypoints.add"), button -> addWaypoint()).bounds(topLeft, getHeight() - 50, topButtonWidth, 20).build());
+        addRenderableWidget(buttonEdit = new Button.Builder(Component.translatable("selectServer.edit"), button -> editWaypoint(selectedWaypoint)).bounds(topLeft + (topButtonWidth + topGap), getHeight() - 50, topButtonWidth, 20).build());
+        addRenderableWidget(buttonDelete = new Button.Builder(Component.translatable("selectServer.delete"), button -> deleteClicked()).bounds(topLeft + (topButtonWidth + topGap) * 2, getHeight() - 50, topButtonWidth, 20).build());
+        addRenderableWidget(buttonHighlight = new Button.Builder(Component.translatable("minimap.waypoints.highlight"), button -> setHighlightedWaypoint()).bounds(topLeft + (topButtonWidth + topGap) * 3, getHeight() - 50, topButtonWidth, 20).build());
+        addRenderableWidget(buttonDimensionFilter = new Button.Builder(getDimensionFilterLabel(), button -> cycleDimensionFilter()).bounds(topLeft + (topButtonWidth + topGap) * 4, getHeight() - 50, topButtonWidth, 20).build());
         int bottomButtonWidth = 74;
         int bottomGap = 4;
         int bottomLeft = getWidth() / 2 - (bottomButtonWidth * 6 + bottomGap * 5) / 2;
@@ -101,6 +110,52 @@ public class GuiWaypoints extends PopupGuiScreen implements IGuiWaypoints {
         updateSelectionButtons();
 
         sort();
+    }
+
+    private Component getDimensionFilterLabel() {
+        if (dimensionFilterMode == 0) {
+            return Component.literal("Dim: Current");
+        }
+        if (dimensionFilterMode == 1) {
+            return Component.literal("Dim: All");
+        }
+        int index = dimensionFilterMode - 2;
+        if (index < 0 || index >= dimensionFilterDimensions.size()) {
+            return Component.literal("Dim: Current");
+        }
+        return Component.literal("Dim: " + TextUtils.scrubCodes(dimensionFilterDimensions.get(index).getDisplayName()));
+    }
+
+    private void cycleDimensionFilter() {
+        int maxMode = 1 + dimensionFilterDimensions.size();
+        dimensionFilterMode++;
+        if (dimensionFilterMode > maxMode) {
+            dimensionFilterMode = 0;
+        }
+        setSelectedWaypoint(null);
+        waypointList.rebuildEntries();
+        sort();
+        buttonDimensionFilter.setMessage(getDimensionFilterLabel());
+    }
+
+    protected boolean shouldShowWaypoint(Waypoint waypoint) {
+        if (waypoint == null || !waypoint.inWorld) {
+            return false;
+        }
+
+        if (dimensionFilterMode == 0) {
+            return waypoint.inDimension;
+        }
+        if (dimensionFilterMode == 1) {
+            return true;
+        }
+
+        int index = dimensionFilterMode - 2;
+        if (index < 0 || index >= dimensionFilterDimensions.size()) {
+            return waypoint.inDimension;
+        }
+        DimensionContainer selectedDimension = dimensionFilterDimensions.get(index);
+        return waypoint.dimensions.isEmpty() || waypoint.dimensions.contains(selectedDimension);
     }
 
     private void sort() {

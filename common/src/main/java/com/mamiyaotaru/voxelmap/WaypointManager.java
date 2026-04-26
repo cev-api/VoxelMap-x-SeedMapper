@@ -1132,19 +1132,38 @@ public class WaypointManager {
             int nextNumber = this.nextPortalWaypointIndex(prefix);
             String name = prefix + " " + nextNumber;
             TreeSet<DimensionContainer> dimensions = new TreeSet<>();
-            if (this.currentDimension != null) {
-                dimensions.add(this.currentDimension);
+            DimensionContainer waypointDimension = this.resolveWaypointDimension();
+            if (waypointDimension != null) {
+                dimensions.add(waypointDimension);
             }
 
             Waypoint waypoint = new Waypoint(name, pos.getX(), pos.getZ(), pos.getY(), true, 0.72F, 0.24F, 1.0F, icon, this.getCurrentSubworldDescriptor(false), dimensions);
+            if (waypointDimension != null) {
+                waypoint.coordinateDimension = waypointDimension.getStorageName();
+            }
             waypoint.showBeacon = false;
             this.wayPts.add(waypoint);
             return true;
         }
     }
 
+    private DimensionContainer resolveWaypointDimension() {
+        Level world = GameVariableAccessShim.getWorld();
+        if (world != null) {
+            DimensionContainer byWorld = VoxelConstants.getVoxelMapInstance().getDimensionManager().getDimensionContainerByWorld(world);
+            if (byWorld != null) {
+                return byWorld;
+            }
+        }
+        return this.currentDimension;
+    }
+
     private boolean hasWaypointAt(BlockPos pos) {
+        String currentSubworld = TextUtils.scrubName(getCurrentSubworldDescriptor(false));
         for (Waypoint waypoint : this.wayPts) {
+            if (!isWaypointInCurrentContext(waypoint, currentSubworld)) {
+                continue;
+            }
             if (waypoint.x == pos.getX() && waypoint.y == pos.getY() && waypoint.z == pos.getZ()) {
                 return true;
             }
@@ -1153,18 +1172,32 @@ public class WaypointManager {
     }
 
     private boolean hasPortalWaypointNearby(String prefix, BlockPos pos, int distance) {
-        int maxSq = distance * distance;
+        String currentSubworld = TextUtils.scrubName(getCurrentSubworldDescriptor(false));
+        long maxSq = (long) distance * distance;
         for (Waypoint waypoint : this.wayPts) {
+            if (!isWaypointInCurrentContext(waypoint, currentSubworld)) {
+                continue;
+            }
             if (!waypoint.name.startsWith(prefix)) {
                 continue;
             }
-            int dx = waypoint.x - pos.getX();
-            int dz = waypoint.z - pos.getZ();
+            long dx = (long) waypoint.x - pos.getX();
+            long dz = (long) waypoint.z - pos.getZ();
             if (dx * dx + dz * dz <= maxSq) {
                 return true;
             }
         }
         return false;
+    }
+
+    private boolean isWaypointInCurrentContext(Waypoint waypoint, String currentSubworld) {
+        if (waypoint == null) {
+            return false;
+        }
+        String waypointSubworld = waypoint.world == null ? "" : waypoint.world;
+        boolean sameSubworld = currentSubworld.isEmpty() || waypointSubworld.isEmpty() || currentSubworld.equals(waypointSubworld);
+        boolean sameDimension = waypoint.dimensions == null || waypoint.dimensions.isEmpty() || waypoint.dimensions.contains(this.currentDimension);
+        return sameSubworld && sameDimension;
     }
 
     private int nextPortalWaypointIndex(String prefix) {
