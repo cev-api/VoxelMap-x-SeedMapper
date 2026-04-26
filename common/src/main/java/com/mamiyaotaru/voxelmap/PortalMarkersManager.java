@@ -179,10 +179,10 @@ public class PortalMarkersManager {
     }
 
     private void addInRange(List<PortalMarker> target, Set<BlockPos> source, int centerX, int centerZ, int radius, PortalType type) {
-        int radiusSq = radius * radius;
+        long radiusSq = (long) radius * radius;
         for (BlockPos marker : source) {
-            int dx = marker.getX() - centerX;
-            int dz = marker.getZ() - centerZ;
+            long dx = (long) marker.getX() - centerX;
+            long dz = (long) marker.getZ() - centerZ;
             if (dx * dx + dz * dz <= radiusSq) {
                 target.add(new PortalMarker(type, marker));
             }
@@ -462,8 +462,8 @@ public class PortalMarkersManager {
     }
 
     private boolean isNearPlayer(BlockPos pos, int playerX, int playerZ, int rangeSq) {
-        int dx = pos.getX() - playerX;
-        int dz = pos.getZ() - playerZ;
+        long dx = (long) pos.getX() - playerX;
+        long dz = (long) pos.getZ() - playerZ;
         return dx * dx + dz * dz <= rangeSq;
     }
 

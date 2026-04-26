@@ -144,6 +144,8 @@ Common commands:
 - Added automatic portal waypoint creation.
 - Added expanded waypoint compass settings.
 - Added waypoint name/distance placement controls.
+- Added dimension filter.
+- Added copy to clipboard in share page.
 - Improved waypoint list filtering, sorting, deleting, and highlighting behavior.
 
 ![WayPoints](https://i.imgur.com/w2s7jOl.png)

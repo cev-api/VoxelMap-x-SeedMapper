@@ -19,12 +19,15 @@ public abstract class MixinClientLevel {
 
         var mapOptions = VoxelConstants.getVoxelMapInstance().getMapOptions();
 
-        boolean usePortalMarkers = mapOptions.showNetherPortalMarkers || mapOptions.showEndPortalMarkers || mapOptions.showEndGatewayMarkers;
-        if (!usePortalMarkers) {
+        boolean usePortalTracking = mapOptions.autoPortalWaypoints
+                || mapOptions.showNetherPortalMarkers
+                || mapOptions.showEndPortalMarkers
+                || mapOptions.showEndGatewayMarkers;
+        if (!usePortalTracking) {
             return;
         }
 
-        if (usePortalMarkers) {
+        if (usePortalTracking) {
             VoxelConstants.getVoxelMapInstance().getPortalMarkersManager().onBlockUpdated(pos);
         }
     }
