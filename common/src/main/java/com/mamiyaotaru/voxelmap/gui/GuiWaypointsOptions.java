@@ -17,7 +17,7 @@ import java.util.List;
 
 public class GuiWaypointsOptions extends GuiScreenMinimap {
     private static final EnumOptionsMinimap[] WAYPOINT_OPTIONS = { EnumOptionsMinimap.WAYPOINT_DISTANCE, EnumOptionsMinimap.WAYPOINT_SIGN_SCALE, EnumOptionsMinimap.WAYPOINT_BEACONS, EnumOptionsMinimap.AUTO_PORTAL_WAYPOINTS, EnumOptionsMinimap.CONFIRM_WAYPOINT_DELETE, EnumOptionsMinimap.DEATHPOINTS, EnumOptionsMinimap.WAYPOINT_DISTANCE_UNIT_CONVERSION, EnumOptionsMinimap.SHOW_IN_GAME_WAYPOINT_NAMES, EnumOptionsMinimap.SHOW_IN_GAME_WAYPOINT_DISTANCES };
-    private static final EnumOptionsMinimap[] COMPASS_OPTIONS = { EnumOptionsMinimap.WAYPOINT_COMPASS, EnumOptionsMinimap.WAYPOINT_COMPASS_SHOW_COORDS, EnumOptionsMinimap.WAYPOINT_COMPASS_TEXT_OUTLINE, EnumOptionsMinimap.WAYPOINT_COMPASS_ICON_RANGE, EnumOptionsMinimap.WAYPOINT_COMPASS_X, EnumOptionsMinimap.WAYPOINT_COMPASS_Y, EnumOptionsMinimap.WAYPOINT_COMPASS_TEXT_OPACITY, EnumOptionsMinimap.WAYPOINT_COMPASS_OUTLINE_OPACITY, EnumOptionsMinimap.WAYPOINT_COMPASS_BACKGROUND_OPACITY };
+    private static final EnumOptionsMinimap[] COMPASS_OPTIONS = { EnumOptionsMinimap.WAYPOINT_COMPASS, EnumOptionsMinimap.WAYPOINT_COMPASS_SHOW_COORDS, EnumOptionsMinimap.WAYPOINT_COMPASS_TEXT_OUTLINE, EnumOptionsMinimap.WAYPOINT_COMPASS_ICON_RANGE, EnumOptionsMinimap.WAYPOINT_COMPASS_MAX_WAYPOINTS, EnumOptionsMinimap.WAYPOINT_COMPASS_X, EnumOptionsMinimap.WAYPOINT_COMPASS_Y, EnumOptionsMinimap.WAYPOINT_COMPASS_TEXT_OPACITY, EnumOptionsMinimap.WAYPOINT_COMPASS_OUTLINE_OPACITY, EnumOptionsMinimap.WAYPOINT_COMPASS_BACKGROUND_OPACITY };
     private final MapSettingsManager options;
     private final List<SectionHeader> sectionHeaders = new ArrayList<>();
     protected Component screenTitle;
@@ -65,6 +65,7 @@ public class GuiWaypointsOptions extends GuiScreenMinimap {
                         }
                         value = (value - 100.0F) / 9901.0F;
                     }
+                    case WAYPOINT_COMPASS_MAX_WAYPOINTS -> value = (value - 1.0F) / 63.0F;
                     case WAYPOINT_COMPASS_X, WAYPOINT_COMPASS_TEXT_OPACITY, WAYPOINT_COMPASS_OUTLINE_OPACITY, WAYPOINT_COMPASS_BACKGROUND_OPACITY -> value = value / 100.0F;
                     case WAYPOINT_COMPASS_Y -> value = value / 40.0F;
                 }

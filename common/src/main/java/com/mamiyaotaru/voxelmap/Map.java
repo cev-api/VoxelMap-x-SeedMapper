@@ -575,8 +575,8 @@ public class Map implements Runnable, IChangeObserver {
         double playerX = minecraft.player.getX();
         double playerY = minecraft.player.getY();
         double playerZ = minecraft.player.getZ();
-        float playerYaw = minecraft.player.getYRot();
         int maxDistance = options.waypointCompassIconRange;
+        ArrayList<CompassWaypoint> compassWaypoints = new ArrayList<>();
 
         for (Waypoint waypoint : waypointManager.getWaypoints()) {
             if (!waypoint.isActive()) {
@@ -590,16 +590,27 @@ public class Map implements Runnable, IChangeObserver {
                 continue;
             }
 
-            float targetYaw = (float) Math.toDegrees(Math.atan2(dz, dx)) - 90.0F;
-            float deltaYaw = Mth.wrapDegrees(targetYaw - playerYaw);
+            double wayX = playerX - waypoint.getXInCurrentDimension() - 0.5D;
+            double wayZ = playerZ - waypoint.getZInCurrentDimension() - 0.5D;
+            float deltaYaw = Mth.wrapDegrees((float) Math.toDegrees(Math.atan2(wayX, wayZ)) + this.direction);
             if (Math.abs(deltaYaw) > 90.0F) {
                 continue;
             }
 
-            int x = centerX + Math.round(deltaYaw / 90.0F * (barWidth / 2.0F));
-            int distance = (int) Math.sqrt(distanceSq);
+            compassWaypoints.add(new CompassWaypoint(waypoint, deltaYaw, (int) Math.sqrt(distanceSq)));
+        }
+
+        compassWaypoints.sort((first, second) -> {
+            int angleCompare = Float.compare(Math.abs(first.deltaYaw()), Math.abs(second.deltaYaw()));
+            return angleCompare != 0 ? angleCompare : Integer.compare(first.distance(), second.distance());
+        });
+
+        int maxRendered = Mth.clamp(options.waypointCompassMaxWaypoints, 1, 64);
+        for (CompassWaypoint compassWaypoint : compassWaypoints) {
+            Waypoint waypoint = compassWaypoint.waypoint();
+            int x = centerX - Math.round(compassWaypoint.deltaYaw() / 90.0F * (barWidth / 2.0F));
             String label = waypoint.name;
-            String distanceLabel = distance + "m";
+            String distanceLabel = compassWaypoint.distance() + "m";
             int textWidth = minecraft.font.width(label);
             int textX = Mth.clamp(x, barLeft + textWidth / 2 + 2, barRight - textWidth / 2 - 2);
             int color = withOpacity(waypoint.getUnifiedColor(), options.waypointCompassTextOpacity);
@@ -607,10 +618,13 @@ public class Map implements Runnable, IChangeObserver {
             drawCompassText(graphics, label, textX, barY + 22, color, true);
             drawCompassText(graphics, distanceLabel, textX, barY + 32, color, true);
 
-            if (++rendered >= 8) {
+            if (++rendered >= maxRendered) {
                 break;
             }
         }
+    }
+
+    private record CompassWaypoint(Waypoint waypoint, float deltaYaw, int distance) {
     }
 
     private double playerX() {

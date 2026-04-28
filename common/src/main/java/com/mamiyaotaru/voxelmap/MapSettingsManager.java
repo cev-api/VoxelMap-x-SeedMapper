@@ -92,6 +92,7 @@ public class MapSettingsManager implements ISettingsManager {
     public boolean waypointCompassShowCoords = true;
     public boolean waypointCompassTextOutline = true;
     public int waypointCompassIconRange = -1;
+    public int waypointCompassMaxWaypoints = 8;
     public int waypointCompassX = 50;
     public int waypointCompassY = 3;
     public int waypointCompassTextOpacity = 100;
@@ -222,6 +223,7 @@ public class MapSettingsManager implements ISettingsManager {
                         case "Waypoint Compass Show Coords" -> waypointCompassShowCoords = Boolean.parseBoolean(curLine[1]);
                         case "Waypoint Compass Text Outline" -> waypointCompassTextOutline = Boolean.parseBoolean(curLine[1]);
                         case "Waypoint Compass Icon Range" -> waypointCompassIconRange = Mth.clamp(Integer.parseInt(curLine[1]), -1, 10000);
+                        case "Waypoint Compass Max Waypoints" -> waypointCompassMaxWaypoints = Mth.clamp(Integer.parseInt(curLine[1]), 1, 64);
                         case "Waypoint Compass X" -> waypointCompassX = Mth.clamp(Integer.parseInt(curLine[1]), 0, 100);
                         case "Waypoint Compass Y" -> waypointCompassY = Mth.clamp(Integer.parseInt(curLine[1]), 0, 40);
                         case "Waypoint Compass Text Opacity" -> waypointCompassTextOpacity = Mth.clamp(Integer.parseInt(curLine[1]), 0, 100);
@@ -332,6 +334,7 @@ public class MapSettingsManager implements ISettingsManager {
             out.println("Waypoint Compass Show Coords:" + waypointCompassShowCoords);
             out.println("Waypoint Compass Text Outline:" + waypointCompassTextOutline);
             out.println("Waypoint Compass Icon Range:" + waypointCompassIconRange);
+            out.println("Waypoint Compass Max Waypoints:" + waypointCompassMaxWaypoints);
             out.println("Waypoint Compass X:" + waypointCompassX);
             out.println("Waypoint Compass Y:" + waypointCompassY);
             out.println("Waypoint Compass Text Opacity:" + waypointCompassTextOpacity);
@@ -402,6 +405,7 @@ public class MapSettingsManager implements ISettingsManager {
                     case WAYPOINT_DISTANCE -> s + (value < 0.0F ? I18n.get("options.minimap.waypoints.infinite") : (int) value);
                     case WAYPOINT_SIGN_SCALE -> s + String.format("%.2fx", value);
                     case WAYPOINT_COMPASS_ICON_RANGE -> s + (value < 0.0F ? I18n.get("options.minimap.waypoints.infinite") : (int) value);
+                    case WAYPOINT_COMPASS_MAX_WAYPOINTS -> s + (int) value;
                     case WAYPOINT_COMPASS_X, WAYPOINT_COMPASS_Y, WAYPOINT_COMPASS_TEXT_OPACITY, WAYPOINT_COMPASS_OUTLINE_OPACITY, WAYPOINT_COMPASS_BACKGROUND_OPACITY -> s + (int) value;
 
                     default -> s + (value <= 0.0F ? I18n.get("options.off") : (int) value + "%");
@@ -650,6 +654,7 @@ public class MapSettingsManager implements ISettingsManager {
             case WAYPOINT_DISTANCE -> maxWaypointDisplayDistance;
             case WAYPOINT_SIGN_SCALE -> waypointSignScale;
             case WAYPOINT_COMPASS_ICON_RANGE -> waypointCompassIconRange;
+            case WAYPOINT_COMPASS_MAX_WAYPOINTS -> waypointCompassMaxWaypoints;
             case WAYPOINT_COMPASS_X -> waypointCompassX;
             case WAYPOINT_COMPASS_Y -> waypointCompassY;
             case WAYPOINT_COMPASS_TEXT_OPACITY -> waypointCompassTextOpacity;
@@ -684,6 +689,7 @@ public class MapSettingsManager implements ISettingsManager {
                 float distance = Mth.lerp(value, 100.0F, 10001.0F);
                 waypointCompassIconRange = distance > 10000.0F ? -1 : (int) distance;
             }
+            case WAYPOINT_COMPASS_MAX_WAYPOINTS -> waypointCompassMaxWaypoints = Mth.clamp(Math.round(Mth.lerp(value, 1.0F, 64.0F)), 1, 64);
             case WAYPOINT_COMPASS_X -> waypointCompassX = Mth.clamp(Math.round(value * 100.0F), 0, 100);
             case WAYPOINT_COMPASS_Y -> waypointCompassY = Mth.clamp(Math.round(value * 40.0F), 0, 40);
             case WAYPOINT_COMPASS_TEXT_OPACITY -> waypointCompassTextOpacity = Mth.clamp(Math.round(value * 100.0F), 0, 100);
