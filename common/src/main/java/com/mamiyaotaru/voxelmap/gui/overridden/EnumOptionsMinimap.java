@@ -44,6 +44,7 @@ public enum EnumOptionsMinimap {
     WAYPOINT_COMPASS_SHOW_COORDS("options.minimap.waypoints.compassShowCoords", Type.BOOLEAN),
     WAYPOINT_COMPASS_TEXT_OUTLINE("options.minimap.waypoints.compassTextOutline", Type.BOOLEAN),
     WAYPOINT_COMPASS_ICON_RANGE("options.minimap.waypoints.compassIconRange", Type.FLOAT),
+    WAYPOINT_COMPASS_MAX_WAYPOINTS("options.minimap.waypoints.compassMaxWaypoints", Type.FLOAT),
     WAYPOINT_COMPASS_X("options.minimap.waypoints.compassX", Type.FLOAT),
     WAYPOINT_COMPASS_Y("options.minimap.waypoints.compassY", Type.FLOAT),
     WAYPOINT_COMPASS_TEXT_OPACITY("options.minimap.waypoints.compassTextOpacity", Type.FLOAT),

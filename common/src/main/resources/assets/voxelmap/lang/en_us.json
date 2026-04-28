@@ -113,6 +113,7 @@
   "options.minimap.waypoints.compassShowCoords": "Compass XYZ",
   "options.minimap.waypoints.compassTextOutline": "Compass Text Outline",
   "options.minimap.waypoints.compassIconRange": "Compass Icon Range",
+  "options.minimap.waypoints.compassMaxWaypoints": "Compass Max Waypoints",
   "options.minimap.waypoints.compassX": "Compass X",
   "options.minimap.waypoints.compassY": "Compass Y",
   "options.minimap.waypoints.compassTextOpacity": "Compass Text Alpha",
