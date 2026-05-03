@@ -1,5 +1,7 @@
 # VoxelMap x SeedMapper by CevAPI
 
+![LOGO](https://i.imgur.com/D4uG0Fd.png)
+
 VoxelMap x SeedMapper is a heavily modified fork of [VoxelMap Updated](https://github.com/fantahund/VoxelMap) with SeedMapper integrated directly into the client.
 
 This fork combines VoxelMap's minimap and fullscreen world map with SeedMapper locating, overlays, loot tools, persistence, UI integration, and a range of rendering and behavior fixes.
