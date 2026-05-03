@@ -245,13 +245,18 @@ public final class SeedMapperLocatorService {
             }
             if ((key.featureMask & (1L << SeedMapperFeature.DATAPACK_STRUCTURE.ordinal())) != 0L) {
                 if (key.settings.datapackEnabled) {
+                    java.util.Set<String> disabledDatapackStructures = key.datapackWorldKey() == null || key.datapackWorldKey().isBlank()
+                            ? java.util.Set.of()
+                            : key.settings.getDisabledDatapackStructures(key.datapackWorldKey());
                     for (SeedMapperMarker marker : SeedMapperImportedDatapackManager.queryImportedMarkers(
                             key.settings.datapackCachePath,
                             key.seed,
+                            key.dimension,
                             key.minX,
                             key.maxX,
                             key.minZ,
-                            key.maxZ
+                            key.maxZ,
+                            disabledDatapackStructures
                     )) {
                         if (isDatapackStructureVisible(key, marker.label())) {
                             markers.add(marker);

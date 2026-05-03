@@ -55,8 +55,18 @@ public final class SeedMapperDatapackManager {
     }
 
     public static List<String> readImportedStructureIds(String datapackRootPath) {
+        return readImportedStructureIds(datapackRootPath, Long.MIN_VALUE);
+    }
+
+    public static List<String> readImportedStructureIds(String datapackRootPath, long seed) {
         if (datapackRootPath == null || datapackRootPath.isBlank()) {
             return List.of();
+        }
+        if (seed != Long.MIN_VALUE) {
+            List<String> worldgenIds = SeedMapperImportedDatapackManager.importedStructureIds(datapackRootPath, seed);
+            if (!worldgenIds.isEmpty()) {
+                return worldgenIds;
+            }
         }
         Path root = Path.of(datapackRootPath);
         if (!Files.isDirectory(root)) {

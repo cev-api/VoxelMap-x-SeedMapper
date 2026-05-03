@@ -45,7 +45,12 @@ public class GuiSeedMapperDatapackStructures extends GuiScreenMinimap {
 
     private void reloadEntries() {
         structureIds.clear();
-        structureIds.addAll(SeedMapperDatapackManager.readImportedStructureIds(settings.datapackCachePath));
+        long seed = Long.MIN_VALUE;
+        try {
+            seed = settings.resolveSeed(VoxelConstants.getVoxelMapInstance().getWorldSeed());
+        } catch (IllegalArgumentException ignored) {
+        }
+        structureIds.addAll(SeedMapperDatapackManager.readImportedStructureIds(settings.datapackCachePath, seed));
         structureIds.sort(Comparator.comparing(s -> s, String.CASE_INSENSITIVE_ORDER));
         clampScroll();
         refreshButtons();
