@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Random;
 
 public class GuiSeedMapperDatapackOptions extends GuiScreenMinimap {
-    private static final List<String> COLOR_SCHEMES = List.of("Random", "HSV", "Bright HSV");
+    private static final List<String> COLOR_SCHEMES = List.of("Palette Random", "Highly Saturated", "Vibrant");
     private static final List<String> ICON_STYLES = List.of("Default", "Large", "Potion");
     private static final int[] COLOR_COUNTS = {32, 64, 128, 256};
 
@@ -62,12 +62,20 @@ public class GuiSeedMapperDatapackOptions extends GuiScreenMinimap {
         y += 24;
         randomColorsButton = addRenderableWidget(new Button.Builder(Component.empty(), button -> {
             cycleRandomColorCount();
+            settings.datapackRandomColorCycle = 0;
+            settings.datapackColorScheme = 1;
             refreshLabels();
             MapSettingsManager.instance.saveAll();
         }).bounds(left, y, 150, 20).build());
 
         regenerateColorsButton = addRenderableWidget(new Button.Builder(Component.literal("Regenerate Colors"), button -> {
-            regenerateColors(settings.getDatapackRandomColors().size());
+            if (settings.getDatapackRandomColors().isEmpty()) {
+                regenerateColors(COLOR_COUNTS[0]);
+                settings.datapackRandomColorCycle = 0;
+            } else {
+                settings.cycleDatapackRandomColors();
+            }
+            settings.datapackColorScheme = 1;
             refreshLabels();
             MapSettingsManager.instance.saveAll();
         }).bounds(right, y, 150, 20).build());
@@ -97,14 +105,20 @@ public class GuiSeedMapperDatapackOptions extends GuiScreenMinimap {
         colorSchemeButton.setMessage(Component.literal("Color Scheme: " + COLOR_SCHEMES.get(Math.max(0, Math.min(COLOR_SCHEMES.size() - 1, settings.datapackColorScheme - 1)))));
         iconStyleButton.setMessage(Component.literal("Icon Style: " + ICON_STYLES.get(Math.max(0, Math.min(ICON_STYLES.size() - 1, settings.datapackIconStyle - 1)))));
         randomColorsButton.setMessage(Component.literal("Random Colors: " + settings.getDatapackRandomColors().size()));
-        structureDisabledButton.setMessage(Component.literal("Structure Disabled: " + countDisabledStructures()));
+        structureDisabledButton.setMessage(Component.literal("Datapack Structures: " + countEnabledStructures() + " shown"));
         savedUrlsButton.setMessage(Component.literal("Saved URLs"));
         savedCachePathsButton.setMessage(Component.literal("Saved Cache Paths"));
     }
 
-    private int countDisabledStructures() {
+    private int countEnabledStructures() {
         String worldKey = currentWorldKey();
-        return settings.getDisabledDatapackStructures(worldKey).size();
+        long seed = Long.MIN_VALUE;
+        try {
+            seed = settings.resolveSeed(VoxelConstants.getVoxelMapInstance().getWorldSeed());
+        } catch (IllegalArgumentException ignored) {
+        }
+        int total = SeedMapperDatapackManager.readImportedStructureIds(settings.datapackCachePath, seed).size();
+        return Math.max(0, total - settings.getDisabledDatapackStructures(worldKey).size());
     }
 
     private void cycleRandomColorCount() {

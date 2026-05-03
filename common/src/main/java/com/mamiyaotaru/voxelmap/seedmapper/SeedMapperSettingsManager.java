@@ -37,6 +37,7 @@ public class SeedMapperSettingsManager implements ISubSettingsManager {
     public String datapackCachePath = "";
     public int datapackColorScheme = 1;
     public int datapackIconStyle = 1;
+    public int datapackRandomColorCycle = 0;
 
     public boolean espEnabled = false;
     public int espDefaultChunks = 4;
@@ -84,6 +85,7 @@ public class SeedMapperSettingsManager implements ISubSettingsManager {
                     case "SeedMapper Datapack Cache Path" -> datapackCachePath = curLine[1];
                     case "SeedMapper Datapack Color Scheme" -> datapackColorScheme = Mth.clamp(Integer.parseInt(curLine[1]), 1, 3);
                     case "SeedMapper Datapack Icon Style" -> datapackIconStyle = Mth.clamp(Integer.parseInt(curLine[1]), 1, 3);
+                    case "SeedMapper Datapack Random Color Cycle" -> datapackRandomColorCycle = Math.max(0, Integer.parseInt(curLine[1]));
                     case "SeedMapper ESP Enabled" -> espEnabled = Boolean.parseBoolean(curLine[1]);
                     case "SeedMapper ESP Default Chunks" -> espDefaultChunks = Mth.clamp(Integer.parseInt(curLine[1]), 0, 8);
                     case "SeedMapper ESP Timeout Minutes" -> espTimeoutMinutes = Math.max(0.0D, Double.parseDouble(curLine[1]));
@@ -163,6 +165,7 @@ public class SeedMapperSettingsManager implements ISubSettingsManager {
         out.println("SeedMapper Datapack Cache Path:" + datapackCachePath);
         out.println("SeedMapper Datapack Color Scheme:" + datapackColorScheme);
         out.println("SeedMapper Datapack Icon Style:" + datapackIconStyle);
+        out.println("SeedMapper Datapack Random Color Cycle:" + datapackRandomColorCycle);
         out.println("SeedMapper ESP Enabled:" + espEnabled);
         out.println("SeedMapper ESP Default Chunks:" + espDefaultChunks);
         out.println("SeedMapper ESP Timeout Minutes:" + espTimeoutMinutes);
@@ -254,6 +257,15 @@ public class SeedMapperSettingsManager implements ISubSettingsManager {
 
     public List<Integer> getDatapackRandomColors() {
         return datapackRandomColors;
+    }
+
+    public void cycleDatapackRandomColors() {
+        int paletteSize = datapackRandomColors.size();
+        if (paletteSize <= 1) {
+            datapackRandomColorCycle = 0;
+            return;
+        }
+        datapackRandomColorCycle = (datapackRandomColorCycle + 1) % paletteSize;
     }
 
     public Set<String> getDisabledDatapackStructures(String worldKey) {
@@ -363,7 +375,12 @@ public class SeedMapperSettingsManager implements ISubSettingsManager {
 
     public int getDatapackMarkerHash() {
         int importedHash = datapackEnabled ? SeedMapperImportedDatapackManager.getImportedDatapack(datapackCachePath).hash() : 0;
-        return 31 * importedHash + datapackLocatedEntries.hashCode() + datapackStructureDisabled.hashCode();
+        int hash = 31 * importedHash + datapackLocatedEntries.hashCode() + datapackStructureDisabled.hashCode();
+        hash = 31 * hash + datapackColorScheme;
+        hash = 31 * hash + datapackIconStyle;
+        hash = 31 * hash + datapackRandomColors.hashCode();
+        hash = 31 * hash + datapackRandomColorCycle;
+        return hash;
     }
 
     @Override

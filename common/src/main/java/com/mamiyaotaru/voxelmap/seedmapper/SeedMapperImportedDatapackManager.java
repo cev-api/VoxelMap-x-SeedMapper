@@ -177,17 +177,28 @@ public final class SeedMapperImportedDatapackManager {
         return id.trim().toLowerCase(Locale.ROOT);
     }
 
-    public static List<SeedMapperMarker> queryImportedMarkers(String datapackRootPath, long seed, int minX, int maxX, int minZ, int maxZ) {
+    public static List<SeedMapperMarker> queryImportedMarkers(String datapackRootPath, long seed, int dimension, int minX, int maxX, int minZ, int maxZ, java.util.Set<String> disabledIds) {
+        return SeedMapperDatapackWorldgen.query(datapackRootPath, seed, dimension, minX, maxX, minZ, maxZ, disabledIds);
+    }
+
+    public static List<String> importedStructureIds(String datapackRootPath, long seed) {
+        List<String> worldgenIds = SeedMapperDatapackWorldgen.structureIds(datapackRootPath, seed);
+        if (!worldgenIds.isEmpty()) {
+            return worldgenIds;
+        }
         ImportedDatapack datapack = getImportedDatapack(datapackRootPath);
         if (datapack == ImportedDatapack.EMPTY || datapack.structureSets().isEmpty()) {
             return List.of();
         }
-
-        ArrayList<SeedMapperMarker> markers = new ArrayList<>();
+        java.util.Set<String> ids = new java.util.HashSet<>();
         for (ImportedStructureSet structureSet : datapack.structureSets()) {
-            markers.addAll(structureSet.query(seed, minX, maxX, minZ, maxZ));
+            for (WeightedStructure structure : structureSet.structures()) {
+                ids.add(structure.id());
+            }
         }
-        return markers;
+        ArrayList<String> sorted = new ArrayList<>(ids);
+        sorted.sort(String::compareTo);
+        return sorted;
     }
 
     public static int colorForStructureId(String structureId) {
@@ -196,6 +207,9 @@ public final class SeedMapperImportedDatapackManager {
         }
         SeedMapperSettingsManager settings = VoxelConstants.getVoxelMapInstance().getSeedMapperOptions();
         int scheme = settings == null ? 1 : settings.datapackColorScheme;
+        if (scheme == 1) {
+            return randomPaletteColorForStructureId(structureId, settings);
+        }
         if (scheme == 2) {
             return hsvColorForStructureId(structureId, 0.45D, 0.95D, 0.50D);
         }
@@ -203,6 +217,18 @@ public final class SeedMapperImportedDatapackManager {
             return hsvColorForStructureId(structureId, 1.0D, 1.0D, 0.0D);
         }
         return colorForSchemeOne(structureId);
+    }
+
+    private static int randomPaletteColorForStructureId(String structureId, SeedMapperSettingsManager settings) {
+        if (settings == null) {
+            return colorForSchemeOne(structureId);
+        }
+        List<Integer> palette = settings.getDatapackRandomColors();
+        if (palette == null || palette.isEmpty()) {
+            return colorForSchemeOne(structureId);
+        }
+        int index = Math.floorMod(structureId.hashCode() + settings.datapackRandomColorCycle, palette.size());
+        return palette.get(index);
     }
 
     public static Identifier iconForStructureId(String structureId) {
@@ -324,7 +350,7 @@ public final class SeedMapperImportedDatapackManager {
     }
 
     private record ImportedStructureSet(String id, Placement placement, List<WeightedStructure> structures) {
-        List<SeedMapperMarker> query(long seed, int minX, int maxX, int minZ, int maxZ) {
+        List<SeedMapperMarker> query(long seed, int minX, int maxX, int minZ, int maxZ, java.util.Set<String> disabledIds) {
             if (!(placement instanceof RandomSpreadPlacement randomSpreadPlacement)) {
                 return List.of();
             }
@@ -341,9 +367,10 @@ public final class SeedMapperImportedDatapackManager {
             int maxRegionZ = floorDiv(maxChunkZ, spacing) + 1;
 
             ArrayList<SeedMapperMarker> markers = new ArrayList<>();
+            java.util.Set<String> disabled = disabledIds == null ? java.util.Set.of() : disabledIds;
             for (int regionX = minRegionX; regionX <= maxRegionX; regionX++) {
                 for (int regionZ = minRegionZ; regionZ <= maxRegionZ; regionZ++) {
-                    WeightedStructure structure = selectStructure(seed, regionX, regionZ, randomSpreadPlacement.salt());
+                    WeightedStructure structure = selectStructure(seed, regionX, regionZ, randomSpreadPlacement.salt(), disabled);
                     if (structure == null) {
                         continue;
                     }
@@ -362,11 +389,14 @@ public final class SeedMapperImportedDatapackManager {
             return markers;
         }
 
-        private WeightedStructure selectStructure(long seed, int regionX, int regionZ, int salt) {
+        private WeightedStructure selectStructure(long seed, int regionX, int regionZ, int salt, java.util.Set<String> disabledIds) {
             if (structures.isEmpty()) {
                 return null;
             }
             if (structures.size() == 1) {
+                if (disabledIds != null && disabledIds.contains(structures.get(0).id())) {
+                    return null;
+                }
                 return structures.get(0);
             }
 
@@ -375,21 +405,32 @@ public final class SeedMapperImportedDatapackManager {
 
             int totalWeight = 0;
             for (WeightedStructure structure : structures) {
-                totalWeight += structure.weight();
+                if (disabledIds == null || !disabledIds.contains(structure.id())) {
+                    totalWeight += structure.weight();
+                }
             }
             if (totalWeight <= 0) {
-                return structures.get(0);
+                return null;
             }
 
             int roll = random.nextInt(totalWeight);
             int accumulated = 0;
             for (WeightedStructure structure : structures) {
+                if (disabledIds != null && disabledIds.contains(structure.id())) {
+                    continue;
+                }
                 accumulated += structure.weight();
                 if (roll < accumulated) {
                     return structure;
                 }
             }
-            return structures.get(structures.size() - 1);
+            for (int i = structures.size() - 1; i >= 0; i--) {
+                WeightedStructure structure = structures.get(i);
+                if (disabledIds == null || !disabledIds.contains(structure.id())) {
+                    return structure;
+                }
+            }
+            return null;
         }
     }
 

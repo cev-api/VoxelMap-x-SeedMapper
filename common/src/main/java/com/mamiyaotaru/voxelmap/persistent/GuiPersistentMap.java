@@ -1856,13 +1856,21 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         int x = startX + titleWidth + stripPad + 8;
         int contentEnd = this.width - this.sideMargin - 6;
         int perPage = Math.max(1, (contentEnd - x) / (iconSize + gap));
-        List<SeedMapperFeature> visibleFeatures = new ArrayList<>();
+        List<LegendEntry> visibleEntries = new ArrayList<>();
         for (SeedMapperFeature feature : SeedMapperFeature.values()) {
+            if (feature == SeedMapperFeature.DATAPACK_STRUCTURE) {
+                continue;
+            }
             if (featureMatchesDimension(feature, currentDimension) && isSeedMapperFeatureVisible(feature)) {
-                visibleFeatures.add(feature);
+                visibleEntries.add(LegendEntry.feature(feature));
             }
         }
-        SeedMapperFeature[] all = visibleFeatures.toArray(SeedMapperFeature[]::new);
+        if (seedMapperOptions.datapackEnabled && seedMapperOptions.isFeatureEnabled(SeedMapperFeature.DATAPACK_STRUCTURE)) {
+            for (String structureId : visibleDatapackLegendStructureIds()) {
+                visibleEntries.add(LegendEntry.datapack(structureId));
+            }
+        }
+        LegendEntry[] all = visibleEntries.toArray(LegendEntry[]::new);
         seedMapperLegendMaxPage = Math.max(0, (all.length - 1) / perPage);
         if (seedMapperLegendPage > seedMapperLegendMaxPage) {
             seedMapperLegendPage = seedMapperLegendMaxPage;
@@ -1871,8 +1879,8 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         int startIndex = seedMapperLegendPage * perPage;
         int endIndex = Math.min(all.length, startIndex + perPage);
         for (int i = startIndex; i < endIndex; i++) {
-            SeedMapperFeature feature = all[i];
-            seedMapperIconHitboxes.add(new FeatureIconHitbox(feature, x, y + (barHeight - iconSize) / 2, iconSize));
+            LegendEntry entry = all[i];
+            seedMapperIconHitboxes.add(new FeatureIconHitbox(entry.feature(), entry.datapackStructureId(), x, y + (barHeight - iconSize) / 2, iconSize));
             x += iconSize + gap;
         }
 
@@ -1918,13 +1926,19 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         if (!seedMapperIconHitboxes.isEmpty()) {
             for (FeatureIconHitbox hitbox : seedMapperIconHitboxes) {
                 SeedMapperFeature feature = hitbox.feature();
-                boolean enabled = isFeatureEnabledInPanel(feature);
+                boolean datapackStructure = hitbox.datapackStructureId() != null;
+                boolean enabled = datapackStructure || isFeatureEnabledInPanel(feature);
                 int color = enabled ? 0xFFFFFFFF : 0x55FFFFFF;
-                VoxelMapGuiGraphics.blitFloat(graphics, RenderPipelines.GUI_TEXTURED, feature.icon(), hitbox.x(), hitbox.y(), iconSize, iconSize, 0, 1, 0, 1, color);
+                if (datapackStructure) {
+                    drawDatapackLegendIcon(graphics, hitbox.datapackStructureId(), hitbox.x(), hitbox.y(), iconSize);
+                } else {
+                    VoxelMapGuiGraphics.blitFloat(graphics, RenderPipelines.GUI_TEXTURED, feature.icon(), hitbox.x(), hitbox.y(), iconSize, iconSize, 0, 1, 0, 1, color);
+                }
                 if (mouseX >= hitbox.x() && mouseX <= hitbox.x() + iconSize && mouseY >= hitbox.y() && mouseY <= hitbox.y() + iconSize) {
                     graphics.requestCursor(CursorTypes.CROSSHAIR);
-                    Component tooltip = Component.translatable(feature.translationKey())
-                            .append(Component.literal(enabled ? " (ON)" : " (OFF)"));
+                    Component tooltip = datapackStructure
+                            ? Component.literal(hitbox.datapackStructureId() + " (ON)")
+                            : Component.translatable(feature.translationKey()).append(Component.literal(enabled ? " (ON)" : " (OFF)"));
                     renderTooltip(graphics, tooltip, mouseX, mouseY);
                 }
             }
@@ -1961,6 +1975,13 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         }
         for (FeatureIconHitbox hitbox : seedMapperIconHitboxes) {
             if (hitbox.contains(mouseX, mouseY)) {
+                if (hitbox.datapackStructureId() != null) {
+                    seedMapperOptions.setDatapackStructureEnabled(currentSeedMapperWorldKey(), hitbox.datapackStructureId(), false);
+                    seedMapperSavedToggles = null;
+                    seedMapperIsolatedFeature = null;
+                    MapSettingsManager.instance.saveAll();
+                    return true;
+                }
                 boolean ctrlDown = isCtrlDown();
                 SeedMapperFeature clicked = hitbox.feature();
                 if (isPortalFeature(clicked)) {
@@ -2025,6 +2046,37 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
     private boolean isSeedMapperFeatureVisible(SeedMapperFeature feature) {
         return true;
+    }
+
+    private List<String> visibleDatapackLegendStructureIds() {
+        long seed;
+        try {
+            seed = seedMapperOptions.resolveSeed(VoxelConstants.getVoxelMapInstance().getWorldSeed());
+        } catch (IllegalArgumentException ignored) {
+            return List.of();
+        }
+        String worldKey = currentSeedMapperWorldKey();
+        Set<String> disabled = seedMapperOptions.getDisabledDatapackStructures(worldKey);
+        ArrayList<String> ids = new ArrayList<>();
+        for (String id : SeedMapperImportedDatapackManager.importedStructureIds(seedMapperOptions.datapackCachePath, seed)) {
+            if (!disabled.contains(id)) {
+                ids.add(id);
+            }
+        }
+        return ids;
+    }
+
+    private void drawDatapackLegendIcon(GuiGraphicsExtractor graphics, String structureId, int x, int y, int iconSize) {
+        int color = SeedMapperImportedDatapackManager.colorForStructureId(structureId);
+        if (SeedMapperImportedDatapackManager.usesPotionIcon()) {
+            Identifier potion = SeedMapperImportedDatapackManager.iconForStructureId(structureId);
+            Identifier overlay = SeedMapperImportedDatapackManager.iconOverlayForStructureId(structureId);
+            VoxelMapGuiGraphics.blitFloat(graphics, RenderPipelines.GUI_TEXTURED, potion, x, y, iconSize, iconSize, 0, 1, 0, 1, 0xFFFFFFFF);
+            VoxelMapGuiGraphics.blitFloat(graphics, RenderPipelines.GUI_TEXTURED, overlay, x, y, iconSize, iconSize, 0, 1, 0, 1, color);
+            return;
+        }
+        graphics.fill(x - 1, y - 1, x + iconSize + 1, y + iconSize + 1, 0xFF000000);
+        graphics.fill(x, y, x + iconSize, y + iconSize, color);
     }
 
     private boolean isPortalFeature(SeedMapperFeature feature) {
@@ -2685,7 +2737,17 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         }
     }
 
-    private record FeatureIconHitbox(SeedMapperFeature feature, int x, int y, int size) {
+    private record LegendEntry(SeedMapperFeature feature, String datapackStructureId) {
+        private static LegendEntry feature(SeedMapperFeature feature) {
+            return new LegendEntry(feature, null);
+        }
+
+        private static LegendEntry datapack(String structureId) {
+            return new LegendEntry(SeedMapperFeature.DATAPACK_STRUCTURE, structureId);
+        }
+    }
+
+    private record FeatureIconHitbox(SeedMapperFeature feature, String datapackStructureId, int x, int y, int size) {
         private boolean contains(int mouseX, int mouseY) {
             return mouseX >= x && mouseX <= x + size && mouseY >= y && mouseY <= y + size;
         }
