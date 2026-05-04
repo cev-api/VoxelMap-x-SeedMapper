@@ -46,6 +46,8 @@ public class GuiRadarChunkOverlays extends GuiScreenMinimap {
     private GuiValueSliderMinimap newOpacitySlider;
     private GuiValueSliderMinimap oldOpacitySlider;
     private GuiValueSliderMinimap blockOpacitySlider;
+    private GuiValueSliderMinimap windowRadiusSlider;
+    private GuiValueSliderMinimap windowRefreshDistanceSlider;
     private GuiColorPickerContainer colorPicker;
     private Button colorPickerModeButton;
     private Button colorPickerApplyButton;
@@ -166,6 +168,19 @@ public class GuiRadarChunkOverlays extends GuiScreenMinimap {
             refreshLabels();
         }, value -> "Block Opacity: " + (int) Math.round(value) + "%"));
 
+        y += 24;
+        windowRadiusSlider = addRenderableWidget(new GuiValueSliderMinimap(left, y, 150, 20, settings.newerNewChunksWindowRadiusChunks, 16.0D, 256.0D, value -> {
+            settings.newerNewChunksWindowRadiusChunks = (int) Math.round(value);
+            MapSettingsManager.instance.saveAll();
+            VoxelConstants.getVoxelMapInstance().getNewerNewChunksManager().reloadWindowNow();
+            refreshLabels();
+        }, value -> "Window Radius: " + (int) Math.round(value) + " chunks"));
+        windowRefreshDistanceSlider = addRenderableWidget(new GuiValueSliderMinimap(right, y, 150, 20, settings.newerNewChunksRefreshDistanceChunks, 8.0D, 128.0D, value -> {
+            settings.newerNewChunksRefreshDistanceChunks = (int) Math.round(value);
+            MapSettingsManager.instance.saveAll();
+            refreshLabels();
+        }, value -> "Refresh Distance: " + (int) Math.round(value) + " chunks"));
+
         y += 30;
         addRenderableWidget(new Button.Builder(Component.literal("Save"), button -> saveValues()).bounds(this.width / 2 - 75, y, 150, 20).build());
         y += 24;
@@ -206,6 +221,8 @@ public class GuiRadarChunkOverlays extends GuiScreenMinimap {
         newOpacitySlider.setActualValue(settings.newerNewChunksNewOpacity);
         oldOpacitySlider.setActualValue(settings.newerNewChunksOldOpacity);
         blockOpacitySlider.setActualValue(settings.newerNewChunksBlockOpacity);
+        if (windowRadiusSlider != null) windowRadiusSlider.setActualValue(settings.newerNewChunksWindowRadiusChunks);
+        if (windowRefreshDistanceSlider != null) windowRefreshDistanceSlider.setActualValue(settings.newerNewChunksRefreshDistanceChunks);
         if (clearExploredButton != null) {
             clearExploredButton.setMessage(Component.literal(clearExploredConfirmUntilMs > 0L
                     ? "Confirm Clear Explored"

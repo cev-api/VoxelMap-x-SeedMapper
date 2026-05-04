@@ -49,6 +49,9 @@ public class RadarSettingsManager implements ISubSettingsManager {
     public int newerNewChunksOldOpacity = 32;
     public String newerNewChunksBlockColor = "#0050FF";
     public int newerNewChunksBlockOpacity = 36;
+    // Newer New Chunks windowing tunables
+    public int newerNewChunksWindowRadiusChunks = 64; // how far to read from disk around player
+    public int newerNewChunksRefreshDistanceChunks = 32; // when to refresh window after moving
     float fontScale = 1.0F;
     public final HashSet<Identifier> hiddenMobs = new HashSet<>();
 
@@ -92,6 +95,8 @@ public class RadarSettingsManager implements ISubSettingsManager {
                     case "Newer New Chunks Old Opacity" -> newerNewChunksOldOpacity = clampOpacity(Integer.parseInt(curLine[1]));
                     case "Newer New Chunks Block Color" -> newerNewChunksBlockColor = sanitizeColor(curLine[1], newerNewChunksBlockColor);
                     case "Newer New Chunks Block Opacity" -> newerNewChunksBlockOpacity = clampOpacity(Integer.parseInt(curLine[1]));
+                    case "Newer New Chunks Window Radius Chunks" -> newerNewChunksWindowRadiusChunks = clampRange(Integer.parseInt(curLine[1]), 16, 256);
+                    case "Newer New Chunks Refresh Distance Chunks" -> newerNewChunksRefreshDistanceChunks = clampRange(Integer.parseInt(curLine[1]), 8, 128);
                     case "Show Full Entity Names" -> showFullEntityNames = Boolean.parseBoolean(curLine[1]);
                     case "Show Entity Elevation" -> showEntityElevation = Boolean.parseBoolean(curLine[1]);
                     case "Hide Sneaking Players" -> hideSneakingPlayers = Boolean.parseBoolean(curLine[1]);
@@ -146,6 +151,8 @@ public class RadarSettingsManager implements ISubSettingsManager {
         out.println("Newer New Chunks Old Opacity:" + newerNewChunksOldOpacity);
         out.println("Newer New Chunks Block Color:" + newerNewChunksBlockColor);
         out.println("Newer New Chunks Block Opacity:" + newerNewChunksBlockOpacity);
+        out.println("Newer New Chunks Window Radius Chunks:" + newerNewChunksWindowRadiusChunks);
+        out.println("Newer New Chunks Refresh Distance Chunks:" + newerNewChunksRefreshDistanceChunks);
         out.println("Show Full Entity Names:" + showFullEntityNames);
         out.println("Show Entity Elevation:" + showEntityElevation);
         out.println("Hide Sneaking Players:" + hideSneakingPlayers);
@@ -341,5 +348,9 @@ public class RadarSettingsManager implements ISubSettingsManager {
 
     private static int clampOpacity(int value) {
         return Math.max(0, Math.min(100, value));
+    }
+
+    private static int clampRange(int value, int min, int max) {
+        return Math.max(min, Math.min(max, value));
     }
 }

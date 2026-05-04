@@ -31,8 +31,10 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -80,6 +82,16 @@ public class NewerNewChunksManager {
     private static final Path OLD_GENERATION_CHUNK_DATA = Path.of("OldGenerationChunkData.txt");
     private static final Set<Path> DATA_FILES = Set.of(NEW_CHUNK_DATA, OLD_CHUNK_DATA, BLOCK_EXPLOIT_CHUNK_DATA,
             BEING_UPDATED_CHUNK_DATA, OLD_GENERATION_CHUNK_DATA);
+    private static final int REGION_SHIFT = 5; // 32x32 chunk buckets for spatial indexing
+    private static final int MAX_CACHED_CHUNKS = 50000; // Allow full window to be cached seamlessly
+    private static final int CACHE_EVICTION_RADIUS = 4096; // Keep a large safety margin (256 chunk diameter)
+    private static final int EVICTION_CHECK_INTERVAL = 200; // Check every 200 ticks (10 seconds)
+    // Restore original scan cadence; we only limit IO/loading radius, not scanning speed
+    private static final int RESCAN_INTERVAL_TICKS = 40; // every 2s (vanilla behavior here)
+    // Windowed loading of persisted data around player to avoid loading entire history
+    private static final int WINDOW_LOAD_RADIUS_CHUNKS = 64; // ~1024 blocks, comfortably above minimap at max zoom
+    private static final int WINDOW_REFRESH_DISTANCE_CHUNKS = 32; // reload window after moving this far
+    private static final int WINDOW_REFRESH_INTERVAL_TICKS = 400; // at most every 20s
 
     private final Set<ChunkPos> newChunks = ConcurrentHashMap.newKeySet();
     private final Set<ChunkPos> oldChunks = ConcurrentHashMap.newKeySet();
@@ -87,10 +99,24 @@ public class NewerNewChunksManager {
     private final Set<ChunkPos> beingUpdatedOldChunks = ConcurrentHashMap.newKeySet();
     private final Set<ChunkPos> oldGenerationChunks = ConcurrentHashMap.newKeySet();
     private final Set<ChunkPos> pendingChunkPackets = ConcurrentHashMap.newKeySet();
+    
+    // Region-indexed maps for fast range queries (REGION_SHIFT = 5 means 32x32 chunk regions)
+    private final Map<Long, Set<ChunkPos>> newChunksByRegion = new HashMap<>();
+    private final Map<Long, Set<ChunkPos>> oldChunksByRegion = new HashMap<>();
+    private final Map<Long, Set<ChunkPos>> tickExploitChunksByRegion = new HashMap<>();
+    private final Map<Long, Set<ChunkPos>> beingUpdatedChunksByRegion = new HashMap<>();
+    private final Map<Long, Set<ChunkPos>> oldGenerationChunksByRegion = new HashMap<>();
+    
     private final Object chunkSetLock = new Object();
 
     private String loadedWorldKey = "";
     private long lastRescanGameTime = Long.MIN_VALUE;
+    private long lastEvictionTime = 0;
+    private boolean lastKnownFeatureState = false;
+    private long lastDebugLogTick = Long.MIN_VALUE;
+    private int windowCenterChunkX = Integer.MIN_VALUE;
+    private int windowCenterChunkZ = Integer.MIN_VALUE;
+    private long lastWindowLoadTick = Long.MIN_VALUE;
 
     private record ChunkClassification(boolean isNewChunk, boolean isOldGeneration, boolean chunkIsBeingUpdated) {
     }
@@ -99,6 +125,8 @@ public class NewerNewChunksManager {
         ensureTrackingWorld();
         processPendingChunkPackets();
         rescanLoadedChunksAroundPlayer();
+        evictDistantChunksIfNeeded();
+        refreshWindowIfNeeded();
     }
 
     public void processChunk(LevelChunk chunk) {
@@ -234,10 +262,13 @@ public class NewerNewChunksManager {
     public Set<ChunkPos> getBlockUpdateChunksInRange(int centerChunkX, int centerChunkZ, int radius) {
         ensureTrackingWorld();
         Set<ChunkPos> chunks = getChunksInRange(tickExploitChunks, centerChunkX, centerChunkZ, radius);
-        chunks.removeAll(newChunks);
-        chunks.removeAll(oldChunks);
-        chunks.removeAll(beingUpdatedOldChunks);
-        chunks.removeAll(oldGenerationChunks);
+        // Important: avoid removeAll against whole-world sets (O(n) over all tracked chunks).
+        // Instead, only filter the small, visible set with O(1) contains checks.
+        chunks.removeIf(chunk ->
+                newChunks.contains(chunk)
+                        || oldChunks.contains(chunk)
+                        || beingUpdatedOldChunks.contains(chunk)
+                        || oldGenerationChunks.contains(chunk));
         return chunks;
     }
 
@@ -252,11 +283,37 @@ public class NewerNewChunksManager {
     }
 
     private Set<ChunkPos> getChunksInRange(Set<ChunkPos> source, int centerChunkX, int centerChunkZ, int radius) {
+        // Use region-based lookup for O(1) query performance
         Set<ChunkPos> result = new HashSet<>();
+        Map<Long, Set<ChunkPos>> regionMap = getRegionMapForSource(source);
+        
+        if (regionMap == null || regionMap.isEmpty()) {
+            return result;
+        }
+        
+        int minChunkX = centerChunkX - radius;
+        int maxChunkX = centerChunkX + radius;
+        int minChunkZ = centerChunkZ - radius;
+        int maxChunkZ = centerChunkZ + radius;
+
+        int minRegionX = minChunkX >> REGION_SHIFT;
+        int maxRegionX = maxChunkX >> REGION_SHIFT;
+        int minRegionZ = minChunkZ >> REGION_SHIFT;
+        int maxRegionZ = maxChunkZ >> REGION_SHIFT;
+
         synchronized (chunkSetLock) {
-            for (ChunkPos chunk : source) {
-                if (Math.abs(chunk.x() - centerChunkX) <= radius && Math.abs(chunk.z() - centerChunkZ) <= radius) {
-                    result.add(chunk);
+            for (int regionX = minRegionX; regionX <= maxRegionX; regionX++) {
+                for (int regionZ = minRegionZ; regionZ <= maxRegionZ; regionZ++) {
+                    Set<ChunkPos> bucket = regionMap.get(regionKey(regionX, regionZ));
+                    if (bucket == null || bucket.isEmpty()) {
+                        continue;
+                    }
+                    for (ChunkPos chunk : bucket) {
+                        if (chunk.x() >= minChunkX && chunk.x() <= maxChunkX
+                                && chunk.z() >= minChunkZ && chunk.z() <= maxChunkZ) {
+                            result.add(chunk);
+                        }
+                    }
                 }
             }
         }
@@ -269,6 +326,7 @@ public class NewerNewChunksManager {
             added = newChunks.add(chunkPos);
             if (added) {
                 removeFromAllSetsExcept(chunkPos, ChunkSet.NEW);
+                indexChunk(chunkPos, newChunksByRegion);
             }
         }
         if (added) {
@@ -285,6 +343,7 @@ public class NewerNewChunksManager {
             added = oldChunks.add(chunkPos);
             if (added) {
                 removeFromAllSetsExcept(chunkPos, ChunkSet.OLD);
+                indexChunk(chunkPos, oldChunksByRegion);
             }
         }
         if (added) {
@@ -300,6 +359,9 @@ public class NewerNewChunksManager {
                 return;
             }
             added = tickExploitChunks.add(chunkPos);
+            if (added) {
+                indexChunk(chunkPos, tickExploitChunksByRegion);
+            }
         }
         if (added) {
             appendChunk(getDataPath(BLOCK_EXPLOIT_CHUNK_DATA), chunkPos);
@@ -312,6 +374,7 @@ public class NewerNewChunksManager {
             added = beingUpdatedOldChunks.add(chunkPos);
             if (added) {
                 removeFromAllSetsExcept(chunkPos, ChunkSet.BEING_UPDATED);
+                indexChunk(chunkPos, beingUpdatedChunksByRegion);
             }
         }
         if (added) {
@@ -325,6 +388,7 @@ public class NewerNewChunksManager {
             added = oldGenerationChunks.add(chunkPos);
             if (added) {
                 removeFromAllSetsExcept(chunkPos, ChunkSet.OLD_GENERATION);
+                indexChunk(chunkPos, oldGenerationChunksByRegion);
             }
         }
         if (added) {
@@ -343,20 +407,40 @@ public class NewerNewChunksManager {
     private void removeFromAllSets(ChunkPos chunkPos) {
         synchronized (chunkSetLock) {
             newChunks.remove(chunkPos);
+            deindexChunk(chunkPos, newChunksByRegion);
             oldChunks.remove(chunkPos);
+            deindexChunk(chunkPos, oldChunksByRegion);
             tickExploitChunks.remove(chunkPos);
+            deindexChunk(chunkPos, tickExploitChunksByRegion);
             beingUpdatedOldChunks.remove(chunkPos);
+            deindexChunk(chunkPos, beingUpdatedChunksByRegion);
             oldGenerationChunks.remove(chunkPos);
+            deindexChunk(chunkPos, oldGenerationChunksByRegion);
         }
     }
 
     private void removeFromAllSetsExcept(ChunkPos chunkPos, ChunkSet keep) {
         synchronized (chunkSetLock) {
-            if (keep != ChunkSet.NEW) newChunks.remove(chunkPos);
-            if (keep != ChunkSet.OLD) oldChunks.remove(chunkPos);
-            if (keep != ChunkSet.TICK_EXPLOIT) tickExploitChunks.remove(chunkPos);
-            if (keep != ChunkSet.BEING_UPDATED) beingUpdatedOldChunks.remove(chunkPos);
-            if (keep != ChunkSet.OLD_GENERATION) oldGenerationChunks.remove(chunkPos);
+            if (keep != ChunkSet.NEW) {
+                newChunks.remove(chunkPos);
+                deindexChunk(chunkPos, newChunksByRegion);
+            }
+            if (keep != ChunkSet.OLD) {
+                oldChunks.remove(chunkPos);
+                deindexChunk(chunkPos, oldChunksByRegion);
+            }
+            if (keep != ChunkSet.TICK_EXPLOIT) {
+                tickExploitChunks.remove(chunkPos);
+                deindexChunk(chunkPos, tickExploitChunksByRegion);
+            }
+            if (keep != ChunkSet.BEING_UPDATED) {
+                beingUpdatedOldChunks.remove(chunkPos);
+                deindexChunk(chunkPos, beingUpdatedChunksByRegion);
+            }
+            if (keep != ChunkSet.OLD_GENERATION) {
+                oldGenerationChunks.remove(chunkPos);
+                deindexChunk(chunkPos, oldGenerationChunksByRegion);
+            }
         }
     }
 
@@ -715,12 +799,37 @@ public class NewerNewChunksManager {
             clearChunkData();
             loadedWorldKey = "";
             lastRescanGameTime = Long.MIN_VALUE;
+            lastKnownFeatureState = false;
             return;
         }
 
+        // Check if the new chunks feature is enabled
+        RadarSettingsManager radarSettings = VoxelConstants.getVoxelMapInstance().getRadarOptions();
+        boolean featureEnabled = radarSettings != null && radarSettings.showNewerNewChunks;
+
         String worldKey = getWorldKey();
+        
+        // Handle world change
         if (!worldKey.equals(loadedWorldKey)) {
-            loadWorld(worldKey);
+            if (featureEnabled) {
+                loadWorld(worldKey);
+            } else {
+                clearChunkData();
+                loadedWorldKey = worldKey;
+            }
+        }
+        
+        // Handle feature toggled on/off
+        if (featureEnabled != lastKnownFeatureState) {
+            if (featureEnabled) {
+                // Feature was just enabled - load chunks for current world
+                loadWorld(worldKey);
+            } else {
+                // Feature was just disabled - clear chunks to free memory
+                clearChunkData();
+                loadedWorldKey = "";
+            }
+            lastKnownFeatureState = featureEnabled;
         }
     }
 
@@ -731,16 +840,29 @@ public class NewerNewChunksManager {
             tickExploitChunks.clear();
             beingUpdatedOldChunks.clear();
             oldGenerationChunks.clear();
+            
+            // Clear region-indexed maps
+            newChunksByRegion.clear();
+            oldChunksByRegion.clear();
+            tickExploitChunksByRegion.clear();
+            beingUpdatedChunksByRegion.clear();
+            oldGenerationChunksByRegion.clear();
         }
         pendingChunkPackets.clear();
     }
 
     private void processPendingChunkPackets() {
+        // Skip if feature is disabled to avoid unnecessary processing
+        RadarSettingsManager radarSettings = VoxelConstants.getVoxelMapInstance().getRadarOptions();
+        if (radarSettings == null || !radarSettings.showNewerNewChunks) {
+            return;
+        }
+        
         Level level = GameVariableAccessShim.getWorld();
         if (level == null || pendingChunkPackets.isEmpty()) {
             return;
         }
-
+        long tick = level.getGameTime();
         for (ChunkPos chunkPos : new ArrayList<>(pendingChunkPackets)) {
             ChunkAccess chunkAccess = level.getChunkSource().getChunk(chunkPos.x(), chunkPos.z(), ChunkStatus.FULL, false);
             if (!(chunkAccess instanceof LevelChunk chunk)) {
@@ -753,16 +875,23 @@ public class NewerNewChunksManager {
             classifyChunkInternal(chunk, false);
             pendingChunkPackets.remove(chunkPos);
         }
+        // no debug logging
     }
 
     private void rescanLoadedChunksAroundPlayer() {
+        // Skip if feature is disabled to avoid expensive chunk classification
+        RadarSettingsManager radarSettings = VoxelConstants.getVoxelMapInstance().getRadarOptions();
+        if (radarSettings == null || !radarSettings.showNewerNewChunks) {
+            return;
+        }
+        
         Level level = GameVariableAccessShim.getWorld();
         if (level == null || Minecraft.getInstance().player == null) {
             return;
         }
 
         long tick = level.getGameTime();
-        if (tick == lastRescanGameTime || tick % 40L != 0L) {
+        if (tick == lastRescanGameTime || tick % RESCAN_INTERVAL_TICKS != 0L) {
             return;
         }
         lastRescanGameTime = tick;
@@ -784,6 +913,106 @@ public class NewerNewChunksManager {
 
                 classifyChunkInternal(chunk, false);
             }
+        }
+        // no debug logging
+    }
+
+    private void refreshWindowIfNeeded() {
+        Level level = GameVariableAccessShim.getWorld();
+        if (level == null || Minecraft.getInstance().player == null) return;
+        long tick = level.getGameTime();
+        int px = Minecraft.getInstance().player.chunkPosition().x();
+        int pz = Minecraft.getInstance().player.chunkPosition().z();
+
+        if (windowCenterChunkX == Integer.MIN_VALUE || windowCenterChunkZ == Integer.MIN_VALUE) {
+            // First-time initialization after load
+            return;
+        }
+        if (tick - lastWindowLoadTick < WINDOW_REFRESH_INTERVAL_TICKS) return;
+
+        int dx = Math.abs(px - windowCenterChunkX);
+        int dz = Math.abs(pz - windowCenterChunkZ);
+        if (Math.max(dx, dz) >= getRefreshDistanceChunks()) {
+            loadWindow(px, pz, tick);
+        }
+    }
+
+    public void reloadWindowNow() {
+        Level level = GameVariableAccessShim.getWorld();
+        if (level == null || Minecraft.getInstance().player == null) return;
+        loadWindow(Minecraft.getInstance().player.chunkPosition().x(), Minecraft.getInstance().player.chunkPosition().z(), level.getGameTime());
+    }
+
+    private int getWindowRadiusChunks() {
+        RadarSettingsManager rs = VoxelConstants.getVoxelMapInstance().getRadarOptions();
+        int v = rs != null ? rs.newerNewChunksWindowRadiusChunks : WINDOW_LOAD_RADIUS_CHUNKS;
+        return Math.max(16, Math.min(256, v));
+    }
+
+    private int getRefreshDistanceChunks() {
+        RadarSettingsManager rs = VoxelConstants.getVoxelMapInstance().getRadarOptions();
+        int v = rs != null ? rs.newerNewChunksRefreshDistanceChunks : WINDOW_REFRESH_DISTANCE_CHUNKS;
+        return Math.max(8, Math.min(128, v));
+    }
+
+    /**
+     * Periodically evicts chunks from memory that are far from the player.
+     * This prevents memory bloat from accumulated chunk data on heavily-explored servers.
+     */
+    private void evictDistantChunksIfNeeded() {
+        Level level = GameVariableAccessShim.getWorld();
+        if (level == null || Minecraft.getInstance().player == null) {
+            return;
+        }
+
+        long tick = level.getGameTime();
+        // Only check every EVICTION_CHECK_INTERVAL ticks to avoid overhead
+        if (tick - lastEvictionTime < EVICTION_CHECK_INTERVAL) {
+            return;
+        }
+        lastEvictionTime = tick;
+
+        // Get current player position in chunks
+        int playerChunkX = Minecraft.getInstance().player.chunkPosition().x();
+        int playerChunkZ = Minecraft.getInstance().player.chunkPosition().z();
+        int evictionRadiusChunks = CACHE_EVICTION_RADIUS >> 4; // Convert blocks to chunks
+
+        // Calculate current cache size
+        int totalChunks = newChunks.size() + oldChunks.size() + tickExploitChunks.size() 
+                + beingUpdatedOldChunks.size() + oldGenerationChunks.size();
+
+        // Only evict if we're exceeding max cache size
+        if (totalChunks <= MAX_CACHED_CHUNKS) {
+            return;
+        }
+
+        // Evict chunks outside the viewport radius
+        synchronized (chunkSetLock) {
+            evictChunksFromSet(newChunks, newChunksByRegion, playerChunkX, playerChunkZ, evictionRadiusChunks);
+            evictChunksFromSet(oldChunks, oldChunksByRegion, playerChunkX, playerChunkZ, evictionRadiusChunks);
+            evictChunksFromSet(tickExploitChunks, tickExploitChunksByRegion, playerChunkX, playerChunkZ, evictionRadiusChunks);
+            evictChunksFromSet(beingUpdatedOldChunks, beingUpdatedChunksByRegion, playerChunkX, playerChunkZ, evictionRadiusChunks);
+            evictChunksFromSet(oldGenerationChunks, oldGenerationChunksByRegion, playerChunkX, playerChunkZ, evictionRadiusChunks);
+        }
+    }
+
+    /**
+     * Removes chunks from a set if they're outside the eviction radius from the player
+     */
+    private void evictChunksFromSet(Set<ChunkPos> chunkSet, Map<Long, Set<ChunkPos>> regionMap, 
+            int playerChunkX, int playerChunkZ, int evictionRadiusChunks) {
+        List<ChunkPos> toRemove = new ArrayList<>();
+        for (ChunkPos chunk : chunkSet) {
+            int dx = Math.abs(chunk.x() - playerChunkX);
+            int dz = Math.abs(chunk.z() - playerChunkZ);
+            if (Math.max(dx, dz) > evictionRadiusChunks) {
+                toRemove.add(chunk);
+            }
+        }
+
+        for (ChunkPos chunk : toRemove) {
+            chunkSet.remove(chunk);
+            deindexChunk(chunk, regionMap);
         }
     }
 
@@ -808,20 +1037,51 @@ public class NewerNewChunksManager {
         clearChunkData();
         loadedWorldKey = worldKey;
         ensureDataFiles();
-        Set<ChunkPos> loadedTickExploitChunks = loadPath(BLOCK_EXPLOIT_CHUNK_DATA);
-        Set<ChunkPos> loadedOldChunks = loadPath(OLD_CHUNK_DATA);
-        Set<ChunkPos> loadedNewChunks = loadPath(NEW_CHUNK_DATA);
-        Set<ChunkPos> loadedBeingUpdatedChunks = loadPath(BEING_UPDATED_CHUNK_DATA);
-        Set<ChunkPos> loadedOldGenerationChunks = loadPath(OLD_GENERATION_CHUNK_DATA);
+        Level level = GameVariableAccessShim.getWorld();
+        int px = level != null && Minecraft.getInstance().player != null
+                ? Minecraft.getInstance().player.chunkPosition().x() : 0;
+        int pz = level != null && Minecraft.getInstance().player != null
+                ? Minecraft.getInstance().player.chunkPosition().z() : 0;
+        long tick = level != null ? level.getGameTime() : 0L;
+        loadWindow(px, pz, tick);
+    }
 
-        synchronized (chunkSetLock) {
-            tickExploitChunks.addAll(loadedTickExploitChunks);
-            oldChunks.addAll(loadedOldChunks);
-            newChunks.addAll(loadedNewChunks);
-            beingUpdatedOldChunks.addAll(loadedBeingUpdatedChunks);
-            oldGenerationChunks.addAll(loadedOldGenerationChunks);
+    private void loadWindow(int centerChunkX, int centerChunkZ, long tick) {
+        windowCenterChunkX = centerChunkX;
+        windowCenterChunkZ = centerChunkZ;
+        lastWindowLoadTick = tick;
+        int radius = getWindowRadiusChunks();
+        int minX = centerChunkX - radius;
+        int maxX = centerChunkX + radius;
+        int minZ = centerChunkZ - radius;
+        int maxZ = centerChunkZ + radius;
+
+        // Helper to load and index chunks if in window
+        java.util.function.Consumer<ChunkPos> indexNew = cp -> { synchronized (chunkSetLock) { newChunks.add(cp); indexChunk(cp, newChunksByRegion);} };
+        java.util.function.Consumer<ChunkPos> indexOld = cp -> { synchronized (chunkSetLock) { oldChunks.add(cp); indexChunk(cp, oldChunksByRegion);} };
+        java.util.function.Consumer<ChunkPos> indexBlock = cp -> { synchronized (chunkSetLock) { tickExploitChunks.add(cp); indexChunk(cp, tickExploitChunksByRegion);} };
+        java.util.function.Consumer<ChunkPos> indexUpd = cp -> { synchronized (chunkSetLock) { beingUpdatedOldChunks.add(cp); indexChunk(cp, beingUpdatedChunksByRegion);} };
+        java.util.function.Consumer<ChunkPos> indexOldGen = cp -> { synchronized (chunkSetLock) { oldGenerationChunks.add(cp); indexChunk(cp, oldGenerationChunksByRegion);} };
+
+        int loadedCount = 0;
+        for (Path file : new Path[]{BLOCK_EXPLOIT_CHUNK_DATA, OLD_CHUNK_DATA, NEW_CHUNK_DATA, BEING_UPDATED_CHUNK_DATA, OLD_GENERATION_CHUNK_DATA}) {
+            try {
+                for (String line : Files.readAllLines(getDataPath(file), StandardCharsets.UTF_8)) {
+                    ChunkPos cp = parseChunk(line);
+                    if (cp == null) continue;
+                    if (cp.x() < minX || cp.x() > maxX || cp.z() < minZ || cp.z() > maxZ) continue;
+                    if (file == NEW_CHUNK_DATA) indexNew.accept(cp);
+                    else if (file == OLD_CHUNK_DATA) indexOld.accept(cp);
+                    else if (file == BLOCK_EXPLOIT_CHUNK_DATA) indexBlock.accept(cp);
+                    else if (file == BEING_UPDATED_CHUNK_DATA) indexUpd.accept(cp);
+                    else if (file == OLD_GENERATION_CHUNK_DATA) indexOldGen.accept(cp);
+                    loadedCount++;
+                }
+            } catch (IOException ignored) {
+            }
         }
         reconcileLoadedData();
+        // no debug logging
     }
 
     private void reconcileLoadedData() {
@@ -924,6 +1184,95 @@ public class NewerNewChunksManager {
             return new ChunkPos(Integer.parseInt(parts[0].trim()), Integer.parseInt(parts[1].trim()));
         } catch (NumberFormatException ignored) {
             return null;
+        }
+    }
+
+    /**
+     * Adds a chunk to its region bucket for fast spatial queries
+     */
+    private void indexChunk(ChunkPos chunk, Map<Long, Set<ChunkPos>> regionMap) {
+        if (chunk == null || regionMap == null) {
+            return;
+        }
+        int regionX = chunk.x() >> REGION_SHIFT;
+        int regionZ = chunk.z() >> REGION_SHIFT;
+        long key = regionKey(regionX, regionZ);
+        
+        regionMap.computeIfAbsent(key, k -> ConcurrentHashMap.newKeySet()).add(chunk);
+    }
+
+    /**
+     * Removes a chunk from its region bucket
+     */
+    private void deindexChunk(ChunkPos chunk, Map<Long, Set<ChunkPos>> regionMap) {
+        if (chunk == null || regionMap == null || regionMap.isEmpty()) {
+            return;
+        }
+        int regionX = chunk.x() >> REGION_SHIFT;
+        int regionZ = chunk.z() >> REGION_SHIFT;
+        long key = regionKey(regionX, regionZ);
+        
+        Set<ChunkPos> bucket = regionMap.get(key);
+        if (bucket != null) {
+            bucket.remove(chunk);
+            if (bucket.isEmpty()) {
+                regionMap.remove(key);
+            }
+        }
+    }
+
+    /**
+     * Computes a unique key for a region (used for Map lookups)
+     */
+    private static long regionKey(int regionX, int regionZ) {
+        return ((long) regionX << 32) | (regionZ & 0xFFFFFFFFL);
+    }
+
+    /**
+     * Returns the appropriate region map for a given chunk set
+     */
+    private Map<Long, Set<ChunkPos>> getRegionMapForSource(Set<ChunkPos> source) {
+        if (source == newChunks) {
+            return newChunksByRegion;
+        } else if (source == oldChunks) {
+            return oldChunksByRegion;
+        } else if (source == tickExploitChunks) {
+            return tickExploitChunksByRegion;
+        } else if (source == beingUpdatedOldChunks) {
+            return beingUpdatedChunksByRegion;
+        } else if (source == oldGenerationChunks) {
+            return oldGenerationChunksByRegion;
+        }
+        return null;
+    }
+
+    /**
+     * Rebuilds all regional indices from the current chunk sets.
+     * Call this after loading chunk data from disk.
+     */
+    private void rebuildRegionalIndices() {
+        synchronized (chunkSetLock) {
+            newChunksByRegion.clear();
+            oldChunksByRegion.clear();
+            tickExploitChunksByRegion.clear();
+            beingUpdatedChunksByRegion.clear();
+            oldGenerationChunksByRegion.clear();
+            
+            for (ChunkPos chunk : newChunks) {
+                indexChunk(chunk, newChunksByRegion);
+            }
+            for (ChunkPos chunk : oldChunks) {
+                indexChunk(chunk, oldChunksByRegion);
+            }
+            for (ChunkPos chunk : tickExploitChunks) {
+                indexChunk(chunk, tickExploitChunksByRegion);
+            }
+            for (ChunkPos chunk : beingUpdatedOldChunks) {
+                indexChunk(chunk, beingUpdatedChunksByRegion);
+            }
+            for (ChunkPos chunk : oldGenerationChunks) {
+                indexChunk(chunk, oldGenerationChunksByRegion);
+            }
         }
     }
 }
