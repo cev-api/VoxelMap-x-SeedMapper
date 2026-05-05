@@ -150,10 +150,21 @@ public final class VoxelConstants {
         VoxelConstants.getVoxelMapInstance().getPersistentMap().purgeCachedRegions();
         VoxelConstants.getVoxelMapInstance().getMapOptions().saveAll();
         BiomeRepository.saveBiomeColors();
-        long shutdownTime = System.currentTimeMillis();
-
-        while (ThreadManager.executorService.getQueue().size() + ThreadManager.executorService.getActiveCount() > 0 && System.currentTimeMillis() - shutdownTime < 10000L) {
-            Thread.onSpinWait();
+        long shutdownStart = System.currentTimeMillis();
+        final long maxWaitMs = 500L;
+        while (ThreadManager.executorService.getQueue().size() + ThreadManager.executorService.getActiveCount() > 0
+                && System.currentTimeMillis() - shutdownStart < maxWaitMs) {
+            try {
+                Thread.sleep(10L);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                VoxelConstants.getLogger().warn("Interrupted while waiting for world map tasks during shutdown; continuing.");
+                break;
+            }
+        }
+        int remaining = ThreadManager.executorService.getQueue().size() + ThreadManager.executorService.getActiveCount();
+        if (remaining > 0) {
+            VoxelConstants.getLogger().warn("Continuing shutdown with {} world map task(s) still pending.", remaining);
         }
     }
 

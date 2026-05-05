@@ -1303,6 +1303,11 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         if (!options.showNewOldChunks || !radarOptions.showNewerNewChunks) {
             return;
         }
+        // At extreme zoom-out these overlays are barely legible and can still add frame cost.
+        // Hard-stop rendering at and below 0.020x world map zoom.
+        if (this.zoom <= 0.020F) {
+            return;
+        }
 
         int minChunkX = leftRegion * 16;
         int maxChunkX = rightRegion * 16 + 15;
