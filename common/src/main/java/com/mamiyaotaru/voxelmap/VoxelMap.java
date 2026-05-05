@@ -412,7 +412,11 @@ public class VoxelMap implements PreparableReloadListener {
     }
 
     public void onClientStopping() {
-        VoxelConstants.onShutDown();
+        try {
+            VoxelConstants.onShutDown();
+        } catch (RuntimeException e) {
+            VoxelConstants.getLogger().warn("Error during VoxelMap shutdown preparation; continuing.", e);
+        }
         ThreadManager.flushSaveQueue();
     }
 

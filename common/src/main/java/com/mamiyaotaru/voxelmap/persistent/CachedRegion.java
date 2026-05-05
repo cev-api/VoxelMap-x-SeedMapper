@@ -526,7 +526,7 @@ public class CachedRegion {
     private void saveData(boolean newThread) {
         if (this.liveChunksUpdated && !this.worldNamePathPart.isEmpty()) {
             if (newThread) {
-                ThreadManager.saveExecutorService.execute(() -> {
+                ThreadManager.submitSaveTask(() -> {
                     if (VoxelConstants.DEBUG) {
                         VoxelConstants.getLogger().info("Saving region file for " + CachedRegion.this.x + "," + CachedRegion.this.z + " in " + CachedRegion.this.worldNamePathPart + "/" + CachedRegion.this.subworldNamePathPart + CachedRegion.this.dimensionNamePathPart);
                     }
@@ -543,7 +543,7 @@ public class CachedRegion {
                         VoxelConstants.getLogger().info("Finished saving region file for " + CachedRegion.this.x + "," + CachedRegion.this.z + " in " + CachedRegion.this.worldNamePathPart + "/" + CachedRegion.this.subworldNamePathPart + CachedRegion.this.dimensionNamePathPart + " ("
                                 + ThreadManager.saveExecutorService.getQueue().size() + ")");
                     }
-                });
+                }, "region " + this.x + "," + this.z + " (" + this.worldNamePathPart + "/" + this.subworldNamePathPart + this.dimensionNamePathPart + ")");
             } else {
                 try {
                     this.doSave();
