@@ -1,6 +1,7 @@
 package com.mamiyaotaru.voxelmap.persistent;
 
 import com.mamiyaotaru.voxelmap.MapSettingsManager;
+import com.mamiyaotaru.voxelmap.NewerNewChunksManager;
 import com.mamiyaotaru.voxelmap.RadarSettingsManager;
 import com.mamiyaotaru.voxelmap.VoxelConstants;
 import com.mamiyaotaru.voxelmap.WaypointManager;
@@ -850,6 +851,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 }
             }
             drawExploredChunkLinesWorldMap(graphics, exploredLeftRegion, exploredRightRegion, exploredTopRegion, exploredBottomRegion);
+            drawNewOldChunkOverlayWorldMap(graphics, exploredLeftRegion, exploredRightRegion, exploredTopRegion, exploredBottomRegion);
 
             if (!farZoomPerformanceMode && mapOptions.worldBorder) {
                 WorldBorder worldBorder = minecraft.level.getWorldBorder();
@@ -1295,6 +1297,111 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 }
             }
         }
+    }
+
+    private void drawNewOldChunkOverlayWorldMap(GuiGraphicsExtractor graphics, int leftRegion, int rightRegion, int topRegion, int bottomRegion) {
+        if (!options.showNewOldChunks || !radarOptions.showNewerNewChunks) {
+            return;
+        }
+
+        int minChunkX = leftRegion * 16;
+        int maxChunkX = rightRegion * 16 + 15;
+        int minChunkZ = topRegion * 16;
+        int maxChunkZ = bottomRegion * 16 + 15;
+        int centerChunkX = (minChunkX + maxChunkX) >> 1;
+        int centerChunkZ = (minChunkZ + maxChunkZ) >> 1;
+        int radius = Math.max(maxChunkX - centerChunkX, maxChunkZ - centerChunkZ) + 2;
+
+        boolean farZoomPerformanceMode = isFarZoomPerformanceMode();
+        boolean mapInMotion = currentDragging
+                || Math.abs(this.deltaX) > 0.01F
+                || Math.abs(this.deltaY) > 0.01F
+                || this.zoom != this.zoomGoal;
+
+        NewerNewChunksManager manager = VoxelConstants.getVoxelMapInstance().getNewerNewChunksManager();
+        List<ChunkPos> oldChunks = new ArrayList<>(manager.getOldChunksInRange(centerChunkX, centerChunkZ, radius));
+        List<ChunkPos> newChunks = new ArrayList<>(manager.getNewChunksInRange(centerChunkX, centerChunkZ, radius));
+
+        int oldAlpha = Mth.clamp((int) Math.round((radarOptions.newerNewChunksOldOpacity / 100.0D) * 255.0D), 0, 255);
+        int newAlpha = Mth.clamp((int) Math.round((radarOptions.newerNewChunksNewOpacity / 100.0D) * 255.0D), 0, 255);
+        if (oldAlpha <= 0 && newAlpha <= 0) {
+            return;
+        }
+
+        int oldColor = (oldAlpha << 24) | (radarOptions.getNewerNewChunksOldColorRgb() & 0x00FFFFFF);
+        int newColor = (newAlpha << 24) | (radarOptions.getNewerNewChunksNewColorRgb() & 0x00FFFFFF);
+
+        int cellChunkSize = 1;
+        if (this.mapToGui < 0.03F) {
+            cellChunkSize = mapInMotion ? 8 : 6;
+        } else if (this.mapToGui < 0.06F) {
+            cellChunkSize = mapInMotion ? 6 : 4;
+        } else if (this.mapToGui < 0.10F) {
+            cellChunkSize = mapInMotion ? 4 : 3;
+        } else if (this.mapToGui < 0.18F) {
+            cellChunkSize = mapInMotion ? 3 : 2;
+        }
+
+        int maxDraw = Integer.MAX_VALUE;
+        if (farZoomPerformanceMode) {
+            maxDraw = mapInMotion ? 2200 : 4500;
+        } else if (this.mapToGui < 0.06F) {
+            maxDraw = mapInMotion ? 900 : 2000;
+        } else if (this.mapToGui < 0.10F) {
+            maxDraw = mapInMotion ? 1500 : 2800;
+        }
+
+        int drawn = 0;
+        drawn = drawChunkSquaresWorldMap(graphics, oldChunks, minChunkX, maxChunkX, minChunkZ, maxChunkZ, oldColor, cellChunkSize, maxDraw, drawn);
+        drawChunkSquaresWorldMap(graphics, newChunks, minChunkX, maxChunkX, minChunkZ, maxChunkZ, newColor, cellChunkSize, maxDraw, drawn);
+    }
+
+    private int drawChunkSquaresWorldMap(GuiGraphicsExtractor graphics, List<ChunkPos> chunks, int minChunkX, int maxChunkX, int minChunkZ, int maxChunkZ, int color, int cellChunkSize, int maxDraw, int startDrawn) {
+        int drawn = startDrawn;
+        if (cellChunkSize > 1) {
+            java.util.HashSet<Long> cells = new java.util.HashSet<>();
+            for (ChunkPos chunk : chunks) {
+                int chunkX = chunk.x();
+                int chunkZ = chunk.z();
+                if (chunkX < minChunkX || chunkX > maxChunkX || chunkZ < minChunkZ || chunkZ > maxChunkZ) {
+                    continue;
+                }
+                int cellX = Math.floorDiv(chunkX, cellChunkSize);
+                int cellZ = Math.floorDiv(chunkZ, cellChunkSize);
+                cells.add(chunkKey(cellX, cellZ));
+            }
+
+            float worldCellSize = 16.0F * cellChunkSize;
+            for (long key : cells) {
+                if (drawn >= maxDraw) {
+                    break;
+                }
+                int cellX = (int) (key >> 32);
+                int cellZ = (int) key;
+                float minX = cellX * worldCellSize;
+                float minZ = cellZ * worldCellSize;
+                VoxelMapGuiGraphics.fillGradient(graphics, minX, minZ, minX + worldCellSize, minZ + worldCellSize, color, color, color, color);
+                drawn++;
+            }
+            return drawn;
+        }
+
+        for (ChunkPos chunk : chunks) {
+            if (drawn >= maxDraw) {
+                break;
+            }
+            int chunkX = chunk.x();
+            int chunkZ = chunk.z();
+            if (chunkX < minChunkX || chunkX > maxChunkX || chunkZ < minChunkZ || chunkZ > maxChunkZ) {
+                continue;
+            }
+
+            float minX = chunk.getMinBlockX();
+            float minZ = chunk.getMinBlockZ();
+            VoxelMapGuiGraphics.fillGradient(graphics, minX, minZ, minX + 16.0F, minZ + 16.0F, color, color, color, color);
+            drawn++;
+        }
+        return drawn;
     }
 
     private long chunkKey(int x, int z) {
