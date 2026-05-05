@@ -41,6 +41,7 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
     public boolean showWaypoints = true;
     public boolean showWaypointNames = true;
     public boolean showDistantWaypoints = true;
+    public boolean showNewOldChunks = false;
 
     @Override
     public void loadAll(File settingsFile) {
@@ -59,6 +60,7 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
                     case "Worldmap Chunk Line Thickness" -> chunkLineThickness = Float.parseFloat(curLine[1]);
                     case "Worldmap Show Waypoints In Performance Mode" -> showWaypointsInPerformanceMode = Boolean.parseBoolean(curLine[1]);
                     case "Worldmap Literal Line Mode" -> literalLineMode = Boolean.parseBoolean(curLine[1]);
+                    case "Worldmap Show New Old Chunks" -> showNewOldChunks = Boolean.parseBoolean(curLine[1]);
                     case "Show Worldmap Coordinates" -> showCoordinates = Boolean.parseBoolean(curLine[1]);
                     case "Show Worldmap Player Direction Arrow" -> showPlayerDirectionArrow = Boolean.parseBoolean(curLine[1]);
                     case "Show Worldmap Waypoints" -> showWaypoints = Boolean.parseBoolean(curLine[1]);
@@ -109,6 +111,7 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
         out.println("Worldmap Chunk Line Thickness:" + chunkLineThickness);
         out.println("Worldmap Show Waypoints In Performance Mode:" + showWaypointsInPerformanceMode);
         out.println("Worldmap Literal Line Mode:" + literalLineMode);
+        out.println("Worldmap Show New Old Chunks:" + showNewOldChunks);
         out.println("Show Worldmap Coordinates:" + showCoordinates);
         out.println("Show Worldmap Player Direction Arrow:" + showPlayerDirectionArrow);
         out.println("Show Worldmap Waypoints:" + showWaypoints);
@@ -155,6 +158,7 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
             case SHOW_DISTANT_WAYPOINTS -> showDistantWaypoints && VoxelConstants.getVoxelMapInstance().getMapOptions().waypointsAllowed;
             case WORLDMAP_SHOW_WAYPOINTS_IN_PERFORMANCE_MODE -> showWaypointsInPerformanceMode;
             case WORLDMAP_LITERAL_LINE_MODE -> literalLineMode;
+            case WORLDMAP_SHOW_NEW_OLD_CHUNKS -> showNewOldChunks;
 
             default -> throw new IllegalArgumentException("Invalid boolean value! Add code to handle EnumOptionMinimap: " + option.getName());
         };
@@ -170,6 +174,7 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
             case SHOW_DISTANT_WAYPOINTS -> showDistantWaypoints = !showDistantWaypoints;
             case WORLDMAP_SHOW_WAYPOINTS_IN_PERFORMANCE_MODE -> showWaypointsInPerformanceMode = !showWaypointsInPerformanceMode;
             case WORLDMAP_LITERAL_LINE_MODE -> literalLineMode = !literalLineMode;
+            case WORLDMAP_SHOW_NEW_OLD_CHUNKS -> showNewOldChunks = !showNewOldChunks;
 
             default -> throw new IllegalArgumentException("Invalid boolean value! Add code to handle EnumOptionMinimap: " + option.getName());
         }

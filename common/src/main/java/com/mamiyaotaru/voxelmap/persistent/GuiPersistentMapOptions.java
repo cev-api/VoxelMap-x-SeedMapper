@@ -60,11 +60,12 @@ public class GuiPersistentMapOptions extends GuiScreenMinimap {
     public void init() {
         optionSections.clear();
 
-        addSection("Map Display", 0, 1);
+        addSection("Map Display", 0, 2);
         addMappedOption(EnumOptionsMinimap.SHOW_WORLDMAP_COORDS, 0, 0);
         addMappedOption(EnumOptionsMinimap.SHOW_WORLDMAP_PLAYER_DIRECTION_ARROW, 0, 1);
         addMappedOption(EnumOptionsMinimap.WORLDMAP_LITERAL_LINE_MODE, 1, 0);
         addMappedOption(EnumOptionsMinimap.CONFIRM_WAYPOINT_DELETE, 1, 1);
+        addMappedOption(EnumOptionsMinimap.WORLDMAP_SHOW_NEW_OLD_CHUNKS, 2, -1);
 
         addSection("Waypoints", 3, 4);
         addMappedOption(EnumOptionsMinimap.SHOW_WAYPOINTS, 3, 0);
@@ -98,12 +99,12 @@ public class GuiPersistentMapOptions extends GuiScreenMinimap {
         }));
         refreshExploredChunkButtons();
 
-        addSection("Zoom & Performance", 9, 11);
+        addSection("Zoom & Performance", 9, 12);
         addMappedOption(EnumOptionsMinimap.MIN_ZOOM, 9, 0);
         addMappedOption(EnumOptionsMinimap.MAX_ZOOM, 9, 1);
         addMappedOption(EnumOptionsMinimap.WORLDMAP_PERFORMANCE_MODE_THRESHOLD, 10, 0);
         addMappedOption(EnumOptionsMinimap.WORLDMAP_CHUNK_LINE_THICKNESS, 10, 1);
-        addMappedOption(EnumOptionsMinimap.CACHE_SIZE, 11, -1);
+        addMappedOption(EnumOptionsMinimap.CACHE_SIZE, 12, -1);
 
         this.addRenderableWidget(new Button.Builder(Component.translatable("gui.done"), buttonx -> this.onClose()).bounds(this.getWidth() / 2 - 100, this.getHeight() - 26, 200, 20).build());
 
