@@ -1038,8 +1038,12 @@ public final class SeedMapperCommandHandler {
                 if (Cubiomes.isViableCanyonBiome(0, biome) == 0) {
                     return;
                 }
-                MemorySegment pos3List = Cubiomes.carveCanyon(arena, seed, chunkX, chunkZ, ccc);
+                MemorySegment biomes = allocateCarverBiomes(arena);
+                MemorySegment pos3List = Pos3List.allocate(arena);
+                Cubiomes.createPos3List(pos3List, 1024);
+                Cubiomes.carveCanyon(seed, version, chunkX, chunkZ, ccc, 0, biomes, pos3List);
                 addPos3List(blocks, pos3List);
+                Cubiomes.freePos3List(pos3List);
             });
         }
 
@@ -1092,8 +1096,12 @@ public final class SeedMapperCommandHandler {
                 if (Cubiomes.isViableCaveBiome(0, biome) == 0) {
                     return;
                 }
-                MemorySegment pos3List = Cubiomes.carveCave(arena, seed, chunkX, chunkZ, ccc);
+                MemorySegment biomes = allocateCarverBiomes(arena);
+                MemorySegment pos3List = Pos3List.allocate(arena);
+                Cubiomes.createPos3List(pos3List, 1024);
+                Cubiomes.carveCave(seed, version, chunkX, chunkZ, ccc, 0, biomes, pos3List);
                 addPos3List(blocks, pos3List);
+                Cubiomes.freePos3List(pos3List);
             });
         }
 
@@ -1342,6 +1350,10 @@ public final class SeedMapperCommandHandler {
         }
     }
 
+    private static MemorySegment allocateCarverBiomes(Arena arena) {
+        return arena.allocate(MemoryLayout.sequenceLayout(17, MemoryLayout.sequenceLayout(17, Cubiomes.C_INT)));
+    }
+
     private static int colorForBlock(int block) {
         if (block == Cubiomes.DIAMOND_ORE()) return 0x3AD9D4;
         if (block == Cubiomes.EMERALD_ORE()) return 0x36CB62;
@@ -1385,7 +1397,7 @@ public final class SeedMapperCommandHandler {
     }
 
     private static LootMatch findNearestLootMarker(String rawQuery, int requiredCount, int maxRadius) {
-        List<SeedMapperMarker> markers = queryMarkers(maxRadius).stream()
+        List<SeedMapperMarker> markers = queryMarkers(maxRadius, true).stream()
                 .filter(marker -> marker.feature().lootable())
                 .sorted(Comparator.comparingLong(marker -> {
                     long dx = marker.blockX() - (long) commandX();
@@ -1422,6 +1434,10 @@ public final class SeedMapperCommandHandler {
     }
 
     private static List<SeedMapperMarker> queryMarkers(int maxRadius) {
+        return queryMarkers(maxRadius, false);
+    }
+
+    private static List<SeedMapperMarker> queryMarkers(int maxRadius, boolean includeHiddenLootableFeatures) {
         long seed = resolveSeed();
         if (seed == Long.MIN_VALUE) return List.of();
         int dimension = getCurrentCubiomesDimension();
@@ -1432,6 +1448,11 @@ public final class SeedMapperCommandHandler {
         int px = commandX();
         int pz = commandZ();
         SeedMapperSettingsManager settings = VoxelConstants.getVoxelMapInstance().getSeedMapperOptions();
+        if (includeHiddenLootableFeatures) {
+            return SeedMapperLocatorService.get().queryLootableBlocking(
+                    seed, dimension, SeedMapperCompat.getMcVersion(), 0,
+                    px - maxRadius, px + maxRadius, pz - maxRadius, pz + maxRadius, settings);
+        }
         return SeedMapperLocatorService.get().queryBlocking(
                 seed, dimension, SeedMapperCompat.getMcVersion(), 0,
                 px - maxRadius, px + maxRadius, pz - maxRadius, pz + maxRadius, settings);

@@ -162,7 +162,7 @@ public final class GuiSeedMapperLootViewer extends Screen {
         int maxZ = playerPos.getZ() + DEFAULT_SEARCH_RADIUS_BLOCKS;
 
         List<SeedMapperMarker> markers = SeedMapperLocatorService.get()
-                .queryBlocking(seed, dimension, mcVersion, generatorFlags, minX, maxX, minZ, maxZ, settings);
+                .queryLootableBlocking(seed, dimension, mcVersion, generatorFlags, minX, maxX, minZ, maxZ, settings);
         if (markers.isEmpty()) {
             return List.of();
         }

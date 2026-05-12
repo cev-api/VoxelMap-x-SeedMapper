@@ -12,6 +12,7 @@ import com.mamiyaotaru.voxelmap.gui.overridden.GuiScreenMinimap;
 import com.mamiyaotaru.voxelmap.gui.overridden.GuiValueSliderMinimap;
 import com.mamiyaotaru.voxelmap.interfaces.ISettingsManager;
 import com.mamiyaotaru.voxelmap.persistent.GuiPersistentMapOptions;
+import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperSettingsManager;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
@@ -44,6 +45,7 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
     private final VoxelMap voxelMap = VoxelConstants.getVoxelMapInstance();
     private final MapSettingsManager mapOptions;
     private final RadarSettingsManager radarOptions;
+    private final SeedMapperSettingsManager seedMapperOptions;
 
     private final HeaderAndFooterLayout layout = new HeaderAndFooterLayout(this);
     private final TabManager tabManager = new TabManager(this::addRenderableWidget, this::removeWidget);
@@ -77,11 +79,13 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
     private Button endPortalGeneralButton;
     private Button endGatewayGeneralButton;
     private Button chunkOverlayButton;
+    private Button seedMapperBorderMarkersButton;
     private Button highlightTracerGeneralButton;
     private Button autoHideHighlightsWhenNearButton;
     private Button tracerColorPickerButton;
     private GuiValueSliderMinimap tracerThicknessSlider;
     private GuiValueSliderMinimap autoHideHighlightsDistanceSlider;
+    private GuiValueSliderMinimap seedMapperBorderRangeSlider;
     private GuiValueSliderMinimap minimapZoomSlider;
     private GuiButtonText tracerColorInput;
     private GuiColorPickerContainer tracerColorPicker;
@@ -99,6 +103,7 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
         lastScreen = parent;
         mapOptions = voxelMap.getMapOptions();
         radarOptions = voxelMap.getRadarOptions();
+        seedMapperOptions = voxelMap.getSeedMapperOptions();
     }
 
     public GuiMinimapOptions(Screen parent, int initialTab) {
@@ -116,7 +121,8 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
                 new OptionsTab(Component.literal("Entities"), 2),
                 new OptionsTab(Component.translatable("controls.title"), 3),
                 new OptionsTab(Component.literal("World Map"), 4),
-                new OptionsTab(Component.translatable("options.seedmapper.tab"), 5)).build();
+                new OptionsTab(Component.literal("Waypoints"), 5),
+                new OptionsTab(Component.translatable("options.seedmapper.tab"), 6)).build();
 
         tabNavigationBar.selectTab(tabIndex, false);
         tabNavigationBar.arrangeElements();
@@ -162,11 +168,13 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
         endPortalGeneralButton = null;
         endGatewayGeneralButton = null;
         chunkOverlayButton = null;
+        seedMapperBorderMarkersButton = null;
         highlightTracerGeneralButton = null;
         autoHideHighlightsWhenNearButton = null;
         tracerColorPickerButton = null;
         tracerThicknessSlider = null;
         autoHideHighlightsDistanceSlider = null;
+        seedMapperBorderRangeSlider = null;
         minimapZoomSlider = null;
         radarTextScaleSlider = null;
         tracerColorInput = null;
@@ -191,7 +199,7 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
                     relevantOptions = RADAR_SIMPLE_OPTIONS;
                 }
             }
-            case 3, 4, 5 -> {
+            case 3, 4, 5, 6 -> {
                 pageInfo = "";
                 nextPageButton.active = false;
                 prevPageButton.active = false;
@@ -240,52 +248,67 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
             }, value -> "Minimap Zoom: " + formatMinimapZoomFactor((int) Math.round(value)));
             addOptionButton(minimapZoomSlider);
 
-            addSection("Map Tools", 8, 8);
+            addSection("Map Tools", 8, 9);
             int left = fromSlot(0, 0)[0];
             int right = fromSlot(0, 1)[0];
             chunkOverlayButton = createModernButton(width / 2 - FULL_ROW_WIDTH / 2, fromSlot(8, 0)[1], FULL_ROW_WIDTH, Component.literal("Chunk Overlay Options"), x -> minecraft.setScreen(new GuiRadarChunkOverlays(this)));
             addOptionButton(chunkOverlayButton);
 
-            addSection("Waypoints & Highlights", 10, 12);
-            autoHideHighlightsWhenNearButton = createModernButton(left, fromSlot(10, 0)[1], OPTION_BUTTON_WIDTH, Component.empty(), button -> {
+            seedMapperBorderMarkersButton = createModernButton(left, fromSlot(9, 0)[1], OPTION_BUTTON_WIDTH, Component.empty(), button -> {
+                seedMapperOptions.showDistant = !seedMapperOptions.showDistant;
+                updateSeedMapperMinimapWidgets();
+                MapSettingsManager.instance.saveAll();
+            });
+            addOptionButton(seedMapperBorderMarkersButton);
+
+            seedMapperBorderRangeSlider = new GuiValueSliderMinimap(right, fromSlot(9, 1)[1], OPTION_BUTTON_WIDTH, 20, seedMapperOptions.minimapDistantMarkerRange, 128.0D, 32768.0D, value -> {
+                seedMapperOptions.minimapDistantMarkerRange = Math.max(128, ((int) Math.round(value / 128.0D)) * 128);
+                updateSeedMapperMinimapWidgets();
+                MapSettingsManager.instance.saveAll();
+            }, value -> "Border Range: " + (((int) Math.round(value / 128.0D)) * 128) + " blocks");
+            addOptionButton(seedMapperBorderRangeSlider);
+
+            addSection("Waypoints & Highlights", 11, 13);
+            autoHideHighlightsWhenNearButton = createModernButton(left, fromSlot(11, 0)[1], OPTION_BUTTON_WIDTH, Component.empty(), button -> {
                 mapOptions.autoHideHighlightsWhenNear = !mapOptions.autoHideHighlightsWhenNear;
                 updateTracerWidgets();
                 MapSettingsManager.instance.saveAll();
             });
             addOptionButton(autoHideHighlightsWhenNearButton);
-            addMappedOption(EnumOptionsMinimap.IN_GAME_WAYPOINTS, 10, 1);
+            addMappedOption(EnumOptionsMinimap.IN_GAME_WAYPOINTS, 11, 1);
 
-            autoHideHighlightsDistanceSlider = new GuiValueSliderMinimap(right, fromSlot(11, 1)[1], OPTION_BUTTON_WIDTH, 20, mapOptions.autoHideHighlightsNearDistance, 1.0D, 64.0D, value -> {
+            autoHideHighlightsDistanceSlider = new GuiValueSliderMinimap(right, fromSlot(12, 1)[1], OPTION_BUTTON_WIDTH, 20, mapOptions.autoHideHighlightsNearDistance, 1.0D, 64.0D, value -> {
                 mapOptions.autoHideHighlightsNearDistance = (float) value;
                 updateTracerWidgets();
                 MapSettingsManager.instance.saveAll();
             }, value -> "Highlight Remove Radius: " + (int) Math.round(value) + " blocks");
             addOptionButton(autoHideHighlightsDistanceSlider);
 
-            highlightTracerGeneralButton = createModernButton(left, fromSlot(11, 0)[1], OPTION_BUTTON_WIDTH, Component.empty(), button -> {
+            highlightTracerGeneralButton = createModernButton(left, fromSlot(12, 0)[1], OPTION_BUTTON_WIDTH, Component.empty(), button -> {
                 mapOptions.highlightTracerEnabled = !mapOptions.highlightTracerEnabled;
                 updateTracerWidgets();
                 MapSettingsManager.instance.saveAll();
             });
             addOptionButton(highlightTracerGeneralButton);
 
-            tracerThicknessSlider = new GuiValueSliderMinimap(left, fromSlot(12, 0)[1], OPTION_BUTTON_WIDTH, 20, mapOptions.highlightTracerThickness, 1.0D, 6.0D, value -> {
+            tracerThicknessSlider = new GuiValueSliderMinimap(left, fromSlot(13, 0)[1], OPTION_BUTTON_WIDTH, 20, mapOptions.highlightTracerThickness, 1.0D, 6.0D, value -> {
                 mapOptions.highlightTracerThickness = (float) value;
                 updateTracerWidgets();
                 MapSettingsManager.instance.saveAll();
             }, value -> "Tracer Thickness: " + String.format("%.1f", value));
             addOptionButton(tracerThicknessSlider);
             int colorInputWidth = OPTION_BUTTON_WIDTH - 32;
-            tracerColorInput = new GuiButtonText(getFont(), right, fromSlot(12, 1)[1], colorInputWidth, 20, Component.literal("Tracer Color"), button -> {});
+            tracerColorInput = new GuiButtonText(getFont(), right, fromSlot(13, 1)[1], colorInputWidth, 20, Component.literal("Tracer Color"), button -> {});
             tracerColorInput.active = false;
             tracerColorInput.setText(mapOptions.highlightTracerColor);
             addOptionButton(tracerColorInput);
-            tracerColorPickerButton = createModernButton(right + colorInputWidth + 4, fromSlot(12, 1)[1], 28, Component.literal("..."), button -> openTracerColorPicker());
+            tracerColorPickerButton = createModernButton(right + colorInputWidth + 4, fromSlot(13, 1)[1], 28, Component.literal("..."), button -> openTracerColorPicker());
             addOptionButton(tracerColorPickerButton);
 
-            addSection("HUD Layout", 14, 14);
-            addMappedOption(EnumOptionsMinimap.MOVE_MAP_BELOW_STATUS_EFFECT_ICONS, 14, 0);
-            addMappedOption(EnumOptionsMinimap.MOVE_SCOREBOARD_BELOW_MAP, 14, 1);
+            addSection("HUD Layout", 15, 15);
+            addMappedOption(EnumOptionsMinimap.MOVE_MAP_BELOW_STATUS_EFFECT_ICONS, 15, 0);
+            addMappedOption(EnumOptionsMinimap.MOVE_SCOREBOARD_BELOW_MAP, 15, 1);
+            updateSeedMapperMinimapWidgets();
             updateTracerWidgets();
         } else if (relevantOptions == PERFORMANCE_OPTIONS) {
             addSection("Lighting & Terrain", 0, 2);
@@ -397,7 +420,8 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
         embeddedTabScreen = switch (index) {
             case 3 -> new GuiMinimapControls(this);
             case 4 -> new GuiPersistentMapOptions(this);
-            case 5 -> new GuiSeedMapperOptions(this);
+            case 5 -> new GuiWaypointsOptions(this, mapOptions);
+            case 6 -> new GuiSeedMapperOptions(this);
             default -> null;
         };
         embeddedTabIndex = index;
@@ -572,6 +596,9 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
         if (chunkOverlayButton != null) {
             chunkOverlayButton.active = mapOptions.minimapAllowed;
         }
+        if (seedMapperBorderMarkersButton != null) {
+            seedMapperBorderMarkersButton.active = mapOptions.minimapAllowed;
+        }
         if (highlightTracerGeneralButton != null) {
             highlightTracerGeneralButton.active = mapOptions.minimapAllowed;
         }
@@ -586,6 +613,9 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
         }
         if (autoHideHighlightsDistanceSlider != null) {
             autoHideHighlightsDistanceSlider.active = mapOptions.minimapAllowed && mapOptions.autoHideHighlightsWhenNear;
+        }
+        if (seedMapperBorderRangeSlider != null) {
+            seedMapperBorderRangeSlider.active = mapOptions.minimapAllowed && seedMapperOptions.showDistant;
         }
     }
 
@@ -674,6 +704,16 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
         if (autoHideHighlightsDistanceSlider != null) {
             autoHideHighlightsDistanceSlider.setActualValue(mapOptions.autoHideHighlightsNearDistance);
             autoHideHighlightsDistanceSlider.active = mapOptions.minimapAllowed && mapOptions.autoHideHighlightsWhenNear;
+        }
+    }
+
+    private void updateSeedMapperMinimapWidgets() {
+        if (seedMapperBorderMarkersButton != null) {
+            seedMapperBorderMarkersButton.setMessage(Component.literal("Structure Border Markers: " + (seedMapperOptions.showDistant ? "ON" : "OFF")));
+        }
+        if (seedMapperBorderRangeSlider != null) {
+            seedMapperBorderRangeSlider.setActualValue(seedMapperOptions.minimapDistantMarkerRange);
+            seedMapperBorderRangeSlider.active = mapOptions.minimapAllowed && seedMapperOptions.showDistant;
         }
     }
 

@@ -6,7 +6,7 @@ public enum SeedMapperFeature {
     DESERT_PYRAMID("desert_pyramid", "seedmapper.feature.desert_pyramid", com.github.cubiomes.Cubiomes.Desert_Pyramid(), com.github.cubiomes.Cubiomes.DIM_OVERWORLD(), "images/seedmapper/cubiomes_viewer_icons/desert_pyramid.png", true),
     JUNGLE_PYRAMID("jungle_pyramid", "seedmapper.feature.jungle_pyramid", com.github.cubiomes.Cubiomes.Jungle_Pyramid(), com.github.cubiomes.Cubiomes.DIM_OVERWORLD(), "images/seedmapper/cubiomes_viewer_icons/jungle_pyramid.png", true),
     SWAMP_HUT("swamp_hut", "seedmapper.feature.swamp_hut", com.github.cubiomes.Cubiomes.Swamp_Hut(), com.github.cubiomes.Cubiomes.DIM_OVERWORLD(), "images/seedmapper/cubiomes_viewer_icons/swamp_hut.png", false),
-    STRONGHOLD("stronghold", "seedmapper.feature.stronghold", -1, com.github.cubiomes.Cubiomes.DIM_OVERWORLD(), "images/seedmapper/cubiomes_viewer_icons/stronghold.png", false),
+    STRONGHOLD("stronghold", "seedmapper.feature.stronghold", com.github.cubiomes.Cubiomes.Stronghold(), com.github.cubiomes.Cubiomes.DIM_OVERWORLD(), "images/seedmapper/cubiomes_viewer_icons/stronghold.png", true),
     IGLOO("igloo", "seedmapper.feature.igloo", com.github.cubiomes.Cubiomes.Igloo(), com.github.cubiomes.Cubiomes.DIM_OVERWORLD(), "images/seedmapper/cubiomes_viewer_icons/igloo.png", true),
     VILLAGE("village", "seedmapper.feature.village", com.github.cubiomes.Cubiomes.Village(), com.github.cubiomes.Cubiomes.DIM_OVERWORLD(), "images/seedmapper/cubiomes_viewer_icons/village.png", false),
     OCEAN_RUIN("ocean_ruin", "seedmapper.feature.ocean_ruin", com.github.cubiomes.Cubiomes.Ocean_Ruin(), com.github.cubiomes.Cubiomes.DIM_OVERWORLD(), "images/seedmapper/cubiomes_viewer_icons/ocean_ruin.png", false),
@@ -15,12 +15,13 @@ public enum SeedMapperFeature {
     MANSION("mansion", "seedmapper.feature.mansion", com.github.cubiomes.Cubiomes.Mansion(), com.github.cubiomes.Cubiomes.DIM_OVERWORLD(), "images/seedmapper/cubiomes_viewer_icons/mansion.png", false),
     OUTPOST("pillager_outpost", "seedmapper.feature.outpost", com.github.cubiomes.Cubiomes.Outpost(), com.github.cubiomes.Cubiomes.DIM_OVERWORLD(), "images/seedmapper/cubiomes_viewer_icons/pillager_outpost.png", true),
     RUINED_PORTAL("ruined_portal", "seedmapper.feature.ruined_portal", com.github.cubiomes.Cubiomes.Ruined_Portal(), com.github.cubiomes.Cubiomes.DIM_OVERWORLD(), "images/seedmapper/cubiomes_viewer_icons/ruined_portal.png", true),
+    RUINED_PORTAL_N("ruined_portal_n", "seedmapper.feature.ruined_portal", com.github.cubiomes.Cubiomes.Ruined_Portal_N(), com.github.cubiomes.Cubiomes.DIM_NETHER(), "images/seedmapper/cubiomes_viewer_icons/ruined_portal_n.png", true),
     ANCIENT_CITY("ancient_city", "seedmapper.feature.ancient_city", com.github.cubiomes.Cubiomes.Ancient_City(), com.github.cubiomes.Cubiomes.DIM_OVERWORLD(), "images/seedmapper/cubiomes_viewer_icons/ancient_city.png", false),
     TREASURE("buried_treasure", "seedmapper.feature.buried_treasure", com.github.cubiomes.Cubiomes.Treasure(), com.github.cubiomes.Cubiomes.DIM_OVERWORLD(), "images/seedmapper/cubiomes_viewer_icons/buried_treasure.png", true),
     FORTRESS("fortress", "seedmapper.feature.fortress", com.github.cubiomes.Cubiomes.Fortress(), com.github.cubiomes.Cubiomes.DIM_NETHER(), "images/seedmapper/cubiomes_viewer_icons/fortress.png", true),
     BASTION("bastion_remnant", "seedmapper.feature.bastion", com.github.cubiomes.Cubiomes.Bastion(), com.github.cubiomes.Cubiomes.DIM_NETHER(), "images/seedmapper/cubiomes_viewer_icons/bastion_remnant.png", true),
     END_CITY("end_city", "seedmapper.feature.end_city", com.github.cubiomes.Cubiomes.End_City(), com.github.cubiomes.Cubiomes.DIM_END(), "images/seedmapper/cubiomes_viewer_icons/end_city.png", true),
-    ELYTRA("end_city_ship", "seedmapper.feature.elytra", com.github.cubiomes.Cubiomes.End_City(), com.github.cubiomes.Cubiomes.DIM_END(), "images/seedmapper/cubiomes_viewer_icons/elytra.png", true),
+    ELYTRA("end_city_ship", "seedmapper.feature.elytra", com.github.cubiomes.Cubiomes.End_City(), com.github.cubiomes.Cubiomes.DIM_END(), "images/seedmapper/cubiomes_viewer_icons/elytra.png", false),
     END_GATEWAY("end_gateway", "seedmapper.feature.end_gateway", com.github.cubiomes.Cubiomes.End_Gateway(), com.github.cubiomes.Cubiomes.DIM_END(), "images/seedmapper/cubiomes_viewer_icons/end_gateway.png", false),
     TRAIL_RUINS("trail_ruins", "seedmapper.feature.trail_ruins", com.github.cubiomes.Cubiomes.Trail_Ruins(), com.github.cubiomes.Cubiomes.DIM_OVERWORLD(), "images/seedmapper/cubiomes_viewer_icons/trail_ruins.png", false),
     TRIAL_CHAMBERS("trial_chambers", "seedmapper.feature.trial_chambers", com.github.cubiomes.Cubiomes.Trial_Chambers(), com.github.cubiomes.Cubiomes.DIM_OVERWORLD(), "images/seedmapper/cubiomes_viewer_icons/trial_chambers.png", false),
@@ -84,10 +85,6 @@ public enum SeedMapperFeature {
         }
         if (this == NETHER_PORTAL || this == END_PORTAL || this == END_BEACON) {
             return true;
-        }
-        if (this == RUINED_PORTAL) {
-            return currentDimension == com.github.cubiomes.Cubiomes.DIM_OVERWORLD()
-                    || currentDimension == com.github.cubiomes.Cubiomes.DIM_NETHER();
         }
         return this.dimension == currentDimension;
     }

@@ -123,7 +123,9 @@ public class GuiWaypointsOptions extends GuiScreenMinimap {
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
-        graphics.centeredText(this.font, this.screenTitle, this.getWidth() / 2, 20, 0xFFFFFFFF);
+        if (!isEmbeddedInParent()) {
+            graphics.centeredText(this.font, this.screenTitle, this.getWidth() / 2, 20, 0xFFFFFFFF);
+        }
 
         for (SectionHeader sectionHeader : sectionHeaders) {
             graphics.fill(sectionHeader.x(), sectionHeader.y() + 8, sectionHeader.x() + 34, sectionHeader.y() + 9, 0xFF8FA7C8);

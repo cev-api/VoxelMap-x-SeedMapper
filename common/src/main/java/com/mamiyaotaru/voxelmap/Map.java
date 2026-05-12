@@ -2005,7 +2005,9 @@ public class Map implements Runnable, IChangeObserver {
 
         int centerX = Mth.floor(baseX);
         int centerZ = Mth.floor(baseZ);
-        int queryRadius = Math.max(256, (int) Math.ceil(40.0D * zoomScaleAdjusted)) + 64;
+        int visibleQueryRadius = Math.max(256, (int) Math.ceil(40.0D * zoomScaleAdjusted)) + 64;
+        int distantRange = seedMapperOptions.showDistant ? Math.max(128, seedMapperOptions.minimapDistantMarkerRange) : 0;
+        int queryRadius = Math.max(visibleQueryRadius, distantRange + 64);
         int keySnap = Math.max(64, queryRadius / 4);
         int queryCenterX = Math.floorDiv(centerX, keySnap) * keySnap;
         int queryCenterZ = Math.floorDiv(centerZ, keySnap) * keySnap;
@@ -2038,9 +2040,20 @@ public class Map implements Runnable, IChangeObserver {
             seedMapperLastMinimapQueryMs = now;
         }
         List<SeedMapperMarker> markers = seedMapperLastMinimapMarkers;
+        if (distantRange > 0 && markers.size() > 1) {
+            markers = new ArrayList<>(markers);
+            markers.sort(java.util.Comparator.comparingDouble(marker -> {
+                double dx = baseX - marker.blockX() - 0.5D;
+                double dz = baseZ - marker.blockZ() - 0.5D;
+                return dx * dx + dz * dz;
+            }));
+        }
 
         boolean lowDetail = zoomScaleAdjusted > 2.0D;
         double maxBlockDistance = (options.squareMap ? 42.0D : 34.0D) * zoomScaleAdjusted + 8.0D;
+        if (distantRange > 0) {
+            maxBlockDistance = Math.max(maxBlockDistance, distantRange);
+        }
         int denseDrawn = 0;
         int totalDrawn = 0;
         int scanned = 0;
@@ -2063,16 +2076,17 @@ public class Map implements Runnable, IChangeObserver {
                 }
                 denseDrawn++;
             }
-            drawSeedMapperMinimapMarker(matrixStack, x, y, marker, baseX, baseZ, worldKey);
+            drawSeedMapperMinimapMarker(matrixStack, x, y, marker, baseX, baseZ, worldKey, distantRange);
             totalDrawn++;
         }
     }
 
-    private void drawSeedMapperMinimapMarker(Matrix4fStack matrixStack, int x, int y, SeedMapperMarker marker, double baseX, double baseZ, String worldKey) {
+    private void drawSeedMapperMinimapMarker(Matrix4fStack matrixStack, int x, int y, SeedMapperMarker marker, double baseX, double baseZ, String worldKey, int distantRange) {
         double wayX = baseX - marker.blockX() - 0.5;
         double wayY = baseZ - marker.blockZ() - 0.5;
+        double blockDistance = Math.sqrt(wayX * wayX + wayY * wayY);
         float locate = (float) Math.toDegrees(Math.atan2(wayX, wayY));
-        float hypot = (float) (Math.sqrt(wayX * wayX + wayY * wayY) / zoomScaleAdjusted);
+        float hypot = (float) (blockDistance / zoomScaleAdjusted);
         if (this.options.rotates) {
             locate += this.direction;
         } else {
@@ -2084,14 +2098,22 @@ public class Map implements Runnable, IChangeObserver {
             double radLocate = Math.toRadians(locate);
             double dispX = hypot * Math.sin(radLocate);
             double dispY = -hypot * Math.cos(radLocate);
-            far = Math.abs(dispX) > 28.5 || Math.abs(dispY) > 28.5;
+            double edge = 28.5D;
+            far = Math.abs(dispX) > edge || Math.abs(dispY) > edge;
             if (far) {
-                return;
+                if (distantRange <= 0 || blockDistance > distantRange) {
+                    return;
+                }
+                double clamp = Math.min(edge / Math.max(1.0D, Math.abs(dispX)), edge / Math.max(1.0D, Math.abs(dispY)));
+                hypot *= (float) clamp;
             }
         } else {
             far = hypot >= 31.0f;
             if (far) {
-                return;
+                if (distantRange <= 0 || blockDistance > distantRange) {
+                    return;
+                }
+                hypot = 30.5F;
             }
         }
 
@@ -2102,6 +2124,7 @@ public class Map implements Runnable, IChangeObserver {
         float iconSize = datapackStructure
                 ? SeedMapperImportedDatapackManager.iconSizeForMinimap()
                 : 8.0F;
+        iconSize = Math.max(4.0F, iconSize * seedMapperMinimapIconScale(blockDistance, distantRange));
 
         try {
             matrixStack.pushMatrix();
@@ -2131,6 +2154,18 @@ public class Map implements Runnable, IChangeObserver {
         } finally {
             matrixStack.popMatrix();
         }
+    }
+
+    private float seedMapperMinimapIconScale(double blockDistance, int distantRange) {
+        if (distantRange <= 0) {
+            return 1.0F;
+        }
+        double fullSizeDistance = Math.max(64.0D, distantRange * 0.20D);
+        if (blockDistance <= fullSizeDistance) {
+            return 1.0F;
+        }
+        double t = Math.min(1.0D, (blockDistance - fullSizeDistance) / Math.max(1.0D, distantRange - fullSizeDistance));
+        return (float) (1.0D - t * 0.55D);
     }
 
     private void drawDatapackMinimapMarker(Matrix4fStack matrixStack, MultiBufferSource.BufferSource renderBufferSource, float x, float y, float iconSize, int color) {

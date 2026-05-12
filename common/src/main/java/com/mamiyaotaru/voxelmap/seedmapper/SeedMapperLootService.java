@@ -37,6 +37,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 public final class SeedMapperLootService {
+    private static final int MAX_STRUCTURE_PIECES = Math.max(Cubiomes.END_CITY_PIECES_MAX(), 1024);
     public static final Set<Integer> LOOT_SUPPORTED_STRUCTURES = Set.of(
             Cubiomes.Treasure(),
             Cubiomes.Desert_Pyramid(),
@@ -48,7 +49,8 @@ public final class SeedMapperLootService {
             Cubiomes.Fortress(),
             Cubiomes.Bastion(),
             Cubiomes.Outpost(),
-            Cubiomes.Shipwreck()
+            Cubiomes.Shipwreck(),
+            Cubiomes.Stronghold()
     );
     private static final Map<SeedMapperFeature, List<String>> FEATURE_TABLES = new LinkedHashMap<>();
     private static final List<String> COMMON_ENCHANT_SUGGESTIONS = List.of(
@@ -68,10 +70,11 @@ public final class SeedMapperLootService {
         FEATURE_TABLES.put(SeedMapperFeature.TREASURE, List.of("minecraft:chests/buried_treasure"));
         FEATURE_TABLES.put(SeedMapperFeature.OUTPOST, List.of("minecraft:chests/pillager_outpost"));
         FEATURE_TABLES.put(SeedMapperFeature.RUINED_PORTAL, List.of("minecraft:chests/ruined_portal"));
+        FEATURE_TABLES.put(SeedMapperFeature.RUINED_PORTAL_N, List.of("minecraft:chests/ruined_portal"));
         FEATURE_TABLES.put(SeedMapperFeature.FORTRESS, List.of("minecraft:chests/nether_bridge"));
         FEATURE_TABLES.put(SeedMapperFeature.BASTION, List.of("minecraft:chests/bastion_treasure", "minecraft:chests/bastion_bridge", "minecraft:chests/bastion_hoglin_stable", "minecraft:chests/bastion_other"));
         FEATURE_TABLES.put(SeedMapperFeature.END_CITY, List.of("minecraft:chests/end_city_treasure"));
-        FEATURE_TABLES.put(SeedMapperFeature.ELYTRA, List.of("minecraft:chests/end_city_treasure"));
+        FEATURE_TABLES.put(SeedMapperFeature.STRONGHOLD, List.of("minecraft:chests/stronghold_corridor", "minecraft:chests/stronghold_crossing", "minecraft:chests/stronghold_library"));
         FEATURE_TABLES.put(SeedMapperFeature.ANCIENT_CITY, List.of("minecraft:chests/ancient_city"));
         FEATURE_TABLES.put(SeedMapperFeature.TRIAL_CHAMBERS, List.of("minecraft:chests/trial_chambers/reward", "minecraft:chests/trial_chambers/corridor"));
         FEATURE_TABLES.put(SeedMapperFeature.TRAIL_RUINS, List.of("minecraft:archaeology/trail_ruins_rare", "minecraft:archaeology/trail_ruins_common"));
@@ -133,8 +136,8 @@ public final class SeedMapperLootService {
                         continue;
                     }
 
-                    MemorySegment pieces = Piece.allocateArray(400, arena);
-                    int numPieces = Cubiomes.getStructurePieces(pieces, 400, structure, structureSaltConfig, structureVariant, mcVersion, seed, pos.getX(), pos.getZ());
+                    MemorySegment pieces = Piece.allocateArray(MAX_STRUCTURE_PIECES, arena);
+                    int numPieces = Cubiomes.getStructurePieces(pieces, MAX_STRUCTURE_PIECES, structure, structureSaltConfig, structureVariant, mcVersion, seed, pos.getX(), pos.getZ());
                     if (numPieces <= 0) {
                         continue;
                     }
@@ -214,6 +217,7 @@ public final class SeedMapperLootService {
                             MemorySegment chestPos = Pos.asSlice(chestPoses, chestIdx);
                             MemorySegment structureNamePtr = Cubiomes.struct2str(structure);
                             String structureName = structureNamePtr == null || structureNamePtr.address() == 0L ? "structure" : structureNamePtr.getString(0);
+                            structureName = resolveStructureDisplayName(structure, structureName);
                             BlockPos entryPos = new BlockPos(Pos.x(chestPos), 0, Pos.z(chestPos));
                             entries.add(new LootEntry(structureName + "-" + pieceName + "-" + chestIdx, structureName, pieceName, entryPos, items));
                         }
@@ -258,7 +262,7 @@ public final class SeedMapperLootService {
                     return List.of();
                 }
 
-                int maxPieces = 400;
+                int maxPieces = MAX_STRUCTURE_PIECES;
                 MemorySegment pieces = Piece.allocateArray(maxPieces, arena);
                 int numPieces = Cubiomes.getStructurePieces(pieces, maxPieces, structureId, structureSaltConfig, structureVariant, mcVersion, seed, blockX, blockZ);
                 if (numPieces <= 0) {
@@ -387,6 +391,20 @@ public final class SeedMapperLootService {
         return Items.BARRIER;
     }
 
+    private static String resolveStructureDisplayName(int structureId, String fallbackName) {
+        for (SeedMapperFeature feature : SeedMapperFeature.values()) {
+            if (feature.structureId() == structureId && feature.lootable()) {
+                return feature.id();
+            }
+        }
+        for (SeedMapperFeature feature : SeedMapperFeature.values()) {
+            if (feature.structureId() == structureId) {
+                return feature.id();
+            }
+        }
+        return fallbackName;
+    }
+
     public static Map<SeedMapperFeature, List<String>> featureTables() {
         return FEATURE_TABLES;
     }
@@ -419,7 +437,7 @@ public final class SeedMapperLootService {
 
         synchronized (SeedMapperNative.cubiomesLock()) {
             List<SeedMapperMarker> markers = SeedMapperLocatorService.get()
-                    .queryBlocking(resolvedSeed, dimension, mcVersion, 0, minX, maxX, minZ, maxZ, settings);
+                    .queryLootableBlocking(resolvedSeed, dimension, mcVersion, 0, minX, maxX, minZ, maxZ, settings);
             if (markers.isEmpty()) {
                 return List.of();
             }
