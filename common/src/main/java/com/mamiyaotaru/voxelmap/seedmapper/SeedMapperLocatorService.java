@@ -25,6 +25,7 @@ import java.util.concurrent.Executors;
 public final class SeedMapperLocatorService {
     private static final SeedMapperLocatorService INSTANCE = new SeedMapperLocatorService();
     private static final int MAX_CACHE_ENTRIES = 48;
+    private static final int MAX_STRUCTURE_PIECES = Math.max(Cubiomes.END_CITY_PIECES_MAX(), 1024);
 
     private volatile long lastComputeMs = 0L;
     private final ExecutorService worker = Executors.newSingleThreadExecutor(runnable -> {
@@ -76,7 +77,16 @@ public final class SeedMapperLocatorService {
     }
 
     public List<SeedMapperMarker> queryBlocking(long seed, int dimension, int mcVersion, int generatorFlags, int minX, int maxX, int minZ, int maxZ, SeedMapperSettingsManager settings, String datapackWorldKey) {
-        QueryKey key = buildQueryKey(seed, dimension, mcVersion, generatorFlags, minX, maxX, minZ, maxZ, settings, datapackWorldKey);
+        QueryKey key = buildQueryKey(seed, dimension, mcVersion, generatorFlags, minX, maxX, minZ, maxZ, settings, datapackWorldKey, false);
+        return queryBlocking(key);
+    }
+
+    public List<SeedMapperMarker> queryLootableBlocking(long seed, int dimension, int mcVersion, int generatorFlags, int minX, int maxX, int minZ, int maxZ, SeedMapperSettingsManager settings) {
+        QueryKey key = buildQueryKey(seed, dimension, mcVersion, generatorFlags, minX, maxX, minZ, maxZ, settings, null, true);
+        return queryBlocking(key);
+    }
+
+    private List<SeedMapperMarker> queryBlocking(QueryKey key) {
         List<SeedMapperMarker> result;
         try {
             result = computeMarkers(key, false);
@@ -199,6 +209,10 @@ public final class SeedMapperLocatorService {
     }
 
     private QueryKey buildQueryKey(long seed, int dimension, int mcVersion, int generatorFlags, int minX, int maxX, int minZ, int maxZ, SeedMapperSettingsManager settings, String datapackWorldKey) {
+        return buildQueryKey(seed, dimension, mcVersion, generatorFlags, minX, maxX, minZ, maxZ, settings, datapackWorldKey, false);
+    }
+
+    private QueryKey buildQueryKey(long seed, int dimension, int mcVersion, int generatorFlags, int minX, int maxX, int minZ, int maxZ, SeedMapperSettingsManager settings, String datapackWorldKey, boolean includeHiddenLootableFeatures) {
         // Use coarser snapping so viewport panning does not invalidate cache every pixel.
         int spanX = Math.max(1, Math.abs(maxX - minX));
         int spanZ = Math.max(1, Math.abs(maxZ - minZ));
@@ -211,11 +225,13 @@ public final class SeedMapperLocatorService {
 
         long featureMask = 0L;
         for (SeedMapperFeature feature : SeedMapperFeature.values()) {
-            if (settings.isFeatureEnabled(feature)) {
+            if (includeHiddenLootableFeatures
+                    ? feature.lootable() && SeedMapperLootService.LOOT_SUPPORTED_STRUCTURES.contains(feature.structureId())
+                    : settings.isFeatureEnabled(feature)) {
                 featureMask |= (1L << feature.ordinal());
             }
         }
-        return new QueryKey(seed, dimension, mcVersion, generatorFlags, minX, maxX, minZ, maxZ, settings.showLootableOnly, featureMask, settings.getDatapackMarkerHash(), settings, datapackWorldKey);
+        return new QueryKey(seed, dimension, mcVersion, generatorFlags, minX, maxX, minZ, maxZ, includeHiddenLootableFeatures || settings.showLootableOnly, featureMask, settings.getDatapackMarkerHash(), settings, datapackWorldKey);
     }
 
     private List<SeedMapperMarker> computeMarkers(QueryKey key, boolean fastMode) {
@@ -274,9 +290,6 @@ public final class SeedMapperLocatorService {
                 if ((key.featureMask & (1L << feature.ordinal())) == 0L) {
                     continue;
                 }
-                if (feature == SeedMapperFeature.ELYTRA) {
-                    continue;
-                }
                 if (feature.structureId() < 0 || !feature.availableInDimension(key.dimension)) {
                     continue;
                 }
@@ -318,13 +331,14 @@ public final class SeedMapperLocatorService {
                             continue;
                         }
 
-                        if (feature == SeedMapperFeature.END_CITY && Cubiomes.isViableEndCityTerrain(generator, surfaceNoise, blockX, blockZ) == 0) {
+                        if (feature.structureId() == Cubiomes.End_City() && Cubiomes.isViableEndCityTerrain(generator, surfaceNoise, blockX, blockZ) == 0) {
                             continue;
                         }
 
-                        markers.add(new SeedMapperMarker(feature, blockX, blockZ));
-                        if (feature == SeedMapperFeature.END_CITY && (key.featureMask & (1L << SeedMapperFeature.ELYTRA.ordinal())) != 0L) {
+                        if (feature == SeedMapperFeature.ELYTRA) {
                             addElytraShipMarkers(arena, key, blockX, blockZ, markers);
+                        } else {
+                            markers.add(new SeedMapperMarker(feature, blockX, blockZ));
                         }
                     }
                 }
@@ -349,7 +363,10 @@ public final class SeedMapperLocatorService {
     }
 
     private static void addStrongholds(Arena arena, QueryKey key, MemorySegment generator, List<SeedMapperMarker> out) {
-        if (key.showLootableOnly) {
+        if ((key.featureMask & (1L << SeedMapperFeature.STRONGHOLD.ordinal())) == 0L) {
+            return;
+        }
+        if (key.showLootableOnly && !SeedMapperFeature.STRONGHOLD.lootable()) {
             return;
         }
 
@@ -386,7 +403,7 @@ public final class SeedMapperLocatorService {
     }
 
     private static void addElytraShipMarkers(Arena arena, QueryKey key, int cityX, int cityZ, List<SeedMapperMarker> out) {
-        MemorySegment pieces = Piece.allocateArray(512, arena);
+        MemorySegment pieces = Piece.allocateArray(MAX_STRUCTURE_PIECES, arena);
         int numPieces = Cubiomes.getEndCityPieces(pieces, key.seed, cityX >> 4, cityZ >> 4);
         for (int i = 0; i < numPieces; i++) {
             MemorySegment piece = Piece.asSlice(pieces, i);

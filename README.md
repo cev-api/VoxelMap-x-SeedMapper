@@ -71,7 +71,7 @@ Common commands:
 
 ### Map And Overlay Features
 
-- Added Newer New Chunks detection and rendering.
+- **Added New Chunks detection and rendering.**
 - Added explored chunk tracking with persistent chunk history.
 - Added chunk overlays for explored chunks, new chunks, liquid exploit tracking, and block update exploit tracking.
 - Added chunk grid and slime chunk display options.
@@ -85,6 +85,7 @@ Common commands:
 ### World Map Improvements
 
 - Added SeedMapper structure icons and loot markers to the fullscreen world map.
+- Added old/new chunk overlay display on the fullscreen world map.
 - Added world map popup actions for SeedMapper markers, loot actions, completion toggles, and waypoint interactions.
 - Added coordinate editing/recentering so the world map can jump to arbitrary coordinates.
 - Added context menu option to recenter the world map on the player.
@@ -109,6 +110,7 @@ Common commands:
 - Added SeedMapper marker rendering on the minimap.
 - Added Newer New Chunks display on the minimap.
 - Added explored chunk breadcrumb-style display.
+- Added structure border marker rendering on the minimap.
 - Added portal marker rendering.
 - Added minimap toggle hotkey.
 - Improved minimap zoom behavior and rendering at extreme zoom levels.
