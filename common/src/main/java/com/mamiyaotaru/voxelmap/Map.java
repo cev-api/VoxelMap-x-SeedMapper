@@ -2149,20 +2149,34 @@ public class Map implements Runnable, IChangeObserver {
                 RenderUtils.drawTexturedModalRect(matrixStack, markerBuffer, x - iconSize / 2.0F, y - iconSize / 2.0F, MAP_OVERLAY_DEPTH, iconSize, iconSize, iconColor);
             }
             if (seedMapperOptions.isCompleted(worldKey, marker.feature(), marker.blockX(), marker.blockZ())) {
-                float tickScale = 0.30F;
-                int tickWidth = this.minecraft.font.width(COMPLETED_TICK_GLYPH);
-                int tickHeight = this.minecraft.font.lineHeight;
-                matrixStack.pushMatrix();
-                matrixStack.scale(tickScale, tickScale, 1.0F);
-                float drawX = (x - tickWidth / 2.0F) / tickScale;
-                float drawY = (y - tickHeight / 2.0F + 0.5F) / tickScale;
-                RenderUtils.drawString(matrixStack, renderBufferSource, COMPLETED_TICK_GLYPH, drawX, drawY, MAP_TEXT_DEPTH + 1.0F, 0xFF22C84A, false);
-                matrixStack.popMatrix();
+                drawCompletedTickOnMinimapMarker(matrixStack, x, y, iconSize);
             }
         } catch (Exception ignored) {
         } finally {
             matrixStack.popMatrix();
         }
+    }
+
+    private void drawCompletedTickOnMinimapMarker(Matrix4fStack matrixStack, float centerX, float centerY, float iconSize) {
+        float tickScale = Mth.clamp(iconSize * 0.0625F, 0.40F, 0.62F);
+        int tickWidth = this.minecraft.font.width(COMPLETED_TICK_GLYPH);
+        int tickHeight = this.minecraft.font.lineHeight;
+        float halfSize = iconSize / 2.0F;
+
+        float rightEdge = centerX + halfSize - 0.8F;
+        float bottomEdge = centerY + halfSize - 0.8F;
+        float drawX = rightEdge - tickWidth * tickScale;
+        float drawY = bottomEdge - tickHeight * tickScale;
+
+        matrixStack.pushMatrix();
+        matrixStack.scale(tickScale, tickScale, 1.0F);
+
+        float scaledX = drawX / tickScale;
+        float scaledY = drawY / tickScale;
+        RenderUtils.drawString(matrixStack, renderBufferSource, COMPLETED_TICK_GLYPH, scaledX + 1.0F, scaledY + 1.0F, MAP_TEXT_DEPTH + 1.0F, 0xCC000000, false);
+        RenderUtils.drawString(matrixStack, renderBufferSource, COMPLETED_TICK_GLYPH, scaledX, scaledY, MAP_TEXT_DEPTH + 1.1F, 0xFF2FE85D, false);
+
+        matrixStack.popMatrix();
     }
 
     private float seedMapperMinimapIconScale(double blockDistance, int distantRange) {
