@@ -128,6 +128,8 @@ public class MapSettingsManager implements ISettingsManager {
     public KeyMapping keyBindSeedMapperTerrainEsp;
     public KeyMapping keyBindSeedMapperLootViewer;
     public KeyMapping keyBindSeedMapperSettings;
+    public KeyMapping keyBindSeedMapperOptionsPage;
+    public KeyMapping keyBindOptionsMenu;
     public final KeyMapping[] keyBindings;
 
     public MapSettingsManager() {
@@ -151,7 +153,9 @@ public class MapSettingsManager implements ISettingsManager {
                 keyBindSeedMapperCaveEsp = new KeyMapping("key.seedmapper.caveEsp", -1, category),
                 keyBindSeedMapperTerrainEsp = new KeyMapping("key.seedmapper.terrainEsp", -1, category),
                 keyBindSeedMapperLootViewer = new KeyMapping("key.seedmapper.openLootViewer", -1, category),
-                keyBindSeedMapperSettings = new KeyMapping("key.seedmapper.openSettings", -1, category)
+                keyBindSeedMapperSettings = new KeyMapping("key.seedmapper.openSettings", -1, category),
+                keyBindSeedMapperOptionsPage = new KeyMapping("key.seedmapper.openOptionsPage", -1, category),
+                keyBindOptionsMenu = new KeyMapping("key.minimap.openOptionsMenu", -1, category)
         };
     }
 
@@ -252,6 +256,8 @@ public class MapSettingsManager implements ISettingsManager {
                         case "SeedMapper Terrain ESP Key" -> bindKey(keyBindSeedMapperTerrainEsp, curLine[1]);
                         case "SeedMapper Loot Viewer Key" -> bindKey(keyBindSeedMapperLootViewer, curLine[1]);
                         case "SeedMapper Settings Key" -> bindKey(keyBindSeedMapperSettings, curLine[1]);
+                        case "SeedMapper Options Page Key" -> bindKey(keyBindSeedMapperOptionsPage, curLine[1]);
+                        case "Options Menu Key" -> bindKey(keyBindOptionsMenu, curLine[1]);
 
                     }
                 }
@@ -363,6 +369,8 @@ public class MapSettingsManager implements ISettingsManager {
             out.println("SeedMapper Terrain ESP Key:" + keyBindSeedMapperTerrainEsp.saveString());
             out.println("SeedMapper Loot Viewer Key:" + keyBindSeedMapperLootViewer.saveString());
             out.println("SeedMapper Settings Key:" + keyBindSeedMapperSettings.saveString());
+            out.println("SeedMapper Options Page Key:" + keyBindSeedMapperOptionsPage.saveString());
+            out.println("Options Menu Key:" + keyBindOptionsMenu.saveString());
 
             for (ISubSettingsManager subSettingsManager : subSettingsManagers) {
                 subSettingsManager.saveAll(out);
