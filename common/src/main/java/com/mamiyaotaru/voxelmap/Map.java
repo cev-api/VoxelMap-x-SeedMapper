@@ -3,6 +3,7 @@ package com.mamiyaotaru.voxelmap;
 import com.mamiyaotaru.voxelmap.gui.GuiAddWaypoint;
 import com.mamiyaotaru.voxelmap.gui.GuiMinimapOptions;
 import com.mamiyaotaru.voxelmap.gui.GuiSeedMapperLootViewer;
+import com.mamiyaotaru.voxelmap.gui.GuiSeedMapperOptions;
 import com.mamiyaotaru.voxelmap.gui.GuiWaypoints;
 import com.mamiyaotaru.voxelmap.gui.GuiWelcomeScreen;
 import com.mamiyaotaru.voxelmap.gui.overridden.EnumOptionsMinimap;
@@ -478,7 +479,15 @@ public class Map implements Runnable, IChangeObserver {
         }
 
         if (minecraft.screen == null && this.options.keyBindSeedMapperSettings.consumeClick()) {
-            minecraft.setScreen(new GuiMinimapOptions(null, 5));
+            minecraft.setScreen(new GuiMinimapOptions(null, 6));
+        }
+
+        if (minecraft.screen == null && this.options.keyBindSeedMapperOptionsPage.consumeClick()) {
+            minecraft.setScreen(new GuiSeedMapperOptions(null));
+        }
+
+        if (minecraft.screen == null && this.options.keyBindOptionsMenu.consumeClick()) {
+            minecraft.setScreen(new GuiMinimapOptions(null));
         }
 
         this.checkForChanges();
