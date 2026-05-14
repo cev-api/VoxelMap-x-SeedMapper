@@ -29,6 +29,10 @@ public final class SeedMapperDatapackManager {
         }
 
         URL url = new URL(urlString.trim());
+        String urlPath = url.getPath();
+        if (urlPath == null || !urlPath.toLowerCase(Locale.ROOT).endsWith(".zip")) {
+            throw new IOException("Please use a .zip datapack URL.");
+        }
         URLConnection connection = url.openConnection();
         connection.setRequestProperty("User-Agent", "VoxelMap-SeedMapper");
         connection.setConnectTimeout(15000);
@@ -51,6 +55,9 @@ public final class SeedMapperDatapackManager {
 
         Path datapackRoot = resolveDatapackRoot(unpackRoot);
         List<String> structures = listStructureIds(datapackRoot);
+        if (structures.isEmpty()) {
+            throw new IOException("Datapack world generation is not supported, only structures.");
+        }
         return new ImportResult(datapackRoot, structures);
     }
 
