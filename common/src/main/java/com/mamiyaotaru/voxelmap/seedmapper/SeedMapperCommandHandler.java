@@ -427,7 +427,7 @@ public final class SeedMapperCommandHandler {
             return;
         }
 
-        SeedMapperMarker marker = findNearestMarker(m -> m.feature() == feature, 32768);
+        SeedMapperMarker marker = findNearestMarker(m -> m.feature() == feature, 32768, true);
         if (marker == null) {
             send("No " + feature.id() + " found within 32768 blocks.");
             return;
@@ -494,7 +494,7 @@ public final class SeedMapperCommandHandler {
         if (query == null || query.isBlank()) return null;
         SeedMapperFeature feature = resolveFeature(query.toLowerCase(Locale.ROOT));
         if (feature == null) return null;
-        SeedMapperMarker marker = findNearestMarker(m -> m.feature() == feature, maxRadius);
+        SeedMapperMarker marker = findNearestMarker(m -> m.feature() == feature, maxRadius, true);
         if (marker == null) return null;
         return new LocateResult(feature.id(), marker.blockX(), marker.blockZ());
     }
@@ -1375,7 +1375,11 @@ public final class SeedMapperCommandHandler {
     }
 
     private static SeedMapperMarker findNearestMarker(java.util.function.Predicate<SeedMapperMarker> predicate, int maxRadius) {
-        List<SeedMapperMarker> markers = queryMarkers(maxRadius);
+        return findNearestMarker(predicate, maxRadius, false);
+    }
+
+    private static SeedMapperMarker findNearestMarker(java.util.function.Predicate<SeedMapperMarker> predicate, int maxRadius, boolean includeAllFeatures) {
+        List<SeedMapperMarker> markers = queryMarkers(maxRadius, false, includeAllFeatures);
         if (markers.isEmpty()) {
             return null;
         }
@@ -1434,10 +1438,14 @@ public final class SeedMapperCommandHandler {
     }
 
     private static List<SeedMapperMarker> queryMarkers(int maxRadius) {
-        return queryMarkers(maxRadius, false);
+        return queryMarkers(maxRadius, false, false);
     }
 
     private static List<SeedMapperMarker> queryMarkers(int maxRadius, boolean includeHiddenLootableFeatures) {
+        return queryMarkers(maxRadius, includeHiddenLootableFeatures, false);
+    }
+
+    private static List<SeedMapperMarker> queryMarkers(int maxRadius, boolean includeHiddenLootableFeatures, boolean includeAllFeatures) {
         long seed = resolveSeed();
         if (seed == Long.MIN_VALUE) return List.of();
         int dimension = getCurrentCubiomesDimension();
@@ -1452,6 +1460,11 @@ public final class SeedMapperCommandHandler {
             return SeedMapperLocatorService.get().queryLootableBlocking(
                     seed, dimension, SeedMapperCompat.getMcVersion(), 0,
                     px - maxRadius, px + maxRadius, pz - maxRadius, pz + maxRadius, settings);
+        }
+        if (includeAllFeatures) {
+            return SeedMapperLocatorService.get().queryBlockingAllFeatures(
+                    seed, dimension, SeedMapperCompat.getMcVersion(), 0,
+                    px - maxRadius, px + maxRadius, pz - maxRadius, pz + maxRadius, settings, null);
         }
         return SeedMapperLocatorService.get().queryBlocking(
                 seed, dimension, SeedMapperCompat.getMcVersion(), 0,
