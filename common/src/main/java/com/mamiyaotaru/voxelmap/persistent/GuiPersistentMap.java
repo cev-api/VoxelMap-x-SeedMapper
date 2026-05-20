@@ -7,6 +7,7 @@ import com.mamiyaotaru.voxelmap.VoxelConstants;
 import com.mamiyaotaru.voxelmap.WaypointManager;
 import com.mamiyaotaru.voxelmap.gui.GuiAddWaypoint;
 import com.mamiyaotaru.voxelmap.gui.GuiMinimapOptions;
+import com.mamiyaotaru.voxelmap.gui.GuiSeedMapperOptions;
 import com.mamiyaotaru.voxelmap.gui.GuiSubworldsSelect;
 import com.mamiyaotaru.voxelmap.gui.GuiWaypoints;
 import com.mamiyaotaru.voxelmap.gui.IGuiWaypoints;
@@ -194,6 +195,10 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     private int seedMapperTitleRight = -1;
     private int seedMapperTitleTop = -1;
     private int seedMapperTitleBottom = -1;
+    private int seedHeaderLeft = -1;
+    private int seedHeaderRight = -1;
+    private int seedHeaderTop = -1;
+    private int seedHeaderBottom = -1;
     private long seedMapperLastMarkerQueryMs = 0L;
     private SeedMapperQueryCacheKey seedMapperLastMarkerQueryKey;
     private List<SeedMapperMarker> seedMapperLastMarkerResult = List.of();
@@ -503,6 +508,13 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 && mouseY >= this.coordinateLabelTop
                 && mouseY <= this.coordinateLabelBottom) {
             openCoordinateInputs(this.coordinateHoverX, this.coordinateHoverZ);
+            return true;
+        }
+
+        if (mapOptions.worldmapAllowed && isInSeedHeader(mouseX, mouseY)) {
+            if (mouseButtonEvent.button() == 0) {
+                minecraft.setScreen(new GuiSeedMapperOptions(this));
+            }
             return true;
         }
 
@@ -1051,10 +1063,20 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             }
             String enteredSeed = seedMapperOptions.manualSeed == null ? "" : seedMapperOptions.manualSeed.trim();
             boolean showSeedHeader = !enteredSeed.isEmpty();
+            seedHeaderLeft = -1;
+            seedHeaderRight = -1;
+            seedHeaderTop = -1;
+            seedHeaderBottom = -1;
             if (showSeedHeader) {
                 String seedText = "Seed: " + enteredSeed;
                 int seedWidth = this.getFont().width(seedText);
-                graphics.text(this.getFont(), seedText, this.getWidth() - this.sideMargin - seedWidth, 16, 0xFFFFFFFF);
+                int seedX = this.getWidth() - this.sideMargin - seedWidth;
+                int seedY = 16;
+                graphics.text(this.getFont(), seedText, seedX, seedY, 0xFFFFFFFF);
+                seedHeaderLeft = seedX - 2;
+                seedHeaderRight = seedX + seedWidth + 2;
+                seedHeaderTop = seedY - 1;
+                seedHeaderBottom = seedY + this.getFont().lineHeight + 1;
             }
             if (this.zoom != this.zoomGoal) {
                 String zoomText = String.format(java.util.Locale.ROOT, "Zoom: %.3fx", this.zoom);
@@ -1073,6 +1095,9 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
             int worldNameY = showSeedHeader ? 28 : 16;
             graphics.text(this.getFont(), this.worldNameDisplay, this.getWidth() - this.sideMargin - this.worldNameDisplayLength, worldNameY, 0xFFFFFF);
+            if (isInSeedHeader(mouseX, mouseY)) {
+                renderTooltip(graphics, Component.literal("Open SeedMapper Options"), mouseX, mouseY);
+            }
             if (this.buttonMultiworld != null) {
                 if ((this.subworldName == null || this.subworldName.isEmpty()) && VoxelConstants.getVoxelMapInstance().getWaypointManager().isMultiworld()) {
                     if ((int) (System.currentTimeMillis() / 1000L % 2L) == 0) {
@@ -2448,6 +2473,17 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
     private boolean isInTopHeader(int mouseX, int mouseY) {
         return mouseY >= 0 && mouseY < this.top;
+    }
+
+    private boolean isInSeedHeader(int mouseX, int mouseY) {
+        return seedHeaderLeft >= 0
+                && seedHeaderRight > seedHeaderLeft
+                && seedHeaderTop >= 0
+                && seedHeaderBottom > seedHeaderTop
+                && mouseX >= seedHeaderLeft
+                && mouseX <= seedHeaderRight
+                && mouseY >= seedHeaderTop
+                && mouseY <= seedHeaderBottom;
     }
 
     private boolean isInSeedMapperStrip(int mouseX, int mouseY) {

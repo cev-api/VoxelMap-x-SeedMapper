@@ -81,6 +81,11 @@ public final class SeedMapperLocatorService {
         return queryBlocking(key);
     }
 
+    public List<SeedMapperMarker> queryBlockingAllFeatures(long seed, int dimension, int mcVersion, int generatorFlags, int minX, int maxX, int minZ, int maxZ, SeedMapperSettingsManager settings, String datapackWorldKey) {
+        QueryKey key = buildQueryKey(seed, dimension, mcVersion, generatorFlags, minX, maxX, minZ, maxZ, settings, datapackWorldKey, false, true);
+        return queryBlocking(key);
+    }
+
     public List<SeedMapperMarker> queryLootableBlocking(long seed, int dimension, int mcVersion, int generatorFlags, int minX, int maxX, int minZ, int maxZ, SeedMapperSettingsManager settings) {
         QueryKey key = buildQueryKey(seed, dimension, mcVersion, generatorFlags, minX, maxX, minZ, maxZ, settings, null, true);
         return queryBlocking(key);
@@ -213,6 +218,10 @@ public final class SeedMapperLocatorService {
     }
 
     private QueryKey buildQueryKey(long seed, int dimension, int mcVersion, int generatorFlags, int minX, int maxX, int minZ, int maxZ, SeedMapperSettingsManager settings, String datapackWorldKey, boolean includeHiddenLootableFeatures) {
+        return buildQueryKey(seed, dimension, mcVersion, generatorFlags, minX, maxX, minZ, maxZ, settings, datapackWorldKey, includeHiddenLootableFeatures, false);
+    }
+
+    private QueryKey buildQueryKey(long seed, int dimension, int mcVersion, int generatorFlags, int minX, int maxX, int minZ, int maxZ, SeedMapperSettingsManager settings, String datapackWorldKey, boolean includeHiddenLootableFeatures, boolean includeAllFeatures) {
         // Use coarser snapping so viewport panning does not invalidate cache every pixel.
         int spanX = Math.max(1, Math.abs(maxX - minX));
         int spanZ = Math.max(1, Math.abs(maxZ - minZ));
@@ -225,9 +234,12 @@ public final class SeedMapperLocatorService {
 
         long featureMask = 0L;
         for (SeedMapperFeature feature : SeedMapperFeature.values()) {
-            if (includeHiddenLootableFeatures
-                    ? feature.lootable() && SeedMapperLootService.LOOT_SUPPORTED_STRUCTURES.contains(feature.structureId())
-                    : settings.isFeatureEnabled(feature)) {
+            boolean included = includeAllFeatures
+                    ? feature.availableInDimension(dimension)
+                    : includeHiddenLootableFeatures
+                        ? feature.lootable() && SeedMapperLootService.LOOT_SUPPORTED_STRUCTURES.contains(feature.structureId())
+                        : settings.isFeatureEnabled(feature);
+            if (included) {
                 featureMask |= (1L << feature.ordinal());
             }
         }
