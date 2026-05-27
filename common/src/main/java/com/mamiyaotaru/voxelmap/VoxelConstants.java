@@ -148,6 +148,8 @@ public final class VoxelConstants {
     public static void onShutDown() {
         VoxelConstants.getLogger().info("Saving all world maps");
         VoxelConstants.getVoxelMapInstance().getPersistentMap().purgeCachedRegions();
+        VoxelConstants.getVoxelMapInstance().getNewerNewChunksManager().flushStorage();
+        VoxelConstants.getVoxelMapInstance().getExploredChunksManager().flushStorage();
         VoxelConstants.getVoxelMapInstance().getMapOptions().saveAll();
         BiomeRepository.saveBiomeColors();
         long shutdownStart = System.currentTimeMillis();
