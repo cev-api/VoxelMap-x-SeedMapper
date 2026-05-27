@@ -203,11 +203,26 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     private SeedMapperQueryCacheKey seedMapperLastMarkerQueryKey;
     private List<SeedMapperMarker> seedMapperLastMarkerResult = List.of();
     private long exploredLinesLastQueryMs = 0L;
+    private long exploredLinesLastDataVersion = Long.MIN_VALUE;
     private ExploredLinesQueryCacheKey exploredLinesLastQueryKey;
     private List<ChunkPos> exploredLinesLastResult = List.of();
+    private java.util.HashSet<Long> exploredLinesLastCellResult = new java.util.HashSet<>();
     private ExploredLineRenderCacheKey exploredLineRenderCacheKey;
     private List<ExploredLineSegment> exploredLineSegments = List.of();
     private List<ExploredLineNode> exploredLineNodes = List.of();
+    private NewOldChunkOverlayRenderCacheKey newOldChunkOverlayRenderCacheKey;
+    private List<NewOldChunkRenderRect> newOldChunkOldRects = List.of();
+    private List<NewOldChunkRenderRect> newOldChunkNewRects = List.of();
+    private long newOldChunkLastMotionMs = 0L;
+    private long newOldChunkCacheHits = 0L;
+    private long newOldChunkCacheMisses = 0L;
+    private long newOldChunkLastDebugLogMs = 0L;
+    private int newOldChunkLastOldReturned = 0;
+    private int newOldChunkLastNewReturned = 0;
+    private int newOldChunkLastVisibleOld = 0;
+    private int newOldChunkLastVisibleNew = 0;
+    private int newOldChunkLastCells = 0;
+    private long newOldChunkLastRebuildTimeMs = 0L;
     private SeedMapperChestLootWidget seedMapperChestLootWidget;
     private Set<SeedMapperFeature> seedMapperAllFeaturesSaved;
     private boolean currentDragging;
@@ -1185,8 +1200,9 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         }
         int maxDraw = Integer.MAX_VALUE;
         if (!literalLineMode) {
+            maxDraw = mapInMotion ? 3000 : 12000;
             if (ultraLowDetail) {
-                maxDraw = mapInMotion ? 700 : 5000;
+                maxDraw = Math.min(maxDraw, mapInMotion ? 700 : 5000);
             }
             if (farZoomPerformanceMode) {
                 maxDraw = Math.min(maxDraw, mapInMotion ? 6000 : 12000);
@@ -1242,23 +1258,78 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         } else {
             minIntervalMs = mapInMotion ? 180L : 350L;
         }
-        boolean queryKeyChanged = exploredLinesLastQueryKey == null || !exploredLinesLastQueryKey.equals(queryKey);
-        boolean queryIntervalElapsed = now - exploredLinesLastQueryMs >= minIntervalMs;
-        boolean refreshChunks = exploredLinesLastResult.isEmpty() || queryKeyChanged || queryIntervalElapsed;
-        if (refreshChunks) {
-            exploredLinesLastResult = new ArrayList<>(
-                    VoxelConstants.getVoxelMapInstance().getExploredChunksManager()
-                            .getExploredChunksInRange(centerChunkX, centerChunkZ, radius));
-            exploredLinesLastQueryKey = queryKey;
-            exploredLinesLastQueryMs = now;
-        }
-
+        boolean vectorLineMode = literalLineMode || mapInMotion || farZoomPerformanceMode || this.mapToGui < 0.16F;
         int cellChunkSize = 1;
-        ArrayList<ChunkPos> visibleChunks = literalLineMode ? null : new ArrayList<>();
-        java.util.HashSet<Long> visibleChunkSet = literalLineMode ? new java.util.HashSet<>() : null;
         if (literalLineMode) {
             float chunkScreenSize = 16.0F * this.mapToGui;
             cellChunkSize = Math.max(1, (int) Math.ceil(0.45F / Math.max(0.0001F, chunkScreenSize)));
+        } else if (vectorLineMode) {
+            if (this.mapToGui < 0.006F) {
+                cellChunkSize = mapInMotion ? 256 : 128;
+            } else if (this.mapToGui < 0.012F) {
+                cellChunkSize = mapInMotion ? 128 : 64;
+            } else if (this.mapToGui < 0.03F) {
+                cellChunkSize = mapInMotion ? 64 : 32;
+            } else if (this.mapToGui < 0.06F) {
+                cellChunkSize = mapInMotion ? 16 : 8;
+            } else if (this.mapToGui < 0.10F) {
+                cellChunkSize = mapInMotion ? 4 : 2;
+            } else {
+                cellChunkSize = mapInMotion ? 2 : 1;
+            }
+        }
+
+        com.mamiyaotaru.voxelmap.ExploredChunksManager exploredChunksManager = VoxelConstants.getVoxelMapInstance().getExploredChunksManager();
+        long exploredDataVersion = exploredChunksManager.getDataVersion();
+        boolean queryKeyChanged = exploredLinesLastQueryKey == null || !exploredLinesLastQueryKey.equals(queryKey);
+        boolean queryIntervalElapsed = now - exploredLinesLastQueryMs >= minIntervalMs;
+        boolean dataChanged = exploredLinesLastDataVersion != exploredDataVersion;
+        boolean refreshChunks = exploredLinesLastResult.isEmpty() || queryKeyChanged || (dataChanged && queryIntervalElapsed);
+        if (vectorLineMode) {
+            ExploredLineRenderCacheKey renderCacheKey = new ExploredLineRenderCacheKey(queryKey, cellChunkSize, exploredDataVersion);
+            if (!renderCacheKey.equals(exploredLineRenderCacheKey) || dataChanged) {
+                java.util.HashSet<Long> previousCells = exploredLinesLastCellResult;
+                List<ExploredLineSegment> previousSegments = exploredLineSegments;
+                List<ExploredLineNode> previousNodes = exploredLineNodes;
+                java.util.HashSet<Long> queriedCells = exploredChunksManager.getExploredCellsInRange(centerChunkX, centerChunkZ, radius, cellChunkSize);
+                if (exploredChunksManager.consumeStorageLoadIncomplete()) {
+                    exploredLinesLastCellResult = previousCells;
+                    exploredLineSegments = previousSegments;
+                    exploredLineNodes = previousNodes;
+                    exploredLineRenderCacheKey = null;
+                } else {
+                    exploredLinesLastCellResult = queriedCells;
+                    rebuildExploredLineRenderCache(exploredLinesLastCellResult, cellChunkSize);
+                    exploredLineRenderCacheKey = renderCacheKey;
+                    exploredLinesLastQueryKey = queryKey;
+                    exploredLinesLastQueryMs = now;
+                    exploredLinesLastDataVersion = exploredDataVersion;
+                }
+            }
+            for (ExploredLineSegment segment : exploredLineSegments) {
+                drawThickInterpolatedLine(graphics, segment.x1(), segment.z1(), segment.x2(), segment.z2(), lineThickness, color);
+            }
+            if (literalLineMode) {
+                float cellWorldSize = cellChunkSize * 16.0F;
+                float nodeHalf = Math.max(lineThickness * 0.55F, cellWorldSize * 0.04F);
+                boolean ultraFarLiteral = this.mapToGui < 0.03F;
+                for (ExploredLineNode node : exploredLineNodes) {
+                    if (!ultraFarLiteral || !node.linked()) {
+                        VoxelMapGuiGraphics.fillGradient(graphics,
+                                node.x() - nodeHalf, node.z() - nodeHalf,
+                                node.x() + nodeHalf, node.z() + nodeHalf,
+                                color, color, color, color);
+                    }
+                }
+            }
+            return;
+        }
+
+        if (refreshChunks) {
+            exploredLinesLastResult = new ArrayList<>(exploredChunksManager.getExploredChunksInRange(centerChunkX, centerChunkZ, radius));
+            exploredLinesLastQueryKey = queryKey;
+            exploredLinesLastQueryMs = now;
+            exploredLinesLastDataVersion = exploredDataVersion;
         }
 
         for (ChunkPos chunk : exploredLinesLastResult) {
@@ -1279,15 +1350,6 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                     continue;
                 }
             }
-            if (literalLineMode) {
-                int cellX = Math.floorDiv(chunkX, cellChunkSize);
-                int cellZ = Math.floorDiv(chunkZ, cellChunkSize);
-                visibleChunkSet.add(chunkKey(cellX, cellZ));
-                drawn++;
-                continue;
-            }
-            visibleChunks.add(chunk);
-
             float minX = chunk.getMinBlockX();
             float minZ = chunk.getMinBlockZ();
             float maxX = minX + 16.0F;
@@ -1300,28 +1362,6 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             drawn++;
         }
 
-        if (literalLineMode && visibleChunkSet != null && !visibleChunkSet.isEmpty()) {
-            float cellWorldSize = cellChunkSize * 16.0F;
-            float nodeHalf = Math.max(lineThickness * 0.55F, cellWorldSize * 0.04F);
-            boolean ultraFarLiteral = this.mapToGui < 0.03F;
-            ExploredLineRenderCacheKey renderCacheKey = new ExploredLineRenderCacheKey(queryKey, cellChunkSize, visibleChunkSet.size(), visibleChunkSet.hashCode());
-            if (!renderCacheKey.equals(exploredLineRenderCacheKey)) {
-                rebuildExploredLineRenderCache(visibleChunkSet, cellChunkSize);
-                exploredLineRenderCacheKey = renderCacheKey;
-            }
-
-            for (ExploredLineSegment segment : exploredLineSegments) {
-                drawThickInterpolatedLine(graphics, segment.x1(), segment.z1(), segment.x2(), segment.z2(), lineThickness, color);
-            }
-            for (ExploredLineNode node : exploredLineNodes) {
-                if (!ultraFarLiteral || !node.linked()) {
-                    VoxelMapGuiGraphics.fillGradient(graphics,
-                            node.x() - nodeHalf, node.z() - nodeHalf,
-                            node.x() + nodeHalf, node.z() + nodeHalf,
-                            color, color, color, color);
-                }
-            }
-        }
     }
 
     private void drawNewOldChunkOverlayWorldMap(GuiGraphicsExtractor graphics, int leftRegion, int rightRegion, int topRegion, int bottomRegion) {
@@ -1338,19 +1378,17 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         int maxChunkX = rightRegion * 16 + 15;
         int minChunkZ = topRegion * 16;
         int maxChunkZ = bottomRegion * 16 + 15;
-        int centerChunkX = (minChunkX + maxChunkX) >> 1;
-        int centerChunkZ = (minChunkZ + maxChunkZ) >> 1;
-        int radius = Math.max(maxChunkX - centerChunkX, maxChunkZ - centerChunkZ) + 2;
 
         boolean farZoomPerformanceMode = isFarZoomPerformanceMode();
         boolean mapInMotion = currentDragging
                 || Math.abs(this.deltaX) > 0.01F
                 || Math.abs(this.deltaY) > 0.01F
                 || this.zoom != this.zoomGoal;
-
-        NewerNewChunksManager manager = VoxelConstants.getVoxelMapInstance().getNewerNewChunksManager();
-        List<ChunkPos> oldChunks = new ArrayList<>(manager.getOldChunksInRange(centerChunkX, centerChunkZ, radius));
-        List<ChunkPos> newChunks = new ArrayList<>(manager.getNewChunksInRange(centerChunkX, centerChunkZ, radius));
+        long now = System.currentTimeMillis();
+        if (mapInMotion) {
+            newOldChunkLastMotionMs = now;
+        }
+        boolean movingLod = mapInMotion || now - newOldChunkLastMotionMs < 250L;
 
         int oldAlpha = Mth.clamp((int) Math.round((radarOptions.newerNewChunksOldOpacity / 100.0D) * 255.0D), 0, 255);
         int newAlpha = Mth.clamp((int) Math.round((radarOptions.newerNewChunksNewOpacity / 100.0D) * 255.0D), 0, 255);
@@ -1361,29 +1399,276 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         int oldColor = (oldAlpha << 24) | (radarOptions.getNewerNewChunksOldColorRgb() & 0x00FFFFFF);
         int newColor = (newAlpha << 24) | (radarOptions.getNewerNewChunksNewColorRgb() & 0x00FFFFFF);
 
-        int cellChunkSize = 1;
-        if (this.mapToGui < 0.03F) {
-            cellChunkSize = mapInMotion ? 8 : 6;
-        } else if (this.mapToGui < 0.06F) {
-            cellChunkSize = mapInMotion ? 6 : 4;
-        } else if (this.mapToGui < 0.10F) {
-            cellChunkSize = mapInMotion ? 4 : 3;
-        } else if (this.mapToGui < 0.18F) {
-            cellChunkSize = mapInMotion ? 3 : 2;
+        int cellChunkSize = getNewOldChunkCellChunkSize(movingLod, farZoomPerformanceMode);
+        int maxDraw = getNewOldChunkMaxDraw(movingLod, farZoomPerformanceMode);
+        int zoomBucket = getNewOldChunkZoomBucket();
+        int querySnap = Math.max(cellChunkSize, movingLod ? 16 : 8);
+        int queryMinChunkX = Math.floorDiv(minChunkX, querySnap) * querySnap;
+        int queryMaxChunkX = Math.floorDiv(maxChunkX + querySnap, querySnap) * querySnap - 1;
+        int queryMinChunkZ = Math.floorDiv(minChunkZ, querySnap) * querySnap;
+        int queryMaxChunkZ = Math.floorDiv(maxChunkZ + querySnap, querySnap) * querySnap - 1;
+
+        NewerNewChunksManager manager = VoxelConstants.getVoxelMapInstance().getNewerNewChunksManager();
+        NewOldChunkOverlayRenderCacheKey cacheKey = new NewOldChunkOverlayRenderCacheKey(
+                queryMinChunkX, queryMaxChunkX, queryMinChunkZ, queryMaxChunkZ,
+                zoomBucket, cellChunkSize, oldColor, newColor, farZoomPerformanceMode, movingLod,
+                maxDraw, manager.getDataVersion(), manager.getLoadedWorldKey());
+        if (!cacheKey.equals(newOldChunkOverlayRenderCacheKey)) {
+            List<NewOldChunkRenderRect> previousOldRects = newOldChunkOldRects;
+            List<NewOldChunkRenderRect> previousNewRects = newOldChunkNewRects;
+            rebuildNewOldChunkOverlayRenderCache(manager, cacheKey);
+            long rebuiltDataVersion = manager.getDataVersion();
+            if (manager.consumeStorageLoadIncomplete()) {
+                newOldChunkOverlayRenderCacheKey = null;
+                newOldChunkOldRects = previousOldRects;
+                newOldChunkNewRects = previousNewRects;
+            } else {
+                newOldChunkOverlayRenderCacheKey = rebuiltDataVersion == cacheKey.dataVersion()
+                        ? cacheKey
+                        : new NewOldChunkOverlayRenderCacheKey(cacheKey.minChunkX(), cacheKey.maxChunkX(), cacheKey.minChunkZ(), cacheKey.maxChunkZ(),
+                                cacheKey.zoomBucket(), cacheKey.cellChunkSize(), cacheKey.oldColor(), cacheKey.newColor(),
+                                cacheKey.farZoomPerformanceMode(), cacheKey.movingLod(), cacheKey.maxDraw(), rebuiltDataVersion, cacheKey.worldKey());
+            }
+            newOldChunkCacheMisses++;
+        } else {
+            newOldChunkCacheHits++;
         }
 
-        int maxDraw = Integer.MAX_VALUE;
+        for (NewOldChunkRenderRect rect : newOldChunkOldRects) {
+            VoxelMapGuiGraphics.fillGradient(graphics, rect.minX(), rect.minZ(), rect.maxX(), rect.maxZ(),
+                    rect.color(), rect.color(), rect.color(), rect.color());
+        }
+        for (NewOldChunkRenderRect rect : newOldChunkNewRects) {
+            VoxelMapGuiGraphics.fillGradient(graphics, rect.minX(), rect.minZ(), rect.maxX(), rect.maxZ(),
+                    rect.color(), rect.color(), rect.color(), rect.color());
+        }
+
+        maybeLogNewOldChunkOverlayDebug(manager);
+    }
+
+    private void rebuildNewOldChunkOverlayRenderCache(NewerNewChunksManager manager, NewOldChunkOverlayRenderCacheKey cacheKey) {
+        long start = System.nanoTime();
+        int centerChunkX = (cacheKey.minChunkX() + cacheKey.maxChunkX()) >> 1;
+        int centerChunkZ = (cacheKey.minChunkZ() + cacheKey.maxChunkZ()) >> 1;
+        int radius = Math.max(cacheKey.maxChunkX() - centerChunkX, cacheKey.maxChunkZ() - centerChunkZ) + 2;
+
+        int remainingDraw = cacheKey.maxDraw();
+        BuildNewOldChunkRectsResult oldResult;
+        BuildNewOldChunkRectsResult newResult;
+        if (cacheKey.cellChunkSize() > 1) {
+            NewerNewChunksManager.NewOldCellsSnapshot snapshot = manager.getNewOldCellsInRange(centerChunkX, centerChunkZ, radius, cacheKey.cellChunkSize());
+            newOldChunkLastOldReturned = snapshot.oldChunks();
+            newOldChunkLastNewReturned = snapshot.newChunks();
+            oldResult = buildNewOldChunkRectsFromCells(snapshot.oldCells(), cacheKey.oldColor(), cacheKey.cellChunkSize(), remainingDraw, newOldChunkLastOldReturned);
+            remainingDraw = Math.max(0, remainingDraw - oldResult.rects().size());
+            newResult = buildNewOldChunkRectsFromCells(snapshot.newCells(), cacheKey.newColor(), cacheKey.cellChunkSize(), remainingDraw, newOldChunkLastNewReturned);
+        } else {
+            int maxQueryResults = getNewOldChunkMaxQueryResults(cacheKey.cellChunkSize(), cacheKey.maxDraw());
+            NewerNewChunksManager.NewOldChunksSnapshot snapshot = manager.getNewOldChunksInRange(centerChunkX, centerChunkZ, radius, maxQueryResults);
+            List<ChunkPos> oldChunks = new ArrayList<>(snapshot.oldChunks());
+            List<ChunkPos> newChunks = new ArrayList<>(snapshot.newChunks());
+            newOldChunkLastOldReturned = oldChunks.size();
+            newOldChunkLastNewReturned = newChunks.size();
+
+            oldResult = buildNewOldChunkRects(oldChunks, cacheKey.minChunkX(), cacheKey.maxChunkX(),
+                    cacheKey.minChunkZ(), cacheKey.maxChunkZ(), cacheKey.oldColor(), cacheKey.cellChunkSize(), remainingDraw);
+            remainingDraw = Math.max(0, remainingDraw - oldResult.rects().size());
+            newResult = buildNewOldChunkRects(newChunks, cacheKey.minChunkX(), cacheKey.maxChunkX(),
+                    cacheKey.minChunkZ(), cacheKey.maxChunkZ(), cacheKey.newColor(), cacheKey.cellChunkSize(), remainingDraw);
+        }
+
+        newOldChunkOldRects = oldResult.rects();
+        newOldChunkNewRects = newResult.rects();
+        newOldChunkLastVisibleOld = oldResult.visibleChunks();
+        newOldChunkLastVisibleNew = newResult.visibleChunks();
+        newOldChunkLastCells = oldResult.generatedCells() + newResult.generatedCells();
+        newOldChunkLastRebuildTimeMs = (System.nanoTime() - start) / 1_000_000L;
+    }
+
+    private BuildNewOldChunkRectsResult buildNewOldChunkRects(List<ChunkPos> chunks, int minChunkX, int maxChunkX, int minChunkZ, int maxChunkZ,
+            int color, int cellChunkSize, int maxDraw) {
+        if (maxDraw <= 0 || chunks.isEmpty()) {
+            return new BuildNewOldChunkRectsResult(List.of(), 0, 0);
+        }
+
+        int visible = 0;
+        java.util.HashSet<Long> cells = new java.util.HashSet<>();
+        for (ChunkPos chunk : chunks) {
+            int chunkX = chunk.x();
+            int chunkZ = chunk.z();
+            if (chunkX < minChunkX || chunkX > maxChunkX || chunkZ < minChunkZ || chunkZ > maxChunkZ) {
+                continue;
+            }
+            visible++;
+            cells.add(chunkKey(Math.floorDiv(chunkX, cellChunkSize), Math.floorDiv(chunkZ, cellChunkSize)));
+        }
+
+        return new BuildNewOldChunkRectsResult(greedyMeshNewOldChunkCells(cells, cellChunkSize, color, maxDraw), visible, cells.size());
+    }
+
+    private BuildNewOldChunkRectsResult buildNewOldChunkRectsFromCells(Set<Long> cells, int color, int cellChunkSize, int maxDraw, int visibleChunks) {
+        if (maxDraw <= 0 || cells.isEmpty()) {
+            return new BuildNewOldChunkRectsResult(List.of(), visibleChunks, 0);
+        }
+        return new BuildNewOldChunkRectsResult(greedyMeshNewOldChunkCells(cells, cellChunkSize, color, maxDraw), visibleChunks, cells.size());
+    }
+
+    private List<NewOldChunkRenderRect> greedyMeshNewOldChunkCells(Set<Long> cells, int cellChunkSize, int color, int maxDraw) {
+        if (cells.isEmpty()) {
+            return List.of();
+        }
+
+        ArrayList<Long> sortedCells = new ArrayList<>(cells);
+        sortedCells.sort(Long::compare);
+        java.util.HashSet<Long> remaining = new java.util.HashSet<>(cells);
+        ArrayList<NewOldChunkRenderRect> rects = new ArrayList<>(Math.min(maxDraw, cells.size()));
+        float worldCellSize = 16.0F * cellChunkSize;
+
+        for (long key : sortedCells) {
+            if (rects.size() >= maxDraw) {
+                break;
+            }
+            if (!remaining.remove(key)) {
+                continue;
+            }
+
+            int startX = (int) (key >> 32);
+            int startZ = (int) key;
+            int width = 1;
+            while (remaining.contains(chunkKey(startX + width, startZ))) {
+                width++;
+            }
+
+            int height = 1;
+            boolean canGrow = true;
+            while (canGrow) {
+                int z = startZ + height;
+                for (int x = startX; x < startX + width; x++) {
+                    if (!remaining.contains(chunkKey(x, z))) {
+                        canGrow = false;
+                        break;
+                    }
+                }
+                if (canGrow) {
+                    height++;
+                }
+            }
+
+            for (int z = startZ; z < startZ + height; z++) {
+                for (int x = startX; x < startX + width; x++) {
+                    remaining.remove(chunkKey(x, z));
+                }
+            }
+
+            float minX = startX * worldCellSize;
+            float minZ = startZ * worldCellSize;
+            rects.add(new NewOldChunkRenderRect(minX, minZ, minX + width * worldCellSize, minZ + height * worldCellSize, color));
+        }
+
+        return List.copyOf(rects);
+    }
+
+    private int getNewOldChunkCellChunkSize(boolean movingLod, boolean farZoomPerformanceMode) {
+        if (farZoomPerformanceMode || this.mapToGui < 0.03F) {
+            return movingLod ? 32 : 16;
+        }
+        if (this.mapToGui < 0.06F) {
+            return movingLod ? 16 : 8;
+        }
+        if (this.mapToGui < 0.10F) {
+            return movingLod ? 8 : 4;
+        }
+        if (this.mapToGui < 0.18F) {
+            return movingLod ? 4 : 2;
+        }
+        return 1;
+    }
+
+    private int getNewOldChunkMaxDraw(boolean movingLod, boolean farZoomPerformanceMode) {
         if (farZoomPerformanceMode) {
-            maxDraw = mapInMotion ? 2200 : 4500;
-        } else if (this.mapToGui < 0.06F) {
-            maxDraw = mapInMotion ? 900 : 2000;
-        } else if (this.mapToGui < 0.10F) {
-            maxDraw = mapInMotion ? 1500 : 2800;
+            return movingLod ? 1600 : 4200;
         }
+        if (this.mapToGui < 0.06F) {
+            return movingLod ? 700 : 1800;
+        }
+        if (this.mapToGui < 0.10F) {
+            return movingLod ? 1200 : 2600;
+        }
+        return Integer.MAX_VALUE;
+    }
 
-        int drawn = 0;
-        drawn = drawChunkSquaresWorldMap(graphics, oldChunks, minChunkX, maxChunkX, minChunkZ, maxChunkZ, oldColor, cellChunkSize, maxDraw, drawn);
-        drawChunkSquaresWorldMap(graphics, newChunks, minChunkX, maxChunkX, minChunkZ, maxChunkZ, newColor, cellChunkSize, maxDraw, drawn);
+    private int getNewOldChunkMaxQueryResults(int cellChunkSize, int maxDraw) {
+        if (cellChunkSize <= 1 && maxDraw == Integer.MAX_VALUE) {
+            return Integer.MAX_VALUE;
+        }
+        if (maxDraw == Integer.MAX_VALUE) {
+            return 120_000;
+        }
+        return Math.max(8_000, Math.min(120_000, maxDraw * Math.max(4, cellChunkSize)));
+    }
+
+    private int getNewOldChunkZoomBucket() {
+        if (this.mapToGui < 0.03F) {
+            return 0;
+        }
+        if (this.mapToGui < 0.06F) {
+            return 1;
+        }
+        if (this.mapToGui < 0.10F) {
+            return 2;
+        }
+        if (this.mapToGui < 0.18F) {
+            return 3;
+        }
+        return 4;
+    }
+
+    private int getExploredVectorMaxCells(boolean mapInMotion) {
+        if (this.mapToGui < 0.006F) {
+            return mapInMotion ? 700 : 1200;
+        }
+        if (this.mapToGui < 0.012F) {
+            return mapInMotion ? 1000 : 1800;
+        }
+        if (this.mapToGui < 0.03F) {
+            return mapInMotion ? 1800 : 3000;
+        }
+        if (this.mapToGui < 0.06F) {
+            return mapInMotion ? 2500 : 4500;
+        }
+        return mapInMotion ? 3500 : 6000;
+    }
+
+    private int getExploredVectorMaxSegments(boolean mapInMotion) {
+        if (this.mapToGui < 0.006F) {
+            return mapInMotion ? 160 : 260;
+        }
+        if (this.mapToGui < 0.012F) {
+            return mapInMotion ? 220 : 380;
+        }
+        if (this.mapToGui < 0.03F) {
+            return mapInMotion ? 360 : 700;
+        }
+        return mapInMotion ? 650 : 1200;
+    }
+
+    private void maybeLogNewOldChunkOverlayDebug(NewerNewChunksManager manager) {
+        if (!VoxelConstants.DEBUG) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        if (now - newOldChunkLastDebugLogMs < 5000L) {
+            return;
+        }
+        newOldChunkLastDebugLogMs = now;
+        VoxelConstants.getLogger().info("World map new/old overlay: hits={} misses={} oldReturned={} newReturned={} oldVisible={} newVisible={} cells={} rects={} rebuildMs={} storageFiles={} storageDecoded={} storageMissing={} storageMs={} migrationMs={} version={}",
+                newOldChunkCacheHits, newOldChunkCacheMisses,
+                newOldChunkLastOldReturned, newOldChunkLastNewReturned,
+                newOldChunkLastVisibleOld, newOldChunkLastVisibleNew,
+                newOldChunkLastCells, newOldChunkOldRects.size() + newOldChunkNewRects.size(),
+                newOldChunkLastRebuildTimeMs,
+                manager.getLastLoadedRegionFiles(), manager.getLastDecodedChunks(), manager.getLastSkippedMissingRegionFiles(),
+                manager.getLastStorageLoadTimeMs(), manager.getLastMigrationTimeMs(), manager.getDataVersion());
     }
 
     private int drawChunkSquaresWorldMap(GuiGraphicsExtractor graphics, List<ChunkPos> chunks, int minChunkX, int maxChunkX, int minChunkZ, int maxChunkZ, int color, int cellChunkSize, int maxDraw, int startDrawn) {
@@ -1441,15 +1726,17 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     private void rebuildExploredLineRenderCache(java.util.HashSet<Long> chunkSet, int cellChunkSize) {
         ArrayList<ExploredLineSegment> segments = new ArrayList<>();
         ArrayList<ExploredLineNode> nodes = new ArrayList<>();
+        ArrayList<Long> sortedCells = new ArrayList<>(chunkSet);
+        sortedCells.sort(Long::compare);
 
-        for (long key : chunkSet) {
+        for (long key : sortedCells) {
             int cellX = (int) (key >> 32);
             int cellZ = (int) key;
             boolean linked = hasExploredLineNeighbor(chunkSet, cellX, cellZ);
             nodes.add(new ExploredLineNode(cellCenter(cellX, cellChunkSize), cellCenter(cellZ, cellChunkSize), linked));
         }
 
-        for (long key : chunkSet) {
+        for (long key : sortedCells) {
             int cellX = (int) (key >> 32);
             int cellZ = (int) key;
 
@@ -1553,6 +1840,13 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         }
         // Sub-pixel stepping keeps diagonal lines visually continuous while still cheap at far zoom.
         float step = Math.max(Math.max(1.0F, thickness * 0.45F), 0.35F / Math.max(0.0001F, this.mapToGui));
+        if (this.mapToGui < 0.006F) {
+            step = Math.max(step, 10.0F / Math.max(0.0001F, this.mapToGui));
+        } else if (this.mapToGui < 0.012F) {
+            step = Math.max(step, 7.0F / Math.max(0.0001F, this.mapToGui));
+        } else if (this.mapToGui < 0.03F) {
+            step = Math.max(step, 4.0F / Math.max(0.0001F, this.mapToGui));
+        }
         int steps = Math.max(1, (int) Math.ceil(length / step));
         for (int i = 0; i <= steps; i++) {
             float t = i / (float) steps;
@@ -2914,13 +3208,24 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     private record ExploredLinesQueryCacheKey(int minChunkX, int maxChunkX, int minChunkZ, int maxChunkZ, int snap) {
     }
 
-    private record ExploredLineRenderCacheKey(ExploredLinesQueryCacheKey queryKey, int cellChunkSize, int chunkCount, int chunkHash) {
+    private record ExploredLineRenderCacheKey(ExploredLinesQueryCacheKey queryKey, int cellChunkSize, long dataVersion) {
     }
 
     private record ExploredLineSegment(float x1, float z1, float x2, float z2) {
     }
 
     private record ExploredLineNode(float x, float z, boolean linked) {
+    }
+
+    private record NewOldChunkOverlayRenderCacheKey(int minChunkX, int maxChunkX, int minChunkZ, int maxChunkZ,
+            int zoomBucket, int cellChunkSize, int oldColor, int newColor, boolean farZoomPerformanceMode,
+            boolean movingLod, int maxDraw, long dataVersion, String worldKey) {
+    }
+
+    private record NewOldChunkRenderRect(float minX, float minZ, float maxX, float maxZ, int color) {
+    }
+
+    private record BuildNewOldChunkRectsResult(List<NewOldChunkRenderRect> rects, int visibleChunks, int generatedCells) {
     }
 
     public void renderBackground(GuiGraphicsExtractor graphics) {
@@ -2946,6 +3251,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             this.persistentMap.getRegions(0, -1, 0, -1);
             this.regions = new CachedRegion[0];
         }
+        VoxelConstants.getVoxelMapInstance().getNewerNewChunksManager().flushStorage();
     }
 
     private void createPopup(int x, int y, int directX, int directY) {
