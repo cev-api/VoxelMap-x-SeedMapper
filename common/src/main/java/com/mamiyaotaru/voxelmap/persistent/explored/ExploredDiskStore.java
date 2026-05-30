@@ -242,19 +242,49 @@ public final class ExploredDiskStore {
         }
     }
 
-    /** writes all dirty containers to disk*/
+    /** writes all dirty containers to disk, merging existing on-disk data first so a container modified
+     *  without ever being loaded (e.g. the player explored its area without opening the map there) can't
+     *  overwrite previously-saved chunks */
     public void flush() {
-        List<PendingWrite> pending = new ArrayList<>();
+        List<ContainerKey> keys;
+        List<ContainerKey> needMerge = new ArrayList<>();
         lock.writeLock().lock();
         try {
             if (dirty.isEmpty()) {
                 return;
             }
-            for (ContainerKey key : dirty) {
+            keys = new ArrayList<>(dirty);
+            for (ContainerKey key : keys) {
+                if (!loaded.contains(key)) {
+                    needMerge.add(key);
+                }
+            }
+            dirty.clear();
+        } finally {
+            lock.writeLock().unlock();
+        }
+
+        List<ExploredContainer> existing = new ArrayList<>();
+        for (ContainerKey key : needMerge) {
+            ExploredContainer onDisk = ExploredContainerIo.read(containerPath(key.level(), key.containerX(), key.containerZ()));
+            if (onDisk != null) {
+                existing.add(onDisk);
+            }
+        }
+
+        List<PendingWrite> pending = new ArrayList<>();
+        lock.writeLock().lock();
+        try {
+            for (ContainerKey key : needMerge) {
+                loaded.add(key);
+            }
+            for (ExploredContainer onDisk : existing) {
+                mergeContainerLocked(onDisk.level(), onDisk.containerX(), onDisk.containerZ(), onDisk);
+            }
+            for (ContainerKey key : keys) {
                 ExploredContainer container = buildContainerLocked(key.level(), key.containerX(), key.containerZ());
                 pending.add(new PendingWrite(containerPath(key.level(), key.containerX(), key.containerZ()), container.encode()));
             }
-            dirty.clear();
         } finally {
             lock.writeLock().unlock();
         }
