@@ -10,8 +10,10 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.render.TextureSetup;
 import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.renderer.texture.AbstractTexture;
 import net.minecraft.resources.Identifier;
+import net.minecraft.util.Mth;
 import org.joml.Matrix3x2f;
 
 public class VoxelMapGuiGraphics {
@@ -46,5 +48,31 @@ public class VoxelMapGuiGraphics {
     public static void fillGradient(GuiGraphicsExtractor graphics, float x0, float y0, float x1, float y1, int color00, int color10, int color01, int color11) {
         graphics.guiRenderState.addGuiElement(new FourColoredRectangleRenderState(
                 RenderPipelines.GUI, TextureSetup.noTexture(), new Matrix3x2f(graphics.pose()), x0, y0, x1, y1, color00, color10, color01, color11, graphics.scissorStack.peek()));
+    }
+
+    public static void fillRectsBatched(GuiGraphicsExtractor graphics, float[] coords, int[] colors, int count) {
+        if (count <= 0) {
+            return;
+        }
+        Matrix3x2f pose = new Matrix3x2f(graphics.pose());
+        ScreenRectangle scissorArea = graphics.scissorStack.peek();
+        float minX = Float.MAX_VALUE;
+        float minY = Float.MAX_VALUE;
+        float maxX = -Float.MAX_VALUE;
+        float maxY = -Float.MAX_VALUE;
+        for (int i = 0; i < count; i++) {
+            int offset = i << 2;
+            minX = Math.min(minX, coords[offset]);
+            minY = Math.min(minY, coords[offset + 1]);
+            maxX = Math.max(maxX, coords[offset + 2]);
+            maxY = Math.max(maxY, coords[offset + 3]);
+        }
+        ScreenRectangle bounds = new ScreenRectangle(Mth.floor(minX), Mth.floor(minY),
+                Mth.ceil(maxX - minX), Mth.ceil(maxY - minY)).transformMaxBounds(pose);
+        if (scissorArea != null) {
+            bounds = scissorArea.intersection(bounds);
+        }
+        graphics.guiRenderState.addGuiElement(new MultiColoredRectangleRenderState(
+                RenderPipelines.GUI, TextureSetup.noTexture(), pose, coords, colors, count, scissorArea, bounds));
     }
 }

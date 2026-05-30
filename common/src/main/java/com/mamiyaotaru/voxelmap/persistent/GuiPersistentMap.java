@@ -210,6 +210,9 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     private ExploredLineRenderCacheKey exploredLineRenderCacheKey;
     private List<ExploredLineSegment> exploredLineSegments = List.of();
     private List<ExploredLineNode> exploredLineNodes = List.of();
+    private float[] exploredQuadCoords = new float[4096];
+    private int[] exploredQuadColors = new int[1024];
+    private int exploredQuadCount = 0;
     private NewOldChunkOverlayRenderCacheKey newOldChunkOverlayRenderCacheKey;
     private List<NewOldChunkRenderRect> newOldChunkOldRects = List.of();
     private List<NewOldChunkRenderRect> newOldChunkNewRects = List.of();
@@ -1141,6 +1144,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     }
 
     private void drawExploredChunkLinesWorldMap(GuiGraphicsExtractor graphics, int leftRegion, int rightRegion, int topRegion, int bottomRegion) {
+        this.exploredQuadCount = 0;
         if (!radarOptions.showExploredChunks) {
             return;
         }
@@ -1307,7 +1311,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 }
             }
             for (ExploredLineSegment segment : exploredLineSegments) {
-                drawThickInterpolatedLine(graphics, segment.x1(), segment.z1(), segment.x2(), segment.z2(), lineThickness, color);
+                appendThickInterpolatedLine(segment.x1(), segment.z1(), segment.x2(), segment.z2(), lineThickness, color);
             }
             if (literalLineMode) {
                 float cellWorldSize = cellChunkSize * 16.0F;
@@ -1315,13 +1319,14 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 boolean ultraFarLiteral = this.mapToGui < 0.03F;
                 for (ExploredLineNode node : exploredLineNodes) {
                     if (!ultraFarLiteral || !node.linked()) {
-                        VoxelMapGuiGraphics.fillGradient(graphics,
+                        appendExploredQuad(
                                 node.x() - nodeHalf, node.z() - nodeHalf,
                                 node.x() + nodeHalf, node.z() + nodeHalf,
-                                color, color, color, color);
+                                color);
                     }
                 }
             }
+            flushExploredQuads(graphics);
             return;
         }
 
@@ -1355,13 +1360,14 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             float maxX = minX + 16.0F;
             float maxZ = minZ + 16.0F;
 
-            VoxelMapGuiGraphics.fillGradient(graphics, minX, minZ, maxX, minZ + lineThickness, color, color, color, color);
-            VoxelMapGuiGraphics.fillGradient(graphics, minX, maxZ - lineThickness, maxX, maxZ, color, color, color, color);
-            VoxelMapGuiGraphics.fillGradient(graphics, minX, minZ, minX + lineThickness, maxZ, color, color, color, color);
-            VoxelMapGuiGraphics.fillGradient(graphics, maxX - lineThickness, minZ, maxX, maxZ, color, color, color, color);
+            appendExploredQuad(minX, minZ, maxX, minZ + lineThickness, color);
+            appendExploredQuad(minX, maxZ - lineThickness, maxX, maxZ, color);
+            appendExploredQuad(minX, minZ, minX + lineThickness, maxZ, color);
+            appendExploredQuad(maxX - lineThickness, minZ, maxX, maxZ, color);
             drawn++;
         }
 
+        flushExploredQuads(graphics);
     }
 
     private void drawNewOldChunkOverlayWorldMap(GuiGraphicsExtractor graphics, int leftRegion, int rightRegion, int topRegion, int bottomRegion) {
@@ -1816,26 +1822,53 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         return chunkSet.contains(chunkKey(x, z));
     }
 
-    private void drawThickInterpolatedLine(GuiGraphicsExtractor graphics, float x1, float z1, float x2, float z2, float thickness, int color) {
+    private void appendExploredQuad(float x0, float y0, float x1, float y1, int color) {
+        int index = this.exploredQuadCount;
+        if (index == this.exploredQuadColors.length) {
+            this.exploredQuadColors = java.util.Arrays.copyOf(this.exploredQuadColors, this.exploredQuadColors.length * 2);
+            this.exploredQuadCoords = java.util.Arrays.copyOf(this.exploredQuadCoords, this.exploredQuadCoords.length * 2);
+        }
+        int offset = index << 2;
+        this.exploredQuadCoords[offset] = x0;
+        this.exploredQuadCoords[offset + 1] = y0;
+        this.exploredQuadCoords[offset + 2] = x1;
+        this.exploredQuadCoords[offset + 3] = y1;
+        this.exploredQuadColors[index] = color;
+        this.exploredQuadCount = index + 1;
+    }
+
+    private void flushExploredQuads(GuiGraphicsExtractor graphics) {
+        int count = this.exploredQuadCount;
+        if (count <= 0) {
+            return;
+        }
+        // exact size arrays so the batched element can own making it so the buffers can be reused next frame
+        float[] coords = java.util.Arrays.copyOf(this.exploredQuadCoords, count << 2);
+        int[] colors = java.util.Arrays.copyOf(this.exploredQuadColors, count);
+        VoxelMapGuiGraphics.fillRectsBatched(graphics, coords, colors, count);
+        this.exploredQuadCount = 0;
+    }
+
+    private void appendThickInterpolatedLine(float x1, float z1, float x2, float z2, float thickness, int color) {
         float dx = x2 - x1;
         float dz = z2 - z1;
         float length = (float) Math.sqrt(dx * dx + dz * dz);
         if (length <= 0.01F) {
             float half = thickness / 2.0F;
-            VoxelMapGuiGraphics.fillGradient(graphics, x1 - half, z1 - half, x1 + half, z1 + half, color, color, color, color);
+            appendExploredQuad(x1 - half, z1 - half, x1 + half, z1 + half, color);
             return;
         }
         float half = thickness / 2.0F;
         if (Math.abs(dz) < 0.001F) {
             float minX = Math.min(x1, x2);
             float maxX = Math.max(x1, x2);
-            VoxelMapGuiGraphics.fillGradient(graphics, minX - half, z1 - half, maxX + half, z1 + half, color, color, color, color);
+            appendExploredQuad(minX - half, z1 - half, maxX + half, z1 + half, color);
             return;
         }
         if (Math.abs(dx) < 0.001F) {
             float minZ = Math.min(z1, z2);
             float maxZ = Math.max(z1, z2);
-            VoxelMapGuiGraphics.fillGradient(graphics, x1 - half, minZ - half, x1 + half, maxZ + half, color, color, color, color);
+            appendExploredQuad(x1 - half, minZ - half, x1 + half, maxZ + half, color);
             return;
         }
         // Sub-pixel stepping keeps diagonal lines visually continuous while still cheap at far zoom.
@@ -1852,7 +1885,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             float t = i / (float) steps;
             float px = x1 + dx * t;
             float pz = z1 + dz * t;
-            VoxelMapGuiGraphics.fillGradient(graphics, px - half, pz - half, px + half, pz + half, color, color, color, color);
+            appendExploredQuad(px - half, pz - half, px + half, pz + half, color);
         }
     }
 
