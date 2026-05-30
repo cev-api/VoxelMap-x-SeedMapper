@@ -139,8 +139,8 @@ public class ExploredChunksManager {
                 }
             }
         }
-        if (anyMissing || c.loader().pendingCount() > 0) {
-            loadIncomplete = true; // render keeps its previous cache and retries until loads land
+        if (anyMissing) {
+            loadIncomplete = true; // render keeps its previous cache and retries until these loads land
         }
     }
 

@@ -84,11 +84,36 @@ public final class ExploredV3Migrator {
     }
 
     private static int importV1(Path v1TextFile, ExploredDiskStore store) {
-        if (v1TextFile == null || Files.notExists(v1TextFile)) {
+        if (v1TextFile == null) {
+            return 0;
+        }
+        int imported = importV1File(v1TextFile, store);
+        Path parent = v1TextFile.getParent();
+        if (parent != null) {
+            String fileName = v1TextFile.getFileName().toString();
+            String worldKey = fileName.endsWith(".txt") ? fileName.substring(0, fileName.length() - 4) : fileName;
+            Path backupDir = parent.resolve("legacy_backup");
+            if (Files.isDirectory(backupDir)) {
+                try (Stream<Path> files = Files.list(backupDir)) {
+                    for (Path file : (Iterable<Path>) files.filter(p -> {
+                        String n = p.getFileName().toString();
+                        return n.startsWith(worldKey + ".") && n.endsWith(".txt");
+                    })::iterator) {
+                        imported += importV1File(file, store);
+                    }
+                } catch (IOException ignored) {
+                }
+            }
+        }
+        return imported;
+    }
+
+    private static int importV1File(Path file, ExploredDiskStore store) {
+        if (file == null || Files.notExists(file)) {
             return 0;
         }
         int imported = 0;
-        try (Stream<String> lines = Files.lines(v1TextFile, StandardCharsets.UTF_8)) {
+        try (Stream<String> lines = Files.lines(file, StandardCharsets.UTF_8)) {
             for (String line : (Iterable<String>) lines::iterator) {
                 String trimmed = line.trim();
                 if (trimmed.isEmpty()) {
