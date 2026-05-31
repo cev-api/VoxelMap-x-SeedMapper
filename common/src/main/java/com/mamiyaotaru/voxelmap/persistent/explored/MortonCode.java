@@ -1,33 +1,22 @@
 package com.mamiyaotaru.voxelmap.persistent.explored;
 
-/** morton z-order interleave for 5-bit local coordinates (0..31) */
 public final class MortonCode {
+    private static final int X_MASK = 0x155; // even bits 0,2,4,6,8
+    private static final int Z_MASK = 0x2AA; // odd bits 1,3,5,7,9
+
     private MortonCode() {
     }
 
     /** interleave x and z (each 0..31) into a 10 bit slot index (0..1023) */
     public static int encode(int x, int z) {
-        int code = 0;
-        for (int i = 0; i < 5; i++) {
-            code |= ((x >> i) & 1) << (2 * i);
-            code |= ((z >> i) & 1) << (2 * i + 1);
-        }
-        return code;
+        return Integer.expand(x, X_MASK) | Integer.expand(z, Z_MASK);
     }
 
     public static int decodeX(int code) {
-        int x = 0;
-        for (int i = 0; i < 5; i++) {
-            x |= ((code >> (2 * i)) & 1) << i;
-        }
-        return x;
+        return Integer.compress(code, X_MASK);
     }
 
     public static int decodeZ(int code) {
-        int z = 0;
-        for (int i = 0; i < 5; i++) {
-            z |= ((code >> (2 * i + 1)) & 1) << i;
-        }
-        return z;
+        return Integer.compress(code, Z_MASK);
     }
 }

@@ -1,5 +1,6 @@
 package com.mamiyaotaru.voxelmap;
 
+import com.mamiyaotaru.voxelmap.util.CellGrid;
 import com.mamiyaotaru.voxelmap.util.GameVariableAccessShim;
 import com.mamiyaotaru.voxelmap.persistent.ThreadManager;
 import net.minecraft.client.Minecraft;
@@ -25,24 +26,15 @@ import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.level.material.FluidState;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.lang.reflect.Field;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
-import java.util.BitSet;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
@@ -91,61 +83,31 @@ public class NewerNewChunksManager {
     private static final Path OLD_GENERATION_CHUNK_DATA = Path.of("OldGenerationChunkData.txt");
     private static final Set<Path> DATA_FILES = Set.of(NEW_CHUNK_DATA, OLD_CHUNK_DATA, BLOCK_EXPLOIT_CHUNK_DATA,
             BEING_UPDATED_CHUNK_DATA, OLD_GENERATION_CHUNK_DATA);
-    private static final int REGION_SHIFT = 5; // 32x32 chunk buckets for spatial indexing
-    private static final int MAX_CACHED_CHUNKS = 50000; // Allow full window to be cached seamlessly
-    private static final int CACHE_EVICTION_RADIUS = 4096; // Keep a large safety margin (256 chunk diameter)
-    private static final int EVICTION_CHECK_INTERVAL = 200; // Check every 200 ticks (10 seconds)
     // Restore original scan cadence; we only limit IO/loading radius, not scanning speed
     private static final int RESCAN_INTERVAL_TICKS = 40; // every 2s (vanilla behavior here)
-    // Windowed loading of persisted data around player to avoid loading entire history
-    private static final int WINDOW_LOAD_RADIUS_CHUNKS = 64; // ~1024 blocks, comfortably above minimap at max zoom
-    private static final int WINDOW_REFRESH_DISTANCE_CHUNKS = 32; // reload window after moving this far
-    private static final int WINDOW_REFRESH_INTERVAL_TICKS = 400; // at most every 20s
-    private static final int V2_FORMAT_VERSION = 2;
-    private static final int REGION_SIZE = 1 << REGION_SHIFT;
-    private static final int REGION_CHUNK_COUNT = REGION_SIZE * REGION_SIZE;
-    private static final int REGION_BYTES = REGION_CHUNK_COUNT / 8;
-    private static final int V2_MAGIC = 0x4E4E4332; // NNC2
-    private static final int MAX_SYNC_REGION_LOADS = 2048;
 
-    private final Set<ChunkPos> newChunks = ConcurrentHashMap.newKeySet();
-    private final Set<ChunkPos> oldChunks = ConcurrentHashMap.newKeySet();
-    private final Set<ChunkPos> tickExploitChunks = ConcurrentHashMap.newKeySet();
-    private final Set<ChunkPos> beingUpdatedOldChunks = ConcurrentHashMap.newKeySet();
-    private final Set<ChunkPos> oldGenerationChunks = ConcurrentHashMap.newKeySet();
+    private static final int NNC_V2_MAGIC = 0x4E4E4332; // "NNC2"
+    private static final long FLUSH_INTERVAL_MS = 4000L;
+
+    private record CategoryStore(com.mamiyaotaru.voxelmap.persistent.explored.ExploredDiskStore store,
+                                 com.mamiyaotaru.voxelmap.persistent.explored.ExploredAsyncLoader loader) {
+    }
+
     private final Set<ChunkPos> pendingChunkPackets = ConcurrentHashMap.newKeySet();
-    
-    // Region-indexed maps for fast range queries (REGION_SHIFT = 5 means 32x32 chunk regions)
-    private final Map<Long, Set<ChunkPos>> newChunksByRegion = new HashMap<>();
-    private final Map<Long, Set<ChunkPos>> oldChunksByRegion = new HashMap<>();
-    private final Map<Long, Set<ChunkPos>> tickExploitChunksByRegion = new HashMap<>();
-    private final Map<Long, Set<ChunkPos>> beingUpdatedChunksByRegion = new HashMap<>();
-    private final Map<Long, Set<ChunkPos>> oldGenerationChunksByRegion = new HashMap<>();
-    private final Map<OverlayType, Set<Long>> loadedV2Regions = new EnumMap<>(OverlayType.class);
-    private final Map<OverlayType, Set<Long>> dirtyV2Regions = new EnumMap<>(OverlayType.class);
-    
-    private final Object chunkSetLock = new Object();
+
+    private static final CellGrid EMPTY_CELL_GRID = new CellGrid(0, 0, 0, 0);
+
+    private final Object worldLock = new Object();
+    private volatile EnumMap<OverlayType, CategoryStore> stores;
+    private volatile java.util.Map<String, EnumMap<OverlayType, CategoryStore>> newOldPlayerLayers = java.util.Map.of();
+    private volatile int worldGen = 0;
+    private long lastFlushMs = 0L;
 
     private String loadedWorldKey = "";
-    private boolean v2StorageReady = false;
-    private boolean migrationQueued = false;
-    private boolean migrationRunning = false;
-    private volatile boolean legacyWritesEnabled = true;
     private long dataVersion = 0L;
     private long lastRescanGameTime = Long.MIN_VALUE;
-    private long lastEvictionTime = 0;
     private boolean lastKnownFeatureState = false;
-    private long lastDebugLogTick = Long.MIN_VALUE;
-    private long lastStorageDebugMs = 0L;
-    private int windowCenterChunkX = Integer.MIN_VALUE;
-    private int windowCenterChunkZ = Integer.MIN_VALUE;
-    private long lastWindowLoadTick = Long.MIN_VALUE;
-    private long lastStorageLoadTimeMs = 0L;
-    private int lastLoadedRegionFiles = 0;
-    private int lastDecodedChunks = 0;
-    private int lastSkippedMissingRegionFiles = 0;
-    private long lastMigrationTimeMs = 0L;
-    private boolean storageLoadIncomplete = false;
+    private volatile boolean storageLoadIncomplete = false;
 
     private record ChunkClassification(boolean isNewChunk, boolean isOldGeneration, boolean chunkIsBeingUpdated) {
     }
@@ -153,7 +115,8 @@ public class NewerNewChunksManager {
     public record NewOldChunksSnapshot(Set<ChunkPos> oldChunks, Set<ChunkPos> newChunks) {
     }
 
-    public record NewOldCellsSnapshot(Set<Long> oldCells, Set<Long> newCells, int oldChunks, int newChunks) {
+    public record NewOldCellsSnapshot(CellGrid oldCells, CellGrid newCells, int oldChunks, int newChunks) {
+        static final NewOldCellsSnapshot EMPTY = new NewOldCellsSnapshot(new CellGrid(0, 0, 0, 0), new CellGrid(0, 0, 0, 0), 0, 0);
     }
 
     private enum OverlayType {
@@ -173,20 +136,381 @@ public class NewerNewChunksManager {
     }
 
     public NewerNewChunksManager() {
-        for (OverlayType type : OverlayType.values()) {
-            loadedV2Regions.put(type, ConcurrentHashMap.newKeySet());
-            dirtyV2Regions.put(type, ConcurrentHashMap.newKeySet());
+    }
+
+    // -------------------------------------------------------------------------
+    // World tracking / store lifecycle
+    // -------------------------------------------------------------------------
+
+    private boolean ensureTrackingWorld() {
+        Level level = GameVariableAccessShim.getWorld();
+        if (level == null) {
+            flushAll();
+            return false;
+        }
+        String worldKey = getWorldKey();
+        if (stores == null || !worldKey.equals(loadedWorldKey)) {
+            loadWorld(worldKey);
+        }
+        return true;
+    }
+
+    private void loadWorld(String worldKey) {
+        synchronized (worldLock) {
+            if (stores != null && worldKey.equals(loadedWorldKey)) {
+                return;
+            }
+            flushAll();
+            loadedWorldKey = worldKey;
+            worldGen++;
+            dataVersion++;
+            stores = buildStores(worldKey);
+            newOldPlayerLayers = loadPlayerLayers(worldKey);
+            maybeMigrate(worldKey, worldGen);
         }
     }
 
-    public void onTick() {
+    private EnumMap<OverlayType, CategoryStore> buildStores(String worldKey) {
+        EnumMap<OverlayType, CategoryStore> map = new EnumMap<>(OverlayType.class);
+        for (OverlayType type : OverlayType.values()) {
+            var store = new com.mamiyaotaru.voxelmap.persistent.explored.ExploredDiskStore(v3DirFor(worldKey, type));
+            map.put(type, new CategoryStore(store,
+                    new com.mamiyaotaru.voxelmap.persistent.explored.ExploredAsyncLoader(store, ThreadManager.executorService)));
+        }
+        return map;
+    }
+
+    private EnumMap<OverlayType, CategoryStore> buildPlayerStores(String worldKey, String slug) {
+        EnumMap<OverlayType, CategoryStore> map = new EnumMap<>(OverlayType.class);
+        for (OverlayType type : OverlayType.values()) {
+            var store = new com.mamiyaotaru.voxelmap.persistent.explored.ExploredDiskStore(playerV3Dir(worldKey, slug, type));
+            map.put(type, new CategoryStore(store,
+                    new com.mamiyaotaru.voxelmap.persistent.explored.ExploredAsyncLoader(store, ThreadManager.executorService)));
+        }
+        return map;
+    }
+
+    private Path playerV3Dir(String worldKey, String slug, OverlayType type) {
+        return nncBaseDir(worldKey).resolve("players").resolve(slug).resolve("v3").resolve(type.directoryName);
+    }
+
+    private java.util.Map<String, EnumMap<OverlayType, CategoryStore>> loadPlayerLayers(String worldKey) {
+        java.util.Map<String, EnumMap<OverlayType, CategoryStore>> map = new java.util.LinkedHashMap<>();
+        Path dir = nncBaseDir(worldKey).resolve("players");
+        if (java.nio.file.Files.isDirectory(dir)) {
+            try (java.util.stream.Stream<Path> dirs = java.nio.file.Files.list(dir)) {
+                for (Path p : (Iterable<Path>) dirs.filter(java.nio.file.Files::isDirectory)::iterator) {
+                    map.put(p.getFileName().toString(), buildPlayerStores(worldKey, p.getFileName().toString()));
+                }
+            } catch (java.io.IOException ignored) {
+            }
+        }
+        return map;
+    }
+
+    public CellGrid getPlayerOldNewCellsInRange(String slug, int cx, int cz, int radius, int cellChunkSize) {
         ensureTrackingWorld();
+        EnumMap<OverlayType, CategoryStore> layer = newOldPlayerLayers.get(slug);
+        if (layer == null || cellChunkSize <= 0) {
+            return EMPTY_CELL_GRID;
+        }
+        int cell = Math.max(1, cellChunkSize);
+        int level = com.mamiyaotaru.voxelmap.persistent.explored.ExploredDiskStore.selectLevelForCellSize(cell);
+        int minCellX = Math.floorDiv(cx - radius, cell);
+        int maxCellX = Math.floorDiv(cx + radius, cell);
+        int minCellZ = Math.floorDiv(cz - radius, cell);
+        int maxCellZ = Math.floorDiv(cz + radius, cell);
+        int gw = maxCellX - minCellX + 1;
+        int gh = maxCellZ - minCellZ + 1;
+        if (gw <= 0 || gh <= 0 || (long) gw * gh > 16_000_000L) {
+            return EMPTY_CELL_GRID;
+        }
+        CellGrid grid = new CellGrid(minCellX, minCellZ, gw, gh);
+        for (OverlayType type : new OverlayType[]{OverlayType.OLD, OverlayType.NEW}) {
+            ensureLoaded(layer, type, level, cx, cz, radius);
+            layer.get(type).store().forEachExploredCellInRange(cx, cz, radius, cell, (qx, qz) -> grid.mark(qx, qz));
+        }
+        return grid;
+    }
+
+    public java.util.Set<String> playerLayerSlugs() {
+        ensureTrackingWorld();
+        return newOldPlayerLayers.keySet();
+    }
+
+    public int importPlayerNewOld(String slug, String dimension, java.util.Map<String, long[]> byCategory) {
+        ensureTrackingWorld();
+        String worldKey = serverName() + "_" + dimension;
+        boolean current = worldKey.equals(loadedWorldKey);
+        EnumMap<OverlayType, CategoryStore> layer = null;
+        if (current) {
+            layer = newOldPlayerLayers.get(slug);
+            if (layer == null) {
+                layer = buildPlayerStores(worldKey, slug);
+                var updated = new java.util.LinkedHashMap<>(newOldPlayerLayers);
+                updated.put(slug, layer);
+                newOldPlayerLayers = updated;
+            }
+        }
+        int total = 0;
+        for (OverlayType type : OverlayType.values()) {
+            long[] chunks = byCategory.get(type.directoryName);
+            if (chunks == null || chunks.length == 0) {
+                continue;
+            }
+            var store = layer != null ? layer.get(type).store()
+                    : new com.mamiyaotaru.voxelmap.persistent.explored.ExploredDiskStore(playerV3Dir(worldKey, slug, type));
+            for (long ch : chunks) {
+                store.setChunk((int) (ch >> 32), (int) ch);
+            }
+            store.flush();
+            total += chunks.length;
+        }
+        return total;
+    }
+
+    public boolean removePlayerLayer(String slug) {
+        if (newOldPlayerLayers.containsKey(slug)) {
+            var updated = new java.util.LinkedHashMap<>(newOldPlayerLayers);
+            updated.remove(slug);
+            newOldPlayerLayers = updated;
+        }
+        String server = serverName();
+        Path base = newOldRoot();
+        boolean any = false;
+        if (java.nio.file.Files.isDirectory(base)) {
+            try (java.util.stream.Stream<Path> dirs = java.nio.file.Files.list(base)) {
+                for (Path dir : (Iterable<Path>) dirs.filter(java.nio.file.Files::isDirectory)::iterator) {
+                    if (!dir.getFileName().toString().startsWith(server + "_")) {
+                        continue;
+                    }
+                    Path slugDir = dir.resolve("players").resolve(slug);
+                    if (java.nio.file.Files.exists(slugDir)) {
+                        deletePlayerDir(slugDir);
+                        any = true;
+                    }
+                }
+            } catch (java.io.IOException ignored) {
+            }
+        }
+        return any;
+    }
+
+    private static void deletePlayerDir(Path path) {
+        try (java.util.stream.Stream<Path> walk = java.nio.file.Files.walk(path)) {
+            walk.sorted(java.util.Comparator.reverseOrder()).forEach(p -> {
+                try {
+                    java.nio.file.Files.deleteIfExists(p);
+                } catch (java.io.IOException ignored) {
+                }
+            });
+        } catch (java.io.IOException ignored) {
+        }
+    }
+
+    private void maybeMigrate(String worldKey, int gen) {
+        boolean anyNeeded = false;
+        for (OverlayType type : OverlayType.values()) {
+            if (!com.mamiyaotaru.voxelmap.persistent.explored.ExploredV3Migrator.isComplete(v3DirFor(worldKey, type))) {
+                anyNeeded = true;
+                break;
+            }
+        }
+        if (!anyNeeded) {
+            return;
+        }
+        Thread thread = new Thread(() -> {
+            for (OverlayType type : OverlayType.values()) {
+                Path v3Dir = v3DirFor(worldKey, type);
+                if (com.mamiyaotaru.voxelmap.persistent.explored.ExploredV3Migrator.isComplete(v3Dir)) {
+                    continue;
+                }
+                com.mamiyaotaru.voxelmap.persistent.explored.ExploredV3Migrator.migrate(
+                        legacyTextPath(worldKey, type), v2OverlayDir(worldKey, type), v3Dir, NNC_V2_MAGIC);
+            }
+            synchronized (worldLock) {
+                if (gen == worldGen) {
+                    stores = buildStores(worldKey);
+                    storageLoadIncomplete = true;
+                }
+            }
+        }, "VoxelMap NewOld V3 Migration");
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private Path nncBaseDir(String worldKey) {
+        return newOldRoot().resolve(worldKey);
+    }
+
+    private Path newOldRoot() {
+        return Minecraft.getInstance().gameDirectory.toPath()
+                .resolve("voxelmap").resolve("chunk_overlays").resolve("newer_new_chunks");
+    }
+
+    private String serverName() {
+        Minecraft minecraft = Minecraft.getInstance();
+        ServerData serverData = minecraft.getCurrentServer();
+        return serverData != null && serverData.ip != null && !serverData.ip.isBlank()
+                ? serverData.ip.replace(':', '_')
+                : minecraft.hasSingleplayerServer() ? "singleplayer" : "unknown";
+    }
+
+    public java.util.Map<String, java.util.Map<String, long[]>> exportAllDimensionsNewOld() {
+        flushAll();
+        String server = serverName();
+        java.util.Map<String, java.util.Map<String, long[]>> out = new java.util.LinkedHashMap<>();
+        Path base = newOldRoot();
+        if (java.nio.file.Files.notExists(base)) {
+            return out;
+        }
+        try (java.util.stream.Stream<Path> dirs = java.nio.file.Files.list(base)) {
+            for (Path dir : (Iterable<Path>) dirs.filter(java.nio.file.Files::isDirectory)::iterator) {
+                String name = dir.getFileName().toString();
+                if (!name.startsWith(server + "_")) {
+                    continue;
+                }
+                String dimension = name.substring(server.length() + 1);
+                java.util.Map<String, long[]> byCategory = new java.util.LinkedHashMap<>();
+                for (OverlayType type : OverlayType.values()) {
+                    var store = new com.mamiyaotaru.voxelmap.persistent.explored.ExploredDiskStore(
+                            dir.resolve("v3").resolve(type.directoryName));
+                    java.util.List<Long> chunks = new java.util.ArrayList<>();
+                    store.forEachStoredChunk((x, z) -> chunks.add(((long) x << 32) ^ (z & 0xFFFFFFFFL)));
+                    long[] arr = new long[chunks.size()];
+                    for (int i = 0; i < arr.length; i++) {
+                        arr[i] = chunks.get(i);
+                    }
+                    byCategory.put(type.directoryName, arr);
+                }
+                out.put(dimension, byCategory);
+            }
+        } catch (java.io.IOException ignored) {
+        }
+        return out;
+    }
+
+    public int importDimensionNewOld(String dimension, java.util.Map<String, long[]> byCategory) {
+        String worldKey = serverName() + "_" + dimension;
+        var s = stores;
+        boolean current = worldKey.equals(loadedWorldKey) && s != null;
+        int total = 0;
+        for (OverlayType type : OverlayType.values()) {
+            long[] chunks = byCategory.get(type.directoryName);
+            if (chunks == null || chunks.length == 0) {
+                continue;
+            }
+            var store = current ? s.get(type).store()
+                    : new com.mamiyaotaru.voxelmap.persistent.explored.ExploredDiskStore(v3DirFor(worldKey, type));
+            for (long ch : chunks) {
+                store.setChunk((int) (ch >> 32), (int) ch);
+            }
+            store.flush();
+            total += chunks.length;
+        }
+        return total;
+    }
+
+    private Path v3DirFor(String worldKey, OverlayType type) {
+        return nncBaseDir(worldKey).resolve("v3").resolve(type.directoryName);
+    }
+
+    private Path v2OverlayDir(String worldKey, OverlayType type) {
+        return nncBaseDir(worldKey).resolve("v2").resolve(type.directoryName);
+    }
+
+    private Path legacyTextPath(String worldKey, OverlayType type) {
+        return nncBaseDir(worldKey).resolve(type.legacyFile.getFileName());
+    }
+
+    private void flushAll() {
+        var s = stores;
+        if (s != null) {
+            for (CategoryStore cs : s.values()) {
+                cs.store().flush();
+            }
+        }
+    }
+
+    public void flushStorage() {
+        flushAll();
+    }
+
+    public java.util.Map<String, long[]> exportNewOld() {
+        if (!ensureTrackingWorld()) {
+            return java.util.Map.of();
+        }
+        var s = stores;
+        if (s == null) {
+            return java.util.Map.of();
+        }
+        java.util.Map<String, long[]> out = new java.util.LinkedHashMap<>();
+        for (OverlayType type : OverlayType.values()) {
+            java.util.List<Long> chunks = new java.util.ArrayList<>();
+            s.get(type).store().forEachStoredChunk((x, z) -> chunks.add(((long) x << 32) ^ (z & 0xFFFFFFFFL)));
+            long[] arr = new long[chunks.size()];
+            for (int i = 0; i < arr.length; i++) {
+                arr[i] = chunks.get(i);
+            }
+            out.put(type.directoryName, arr);
+        }
+        return out;
+    }
+
+    public int importNewOld(java.util.Map<String, long[]> data) {
+        if (!ensureTrackingWorld()) {
+            return 0;
+        }
+        var s = stores;
+        if (s == null) {
+            return 0;
+        }
+        int total = 0;
+        for (OverlayType type : OverlayType.values()) {
+            long[] arr = data.get(type.directoryName);
+            if (arr == null) {
+                continue;
+            }
+            var store = s.get(type).store();
+            for (long ch : arr) {
+                store.setChunk((int) (ch >> 32), (int) ch);
+            }
+            store.flush();
+            total += arr.length;
+        }
+        return total;
+    }
+
+    public void reloadWindowNow() {
+    }
+
+    // -------------------------------------------------------------------------
+    // Tick
+    // -------------------------------------------------------------------------
+
+    public void onTick() {
+        if (!ensureTrackingWorld()) {
+            return;
+        }
         processPendingChunkPackets();
         rescanLoadedChunksAroundPlayer();
-        evictDistantChunksIfNeeded();
-        refreshWindowIfNeeded();
-        flushDirtyV2Regions(2);
+        long now = System.currentTimeMillis();
+        if (now - lastFlushMs >= FLUSH_INTERVAL_MS) {
+            lastFlushMs = now;
+            var s = stores;
+            if (s != null) {
+                for (CategoryStore cs : s.values()) {
+                    if (cs.store().hasDirty()) {
+                        cs.loader().requestFlush();
+                    }
+                }
+            }
+        }
     }
+
+    // -------------------------------------------------------------------------
+    // Classification
+    // -------------------------------------------------------------------------
 
     public void processChunk(LevelChunk chunk) {
         // Intentionally no-op.
@@ -208,9 +532,6 @@ public class NewerNewChunksManager {
         ChunkPos chunkPos = chunk.getPos();
         if (!allowReclassify && containsAny(chunkPos)) {
             return;
-        }
-        if (allowReclassify) {
-            removeFromAllSets(chunkPos);
         }
 
         ChunkClassification classification = classifyChunk(chunk);
@@ -299,109 +620,266 @@ public class NewerNewChunksManager {
             BlockPos neighborPos = pos.relative(dir);
             FluidState neighborFluid = level.getBlockState(neighborPos).getFluidState();
             if (!neighborFluid.isEmpty() && neighborFluid.isSource()) {
-                synchronized (chunkSetLock) {
-                    tickExploitChunks.remove(chunkPos);
-                }
                 markNew(chunkPos);
                 return;
             }
         }
     }
 
+    // -------------------------------------------------------------------------
+    // Write routing (append-only; categories are permanent in V3)
+    // -------------------------------------------------------------------------
+
+    private void markNew(ChunkPos c)           { setChunk(OverlayType.NEW, c); }
+    private void markOld(ChunkPos c)           { setChunk(OverlayType.OLD, c); }
+    private void markTickExploit(ChunkPos c)   { setChunk(OverlayType.BLOCK_EXPLOIT, c); }
+    private void markBeingUpdated(ChunkPos c)  { setChunk(OverlayType.BEING_UPDATED, c); }
+    private void markOldGeneration(ChunkPos c) { setChunk(OverlayType.OLD_GENERATION, c); }
+
+    private void setChunk(OverlayType type, ChunkPos c) {
+        var s = stores;
+        if (s != null) {
+            s.get(type).store().setChunk(c.x(), c.z());
+            markDataChanged();
+        }
+    }
+
+    private boolean containsAny(ChunkPos c) {
+        var s = stores;
+        if (s == null) {
+            return false;
+        }
+        for (CategoryStore cs : s.values()) {
+            if (cs.store().isChunkExplored(c.x(), c.z())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean containsFinalChunkType(ChunkPos c) {
+        var s = stores;
+        if (s == null) {
+            return false;
+        }
+        return s.get(OverlayType.NEW).store().isChunkExplored(c.x(), c.z())
+                || s.get(OverlayType.OLD).store().isChunkExplored(c.x(), c.z())
+                || s.get(OverlayType.BEING_UPDATED).store().isChunkExplored(c.x(), c.z())
+                || s.get(OverlayType.OLD_GENERATION).store().isChunkExplored(c.x(), c.z());
+    }
+
+    // -------------------------------------------------------------------------
+    // Queries
+    // -------------------------------------------------------------------------
+
     public Set<ChunkPos> getNewChunksInRange(int centerChunkX, int centerChunkZ, int radius) {
         ensureTrackingWorld();
-        return getChunksInRange(OverlayType.NEW, centerChunkX, centerChunkZ, radius, Integer.MAX_VALUE);
+        return queryChunksInRange(OverlayType.NEW, centerChunkX, centerChunkZ, radius, Integer.MAX_VALUE, null);
     }
 
     public Set<ChunkPos> getNewChunksInRange(int centerChunkX, int centerChunkZ, int radius, int maxResults) {
         ensureTrackingWorld();
-        return getChunksInRange(OverlayType.NEW, centerChunkX, centerChunkZ, radius, maxResults);
+        return queryChunksInRange(OverlayType.NEW, centerChunkX, centerChunkZ, radius, maxResults, null);
     }
 
     public Set<ChunkPos> getOldChunksInRange(int centerChunkX, int centerChunkZ, int radius) {
         ensureTrackingWorld();
-        return getChunksInRange(OverlayType.OLD, centerChunkX, centerChunkZ, radius, Integer.MAX_VALUE);
+        return queryChunksInRange(OverlayType.OLD, centerChunkX, centerChunkZ, radius, Integer.MAX_VALUE, null);
     }
 
     public Set<ChunkPos> getOldChunksInRange(int centerChunkX, int centerChunkZ, int radius, int maxResults) {
         ensureTrackingWorld();
-        return getChunksInRange(OverlayType.OLD, centerChunkX, centerChunkZ, radius, maxResults);
+        return queryChunksInRange(OverlayType.OLD, centerChunkX, centerChunkZ, radius, maxResults, null);
     }
 
     public Set<ChunkPos> getBlockUpdateChunksInRange(int centerChunkX, int centerChunkZ, int radius) {
         ensureTrackingWorld();
-        Set<ChunkPos> chunks = getChunksInRange(OverlayType.BLOCK_EXPLOIT, centerChunkX, centerChunkZ, radius, Integer.MAX_VALUE);
-        // Important: avoid removeAll against whole-world sets (O(n) over all tracked chunks).
-        // Instead, only filter the small, visible set with O(1) contains checks.
-        chunks.removeIf(chunk ->
-                newChunks.contains(chunk)
-                        || oldChunks.contains(chunk)
-                        || beingUpdatedOldChunks.contains(chunk)
-                        || oldGenerationChunks.contains(chunk));
-        return chunks;
+        var s = stores;
+        if (s == null) {
+            return new HashSet<>();
+        }
+        ensureLoaded(s, OverlayType.BLOCK_EXPLOIT, 0, centerChunkX, centerChunkZ, radius);
+        ensureLoaded(s, OverlayType.NEW, 0, centerChunkX, centerChunkZ, radius);
+        ensureLoaded(s, OverlayType.OLD, 0, centerChunkX, centerChunkZ, radius);
+        ensureLoaded(s, OverlayType.BEING_UPDATED, 0, centerChunkX, centerChunkZ, radius);
+        ensureLoaded(s, OverlayType.OLD_GENERATION, 0, centerChunkX, centerChunkZ, radius);
+        HashSet<ChunkPos> result = new HashSet<>();
+        var buStore = s.get(OverlayType.BLOCK_EXPLOIT).store();
+        var newStore = s.get(OverlayType.NEW).store();
+        var oldStore = s.get(OverlayType.OLD).store();
+        var beingUpdStore = s.get(OverlayType.BEING_UPDATED).store();
+        var ogStore = s.get(OverlayType.OLD_GENERATION).store();
+        buStore.forEachExploredChunkInRange(centerChunkX, centerChunkZ, radius, (x, z) -> {
+            if (!newStore.isChunkExplored(x, z)
+                    && !oldStore.isChunkExplored(x, z)
+                    && !beingUpdStore.isChunkExplored(x, z)
+                    && !ogStore.isChunkExplored(x, z)) {
+                result.add(new ChunkPos(x, z));
+            }
+        });
+        return result;
     }
 
     public Set<ChunkPos> getBeingUpdatedChunksInRange(int centerChunkX, int centerChunkZ, int radius) {
         ensureTrackingWorld();
-        return getChunksInRange(OverlayType.BEING_UPDATED, centerChunkX, centerChunkZ, radius, Integer.MAX_VALUE);
+        return queryChunksInRange(OverlayType.BEING_UPDATED, centerChunkX, centerChunkZ, radius, Integer.MAX_VALUE, null);
     }
 
     public Set<ChunkPos> getOldGenerationChunksInRange(int centerChunkX, int centerChunkZ, int radius) {
         ensureTrackingWorld();
-        return getChunksInRange(OverlayType.OLD_GENERATION, centerChunkX, centerChunkZ, radius, Integer.MAX_VALUE);
+        return queryChunksInRange(OverlayType.OLD_GENERATION, centerChunkX, centerChunkZ, radius, Integer.MAX_VALUE, null);
+    }
+
+    private Set<ChunkPos> queryChunksInRange(OverlayType type, int cx, int cz, int radius, int maxResults,
+            java.util.function.BiPredicate<Integer, Integer> extraFilter) {
+        var s = stores;
+        if (s == null || maxResults <= 0) {
+            return new HashSet<>();
+        }
+        ensureLoaded(s, type, 0, cx, cz, radius);
+        HashSet<ChunkPos> result = new HashSet<>();
+        int cap = maxResults <= 0 ? Integer.MAX_VALUE : maxResults;
+        s.get(type).store().forEachExploredChunkInRange(cx, cz, radius, (x, z) -> {
+            if (result.size() < cap) {
+                if (extraFilter == null || extraFilter.test(x, z)) {
+                    result.add(new ChunkPos(x, z));
+                }
+            }
+        });
+        return result;
     }
 
     public NewOldChunksSnapshot getNewOldChunksInRange(int centerChunkX, int centerChunkZ, int radius, int maxResults) {
-        ensureTrackingWorld();
-        int minChunkX = centerChunkX - radius;
-        int maxChunkX = centerChunkX + radius;
-        int minChunkZ = centerChunkZ - radius;
-        int maxChunkZ = centerChunkZ + radius;
+        if (!ensureTrackingWorld()) {
+            return new NewOldChunksSnapshot(Set.of(), Set.of());
+        }
+        var s = stores;
+        if (s == null) {
+            return new NewOldChunksSnapshot(Set.of(), Set.of());
+        }
+        ensureLoaded(s, OverlayType.NEW, 0, centerChunkX, centerChunkZ, radius);
+        ensureLoaded(s, OverlayType.OLD, 0, centerChunkX, centerChunkZ, radius);
+        ensureLoaded(s, OverlayType.BEING_UPDATED, 0, centerChunkX, centerChunkZ, radius);
+        ensureLoaded(s, OverlayType.OLD_GENERATION, 0, centerChunkX, centerChunkZ, radius);
 
-        loadV2RegionsForBounds(OverlayType.NEW, minChunkX, maxChunkX, minChunkZ, maxChunkZ, MAX_SYNC_REGION_LOADS);
-        loadV2RegionsForBounds(OverlayType.OLD, minChunkX, maxChunkX, minChunkZ, maxChunkZ, MAX_SYNC_REGION_LOADS);
-        loadV2RegionsForBounds(OverlayType.BEING_UPDATED, minChunkX, maxChunkX, minChunkZ, maxChunkZ, MAX_SYNC_REGION_LOADS);
-        loadV2RegionsForBounds(OverlayType.OLD_GENERATION, minChunkX, maxChunkX, minChunkZ, maxChunkZ, MAX_SYNC_REGION_LOADS);
-        reconcileLoadedData();
+        var newStore = s.get(OverlayType.NEW).store();
+        var oldStore = s.get(OverlayType.OLD).store();
+        var buStore = s.get(OverlayType.BEING_UPDATED).store();
+        var ogStore = s.get(OverlayType.OLD_GENERATION).store();
 
         int budget = maxResults <= 0 ? Integer.MAX_VALUE : maxResults;
-        Set<ChunkPos> newResult = collectChunksInBounds(newChunksByRegion, minChunkX, maxChunkX, minChunkZ, maxChunkZ, budget, null);
+
+        HashSet<ChunkPos> newResult = new HashSet<>();
+        newStore.forEachExploredChunkInRange(centerChunkX, centerChunkZ, radius, (x, z) -> {
+            if (newResult.size() < budget) {
+                newResult.add(new ChunkPos(x, z));
+            }
+        });
+
         int remainingBudget = budget == Integer.MAX_VALUE ? Integer.MAX_VALUE : Math.max(0, budget - newResult.size());
-        Set<ChunkPos> oldResult = collectChunksInBounds(oldChunksByRegion, minChunkX, maxChunkX, minChunkZ, maxChunkZ, remainingBudget, chunk ->
-                !newChunks.contains(chunk)
-                        && !beingUpdatedOldChunks.contains(chunk)
-                        && !oldGenerationChunks.contains(chunk));
+        HashSet<ChunkPos> oldResult = new HashSet<>();
+        oldStore.forEachExploredChunkInRange(centerChunkX, centerChunkZ, radius, (x, z) -> {
+            if (oldResult.size() < remainingBudget
+                    && !newStore.isChunkExplored(x, z)
+                    && !buStore.isChunkExplored(x, z)
+                    && !ogStore.isChunkExplored(x, z)) {
+                oldResult.add(new ChunkPos(x, z));
+            }
+        });
+
         return new NewOldChunksSnapshot(oldResult, newResult);
     }
 
-    public NewOldCellsSnapshot getNewOldCellsInRange(int centerChunkX, int centerChunkZ, int radius, int cellChunkSize) {
-        ensureTrackingWorld();
-        int minChunkX = centerChunkX - radius;
-        int maxChunkX = centerChunkX + radius;
-        int minChunkZ = centerChunkZ - radius;
-        int maxChunkZ = centerChunkZ + radius;
+    public NewOldCellsSnapshot getNewOldCellsInRange(int cx, int cz, int radius, int cellChunkSize) {
+        if (!ensureTrackingWorld()) {
+            return NewOldCellsSnapshot.EMPTY;
+        }
+        var s = stores;
+        if (s == null) {
+            return NewOldCellsSnapshot.EMPTY;
+        }
+        int cell = Math.max(1, cellChunkSize);
+        int level = com.mamiyaotaru.voxelmap.persistent.explored.ExploredDiskStore.selectLevelForCellSize(cell);
+        ensureLoaded(s, OverlayType.NEW, level, cx, cz, radius);
+        ensureLoaded(s, OverlayType.OLD, level, cx, cz, radius);
+        ensureLoaded(s, OverlayType.BEING_UPDATED, level, cx, cz, radius);
+        ensureLoaded(s, OverlayType.OLD_GENERATION, level, cx, cz, radius);
 
-        loadV2RegionsForBounds(OverlayType.NEW, minChunkX, maxChunkX, minChunkZ, maxChunkZ, MAX_SYNC_REGION_LOADS);
-        loadV2RegionsForBounds(OverlayType.OLD, minChunkX, maxChunkX, minChunkZ, maxChunkZ, MAX_SYNC_REGION_LOADS);
-        loadV2RegionsForBounds(OverlayType.BEING_UPDATED, minChunkX, maxChunkX, minChunkZ, maxChunkZ, MAX_SYNC_REGION_LOADS);
-        loadV2RegionsForBounds(OverlayType.OLD_GENERATION, minChunkX, maxChunkX, minChunkZ, maxChunkZ, MAX_SYNC_REGION_LOADS);
-        reconcileLoadedData();
+        // Mark cells into flat grids (no HashSet<Long> -> no boxing / no x^z-collision treeification)
+        int minCellX = Math.floorDiv(cx - radius, cell);
+        int maxCellX = Math.floorDiv(cx + radius, cell);
+        int minCellZ = Math.floorDiv(cz - radius, cell);
+        int maxCellZ = Math.floorDiv(cz + radius, cell);
+        int gw = maxCellX - minCellX + 1;
+        int gh = maxCellZ - minCellZ + 1;
+        if (gw <= 0 || gh <= 0 || (long) gw * gh > 16_000_000L) {
+            return NewOldCellsSnapshot.EMPTY;
+        }
 
-        int safeCellChunkSize = Math.max(1, cellChunkSize);
-        HashSet<Long> newCells = new HashSet<>();
-        HashSet<Long> oldCells = new HashSet<>();
-        int[] newCount = new int[1];
-        int[] oldCount = new int[1];
+        CellGrid newGrid = new CellGrid(minCellX, minCellZ, gw, gh);
+        CellGrid oldGrid = new CellGrid(minCellX, minCellZ, gw, gh);
+        CellGrid buOg = new CellGrid(minCellX, minCellZ, gw, gh); // beingUpdated | oldGeneration: always hide old
 
-        collectCellsInBounds(newChunksByRegion, minChunkX, maxChunkX, minChunkZ, maxChunkZ, safeCellChunkSize, newCells, newCount, null);
-        collectCellsInBounds(oldChunksByRegion, minChunkX, maxChunkX, minChunkZ, maxChunkZ, safeCellChunkSize, oldCells, oldCount, chunk ->
-                !newChunks.contains(chunk)
-                        && !beingUpdatedOldChunks.contains(chunk)
-                        && !oldGenerationChunks.contains(chunk));
-        oldCells.removeAll(newCells);
+        s.get(OverlayType.NEW).store().forEachExploredCellInRange(cx, cz, radius, cell, (qx, qz) -> newGrid.mark(qx, qz));
+        s.get(OverlayType.OLD).store().forEachExploredCellInRange(cx, cz, radius, cell, (qx, qz) -> oldGrid.mark(qx, qz));
+        s.get(OverlayType.BEING_UPDATED).store().forEachExploredCellInRange(cx, cz, radius, cell, (qx, qz) -> buOg.mark(qx, qz));
+        s.get(OverlayType.OLD_GENERATION).store().forEachExploredCellInRange(cx, cz, radius, cell, (qx, qz) -> buOg.mark(qx, qz));
 
-        return new NewOldCellsSnapshot(oldCells, newCells, oldCount[0], newCount[0]);
+        boolean oldPriority = cell > 1;
+        boolean[] oldArr = oldGrid.cells;
+        boolean[] newArr = newGrid.cells;
+        boolean[] buOgArr = buOg.cells;
+
+        for (int i = 0; i < oldArr.length; i++) {
+            if (oldArr[i] && (buOgArr[i] || (!oldPriority && newArr[i]))) {
+                oldArr[i] = false;
+            }
+        }
+        int oldN = 0;
+        int newN = 0;
+        for (int i = 0; i < newArr.length; i++) {
+            if (oldPriority && newArr[i] && oldArr[i]) {
+                newArr[i] = false; // OLD wins this cell so the trail shows through
+            }
+            if (oldArr[i]) {
+                oldN++;
+            }
+            if (newArr[i]) {
+                newN++;
+            }
+        }
+        return new NewOldCellsSnapshot(oldGrid, newGrid, oldN, newN);
     }
+
+    private static long cellKey(int x, int z) {
+        return ((long) x << 32) ^ (z & 0xFFFFFFFFL);
+    }
+
+    private void ensureLoaded(EnumMap<OverlayType, CategoryStore> s, OverlayType type, int level, int cx, int cz, int radius) {
+        if (s == null) {
+            return;
+        }
+        CategoryStore cs = s.get(type);
+        int containerShift = 5 * (level + 1) + 5;
+        int minCX = (cx - radius) >> containerShift, maxCX = (cx + radius) >> containerShift;
+        int minCZ = (cz - radius) >> containerShift, maxCZ = (cz + radius) >> containerShift;
+        boolean missing = false;
+        for (int ccx = minCX; ccx <= maxCX; ccx++) {
+            for (int ccz = minCZ; ccz <= maxCZ; ccz++) {
+                if (!cs.store().isContainerLoaded(level, ccx, ccz)) {
+                    missing = true;
+                    cs.loader().requestLoad(level, ccx, ccz);
+                }
+            }
+        }
+        if (missing) {
+            storageLoadIncomplete = true;
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Data management
+    // -------------------------------------------------------------------------
 
     public long getDataVersion() {
         ensureTrackingWorld();
@@ -413,24 +891,25 @@ public class NewerNewChunksManager {
         return loadedWorldKey;
     }
 
+    // Debug getters
     public long getLastStorageLoadTimeMs() {
-        return lastStorageLoadTimeMs;
+        return 0L;
     }
 
     public int getLastLoadedRegionFiles() {
-        return lastLoadedRegionFiles;
+        return 0;
     }
 
     public int getLastDecodedChunks() {
-        return lastDecodedChunks;
+        return 0;
     }
 
     public int getLastSkippedMissingRegionFiles() {
-        return lastSkippedMissingRegionFiles;
+        return 0;
     }
 
     public long getLastMigrationTimeMs() {
-        return lastMigrationTimeMs;
+        return 0L;
     }
 
     public boolean consumeStorageLoadIncomplete() {
@@ -439,280 +918,96 @@ public class NewerNewChunksManager {
         return incomplete;
     }
 
-    private Set<ChunkPos> getChunksInRange(OverlayType type, int centerChunkX, int centerChunkZ, int radius, int maxResults) {
-        // Use region-based lookup for O(1) query performance
-        Set<ChunkPos> result = new HashSet<>();
-        if (maxResults <= 0) {
-            return result;
-        }
-        int minChunkX = centerChunkX - radius;
-        int maxChunkX = centerChunkX + radius;
-        int minChunkZ = centerChunkZ - radius;
-        int maxChunkZ = centerChunkZ + radius;
-        int maxRegionLoads = maxResults == Integer.MAX_VALUE
-                ? MAX_SYNC_REGION_LOADS
-                : Math.max(64, Math.min(MAX_SYNC_REGION_LOADS, (maxResults / REGION_CHUNK_COUNT) + 16));
-        loadV2RegionsForBounds(type, minChunkX, maxChunkX, minChunkZ, maxChunkZ, maxRegionLoads);
-
-        Map<Long, Set<ChunkPos>> regionMap = getRegionMapForType(type);
-        if (regionMap == null || regionMap.isEmpty()) {
-            return result;
-        }
-
-        int minRegionX = minChunkX >> REGION_SHIFT;
-        int maxRegionX = maxChunkX >> REGION_SHIFT;
-        int minRegionZ = minChunkZ >> REGION_SHIFT;
-        int maxRegionZ = maxChunkZ >> REGION_SHIFT;
-
-        synchronized (chunkSetLock) {
-            for (int regionX = minRegionX; regionX <= maxRegionX; regionX++) {
-                for (int regionZ = minRegionZ; regionZ <= maxRegionZ; regionZ++) {
-                    Set<ChunkPos> bucket = regionMap.get(regionKey(regionX, regionZ));
-                    if (bucket == null || bucket.isEmpty()) {
-                        continue;
-                    }
-                    for (ChunkPos chunk : bucket) {
-                        if (chunk.x() >= minChunkX && chunk.x() <= maxChunkX
-                                && chunk.z() >= minChunkZ && chunk.z() <= maxChunkZ) {
-                            result.add(chunk);
-                            if (result.size() >= maxResults) {
-                                return result;
-                            }
-                        }
-                    }
+    public void clearCurrentWorldData() {
+        synchronized (worldLock) {
+            worldGen++;
+            flushAll();
+            if (!loadedWorldKey.isEmpty()) {
+                try {
+                    deleteDirectoryIfExists(nncBaseDir(loadedWorldKey).resolve("v3"));
+                } catch (IOException ignored) {
                 }
             }
+            stores = buildStores(loadedWorldKey);
+            storageLoadIncomplete = false;
         }
-        return result;
+        markDataChanged();
     }
 
-    private Set<ChunkPos> collectChunksInBounds(Map<Long, Set<ChunkPos>> regionMap, int minChunkX, int maxChunkX, int minChunkZ, int maxChunkZ,
-            int maxResults, java.util.function.Predicate<ChunkPos> filter) {
-        Set<ChunkPos> result = new HashSet<>();
-        if (maxResults <= 0 || regionMap == null || regionMap.isEmpty()) {
-            return result;
-        }
-
-        int minRegionX = minChunkX >> REGION_SHIFT;
-        int maxRegionX = maxChunkX >> REGION_SHIFT;
-        int minRegionZ = minChunkZ >> REGION_SHIFT;
-        int maxRegionZ = maxChunkZ >> REGION_SHIFT;
-
-        synchronized (chunkSetLock) {
-            for (int regionX = minRegionX; regionX <= maxRegionX; regionX++) {
-                for (int regionZ = minRegionZ; regionZ <= maxRegionZ; regionZ++) {
-                    Set<ChunkPos> bucket = regionMap.get(regionKey(regionX, regionZ));
-                    if (bucket == null || bucket.isEmpty()) {
-                        continue;
-                    }
-                    for (ChunkPos chunk : bucket) {
-                        if (chunk.x() < minChunkX || chunk.x() > maxChunkX || chunk.z() < minChunkZ || chunk.z() > maxChunkZ) {
-                            continue;
-                        }
-                        if (filter != null && !filter.test(chunk)) {
-                            continue;
-                        }
-                        result.add(chunk);
-                        if (result.size() >= maxResults) {
-                            return result;
-                        }
-                    }
-                }
-            }
-        }
-        return result;
+    private void markDataChanged() {
+        dataVersion++;
     }
 
-    private void collectCellsInBounds(Map<Long, Set<ChunkPos>> regionMap, int minChunkX, int maxChunkX, int minChunkZ, int maxChunkZ,
-            int cellChunkSize, Set<Long> result, int[] visibleChunks, java.util.function.Predicate<ChunkPos> filter) {
-        if (regionMap == null || regionMap.isEmpty()) {
+    // -------------------------------------------------------------------------
+    // Chunk processing helpers
+    // -------------------------------------------------------------------------
+
+    private void processPendingChunkPackets() {
+        // Skip if feature is disabled to avoid unnecessary processing
+        RadarSettingsManager radarSettings = VoxelConstants.getVoxelMapInstance().getRadarOptions();
+        if (radarSettings == null || !radarSettings.showNewerNewChunks) {
             return;
         }
 
-        int minRegionX = minChunkX >> REGION_SHIFT;
-        int maxRegionX = maxChunkX >> REGION_SHIFT;
-        int minRegionZ = minChunkZ >> REGION_SHIFT;
-        int maxRegionZ = maxChunkZ >> REGION_SHIFT;
+        Level level = GameVariableAccessShim.getWorld();
+        if (level == null || pendingChunkPackets.isEmpty()) {
+            return;
+        }
+        for (ChunkPos chunkPos : new ArrayList<>(pendingChunkPackets)) {
+            ChunkAccess chunkAccess = level.getChunkSource().getChunk(chunkPos.x(), chunkPos.z(), ChunkStatus.FULL, false);
+            if (!(chunkAccess instanceof LevelChunk chunk)) {
+                continue;
+            }
+            if (chunk == null || chunk.isEmpty()) {
+                continue;
+            }
 
-        synchronized (chunkSetLock) {
-            for (int regionX = minRegionX; regionX <= maxRegionX; regionX++) {
-                for (int regionZ = minRegionZ; regionZ <= maxRegionZ; regionZ++) {
-                    Set<ChunkPos> bucket = regionMap.get(regionKey(regionX, regionZ));
-                    if (bucket == null || bucket.isEmpty()) {
-                        continue;
-                    }
-                    for (ChunkPos chunk : bucket) {
-                        int chunkX = chunk.x();
-                        int chunkZ = chunk.z();
-                        if (chunkX < minChunkX || chunkX > maxChunkX || chunkZ < minChunkZ || chunkZ > maxChunkZ) {
-                            continue;
-                        }
-                        if (filter != null && !filter.test(chunk)) {
-                            continue;
-                        }
-                        visibleChunks[0]++;
-                        result.add(cellKey(Math.floorDiv(chunkX, cellChunkSize), Math.floorDiv(chunkZ, cellChunkSize)));
-                    }
+            classifyChunkInternal(chunk, false);
+            pendingChunkPackets.remove(chunkPos);
+        }
+    }
+
+    private void rescanLoadedChunksAroundPlayer() {
+        // Skip if feature is disabled to avoid expensive chunk classification
+        RadarSettingsManager radarSettings = VoxelConstants.getVoxelMapInstance().getRadarOptions();
+        if (radarSettings == null || !radarSettings.showNewerNewChunks) {
+            return;
+        }
+
+        Level level = GameVariableAccessShim.getWorld();
+        if (level == null || Minecraft.getInstance().player == null) {
+            return;
+        }
+
+        long tick = level.getGameTime();
+        if (tick == lastRescanGameTime || tick % RESCAN_INTERVAL_TICKS != 0L) {
+            return;
+        }
+        lastRescanGameTime = tick;
+
+        int px = Minecraft.getInstance().player.chunkPosition().x();
+        int pz = Minecraft.getInstance().player.chunkPosition().z();
+        int radius = Math.max(2, Minecraft.getInstance().options.getEffectiveRenderDistance()) + 1;
+
+        for (int x = px - radius; x <= px + radius; x++) {
+            for (int z = pz - radius; z <= pz + radius; z++) {
+                if (!level.hasChunk(x, z)) {
+                    continue;
                 }
+
+                ChunkAccess chunkAccess = level.getChunkSource().getChunk(x, z, ChunkStatus.FULL, false);
+                if (!(chunkAccess instanceof LevelChunk chunk) || chunk.isEmpty()) {
+                    continue;
+                }
+
+                classifyChunkInternal(chunk, false);
             }
         }
     }
 
-    private void markNew(ChunkPos chunkPos) {
-        boolean added;
-        synchronized (chunkSetLock) {
-            added = newChunks.add(chunkPos);
-            if (added) {
-                removeFromAllSetsExcept(chunkPos, ChunkSet.NEW);
-                indexChunk(chunkPos, newChunksByRegion);
-            }
-        }
-        if (added) {
-            markV2Dirty(OverlayType.NEW, chunkPos);
-            markDataChanged();
-            if (legacyWritesEnabled) {
-                appendChunk(getDataPath(NEW_CHUNK_DATA), chunkPos);
-            }
-        }
-    }
-
-    private void markOld(ChunkPos chunkPos) {
-        boolean added;
-        synchronized (chunkSetLock) {
-            if (newChunks.contains(chunkPos) || beingUpdatedOldChunks.contains(chunkPos) || oldGenerationChunks.contains(chunkPos)) {
-                return;
-            }
-            added = oldChunks.add(chunkPos);
-            if (added) {
-                removeFromAllSetsExcept(chunkPos, ChunkSet.OLD);
-                indexChunk(chunkPos, oldChunksByRegion);
-            }
-        }
-        if (added) {
-            markV2Dirty(OverlayType.OLD, chunkPos);
-            markDataChanged();
-            if (legacyWritesEnabled) {
-                appendChunk(getDataPath(OLD_CHUNK_DATA), chunkPos);
-            }
-        }
-    }
-
-    private void markTickExploit(ChunkPos chunkPos) {
-        boolean added;
-        synchronized (chunkSetLock) {
-            if (newChunks.contains(chunkPos) || oldChunks.contains(chunkPos) || beingUpdatedOldChunks.contains(chunkPos)
-                    || oldGenerationChunks.contains(chunkPos)) {
-                return;
-            }
-            added = tickExploitChunks.add(chunkPos);
-            if (added) {
-                indexChunk(chunkPos, tickExploitChunksByRegion);
-            }
-        }
-        if (added) {
-            markV2Dirty(OverlayType.BLOCK_EXPLOIT, chunkPos);
-            markDataChanged();
-            if (legacyWritesEnabled) {
-                appendChunk(getDataPath(BLOCK_EXPLOIT_CHUNK_DATA), chunkPos);
-            }
-        }
-    }
-
-    private void markBeingUpdated(ChunkPos chunkPos) {
-        boolean added;
-        synchronized (chunkSetLock) {
-            added = beingUpdatedOldChunks.add(chunkPos);
-            if (added) {
-                removeFromAllSetsExcept(chunkPos, ChunkSet.BEING_UPDATED);
-                indexChunk(chunkPos, beingUpdatedChunksByRegion);
-            }
-        }
-        if (added) {
-            markV2Dirty(OverlayType.BEING_UPDATED, chunkPos);
-            markDataChanged();
-            if (legacyWritesEnabled) {
-                appendChunk(getDataPath(BEING_UPDATED_CHUNK_DATA), chunkPos);
-            }
-        }
-    }
-
-    private void markOldGeneration(ChunkPos chunkPos) {
-        boolean added;
-        synchronized (chunkSetLock) {
-            added = oldGenerationChunks.add(chunkPos);
-            if (added) {
-                removeFromAllSetsExcept(chunkPos, ChunkSet.OLD_GENERATION);
-                indexChunk(chunkPos, oldGenerationChunksByRegion);
-            }
-        }
-        if (added) {
-            markV2Dirty(OverlayType.OLD_GENERATION, chunkPos);
-            markDataChanged();
-            if (legacyWritesEnabled) {
-                appendChunk(getDataPath(OLD_GENERATION_CHUNK_DATA), chunkPos);
-            }
-        }
-    }
-
-    private enum ChunkSet {
-        NEW,
-        OLD,
-        TICK_EXPLOIT,
-        BEING_UPDATED,
-        OLD_GENERATION
-    }
-
-    private void removeFromAllSets(ChunkPos chunkPos) {
-        boolean changed = false;
-        synchronized (chunkSetLock) {
-            changed |= removeChunkFromType(chunkPos, OverlayType.NEW);
-            changed |= removeChunkFromType(chunkPos, OverlayType.OLD);
-            changed |= removeChunkFromType(chunkPos, OverlayType.BLOCK_EXPLOIT);
-            changed |= removeChunkFromType(chunkPos, OverlayType.BEING_UPDATED);
-            changed |= removeChunkFromType(chunkPos, OverlayType.OLD_GENERATION);
-        }
-        if (changed) {
-            markDataChanged();
-        }
-    }
-
-    private void removeFromAllSetsExcept(ChunkPos chunkPos, ChunkSet keep) {
-        boolean changed = false;
-        synchronized (chunkSetLock) {
-            if (keep != ChunkSet.NEW) {
-                changed |= removeChunkFromType(chunkPos, OverlayType.NEW);
-            }
-            if (keep != ChunkSet.OLD) {
-                changed |= removeChunkFromType(chunkPos, OverlayType.OLD);
-            }
-            if (keep != ChunkSet.TICK_EXPLOIT) {
-                changed |= removeChunkFromType(chunkPos, OverlayType.BLOCK_EXPLOIT);
-            }
-            if (keep != ChunkSet.BEING_UPDATED) {
-                changed |= removeChunkFromType(chunkPos, OverlayType.BEING_UPDATED);
-            }
-            if (keep != ChunkSet.OLD_GENERATION) {
-                changed |= removeChunkFromType(chunkPos, OverlayType.OLD_GENERATION);
-            }
-        }
-        if (changed) {
-            markDataChanged();
-        }
-    }
-
-    private boolean containsAny(ChunkPos chunkPos) {
-        synchronized (chunkSetLock) {
-            return newChunks.contains(chunkPos) || oldChunks.contains(chunkPos) || tickExploitChunks.contains(chunkPos)
-                    || beingUpdatedOldChunks.contains(chunkPos) || oldGenerationChunks.contains(chunkPos);
-        }
-    }
-
-    private boolean containsFinalChunkType(ChunkPos chunkPos) {
-        synchronized (chunkSetLock) {
-            return newChunks.contains(chunkPos) || oldChunks.contains(chunkPos) || beingUpdatedOldChunks.contains(chunkPos)
-                    || oldGenerationChunks.contains(chunkPos);
-        }
-    }
+    // -------------------------------------------------------------------------
+    // Classification logic
+    // -------------------------------------------------------------------------
 
     private ChunkClassification classifyChunk(LevelChunk chunk) {
         boolean isNewChunk = false;
@@ -1049,812 +1344,9 @@ public class NewerNewChunksManager {
         return level != null && "minecraft:the_end".equals(level.dimension().identifier().toString());
     }
 
-    private void ensureTrackingWorld() {
-        Level level = GameVariableAccessShim.getWorld();
-        if (level == null) {
-            flushDirtyV2Regions(Integer.MAX_VALUE);
-            clearChunkData();
-            loadedWorldKey = "";
-            lastRescanGameTime = Long.MIN_VALUE;
-            lastKnownFeatureState = false;
-            return;
-        }
-
-        // Check if the new chunks feature is enabled
-        RadarSettingsManager radarSettings = VoxelConstants.getVoxelMapInstance().getRadarOptions();
-        boolean featureEnabled = radarSettings != null && radarSettings.showNewerNewChunks;
-
-        String worldKey = getWorldKey();
-        
-        // Handle world change
-        if (!worldKey.equals(loadedWorldKey)) {
-            flushDirtyV2Regions(Integer.MAX_VALUE);
-            if (featureEnabled) {
-                loadWorld(worldKey);
-            } else {
-                clearChunkData();
-                loadedWorldKey = worldKey;
-            }
-        }
-        
-        // Handle feature toggled on/off
-        if (featureEnabled != lastKnownFeatureState) {
-            if (featureEnabled) {
-                // Feature was just enabled - load chunks for current world
-                loadWorld(worldKey);
-            } else {
-                // Feature was just disabled - clear chunks to free memory
-                flushDirtyV2Regions(Integer.MAX_VALUE);
-                clearChunkData();
-                loadedWorldKey = "";
-            }
-            lastKnownFeatureState = featureEnabled;
-        }
-    }
-
-    private void clearChunkData() {
-        boolean changed;
-        synchronized (chunkSetLock) {
-            changed = !newChunks.isEmpty() || !oldChunks.isEmpty() || !tickExploitChunks.isEmpty()
-                    || !beingUpdatedOldChunks.isEmpty() || !oldGenerationChunks.isEmpty();
-            newChunks.clear();
-            oldChunks.clear();
-            tickExploitChunks.clear();
-            beingUpdatedOldChunks.clear();
-            oldGenerationChunks.clear();
-            
-            // Clear region-indexed maps
-            newChunksByRegion.clear();
-            oldChunksByRegion.clear();
-            tickExploitChunksByRegion.clear();
-            beingUpdatedChunksByRegion.clear();
-            oldGenerationChunksByRegion.clear();
-            for (Set<Long> loadedRegions : loadedV2Regions.values()) {
-                loadedRegions.clear();
-            }
-        }
-        pendingChunkPackets.clear();
-        v2StorageReady = false;
-        if (changed) {
-            markDataChanged();
-        }
-    }
-
-    private void processPendingChunkPackets() {
-        // Skip if feature is disabled to avoid unnecessary processing
-        RadarSettingsManager radarSettings = VoxelConstants.getVoxelMapInstance().getRadarOptions();
-        if (radarSettings == null || !radarSettings.showNewerNewChunks) {
-            return;
-        }
-        
-        Level level = GameVariableAccessShim.getWorld();
-        if (level == null || pendingChunkPackets.isEmpty()) {
-            return;
-        }
-        long tick = level.getGameTime();
-        for (ChunkPos chunkPos : new ArrayList<>(pendingChunkPackets)) {
-            ChunkAccess chunkAccess = level.getChunkSource().getChunk(chunkPos.x(), chunkPos.z(), ChunkStatus.FULL, false);
-            if (!(chunkAccess instanceof LevelChunk chunk)) {
-                continue;
-            }
-            if (chunk == null || chunk.isEmpty()) {
-                continue;
-            }
-
-            classifyChunkInternal(chunk, false);
-            pendingChunkPackets.remove(chunkPos);
-        }
-        // no debug logging
-    }
-
-    private void rescanLoadedChunksAroundPlayer() {
-        // Skip if feature is disabled to avoid expensive chunk classification
-        RadarSettingsManager radarSettings = VoxelConstants.getVoxelMapInstance().getRadarOptions();
-        if (radarSettings == null || !radarSettings.showNewerNewChunks) {
-            return;
-        }
-        
-        Level level = GameVariableAccessShim.getWorld();
-        if (level == null || Minecraft.getInstance().player == null) {
-            return;
-        }
-
-        long tick = level.getGameTime();
-        if (tick == lastRescanGameTime || tick % RESCAN_INTERVAL_TICKS != 0L) {
-            return;
-        }
-        lastRescanGameTime = tick;
-
-        int px = Minecraft.getInstance().player.chunkPosition().x();
-        int pz = Minecraft.getInstance().player.chunkPosition().z();
-        int radius = Math.max(2, Minecraft.getInstance().options.getEffectiveRenderDistance()) + 1;
-
-        for (int x = px - radius; x <= px + radius; x++) {
-            for (int z = pz - radius; z <= pz + radius; z++) {
-                if (!level.hasChunk(x, z)) {
-                    continue;
-                }
-
-                ChunkAccess chunkAccess = level.getChunkSource().getChunk(x, z, ChunkStatus.FULL, false);
-                if (!(chunkAccess instanceof LevelChunk chunk) || chunk.isEmpty()) {
-                    continue;
-                }
-
-                classifyChunkInternal(chunk, false);
-            }
-        }
-        // no debug logging
-    }
-
-    private void refreshWindowIfNeeded() {
-        Level level = GameVariableAccessShim.getWorld();
-        if (level == null || Minecraft.getInstance().player == null) return;
-        long tick = level.getGameTime();
-        int px = Minecraft.getInstance().player.chunkPosition().x();
-        int pz = Minecraft.getInstance().player.chunkPosition().z();
-
-        if (windowCenterChunkX == Integer.MIN_VALUE || windowCenterChunkZ == Integer.MIN_VALUE) {
-            // First-time initialization after load
-            return;
-        }
-        if (tick - lastWindowLoadTick < WINDOW_REFRESH_INTERVAL_TICKS) return;
-
-        int dx = Math.abs(px - windowCenterChunkX);
-        int dz = Math.abs(pz - windowCenterChunkZ);
-        if (Math.max(dx, dz) >= getRefreshDistanceChunks()) {
-            loadWindow(px, pz, tick);
-        }
-    }
-
-    public void reloadWindowNow() {
-        Level level = GameVariableAccessShim.getWorld();
-        if (level == null || Minecraft.getInstance().player == null) return;
-        loadWindow(Minecraft.getInstance().player.chunkPosition().x(), Minecraft.getInstance().player.chunkPosition().z(), level.getGameTime());
-    }
-
-    public void flushStorage() {
-        flushDirtyV2Regions(Integer.MAX_VALUE);
-    }
-
-    private int getWindowRadiusChunks() {
-        RadarSettingsManager rs = VoxelConstants.getVoxelMapInstance().getRadarOptions();
-        int v = rs != null ? rs.newerNewChunksWindowRadiusChunks : WINDOW_LOAD_RADIUS_CHUNKS;
-        return Math.max(16, Math.min(256, v));
-    }
-
-    private int getRefreshDistanceChunks() {
-        RadarSettingsManager rs = VoxelConstants.getVoxelMapInstance().getRadarOptions();
-        int v = rs != null ? rs.newerNewChunksRefreshDistanceChunks : WINDOW_REFRESH_DISTANCE_CHUNKS;
-        return Math.max(8, Math.min(128, v));
-    }
-
-    /**
-     * Periodically evicts chunks from memory that are far from the player.
-     * This prevents memory bloat from accumulated chunk data on heavily-explored servers.
-     */
-    private void evictDistantChunksIfNeeded() {
-        Level level = GameVariableAccessShim.getWorld();
-        if (level == null || Minecraft.getInstance().player == null) {
-            return;
-        }
-
-        long tick = level.getGameTime();
-        // Only check every EVICTION_CHECK_INTERVAL ticks to avoid overhead
-        if (tick - lastEvictionTime < EVICTION_CHECK_INTERVAL) {
-            return;
-        }
-        lastEvictionTime = tick;
-
-        // Get current player position in chunks
-        int playerChunkX = Minecraft.getInstance().player.chunkPosition().x();
-        int playerChunkZ = Minecraft.getInstance().player.chunkPosition().z();
-        int evictionRadiusChunks = CACHE_EVICTION_RADIUS >> 4; // Convert blocks to chunks
-
-        // Calculate current cache size
-        int totalChunks = newChunks.size() + oldChunks.size() + tickExploitChunks.size() 
-                + beingUpdatedOldChunks.size() + oldGenerationChunks.size();
-
-        // Only evict if we're exceeding max cache size
-        if (totalChunks <= MAX_CACHED_CHUNKS) {
-            return;
-        }
-
-        // Evict chunks outside the viewport radius
-        boolean changed = false;
-        synchronized (chunkSetLock) {
-            changed |= evictChunksFromSet(OverlayType.NEW, playerChunkX, playerChunkZ, evictionRadiusChunks);
-            changed |= evictChunksFromSet(OverlayType.OLD, playerChunkX, playerChunkZ, evictionRadiusChunks);
-            changed |= evictChunksFromSet(OverlayType.BLOCK_EXPLOIT, playerChunkX, playerChunkZ, evictionRadiusChunks);
-            changed |= evictChunksFromSet(OverlayType.BEING_UPDATED, playerChunkX, playerChunkZ, evictionRadiusChunks);
-            changed |= evictChunksFromSet(OverlayType.OLD_GENERATION, playerChunkX, playerChunkZ, evictionRadiusChunks);
-        }
-        if (changed) {
-            markDataChanged();
-        }
-    }
-
-    /**
-     * Removes chunks from a set if they're outside the eviction radius from the player
-     */
-    private boolean evictChunksFromSet(OverlayType type, int playerChunkX, int playerChunkZ, int evictionRadiusChunks) {
-        Set<ChunkPos> chunkSet = getChunkSetForType(type);
-        Map<Long, Set<ChunkPos>> regionMap = getRegionMapForType(type);
-        if (chunkSet == null || regionMap == null) {
-            return false;
-        }
-        List<ChunkPos> toRemove = new ArrayList<>();
-        for (ChunkPos chunk : chunkSet) {
-            int dx = Math.abs(chunk.x() - playerChunkX);
-            int dz = Math.abs(chunk.z() - playerChunkZ);
-            if (Math.max(dx, dz) > evictionRadiusChunks) {
-                toRemove.add(chunk);
-            }
-        }
-
-        for (ChunkPos chunk : toRemove) {
-            chunkSet.remove(chunk);
-            deindexChunk(chunk, regionMap);
-            loadedV2Regions.get(type).remove(regionKey(chunk.x() >> REGION_SHIFT, chunk.z() >> REGION_SHIFT));
-        }
-        return !toRemove.isEmpty();
-    }
-
-    public void clearCurrentWorldData() {
-        ensureTrackingWorld();
-        clearChunkData();
-        for (Set<Long> dirtyRegions : dirtyV2Regions.values()) {
-            dirtyRegions.clear();
-        }
-
-        Path baseDir = getBaseDir();
-        try {
-            Files.deleteIfExists(baseDir.resolve(NEW_CHUNK_DATA));
-            Files.deleteIfExists(baseDir.resolve(OLD_CHUNK_DATA));
-            Files.deleteIfExists(baseDir.resolve(BLOCK_EXPLOIT_CHUNK_DATA));
-            Files.deleteIfExists(baseDir.resolve(BEING_UPDATED_CHUNK_DATA));
-            Files.deleteIfExists(baseDir.resolve(OLD_GENERATION_CHUNK_DATA));
-            deleteDirectoryIfExists(getV2Dir());
-        } catch (IOException ignored) {
-        }
-
-        ensureDataFiles();
-        ensureV2Storage();
-        markDataChanged();
-    }
-
-    private void loadWorld(String worldKey) {
-        flushDirtyV2Regions(Integer.MAX_VALUE);
-        clearChunkData();
-        loadedWorldKey = worldKey;
-        ensureV2Storage();
-        if (legacyWritesEnabled) {
-            ensureDataFiles();
-        }
-        Level level = GameVariableAccessShim.getWorld();
-        int px = level != null && Minecraft.getInstance().player != null
-                ? Minecraft.getInstance().player.chunkPosition().x() : 0;
-        int pz = level != null && Minecraft.getInstance().player != null
-                ? Minecraft.getInstance().player.chunkPosition().z() : 0;
-        long tick = level != null ? level.getGameTime() : 0L;
-        loadWindow(px, pz, tick);
-    }
-
-    private void loadWindow(int centerChunkX, int centerChunkZ, long tick) {
-        windowCenterChunkX = centerChunkX;
-        windowCenterChunkZ = centerChunkZ;
-        lastWindowLoadTick = tick;
-        int radius = getWindowRadiusChunks();
-        int minX = centerChunkX - radius;
-        int maxX = centerChunkX + radius;
-        int minZ = centerChunkZ - radius;
-        int maxZ = centerChunkZ + radius;
-
-        for (OverlayType type : OverlayType.values()) {
-            loadV2RegionsForBounds(type, minX, maxX, minZ, maxZ, MAX_SYNC_REGION_LOADS);
-        }
-        reconcileLoadedData();
-    }
-
-    private void reconcileLoadedData() {
-        boolean changed = false;
-        synchronized (chunkSetLock) {
-            // Precedence: old-generation > being-updated > new > old > block-exploit
-            changed |= removeAllIndexed(oldChunks, newChunks);
-            changed |= removeAllIndexed(tickExploitChunks, newChunks);
-
-            changed |= removeAllIndexed(newChunks, beingUpdatedOldChunks);
-            changed |= removeAllIndexed(oldChunks, beingUpdatedOldChunks);
-            changed |= removeAllIndexed(tickExploitChunks, beingUpdatedOldChunks);
-
-            changed |= removeAllIndexed(newChunks, oldGenerationChunks);
-            changed |= removeAllIndexed(oldChunks, oldGenerationChunks);
-            changed |= removeAllIndexed(beingUpdatedOldChunks, oldGenerationChunks);
-            changed |= removeAllIndexed(tickExploitChunks, oldGenerationChunks);
-
-            changed |= removeAllIndexed(tickExploitChunks, oldChunks);
-        }
-        if (changed) {
-            rebuildRegionalIndices();
-            markDataChanged();
-        }
-    }
-
-    private void ensureDataFiles() {
-        Path baseDir = getBaseDir();
-        try {
-            Files.createDirectories(baseDir);
-            for (Path fileName : DATA_FILES) {
-                Path file = baseDir.resolve(fileName);
-                if (Files.notExists(file)) {
-                    Files.createFile(file);
-                }
-            }
-        } catch (IOException ignored) {
-        }
-    }
-
-    private Set<ChunkPos> loadPath(Path fileName) {
-        Set<ChunkPos> loaded = new HashSet<>();
-        Path path = getDataPath(fileName);
-        if (Files.notExists(path)) {
-            return loaded;
-        }
-
-        try {
-            for (String line : Files.readAllLines(path, StandardCharsets.UTF_8)) {
-                ChunkPos chunkPos = parseChunk(line);
-                if (chunkPos != null) {
-                    loaded.add(chunkPos);
-                }
-            }
-        } catch (IOException ignored) {
-        }
-        return loaded;
-    }
-
-    private void ensureV2Storage() {
-        if (v2StorageReady) {
-            return;
-        }
-        try {
-            Path v2Dir = getV2Dir();
-            Files.createDirectories(v2Dir);
-            for (OverlayType type : OverlayType.values()) {
-                Files.createDirectories(getV2OverlayDir(type));
-            }
-            if (isV2MigrationComplete()) {
-                legacyWritesEnabled = false;
-                moveLegacyTextFilesToBackup(getStorageWorldKey());
-            } else {
-                legacyWritesEnabled = true;
-                queueLegacyMigration();
-            }
-            v2StorageReady = true;
-        } catch (IOException ignored) {
-        }
-    }
-
-    private void queueLegacyMigration() {
-        if (migrationQueued || migrationRunning) {
-            return;
-        }
-        migrationQueued = true;
-        String migrationWorldKey = getStorageWorldKey();
-        ThreadManager.executorService.execute(() -> {
-            migrationRunning = true;
-            try {
-                migrateLegacyTextFilesToV2(migrationWorldKey);
-            } finally {
-                migrationRunning = false;
-                migrationQueued = false;
-            }
-        });
-    }
-
-    private boolean isV2MigrationComplete() {
-        Path manifest = getV2ManifestPath();
-        if (Files.notExists(manifest)) {
-            return false;
-        }
-        try {
-            String text = Files.readString(manifest, StandardCharsets.UTF_8);
-            String compact = text.replace(" ", "").replace("\n", "").replace("\r", "").replace("\t", "");
-            return compact.contains("\"formatVersion\":2")
-                    && compact.contains("\"regionShift\":" + REGION_SHIFT)
-                    && compact.contains("\"migrationComplete\":true")
-                    && compact.contains("\"legacyImportVerified\":true");
-        } catch (IOException ignored) {
-            return false;
-        }
-    }
-
-    private void migrateLegacyTextFilesToV2(String worldKey) {
-        long start = System.nanoTime();
-        int migratedChunks = 0;
-        int writtenRegions = 0;
-        int expectedRegions = 0;
-        int failedRegions = 0;
-        for (OverlayType type : OverlayType.values()) {
-            Map<Long, BitSet> regionBits = new HashMap<>();
-            Path legacyPath = getDataPath(worldKey, type.legacyFile);
-            if (Files.exists(legacyPath)) {
-                try (Stream<String> lines = Files.lines(legacyPath, StandardCharsets.UTF_8)) {
-                    Iterator<String> iterator = lines.iterator();
-                    while (iterator.hasNext()) {
-                        ChunkPos chunkPos = parseChunk(iterator.next());
-                        if (chunkPos == null) {
-                            continue;
-                        }
-                        int regionX = chunkPos.x() >> REGION_SHIFT;
-                        int regionZ = chunkPos.z() >> REGION_SHIFT;
-                        long regionKey = regionKey(regionX, regionZ);
-                        BitSet bits = regionBits.computeIfAbsent(regionKey, ignored -> new BitSet(REGION_CHUNK_COUNT));
-                        bits.set(regionBitIndex(chunkPos.x(), chunkPos.z()));
-                        migratedChunks++;
-                    }
-                } catch (IOException ignored) {
-                }
-            }
-
-            expectedRegions += regionBits.size();
-            for (Map.Entry<Long, BitSet> entry : regionBits.entrySet()) {
-                int regionX = (int) (entry.getKey() >> 32);
-                int regionZ = (int) (long) entry.getKey();
-                BitSet existingBits = readRegionBits(getV2RegionPath(worldKey, type, regionX, regionZ));
-                if (existingBits != null && !existingBits.isEmpty()) {
-                    entry.getValue().or(existingBits);
-                }
-                if (writeRegionBits(worldKey, type, regionX, regionZ, entry.getValue())) {
-                    writtenRegions++;
-                } else {
-                    failedRegions++;
-                }
-            }
-        }
-        lastMigrationTimeMs = (System.nanoTime() - start) / 1_000_000L;
-        boolean complete = failedRegions == 0;
-        writeV2Manifest(worldKey, complete, migratedChunks, writtenRegions, expectedRegions, failedRegions);
-        if (complete) {
-            moveLegacyTextFilesToBackup(worldKey);
-        }
-        if (worldKey.equals(loadedWorldKey)) {
-            for (Set<Long> loadedRegions : loadedV2Regions.values()) {
-                loadedRegions.clear();
-            }
-            legacyWritesEnabled = !complete;
-            markDataChanged();
-        }
-        if (VoxelConstants.DEBUG) {
-            VoxelConstants.getLogger().info("NewerNewChunks v2 migration: world={} chunks={} regions={}/{} failedRegions={} timeMs={}",
-                    worldKey, migratedChunks, writtenRegions, expectedRegions, failedRegions, lastMigrationTimeMs);
-        }
-    }
-
-    private void loadV2RegionsForBounds(OverlayType type, int minChunkX, int maxChunkX, int minChunkZ, int maxChunkZ, int maxRegionLoads) {
-        ensureV2Storage();
-        int minRegionX = minChunkX >> REGION_SHIFT;
-        int maxRegionX = maxChunkX >> REGION_SHIFT;
-        int minRegionZ = minChunkZ >> REGION_SHIFT;
-        int maxRegionZ = maxChunkZ >> REGION_SHIFT;
-        int loaded = 0;
-        int decoded = 0;
-        int skipped = 0;
-        long start = System.nanoTime();
-        Set<Long> loadedRegions = loadedV2Regions.get(type);
-
-        for (int regionX = minRegionX; regionX <= maxRegionX; regionX++) {
-            for (int regionZ = minRegionZ; regionZ <= maxRegionZ; regionZ++) {
-                if (loaded >= maxRegionLoads) {
-                    storageLoadIncomplete = true;
-                    recordStorageLoadStats(start, loaded, decoded, skipped);
-                    return;
-                }
-                long key = regionKey(regionX, regionZ);
-                if (loadedRegions.contains(key)) {
-                    continue;
-                }
-                Path path = getV2RegionPath(type, regionX, regionZ);
-                if (Files.notExists(path)) {
-                    loadedRegions.add(key);
-                    skipped++;
-                    continue;
-                }
-                BitSet bits = readRegionBits(path);
-                loadedRegions.add(key);
-                loaded++;
-                if (bits == null || bits.isEmpty()) {
-                    continue;
-                }
-                decoded += addRegionBitsToMemory(type, regionX, regionZ, bits);
-            }
-        }
-        recordStorageLoadStats(start, loaded, decoded, skipped);
-    }
-
-    private void recordStorageLoadStats(long startNanos, int loaded, int decoded, int skipped) {
-        if (loaded == 0 && decoded == 0 && skipped == 0) {
-            return;
-        }
-        lastStorageLoadTimeMs = (System.nanoTime() - startNanos) / 1_000_000L;
-        lastLoadedRegionFiles = loaded;
-        lastDecodedChunks = decoded;
-        lastSkippedMissingRegionFiles = skipped;
-        if (decoded > 0) {
-            markDataChanged();
-        }
-        long now = System.currentTimeMillis();
-        if (VoxelConstants.DEBUG && now - lastStorageDebugMs > 5000L) {
-            lastStorageDebugMs = now;
-            VoxelConstants.getLogger().info("NewerNewChunks v2 load: world={} files={} decoded={} missing={} timeMs={} version={}",
-                    loadedWorldKey, loaded, decoded, skipped, lastStorageLoadTimeMs, dataVersion);
-        }
-    }
-
-    private int addRegionBitsToMemory(OverlayType type, int regionX, int regionZ, BitSet bits) {
-        int decoded = 0;
-        int baseChunkX = regionX << REGION_SHIFT;
-        int baseChunkZ = regionZ << REGION_SHIFT;
-        Set<ChunkPos> chunkSet = getChunkSetForType(type);
-        Map<Long, Set<ChunkPos>> regionMap = getRegionMapForType(type);
-        if (chunkSet == null || regionMap == null) {
-            return 0;
-        }
-        synchronized (chunkSetLock) {
-            for (int bit = bits.nextSetBit(0); bit >= 0 && bit < REGION_CHUNK_COUNT; bit = bits.nextSetBit(bit + 1)) {
-                int localX = bit & (REGION_SIZE - 1);
-                int localZ = bit >> REGION_SHIFT;
-                ChunkPos chunkPos = new ChunkPos(baseChunkX + localX, baseChunkZ + localZ);
-                if (chunkSet.add(chunkPos)) {
-                    indexChunk(chunkPos, regionMap);
-                    decoded++;
-                }
-            }
-        }
-        return decoded;
-    }
-
-    private void flushDirtyV2Regions(int maxRegions) {
-        if (loadedWorldKey == null || loadedWorldKey.isEmpty()) {
-            return;
-        }
-        int flushed = 0;
-        for (OverlayType type : OverlayType.values()) {
-            Set<Long> dirtyRegions = dirtyV2Regions.get(type);
-            Iterator<Long> iterator = dirtyRegions.iterator();
-            while (iterator.hasNext() && flushed < maxRegions) {
-                long key = iterator.next();
-                iterator.remove();
-                int regionX = (int) (key >> 32);
-                int regionZ = (int) key;
-                loadV2RegionIfNeeded(type, regionX, regionZ);
-                writeRegionBits(getStorageWorldKey(), type, regionX, regionZ, buildRegionBits(type, regionX, regionZ));
-                flushed++;
-            }
-            if (flushed >= maxRegions) {
-                break;
-            }
-        }
-    }
-
-    private void loadV2RegionIfNeeded(OverlayType type, int regionX, int regionZ) {
-        Set<Long> loadedRegions = loadedV2Regions.get(type);
-        long key = regionKey(regionX, regionZ);
-        if (loadedRegions.contains(key)) {
-            return;
-        }
-        Path path = getV2RegionPath(type, regionX, regionZ);
-        loadedRegions.add(key);
-        if (Files.notExists(path)) {
-            return;
-        }
-        BitSet bits = readRegionBits(path);
-        if (bits != null && !bits.isEmpty()) {
-            addRegionBitsToMemory(type, regionX, regionZ, bits);
-        }
-    }
-
-    private BitSet buildRegionBits(OverlayType type, int regionX, int regionZ) {
-        BitSet bits = new BitSet(REGION_CHUNK_COUNT);
-        Map<Long, Set<ChunkPos>> regionMap = getRegionMapForType(type);
-        if (regionMap == null) {
-            return bits;
-        }
-        Set<ChunkPos> bucket = regionMap.get(regionKey(regionX, regionZ));
-        if (bucket == null || bucket.isEmpty()) {
-            return bits;
-        }
-        synchronized (chunkSetLock) {
-            for (ChunkPos chunkPos : bucket) {
-                bits.set(regionBitIndex(chunkPos.x(), chunkPos.z()));
-            }
-        }
-        return bits;
-    }
-
-    private boolean writeRegionBits(String worldKey, OverlayType type, int regionX, int regionZ, BitSet bits) {
-        Path path = getV2RegionPath(worldKey, type, regionX, regionZ);
-        try {
-            Files.createDirectories(path.getParent());
-            if (bits == null || bits.isEmpty()) {
-                Files.deleteIfExists(path);
-                return true;
-            }
-            byte[] data = new byte[REGION_BYTES];
-            byte[] bitBytes = bits.toByteArray();
-            System.arraycopy(bitBytes, 0, data, 0, Math.min(bitBytes.length, data.length));
-            Path temp = path.resolveSibling(path.getFileName() + ".tmp");
-            try (OutputStream output = Files.newOutputStream(temp, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
-                writeInt(output, V2_MAGIC);
-                writeInt(output, V2_FORMAT_VERSION);
-                writeInt(output, REGION_SHIFT);
-                writeInt(output, regionX);
-                writeInt(output, regionZ);
-                output.write(data);
-            }
-            try {
-                Files.move(temp, path, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-            } catch (IOException ignored) {
-                Files.move(temp, path, StandardCopyOption.REPLACE_EXISTING);
-            }
-            return true;
-        } catch (IOException ignored) {
-            return false;
-        }
-    }
-
-    private BitSet readRegionBits(Path path) {
-        try (InputStream input = Files.newInputStream(path)) {
-            int magic = readInt(input);
-            int version = readInt(input);
-            int regionShift = readInt(input);
-            readInt(input);
-            readInt(input);
-            if (magic != V2_MAGIC || version != V2_FORMAT_VERSION || regionShift != REGION_SHIFT) {
-                return null;
-            }
-            byte[] data = input.readNBytes(REGION_BYTES);
-            if (data.length < REGION_BYTES) {
-                return null;
-            }
-            return BitSet.valueOf(data);
-        } catch (IOException ignored) {
-            return null;
-        }
-    }
-
-    private void writeV2Manifest(String worldKey, boolean migrationComplete, int migratedChunks, int writtenRegions, int expectedRegions, int failedRegions) {
-        Path manifest = getV2ManifestPath(worldKey);
-        String json = "{\n"
-                + "  \"formatVersion\": " + V2_FORMAT_VERSION + ",\n"
-                + "  \"regionShift\": " + REGION_SHIFT + ",\n"
-                + "  \"worldKey\": \"" + escapeJson(loadedWorldKey) + "\",\n"
-                + "  \"migrationComplete\": " + migrationComplete + ",\n"
-                + "  \"legacyImportVerified\": " + migrationComplete + ",\n"
-                + "  \"overlayTypes\": [\"new\", \"old\", \"block_exploit\", \"being_updated\", \"old_generation\"],\n"
-                + "  \"migratedChunks\": " + migratedChunks + ",\n"
-                + "  \"writtenRegions\": " + writtenRegions + ",\n"
-                + "  \"expectedRegions\": " + expectedRegions + ",\n"
-                + "  \"failedRegions\": " + failedRegions + ",\n"
-                + "  \"updatedAt\": " + System.currentTimeMillis() + "\n"
-                + "}\n";
-        try {
-            Files.createDirectories(manifest.getParent());
-            Files.writeString(manifest, json, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-        } catch (IOException ignored) {
-        }
-    }
-
-    private void moveLegacyTextFilesToBackup(String worldKey) {
-        Path backupDir = getBaseDir(worldKey).resolve("legacy_backup");
-        for (OverlayType type : OverlayType.values()) {
-            Path source = getDataPath(worldKey, type.legacyFile);
-            if (Files.notExists(source)) {
-                continue;
-            }
-            try {
-                Files.createDirectories(backupDir);
-                Files.move(source, nextBackupPath(backupDir.resolve(type.legacyFile.getFileName())), StandardCopyOption.ATOMIC_MOVE);
-            } catch (IOException ignored) {
-                try {
-                    Files.move(source, nextBackupPath(backupDir.resolve(type.legacyFile.getFileName())), StandardCopyOption.REPLACE_EXISTING);
-                } catch (IOException ignoredToo) {
-                }
-            }
-        }
-    }
-
-    private static Path nextBackupPath(Path desiredPath) {
-        if (Files.notExists(desiredPath)) {
-            return desiredPath;
-        }
-        String fileName = desiredPath.getFileName().toString();
-        int dot = fileName.lastIndexOf('.');
-        String baseName = dot > 0 ? fileName.substring(0, dot) : fileName;
-        String extension = dot > 0 ? fileName.substring(dot) : "";
-        return desiredPath.resolveSibling(baseName + "." + System.currentTimeMillis() + extension);
-    }
-
-    private boolean removeAllIndexed(Set<ChunkPos> target, Set<ChunkPos> remove) {
-        if (target.isEmpty() || remove.isEmpty()) {
-            return false;
-        }
-        return target.removeIf(remove::contains);
-    }
-
-    private boolean removeChunkFromType(ChunkPos chunkPos, OverlayType type) {
-        Set<ChunkPos> chunkSet = getChunkSetForType(type);
-        Map<Long, Set<ChunkPos>> regionMap = getRegionMapForType(type);
-        if (chunkSet == null || regionMap == null || !chunkSet.remove(chunkPos)) {
-            return false;
-        }
-        deindexChunk(chunkPos, regionMap);
-        markV2Dirty(type, chunkPos);
-        return true;
-    }
-
-    private void markV2Dirty(OverlayType type, ChunkPos chunkPos) {
-        if (chunkPos == null) {
-            return;
-        }
-        dirtyV2Regions.get(type).add(regionKey(chunkPos.x() >> REGION_SHIFT, chunkPos.z() >> REGION_SHIFT));
-    }
-
-    private void markDataChanged() {
-        dataVersion++;
-    }
-
-    private Path getDataPath(Path fileName) {
-        return getBaseDir().resolve(fileName);
-    }
-
-    private Path getDataPath(String worldKey, Path fileName) {
-        return getBaseDir(worldKey).resolve(fileName);
-    }
-
-    private Path getV2Dir() {
-        return getBaseDir().resolve("v2");
-    }
-
-    private Path getV2Dir(String worldKey) {
-        return getBaseDir(worldKey).resolve("v2");
-    }
-
-    private Path getV2OverlayDir(OverlayType type) {
-        return getV2Dir().resolve(type.directoryName);
-    }
-
-    private Path getV2OverlayDir(String worldKey, OverlayType type) {
-        return getV2Dir(worldKey).resolve(type.directoryName);
-    }
-
-    private Path getV2RegionPath(OverlayType type, int regionX, int regionZ) {
-        return getV2OverlayDir(type).resolve("r." + regionX + "." + regionZ + ".bin");
-    }
-
-    private Path getV2RegionPath(String worldKey, OverlayType type, int regionX, int regionZ) {
-        return getV2OverlayDir(worldKey, type).resolve("r." + regionX + "." + regionZ + ".bin");
-    }
-
-    private Path getV2ManifestPath() {
-        return getV2Dir().resolve("manifest.json");
-    }
-
-    private Path getV2ManifestPath(String worldKey) {
-        return getV2Dir(worldKey).resolve("manifest.json");
-    }
-
-    private Path getBaseDir() {
-        return getBaseDir(getStorageWorldKey());
-    }
-
-    private Path getBaseDir(String worldKey) {
-        Minecraft minecraft = Minecraft.getInstance();
-        return minecraft.gameDirectory.toPath()
-                .resolve("voxelmap")
-                .resolve("chunk_overlays")
-                .resolve("newer_new_chunks")
-                .resolve(worldKey);
-    }
+    // -------------------------------------------------------------------------
+    // World key helpers
+    // -------------------------------------------------------------------------
 
     private String getWorldKey() {
         Level level = GameVariableAccessShim.getWorld();
@@ -1868,49 +1360,9 @@ public class NewerNewChunksManager {
         return server + "_" + dimension;
     }
 
-    private String getStorageWorldKey() {
-        return loadedWorldKey == null || loadedWorldKey.isEmpty() ? getWorldKey() : loadedWorldKey;
-    }
-
-    private static void appendChunk(Path path, ChunkPos chunkPos) {
-        String line = chunkPos.x() + "," + chunkPos.z() + System.lineSeparator();
-        try {
-            Files.createDirectories(path.getParent());
-            Files.writeString(path, line, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
-        } catch (IOException ignored) {
-        }
-    }
-
-    private static int regionBitIndex(int chunkX, int chunkZ) {
-        int localX = chunkX & (REGION_SIZE - 1);
-        int localZ = chunkZ & (REGION_SIZE - 1);
-        return (localZ << REGION_SHIFT) | localX;
-    }
-
-    private static void writeInt(OutputStream output, int value) throws IOException {
-        output.write((value >>> 24) & 0xFF);
-        output.write((value >>> 16) & 0xFF);
-        output.write((value >>> 8) & 0xFF);
-        output.write(value & 0xFF);
-    }
-
-    private static int readInt(InputStream input) throws IOException {
-        int b1 = input.read();
-        int b2 = input.read();
-        int b3 = input.read();
-        int b4 = input.read();
-        if ((b1 | b2 | b3 | b4) < 0) {
-            throw new IOException("Unexpected end of region file");
-        }
-        return (b1 << 24) | (b2 << 16) | (b3 << 8) | b4;
-    }
-
-    private static String escapeJson(String value) {
-        if (value == null) {
-            return "";
-        }
-        return value.replace("\\", "\\\\").replace("\"", "\\\"");
-    }
+    // -------------------------------------------------------------------------
+    // Static utilities
+    // -------------------------------------------------------------------------
 
     private static void deleteDirectoryIfExists(Path path) throws IOException {
         if (Files.notExists(path)) {
@@ -1920,136 +1372,6 @@ public class NewerNewChunksManager {
             List<Path> toDelete = paths.sorted(Comparator.reverseOrder()).toList();
             for (Path entry : toDelete) {
                 Files.deleteIfExists(entry);
-            }
-        }
-    }
-
-    private static ChunkPos parseChunk(String line) {
-        if (line == null || line.isBlank()) {
-            return null;
-        }
-
-        String[] parts = line.split(",");
-        if (parts.length != 2) {
-            return null;
-        }
-
-        try {
-            return new ChunkPos(Integer.parseInt(parts[0].trim()), Integer.parseInt(parts[1].trim()));
-        } catch (NumberFormatException ignored) {
-            return null;
-        }
-    }
-
-    /**
-     * Adds a chunk to its region bucket for fast spatial queries
-     */
-    private void indexChunk(ChunkPos chunk, Map<Long, Set<ChunkPos>> regionMap) {
-        if (chunk == null || regionMap == null) {
-            return;
-        }
-        int regionX = chunk.x() >> REGION_SHIFT;
-        int regionZ = chunk.z() >> REGION_SHIFT;
-        long key = regionKey(regionX, regionZ);
-        
-        regionMap.computeIfAbsent(key, k -> ConcurrentHashMap.newKeySet()).add(chunk);
-    }
-
-    /**
-     * Removes a chunk from its region bucket
-     */
-    private void deindexChunk(ChunkPos chunk, Map<Long, Set<ChunkPos>> regionMap) {
-        if (chunk == null || regionMap == null || regionMap.isEmpty()) {
-            return;
-        }
-        int regionX = chunk.x() >> REGION_SHIFT;
-        int regionZ = chunk.z() >> REGION_SHIFT;
-        long key = regionKey(regionX, regionZ);
-        
-        Set<ChunkPos> bucket = regionMap.get(key);
-        if (bucket != null) {
-            bucket.remove(chunk);
-            if (bucket.isEmpty()) {
-                regionMap.remove(key);
-            }
-        }
-    }
-
-    /**
-     * Computes a unique key for a region (used for Map lookups)
-     */
-    private static long regionKey(int regionX, int regionZ) {
-        return ((long) regionX << 32) | (regionZ & 0xFFFFFFFFL);
-    }
-
-    private static long cellKey(int cellX, int cellZ) {
-        return ((long) cellX << 32) | (cellZ & 0xFFFFFFFFL);
-    }
-
-    /**
-     * Returns the appropriate region map for a given chunk set
-     */
-    private Set<ChunkPos> getChunkSetForType(OverlayType type) {
-        return switch (type) {
-            case NEW -> newChunks;
-            case OLD -> oldChunks;
-            case BLOCK_EXPLOIT -> tickExploitChunks;
-            case BEING_UPDATED -> beingUpdatedOldChunks;
-            case OLD_GENERATION -> oldGenerationChunks;
-        };
-    }
-
-    private Map<Long, Set<ChunkPos>> getRegionMapForType(OverlayType type) {
-        return switch (type) {
-            case NEW -> newChunksByRegion;
-            case OLD -> oldChunksByRegion;
-            case BLOCK_EXPLOIT -> tickExploitChunksByRegion;
-            case BEING_UPDATED -> beingUpdatedChunksByRegion;
-            case OLD_GENERATION -> oldGenerationChunksByRegion;
-        };
-    }
-
-    private Map<Long, Set<ChunkPos>> getRegionMapForSource(Set<ChunkPos> source) {
-        if (source == newChunks) {
-            return getRegionMapForType(OverlayType.NEW);
-        } else if (source == oldChunks) {
-            return getRegionMapForType(OverlayType.OLD);
-        } else if (source == tickExploitChunks) {
-            return getRegionMapForType(OverlayType.BLOCK_EXPLOIT);
-        } else if (source == beingUpdatedOldChunks) {
-            return getRegionMapForType(OverlayType.BEING_UPDATED);
-        } else if (source == oldGenerationChunks) {
-            return getRegionMapForType(OverlayType.OLD_GENERATION);
-        }
-        return null;
-    }
-
-    /**
-     * Rebuilds all regional indices from the current chunk sets.
-     * Call this after loading chunk data from disk.
-     */
-    private void rebuildRegionalIndices() {
-        synchronized (chunkSetLock) {
-            newChunksByRegion.clear();
-            oldChunksByRegion.clear();
-            tickExploitChunksByRegion.clear();
-            beingUpdatedChunksByRegion.clear();
-            oldGenerationChunksByRegion.clear();
-            
-            for (ChunkPos chunk : newChunks) {
-                indexChunk(chunk, newChunksByRegion);
-            }
-            for (ChunkPos chunk : oldChunks) {
-                indexChunk(chunk, oldChunksByRegion);
-            }
-            for (ChunkPos chunk : tickExploitChunks) {
-                indexChunk(chunk, tickExploitChunksByRegion);
-            }
-            for (ChunkPos chunk : beingUpdatedOldChunks) {
-                indexChunk(chunk, beingUpdatedChunksByRegion);
-            }
-            for (ChunkPos chunk : oldGenerationChunks) {
-                indexChunk(chunk, oldGenerationChunksByRegion);
             }
         }
     }

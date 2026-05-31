@@ -29,6 +29,7 @@ import com.mamiyaotaru.voxelmap.textures.Sprite;
 import com.mamiyaotaru.voxelmap.textures.TextureAtlas;
 import com.mamiyaotaru.voxelmap.util.BackgroundImageInfo;
 import com.mamiyaotaru.voxelmap.util.BiomeMapData;
+import com.mamiyaotaru.voxelmap.util.CellGrid;
 import com.mamiyaotaru.voxelmap.util.CommandUtils;
 import com.mamiyaotaru.voxelmap.util.DimensionContainer;
 import com.mamiyaotaru.voxelmap.util.EasingUtils;
@@ -206,13 +207,13 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     private long exploredLinesLastDataVersion = Long.MIN_VALUE;
     private ExploredLinesQueryCacheKey exploredLinesLastQueryKey;
     private List<ChunkPos> exploredLinesLastResult = List.of();
-    private java.util.HashSet<Long> exploredLinesLastCellResult = new java.util.HashSet<>();
+    private CellGrid exploredLinesLastCellResult = new CellGrid(0, 0, 0, 0);
     private ExploredLineRenderCacheKey exploredLineRenderCacheKey;
-    private List<ExploredLineSegment> exploredLineSegments = List.of();
-    private List<ExploredLineNode> exploredLineNodes = List.of();
+    private ExploredLineMesher.Result exploredLineMesh = ExploredLineMesher.Result.EMPTY;
     private float[] exploredQuadCoords = new float[4096];
     private int[] exploredQuadColors = new int[1024];
     private int exploredQuadCount = 0;
+    private final java.util.Map<String, float[]> playerLayerLabelAnchors = new java.util.LinkedHashMap<>();
     private NewOldChunkOverlayRenderCacheKey newOldChunkOverlayRenderCacheKey;
     private List<NewOldChunkRenderRect> newOldChunkOldRects = List.of();
     private List<NewOldChunkRenderRect> newOldChunkNewRects = List.of();
@@ -1013,6 +1014,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         if (!farZoomPerformanceMode) {
             drawSeedMapperMarkers(graphics, mouseX, mouseY);
         }
+        drawPlayerLayerLabels(graphics);
 
         Waypoint currentlyHovered = null;
         boolean showWaypointsInThisMode = !farZoomPerformanceMode || this.options.isShowWaypointsInPerformanceModeEnabled();
@@ -1145,6 +1147,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
     private void drawExploredChunkLinesWorldMap(GuiGraphicsExtractor graphics, int leftRegion, int rightRegion, int topRegion, int bottomRegion) {
         this.exploredQuadCount = 0;
+        this.playerLayerLabelAnchors.clear();
         if (!radarOptions.showExploredChunks) {
             return;
         }
@@ -1292,40 +1295,45 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         if (vectorLineMode) {
             ExploredLineRenderCacheKey renderCacheKey = new ExploredLineRenderCacheKey(queryKey, cellChunkSize, exploredDataVersion);
             if (!renderCacheKey.equals(exploredLineRenderCacheKey) || dataChanged) {
-                java.util.HashSet<Long> previousCells = exploredLinesLastCellResult;
-                List<ExploredLineSegment> previousSegments = exploredLineSegments;
-                List<ExploredLineNode> previousNodes = exploredLineNodes;
-                java.util.HashSet<Long> queriedCells = exploredChunksManager.getExploredCellsInRange(centerChunkX, centerChunkZ, radius, cellChunkSize);
+                CellGrid previousCells = exploredLinesLastCellResult;
+                ExploredLineMesher.Result previousMesh = exploredLineMesh;
+                CellGrid queriedCells = exploredChunksManager.getExploredCellsInRange(centerChunkX, centerChunkZ, radius, cellChunkSize);
                 if (exploredChunksManager.consumeStorageLoadIncomplete()) {
                     exploredLinesLastCellResult = previousCells;
-                    exploredLineSegments = previousSegments;
-                    exploredLineNodes = previousNodes;
+                    exploredLineMesh = previousMesh;
                     exploredLineRenderCacheKey = null;
                 } else {
                     exploredLinesLastCellResult = queriedCells;
-                    rebuildExploredLineRenderCache(exploredLinesLastCellResult, cellChunkSize);
+                    rebuildExploredLineRenderCache(exploredLinesLastCellResult, cellChunkSize, literalLineMode);
                     exploredLineRenderCacheKey = renderCacheKey;
                     exploredLinesLastQueryKey = queryKey;
                     exploredLinesLastQueryMs = now;
                     exploredLinesLastDataVersion = exploredDataVersion;
                 }
             }
-            for (ExploredLineSegment segment : exploredLineSegments) {
-                appendThickInterpolatedLine(segment.x1(), segment.z1(), segment.x2(), segment.z2(), lineThickness, color);
+            ExploredLineMesher.Result mesh = exploredLineMesh;
+            float[] segmentCoords = mesh.segments();
+            int segmentCount = mesh.segmentCount();
+            for (int i = 0; i < segmentCount; i++) {
+                int o = i << 2;
+                appendThickInterpolatedLine(segmentCoords[o], segmentCoords[o + 1], segmentCoords[o + 2], segmentCoords[o + 3], lineThickness, color);
             }
             if (literalLineMode) {
                 float cellWorldSize = cellChunkSize * 16.0F;
                 float nodeHalf = Math.max(lineThickness * 0.55F, cellWorldSize * 0.04F);
                 boolean ultraFarLiteral = this.mapToGui < 0.03F;
-                for (ExploredLineNode node : exploredLineNodes) {
-                    if (!ultraFarLiteral || !node.linked()) {
-                        appendExploredQuad(
-                                node.x() - nodeHalf, node.z() - nodeHalf,
-                                node.x() + nodeHalf, node.z() + nodeHalf,
-                                color);
+                float[] nodeCoords = mesh.nodeCoords();
+                boolean[] nodeLinked = mesh.nodeLinked();
+                int nodeCount = mesh.nodeCount();
+                for (int i = 0; i < nodeCount; i++) {
+                    if (!ultraFarLiteral || !nodeLinked[i]) {
+                        float nx = nodeCoords[i << 1];
+                        float nz = nodeCoords[(i << 1) + 1];
+                        appendExploredQuad(nx - nodeHalf, nz - nodeHalf, nx + nodeHalf, nz + nodeHalf, color);
                     }
                 }
             }
+            renderPlayerExploredLayers(graphics, exploredChunksManager, centerChunkX, centerChunkZ, radius, cellChunkSize, lineThickness, color);
             flushExploredQuads(graphics);
             return;
         }
@@ -1367,6 +1375,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             drawn++;
         }
 
+        renderPlayerExploredLayers(graphics, exploredChunksManager, centerChunkX, centerChunkZ, radius, cellChunkSize, lineThickness, color);
         flushExploredQuads(graphics);
     }
 
@@ -1440,13 +1449,29 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             newOldChunkCacheHits++;
         }
 
-        for (NewOldChunkRenderRect rect : newOldChunkOldRects) {
-            VoxelMapGuiGraphics.fillGradient(graphics, rect.minX(), rect.minZ(), rect.maxX(), rect.maxZ(),
-                    rect.color(), rect.color(), rect.color(), rect.color());
-        }
-        for (NewOldChunkRenderRect rect : newOldChunkNewRects) {
-            VoxelMapGuiGraphics.fillGradient(graphics, rect.minX(), rect.minZ(), rect.maxX(), rect.maxZ(),
-                    rect.color(), rect.color(), rect.color(), rect.color());
+        // submit all rects as a single batched GUI element
+        int rectCount = newOldChunkOldRects.size() + newOldChunkNewRects.size();
+        if (rectCount > 0) {
+            float[] coords = new float[rectCount * 4];
+            int[] colors = new int[rectCount];
+            int i = 0;
+            for (NewOldChunkRenderRect rect : newOldChunkOldRects) {
+                int o = i << 2;
+                coords[o] = rect.minX();
+                coords[o + 1] = rect.minZ();
+                coords[o + 2] = rect.maxX();
+                coords[o + 3] = rect.maxZ();
+                colors[i++] = rect.color();
+            }
+            for (NewOldChunkRenderRect rect : newOldChunkNewRects) {
+                int o = i << 2;
+                coords[o] = rect.minX();
+                coords[o + 1] = rect.minZ();
+                coords[o + 2] = rect.maxX();
+                coords[o + 3] = rect.maxZ();
+                colors[i++] = rect.color();
+            }
+            VoxelMapGuiGraphics.fillRectsBatched(graphics, coords, colors, rectCount);
         }
 
         maybeLogNewOldChunkOverlayDebug(manager);
@@ -1459,29 +1484,13 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         int radius = Math.max(cacheKey.maxChunkX() - centerChunkX, cacheKey.maxChunkZ() - centerChunkZ) + 2;
 
         int remainingDraw = cacheKey.maxDraw();
-        BuildNewOldChunkRectsResult oldResult;
-        BuildNewOldChunkRectsResult newResult;
-        if (cacheKey.cellChunkSize() > 1) {
-            NewerNewChunksManager.NewOldCellsSnapshot snapshot = manager.getNewOldCellsInRange(centerChunkX, centerChunkZ, radius, cacheKey.cellChunkSize());
-            newOldChunkLastOldReturned = snapshot.oldChunks();
-            newOldChunkLastNewReturned = snapshot.newChunks();
-            oldResult = buildNewOldChunkRectsFromCells(snapshot.oldCells(), cacheKey.oldColor(), cacheKey.cellChunkSize(), remainingDraw, newOldChunkLastOldReturned);
-            remainingDraw = Math.max(0, remainingDraw - oldResult.rects().size());
-            newResult = buildNewOldChunkRectsFromCells(snapshot.newCells(), cacheKey.newColor(), cacheKey.cellChunkSize(), remainingDraw, newOldChunkLastNewReturned);
-        } else {
-            int maxQueryResults = getNewOldChunkMaxQueryResults(cacheKey.cellChunkSize(), cacheKey.maxDraw());
-            NewerNewChunksManager.NewOldChunksSnapshot snapshot = manager.getNewOldChunksInRange(centerChunkX, centerChunkZ, radius, maxQueryResults);
-            List<ChunkPos> oldChunks = new ArrayList<>(snapshot.oldChunks());
-            List<ChunkPos> newChunks = new ArrayList<>(snapshot.newChunks());
-            newOldChunkLastOldReturned = oldChunks.size();
-            newOldChunkLastNewReturned = newChunks.size();
-
-            oldResult = buildNewOldChunkRects(oldChunks, cacheKey.minChunkX(), cacheKey.maxChunkX(),
-                    cacheKey.minChunkZ(), cacheKey.maxChunkZ(), cacheKey.oldColor(), cacheKey.cellChunkSize(), remainingDraw);
-            remainingDraw = Math.max(0, remainingDraw - oldResult.rects().size());
-            newResult = buildNewOldChunkRects(newChunks, cacheKey.minChunkX(), cacheKey.maxChunkX(),
-                    cacheKey.minChunkZ(), cacheKey.maxChunkZ(), cacheKey.newColor(), cacheKey.cellChunkSize(), remainingDraw);
-        }
+        int effectiveCell = Math.max(1, cacheKey.cellChunkSize());
+        NewerNewChunksManager.NewOldCellsSnapshot snapshot = manager.getNewOldCellsInRange(centerChunkX, centerChunkZ, radius, effectiveCell);
+        newOldChunkLastOldReturned = snapshot.oldChunks();
+        newOldChunkLastNewReturned = snapshot.newChunks();
+        BuildNewOldChunkRectsResult oldResult = buildNewOldChunkRectsFromCells(snapshot.oldCells(), cacheKey.oldColor(), effectiveCell, remainingDraw, newOldChunkLastOldReturned);
+        remainingDraw = Math.max(0, remainingDraw - oldResult.rects().size());
+        BuildNewOldChunkRectsResult newResult = buildNewOldChunkRectsFromCells(snapshot.newCells(), cacheKey.newColor(), effectiveCell, remainingDraw, newOldChunkLastNewReturned);
 
         newOldChunkOldRects = oldResult.rects();
         newOldChunkNewRects = newResult.rects();
@@ -1491,84 +1500,68 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         newOldChunkLastRebuildTimeMs = (System.nanoTime() - start) / 1_000_000L;
     }
 
-    private BuildNewOldChunkRectsResult buildNewOldChunkRects(List<ChunkPos> chunks, int minChunkX, int maxChunkX, int minChunkZ, int maxChunkZ,
-            int color, int cellChunkSize, int maxDraw) {
-        if (maxDraw <= 0 || chunks.isEmpty()) {
-            return new BuildNewOldChunkRectsResult(List.of(), 0, 0);
-        }
-
-        int visible = 0;
-        java.util.HashSet<Long> cells = new java.util.HashSet<>();
-        for (ChunkPos chunk : chunks) {
-            int chunkX = chunk.x();
-            int chunkZ = chunk.z();
-            if (chunkX < minChunkX || chunkX > maxChunkX || chunkZ < minChunkZ || chunkZ > maxChunkZ) {
-                continue;
-            }
-            visible++;
-            cells.add(chunkKey(Math.floorDiv(chunkX, cellChunkSize), Math.floorDiv(chunkZ, cellChunkSize)));
-        }
-
-        return new BuildNewOldChunkRectsResult(greedyMeshNewOldChunkCells(cells, cellChunkSize, color, maxDraw), visible, cells.size());
-    }
-
-    private BuildNewOldChunkRectsResult buildNewOldChunkRectsFromCells(Set<Long> cells, int color, int cellChunkSize, int maxDraw, int visibleChunks) {
+    private BuildNewOldChunkRectsResult buildNewOldChunkRectsFromCells(CellGrid cells, int color, int cellChunkSize, int maxDraw, int visibleChunks) {
         if (maxDraw <= 0 || cells.isEmpty()) {
             return new BuildNewOldChunkRectsResult(List.of(), visibleChunks, 0);
         }
-        return new BuildNewOldChunkRectsResult(greedyMeshNewOldChunkCells(cells, cellChunkSize, color, maxDraw), visibleChunks, cells.size());
+        int cellCount = 0;
+        for (boolean b : cells.cells) {
+            if (b) {
+                cellCount++;
+            }
+        }
+        return new BuildNewOldChunkRectsResult(greedyMeshNewOldChunkCells(cells, cellChunkSize, color, maxDraw), visibleChunks, cellCount);
     }
 
-    private List<NewOldChunkRenderRect> greedyMeshNewOldChunkCells(Set<Long> cells, int cellChunkSize, int color, int maxDraw) {
-        if (cells.isEmpty()) {
+    private List<NewOldChunkRenderRect> greedyMeshNewOldChunkCells(CellGrid grid, int cellChunkSize, int color, int maxDraw) {
+        int w = grid.width;
+        int h = grid.height;
+        if (w <= 0 || h <= 0) {
             return List.of();
         }
-
-        ArrayList<Long> sortedCells = new ArrayList<>(cells);
-        sortedCells.sort(Long::compare);
-        java.util.HashSet<Long> remaining = new java.util.HashSet<>(cells);
-        ArrayList<NewOldChunkRenderRect> rects = new ArrayList<>(Math.min(maxDraw, cells.size()));
+        boolean[] cells = grid.cells;
+        int minCellX = grid.minX;
+        int minCellZ = grid.minZ;
         float worldCellSize = 16.0F * cellChunkSize;
 
-        for (long key : sortedCells) {
-            if (rects.size() >= maxDraw) {
-                break;
-            }
-            if (!remaining.remove(key)) {
-                continue;
-            }
-
-            int startX = (int) (key >> 32);
-            int startZ = (int) key;
-            int width = 1;
-            while (remaining.contains(chunkKey(startX + width, startZ))) {
-                width++;
-            }
-
-            int height = 1;
-            boolean canGrow = true;
-            while (canGrow) {
-                int z = startZ + height;
-                for (int x = startX; x < startX + width; x++) {
-                    if (!remaining.contains(chunkKey(x, z))) {
-                        canGrow = false;
-                        break;
+        ArrayList<NewOldChunkRenderRect> rects = new ArrayList<>();
+        for (int gz = 0; gz < h; gz++) {
+            int rowBase = gz * w;
+            for (int gx = 0; gx < w; gx++) {
+                if (!cells[rowBase + gx]) {
+                    continue;
+                }
+                if (rects.size() >= maxDraw) {
+                    return List.copyOf(rects);
+                }
+                int rectWidth = 1;
+                while (gx + rectWidth < w && cells[rowBase + gx + rectWidth]) {
+                    rectWidth++;
+                }
+                int rectHeight = 1;
+                boolean canGrow = true;
+                while (canGrow && gz + rectHeight < h) {
+                    int nextRow = (gz + rectHeight) * w;
+                    for (int x = gx; x < gx + rectWidth; x++) {
+                        if (!cells[nextRow + x]) {
+                            canGrow = false;
+                            break;
+                        }
+                    }
+                    if (canGrow) {
+                        rectHeight++;
                     }
                 }
-                if (canGrow) {
-                    height++;
+                for (int z = gz; z < gz + rectHeight; z++) {
+                    int clearRow = z * w;
+                    for (int x = gx; x < gx + rectWidth; x++) {
+                        cells[clearRow + x] = false;
+                    }
                 }
+                float minX = (minCellX + gx) * worldCellSize;
+                float minZ = (minCellZ + gz) * worldCellSize;
+                rects.add(new NewOldChunkRenderRect(minX, minZ, minX + rectWidth * worldCellSize, minZ + rectHeight * worldCellSize, color));
             }
-
-            for (int z = startZ; z < startZ + height; z++) {
-                for (int x = startX; x < startX + width; x++) {
-                    remaining.remove(chunkKey(x, z));
-                }
-            }
-
-            float minX = startX * worldCellSize;
-            float minZ = startZ * worldCellSize;
-            rects.add(new NewOldChunkRenderRect(minX, minZ, minX + width * worldCellSize, minZ + height * worldCellSize, color));
         }
 
         return List.copyOf(rects);
@@ -1729,97 +1722,124 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         return (((long) x) << 32) ^ (z & 0xFFFFFFFFL);
     }
 
-    private void rebuildExploredLineRenderCache(java.util.HashSet<Long> chunkSet, int cellChunkSize) {
-        ArrayList<ExploredLineSegment> segments = new ArrayList<>();
-        ArrayList<ExploredLineNode> nodes = new ArrayList<>();
-        ArrayList<Long> sortedCells = new ArrayList<>(chunkSet);
-        sortedCells.sort(Long::compare);
+    private void rebuildExploredLineRenderCache(CellGrid chunkSet, int cellChunkSize, boolean buildNodes) {
+        exploredLineMesh = ExploredLineMesher.build(
+                chunkSet, cellChunkSize, buildNodes, exploredLineMesh.segmentCount(), exploredLineMesh.nodeCount());
+    }
 
-        for (long key : sortedCells) {
-            int cellX = (int) (key >> 32);
-            int cellZ = (int) key;
-            boolean linked = hasExploredLineNeighbor(chunkSet, cellX, cellZ);
-            nodes.add(new ExploredLineNode(cellCenter(cellX, cellChunkSize), cellCenter(cellZ, cellChunkSize), linked));
+    private static final int[] PLAYER_LAYER_PALETTE = {
+        0xFFFF5555, 0xFF55FF55, 0xFF5599FF, 0xFFFFEE44, 0xFFFF55FF,
+        0xFF55FFFF, 0xFFFFAA33, 0xFFAA66FF, 0xFF33CCAA, 0xFFFF99CC
+    };
+
+    private static int playerLayerColor(String slug, int alphaSource) {
+        int rgb = PLAYER_LAYER_PALETTE[Math.floorMod(slug.hashCode(), PLAYER_LAYER_PALETTE.length)] & 0x00FFFFFF;
+        return (alphaSource & 0xFF000000) | rgb; // share the explored overlay's alpha
+    }
+
+    /** Draws each imported player's explored lattice and their old/new area outline, in the player's colour. */
+    private void renderPlayerExploredLayers(GuiGraphicsExtractor graphics, com.mamiyaotaru.voxelmap.ExploredChunksManager mgr,
+            int centerChunkX, int centerChunkZ, int radius, int cellChunkSize, float lineThickness, int selfColor) {
+        this.playerLayerLabelAnchors.clear();
+        java.util.Set<String> slugs = mgr.playerLayerSlugs();
+        if (slugs.isEmpty()) {
+            return;
         }
+        com.mamiyaotaru.voxelmap.NewerNewChunksManager nnc = VoxelConstants.getVoxelMapInstance().getNewerNewChunksManager();
+        for (String slug : slugs) {
+            int layerColor = playerLayerColor(slug, selfColor);
 
-        for (long key : sortedCells) {
-            int cellX = (int) (key >> 32);
-            int cellZ = (int) key;
-
-            if (hasCell(chunkSet, cellX + 1, cellZ) && !hasCell(chunkSet, cellX - 1, cellZ)) {
-                int endX = cellX + 1;
-                while (hasCell(chunkSet, endX + 1, cellZ)) {
-                    endX++;
-                }
-                addExploredLineSegment(segments, cellX, cellZ, endX, cellZ, cellChunkSize);
+            CellGrid cells = mgr.getPlayerExploredCellsInRange(slug, centerChunkX, centerChunkZ, radius, cellChunkSize);
+            ExploredLineMesher.Result mesh = ExploredLineMesher.build(cells, cellChunkSize, false, 0, 0);
+            float[] seg = mesh.segments();
+            int segCount = mesh.segmentCount();
+            for (int i = 0; i < segCount; i++) {
+                int o = i << 2;
+                appendThickInterpolatedLine(seg[o], seg[o + 1], seg[o + 2], seg[o + 3], lineThickness, layerColor);
             }
 
-            if (hasCell(chunkSet, cellX, cellZ + 1) && !hasCell(chunkSet, cellX, cellZ - 1)) {
-                int endZ = cellZ + 1;
-                while (hasCell(chunkSet, cellX, endZ + 1)) {
-                    endZ++;
-                }
-                addExploredLineSegment(segments, cellX, cellZ, cellX, endZ, cellChunkSize);
+            CellGrid area = nnc.getPlayerOldNewCellsInRange(slug, centerChunkX, centerChunkZ, radius, cellChunkSize);
+            float[] outline = CellBoundaryMesher.boundarySegments(area, cellChunkSize);
+            for (int i = 0; i + 3 < outline.length; i += 4) {
+                appendThickInterpolatedLine(outline[i], outline[i + 1], outline[i + 2], outline[i + 3], lineThickness, layerColor);
             }
 
-            if (hasSouthEastExploredLine(chunkSet, cellX, cellZ) && !hasSouthEastExploredLine(chunkSet, cellX - 1, cellZ - 1)) {
-                int endX = cellX + 1;
-                int endZ = cellZ + 1;
-                while (hasSouthEastExploredLine(chunkSet, endX, endZ)) {
-                    endX++;
-                    endZ++;
-                }
-                addExploredLineSegment(segments, cellX, cellZ, endX, endZ, cellChunkSize);
+            // Anchor the nametag at the centroid of this layer's visible cells (prefer explored mass,
+            // fall back to the old/new area when the player has no explored cells in view).
+            float[] anchor = cellGridCentroidWorld(cells, cellChunkSize);
+            if (anchor == null) {
+                anchor = cellGridCentroidWorld(area, cellChunkSize);
             }
-
-            if (hasNorthEastExploredLine(chunkSet, cellX, cellZ) && !hasNorthEastExploredLine(chunkSet, cellX - 1, cellZ + 1)) {
-                int endX = cellX + 1;
-                int endZ = cellZ - 1;
-                while (hasNorthEastExploredLine(chunkSet, endX, endZ)) {
-                    endX++;
-                    endZ--;
-                }
-                addExploredLineSegment(segments, cellX, cellZ, endX, endZ, cellChunkSize);
+            if (anchor != null) {
+                this.playerLayerLabelAnchors.put(slug, anchor);
             }
         }
-
-        exploredLineSegments = segments;
-        exploredLineNodes = nodes;
     }
 
-    private void addExploredLineSegment(ArrayList<ExploredLineSegment> segments, int startX, int startZ, int endX, int endZ, int cellChunkSize) {
-        segments.add(new ExploredLineSegment(cellCenter(startX, cellChunkSize), cellCenter(startZ, cellChunkSize), cellCenter(endX, cellChunkSize), cellCenter(endZ, cellChunkSize)));
+
+    private static float[] cellGridCentroidWorld(CellGrid grid, int cellChunkSize) {
+        if (grid == null) {
+            return null;
+        }
+        long count = 0;
+        double sumGx = 0.0;
+        double sumGz = 0.0;
+        boolean[] cells = grid.cells;
+        int width = grid.width;
+        for (int i = 0; i < cells.length; i++) {
+            if (cells[i]) {
+                sumGx += i % width;
+                sumGz += i / width;
+                count++;
+            }
+        }
+        if (count == 0) {
+            return null;
+        }
+        float cellWorld = cellChunkSize * 16.0F;
+        float worldX = (float) ((grid.minX + sumGx / count) * cellWorld + cellWorld * 0.5F);
+        float worldZ = (float) ((grid.minZ + sumGz / count) * cellWorld + cellWorld * 0.5F);
+        return new float[] {worldX, worldZ};
     }
 
-    private float cellCenter(int cellCoordinate, int cellChunkSize) {
-        return (cellCoordinate * cellChunkSize + cellChunkSize * 0.5F) * 16.0F;
+
+    private void drawPlayerLayerLabels(GuiGraphicsExtractor graphics) {
+        if (this.playerLayerLabelAnchors.isEmpty()) {
+            return;
+        }
+        int screenCenterX = this.width / 2;
+        int screenCenterY = this.height / 2;
+        for (java.util.Map.Entry<String, float[]> e : this.playerLayerLabelAnchors.entrySet()) {
+            float ptX = e.getValue()[0];
+            float ptZ = e.getValue()[1];
+
+            double wayX = this.mapCenterX - (this.oldNorth ? -ptZ : ptX);
+            double wayY = this.mapCenterZ - (this.oldNorth ? ptX : ptZ);
+            float locate = (float) Math.atan2(wayX, wayY);
+            float hypot = (float) Math.sqrt(wayX * wayX + wayY * wayY) * this.mapToGui;
+
+            graphics.pose().pushMatrix();
+            graphics.pose().rotate(-locate);
+            graphics.pose().translate(0.0F, -hypot);
+            graphics.pose().rotate(locate);
+            Vector2f guiVector = graphics.pose().transformPosition(new Vector2f(screenCenterX, screenCenterY));
+            graphics.pose().popMatrix();
+
+            float screenX = guiVector.x();
+            float screenY = guiVector.y();
+            if (screenX < this.sideMargin || screenX > this.width - this.sideMargin
+                    || screenY < this.top + 2 || screenY > this.bottom - 10) {
+                continue;
+            }
+
+            String name = layerDisplayName(e.getKey());
+            int color = 0xFF000000 | (playerLayerColor(e.getKey(), 0xFF000000) & 0x00FFFFFF);
+            writeCentered(graphics, name, screenX, screenY - 4.0F, color, true);
+        }
     }
 
-    private boolean hasExploredLineNeighbor(java.util.HashSet<Long> chunkSet, int x, int z) {
-        return hasCell(chunkSet, x - 1, z)
-                || hasCell(chunkSet, x + 1, z)
-                || hasCell(chunkSet, x, z - 1)
-                || hasCell(chunkSet, x, z + 1)
-                || hasSouthEastExploredLine(chunkSet, x, z)
-                || hasSouthEastExploredLine(chunkSet, x - 1, z - 1)
-                || hasNorthEastExploredLine(chunkSet, x, z)
-                || hasNorthEastExploredLine(chunkSet, x - 1, z + 1);
-    }
-
-    private boolean hasSouthEastExploredLine(java.util.HashSet<Long> chunkSet, int x, int z) {
-        return hasCell(chunkSet, x + 1, z + 1)
-                && !hasCell(chunkSet, x + 1, z)
-                && !hasCell(chunkSet, x, z + 1);
-    }
-
-    private boolean hasNorthEastExploredLine(java.util.HashSet<Long> chunkSet, int x, int z) {
-        return hasCell(chunkSet, x + 1, z - 1)
-                && !hasCell(chunkSet, x + 1, z)
-                && !hasCell(chunkSet, x, z - 1);
-    }
-
-    private boolean hasCell(java.util.HashSet<Long> chunkSet, int x, int z) {
-        return chunkSet.contains(chunkKey(x, z));
+    private static String layerDisplayName(String slug) {
+        return slug;
     }
 
     private void appendExploredQuad(float x0, float y0, float x1, float y1, int color) {
@@ -3242,12 +3262,6 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     }
 
     private record ExploredLineRenderCacheKey(ExploredLinesQueryCacheKey queryKey, int cellChunkSize, long dataVersion) {
-    }
-
-    private record ExploredLineSegment(float x1, float z1, float x2, float z2) {
-    }
-
-    private record ExploredLineNode(float x, float z, boolean linked) {
     }
 
     private record NewOldChunkOverlayRenderCacheKey(int minChunkX, int maxChunkX, int minChunkZ, int maxChunkZ,
