@@ -5,6 +5,7 @@ import com.mamiyaotaru.voxelmap.NewerNewChunksManager;
 import com.mamiyaotaru.voxelmap.RadarSettingsManager;
 import com.mamiyaotaru.voxelmap.VoxelConstants;
 import com.mamiyaotaru.voxelmap.WaypointManager;
+import com.mamiyaotaru.voxelmap.chunksync.ChunkSharePlayerSettings;
 import com.mamiyaotaru.voxelmap.gui.GuiAddWaypoint;
 import com.mamiyaotaru.voxelmap.gui.GuiMinimapOptions;
 import com.mamiyaotaru.voxelmap.gui.GuiSeedMapperOptions;
@@ -31,6 +32,7 @@ import com.mamiyaotaru.voxelmap.util.BackgroundImageInfo;
 import com.mamiyaotaru.voxelmap.util.BiomeMapData;
 import com.mamiyaotaru.voxelmap.util.CellGrid;
 import com.mamiyaotaru.voxelmap.util.CommandUtils;
+import com.mamiyaotaru.voxelmap.util.AppChatMessages;
 import com.mamiyaotaru.voxelmap.util.DimensionContainer;
 import com.mamiyaotaru.voxelmap.util.EasingUtils;
 import com.mamiyaotaru.voxelmap.util.GameVariableAccessShim;
@@ -213,7 +215,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     private float[] exploredQuadCoords = new float[4096];
     private int[] exploredQuadColors = new int[1024];
     private int exploredQuadCount = 0;
-    private final java.util.Map<String, float[]> playerLayerLabelAnchors = new java.util.LinkedHashMap<>();
+    private final List<PlayerLayerStatusHitbox> playerLayerStatusHitboxes = new ArrayList<>();
     private NewOldChunkOverlayRenderCacheKey newOldChunkOverlayRenderCacheKey;
     private List<NewOldChunkRenderRect> newOldChunkOldRects = List.of();
     private List<NewOldChunkRenderRect> newOldChunkNewRects = List.of();
@@ -477,6 +479,9 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     public boolean mouseClicked(MouseButtonEvent mouseButtonEvent, boolean doubleClick) {
         int mouseX = (int) mouseButtonEvent.x();
         int mouseY = (int) mouseButtonEvent.y();
+        if (mouseButtonEvent.button() == 0 && handlePlayerLayerStatusClick(mouseX, mouseY)) {
+            return true;
+        }
         if (mouseButtonEvent.button() == 0) {
             long now = System.currentTimeMillis();
             boolean closeInTime = now - this.lastMapLeftClickMs <= 300L;
@@ -1014,7 +1019,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         if (!farZoomPerformanceMode) {
             drawSeedMapperMarkers(graphics, mouseX, mouseY);
         }
-        drawPlayerLayerLabels(graphics);
+        drawPlayerLayerStatuses(graphics);
 
         Waypoint currentlyHovered = null;
         boolean showWaypointsInThisMode = !farZoomPerformanceMode || this.options.isShowWaypointsInPerformanceModeEnabled();
@@ -1148,7 +1153,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     private void drawExploredChunkLinesWorldMap(GuiGraphicsExtractor graphics, int leftRegion, int rightRegion, int topRegion, int bottomRegion) {
         this.exploredQuadCount = 0;
         // Clear up front so an early return (overlay off / zero alpha) leaves no stale player-layer labels.
-        this.playerLayerLabelAnchors.clear();
+        this.playerLayerStatusHitboxes.clear();
         if (!radarOptions.showExploredChunks) {
             return;
         }
@@ -1496,11 +1501,16 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
         java.util.ArrayList<NewOldChunkRenderRect> rects = new java.util.ArrayList<>();
         for (String slug : slugs) {
+            if (!ChunkSharePlayerSettings.isEnabled(slug)) {
+                continue;
+            }
             NewerNewChunksManager.NewOldCellsSnapshot snap =
                     manager.getPlayerNewOldCellsInRange(slug, centerChunkX, centerChunkZ, radius, effectiveCell);
             // greedyMesh consumes the grid; the snapshot grids are freshly built per call so that's fine.
-            rects.addAll(greedyMeshNewOldChunkCells(snap.oldCells(), effectiveCell, oldColor, maxDraw));
-            rects.addAll(greedyMeshNewOldChunkCells(snap.newCells(), effectiveCell, newColor, maxDraw));
+            rects.addAll(greedyMeshNewOldChunkCells(snap.oldCells(), effectiveCell,
+                    ChunkSharePlayerSettings.colorFor(slug, oldColor), maxDraw));
+            rects.addAll(greedyMeshNewOldChunkCells(snap.newCells(), effectiveCell,
+                    ChunkSharePlayerSettings.colorFor(slug, newColor), maxDraw));
         }
         if (rects.isEmpty()) {
             return;
@@ -1769,25 +1779,21 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 chunkSet, cellChunkSize, buildNodes, exploredLineMesh.segmentCount(), exploredLineMesh.nodeCount());
     }
 
-    private static final int[] PLAYER_LAYER_PALETTE = {
-        0xFFFF5555, 0xFF55FF55, 0xFF5599FF, 0xFFFFEE44, 0xFFFF55FF,
-        0xFF55FFFF, 0xFFFFAA33, 0xFFAA66FF, 0xFF33CCAA, 0xFFFF99CC
-    };
-
     private static int playerLayerColor(String slug, int alphaSource) {
-        int rgb = PLAYER_LAYER_PALETTE[Math.floorMod(slug.hashCode(), PLAYER_LAYER_PALETTE.length)] & 0x00FFFFFF;
-        return (alphaSource & 0xFF000000) | rgb; // share the explored overlay's alpha
+        return ChunkSharePlayerSettings.colorFor(slug, alphaSource);
     }
 
     /** Draws each imported player's explored lattice and their old/new area outline, in the player's colour. */
     private void renderPlayerExploredLayers(GuiGraphicsExtractor graphics, com.mamiyaotaru.voxelmap.ExploredChunksManager mgr,
             int centerChunkX, int centerChunkZ, int radius, int cellChunkSize, float lineThickness, int selfColor) {
-        this.playerLayerLabelAnchors.clear();
         java.util.Set<String> slugs = mgr.playerLayerSlugs();
         if (slugs.isEmpty()) {
             return;
         }
         for (String slug : slugs) {
+            if (!ChunkSharePlayerSettings.isEnabled(slug)) {
+                continue;
+            }
             int layerColor = playerLayerColor(slug, selfColor);
 
             CellGrid cells = mgr.getPlayerExploredCellsInRange(slug, centerChunkX, centerChunkZ, radius, cellChunkSize);
@@ -1798,81 +1804,43 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 int o = i << 2;
                 appendThickInterpolatedLine(seg[o], seg[o + 1], seg[o + 2], seg[o + 3], lineThickness, layerColor);
             }
-
-            // Anchor the nametag at the centroid of this layer's visible explored cells.
-            float[] anchor = cellGridCentroidWorld(cells, cellChunkSize);
-            if (anchor != null) {
-                this.playerLayerLabelAnchors.put(slug, anchor);
-            }
         }
     }
 
-
-    private static float[] cellGridCentroidWorld(CellGrid grid, int cellChunkSize) {
-        if (grid == null) {
-            return null;
+    private void drawPlayerLayerStatuses(GuiGraphicsExtractor graphics) {
+        this.playerLayerStatusHitboxes.clear();
+        java.util.Set<String> slugs = new java.util.LinkedHashSet<>();
+        slugs.addAll(VoxelConstants.getVoxelMapInstance().getExploredChunksManager().playerLayerSlugs());
+        slugs.addAll(VoxelConstants.getVoxelMapInstance().getNewerNewChunksManager().playerLayerSlugs());
+        int y = this.top + 5;
+        for (String slug : slugs) {
+            boolean enabled = ChunkSharePlayerSettings.isEnabled(slug);
+            String text = enabled ? "Chunk Share Active: " + layerDisplayName(slug) : "Chunk Share: " + layerDisplayName(slug);
+            int color = enabled ? playerLayerColor(slug, 0xFF000000) : 0xFFFFFFFF;
+            int x = this.width - this.sideMargin - this.getFont().width(text);
+            graphics.text(this.getFont(), text, x, y, color, true);
+            this.playerLayerStatusHitboxes.add(new PlayerLayerStatusHitbox(slug, x, y - 1, this.width - this.sideMargin, y + 10));
+            y += 11;
         }
-        long count = 0;
-        double sumGx = 0.0;
-        double sumGz = 0.0;
-        boolean[] cells = grid.cells;
-        int width = grid.width;
-        for (int i = 0; i < cells.length; i++) {
-            if (cells[i]) {
-                sumGx += i % width;
-                sumGz += i / width;
-                count++;
-            }
-        }
-        if (count == 0) {
-            return null;
-        }
-        float cellWorld = cellChunkSize * 16.0F;
-        float worldX = (float) ((grid.minX + sumGx / count) * cellWorld + cellWorld * 0.5F);
-        float worldZ = (float) ((grid.minZ + sumGz / count) * cellWorld + cellWorld * 0.5F);
-        return new float[] {worldX, worldZ};
     }
 
-
-    private void drawPlayerLayerLabels(GuiGraphicsExtractor graphics) {
-        if (this.playerLayerLabelAnchors.isEmpty()) {
-            return;
-        }
-        int screenCenterX = this.width / 2;
-        int screenCenterY = this.height / 2;
-        for (java.util.Map.Entry<String, float[]> e : this.playerLayerLabelAnchors.entrySet()) {
-            float ptX = e.getValue()[0];
-            float ptZ = e.getValue()[1];
-
-            double wayX = this.mapCenterX - (this.oldNorth ? -ptZ : ptX);
-            double wayY = this.mapCenterZ - (this.oldNorth ? ptX : ptZ);
-            float locate = (float) Math.atan2(wayX, wayY);
-            float hypot = (float) Math.sqrt(wayX * wayX + wayY * wayY) * this.mapToGui;
-
-            graphics.pose().pushMatrix();
-            graphics.pose().rotate(-locate);
-            graphics.pose().translate(0.0F, -hypot);
-            graphics.pose().rotate(locate);
-            Vector2f guiVector = graphics.pose().transformPosition(new Vector2f(screenCenterX, screenCenterY));
-            graphics.pose().popMatrix();
-
-            float screenX = guiVector.x();
-            float screenY = guiVector.y();
-            // Skip labels whose anchor falls outside the visible map strip.
-            if (screenX < this.sideMargin || screenX > this.width - this.sideMargin
-                    || screenY < this.top + 2 || screenY > this.bottom - 10) {
-                continue;
+    private boolean handlePlayerLayerStatusClick(int mouseX, int mouseY) {
+        for (PlayerLayerStatusHitbox hitbox : this.playerLayerStatusHitboxes) {
+            if (mouseX >= hitbox.left() && mouseX <= hitbox.right()
+                    && mouseY >= hitbox.top() && mouseY <= hitbox.bottom()) {
+                ChunkSharePlayerSettings.toggleEnabled(hitbox.slug());
+                return true;
             }
-
-            String name = layerDisplayName(e.getKey());
-            int color = 0xFF000000 | (playerLayerColor(e.getKey(), 0xFF000000) & 0x00FFFFFF);
-            writeCentered(graphics, name, screenX, screenY - 4.0F, color, true);
         }
+        return false;
     }
 
     /** A human-readable label for a player layer slug (slugs use only filesystem-safe chars already). */
     private static String layerDisplayName(String slug) {
         return slug;
+    }
+
+    private record PlayerLayerStatusHitbox(String slug, int left, int top, int right, int bottom) {
     }
 
     private void appendExploredQuad(float x0, float y0, float x1, float y1, int color) {
@@ -2795,7 +2763,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                     marker.blockZ()
             );
             if (chestData.isEmpty()) {
-                minecraft.gui.getChat().addClientSystemMessage(Component.literal("[SeedMapper] No chest loot data available for this structure."));
+                minecraft.gui.getChat().addClientSystemMessage(AppChatMessages.prefixed("SeedMapper", "No chest loot data available for this structure."));
                 return true;
             }
 
@@ -3005,7 +2973,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 dimensions
         );
         waypointManager.addWaypoint(waypoint);
-        minecraft.gui.getChat().addClientSystemMessage(Component.literal("[SeedMapper] Waypoint created for " + name));
+        minecraft.gui.getChat().addClientSystemMessage(AppChatMessages.prefixed("SeedMapper", "Waypoint created for " + name));
     }
 
     private Waypoint createTransientStructureWaypoint(SeedMapperMarker marker) {
@@ -3559,7 +3527,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                             selectedSeedMapperMarker.blockZ()
                     );
                     if (chestData.isEmpty()) {
-                        minecraft.gui.getChat().addClientSystemMessage(Component.literal("[SeedMapper] No chest loot data available for this structure."));
+                        minecraft.gui.getChat().addClientSystemMessage(AppChatMessages.prefixed("SeedMapper", "No chest loot data available for this structure."));
                     } else {
                         int widgetX = Mth.clamp((int) popup.getClickedDirectX() / (int) this.guiToDirectMouse + 10, 4, this.width - SeedMapperChestLootWidget.WIDTH - 4);
                         int widgetY = Mth.clamp((int) (popup.getClickedDirectY() / this.guiToDirectMouse) + 10, this.top + 4, this.bottom - SeedMapperChestLootWidget.HEIGHT - 4);

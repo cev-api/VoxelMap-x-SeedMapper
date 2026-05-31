@@ -16,6 +16,7 @@ import com.google.gson.JsonObject;
 import com.mamiyaotaru.voxelmap.VoxelConstants;
 import com.mamiyaotaru.voxelmap.util.DimensionContainer;
 import com.mamiyaotaru.voxelmap.util.GameVariableAccessShim;
+import com.mamiyaotaru.voxelmap.util.AppChatMessages;
 import com.mamiyaotaru.voxelmap.util.Waypoint;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
@@ -1798,7 +1799,7 @@ public final class SeedMapperCommandHandler {
             statusSink.accept(text);
         }
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.gui != null) minecraft.gui.getChat().addClientSystemMessage(Component.literal("[SeedMapper] " + text));
+        if (minecraft.gui != null) minecraft.gui.getChat().addClientSystemMessage(AppChatMessages.prefixed("SeedMapper", text));
     }
 
     public static void setStatusSink(Consumer<String> sink) {

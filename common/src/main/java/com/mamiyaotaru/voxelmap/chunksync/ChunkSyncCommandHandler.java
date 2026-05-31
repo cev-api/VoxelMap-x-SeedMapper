@@ -1,6 +1,7 @@
 package com.mamiyaotaru.voxelmap.chunksync;
 
 import com.mamiyaotaru.voxelmap.VoxelConstants;
+import com.mamiyaotaru.voxelmap.util.AppChatMessages;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 
@@ -8,10 +9,12 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
+import java.util.function.Consumer;
 
 public final class ChunkSyncCommandHandler {
     private static final String USAGE = "Usage: /chunksync share [to <player>] | get <code> [as <player>] | key <pass> "
             + "| host <litterbox|file.io> | export [name] | import [name] [as <player>] | players | remove <player>";
+    private static Consumer<String> statusSink;
 
     private ChunkSyncCommandHandler() {
     }
@@ -19,6 +22,14 @@ public final class ChunkSyncCommandHandler {
     public static boolean handleChatCommand(String rawCommand) {
         handle(rawCommand.trim().split("\\s+"));
         return true;
+    }
+
+    public static void runFromGui(String arguments) {
+        handle(("chunksync " + (arguments == null ? "" : arguments.trim())).trim().split("\\s+"));
+    }
+
+    public static void setStatusSink(Consumer<String> sink) {
+        statusSink = sink;
     }
 
     private static void handle(String[] args) {
@@ -31,7 +42,7 @@ public final class ChunkSyncCommandHandler {
                 Path dir = chunkShareBundle(args.length >= 3 ? args[2] : null);
                 try {
                     int n = ChunkShareService.exportBundle(dir, playerName());
-                    sendChunkSync("Exported " + n + " chunks (all dimensions) to " + dir);
+                    sendChunkSync("Exported " + n + " chunks from this game to " + dir);
                 } catch (IOException e) {
                     sendChunkSync("Chunk export failed: " + e.getMessage());
                 }
@@ -63,9 +74,9 @@ public final class ChunkSyncCommandHandler {
                 var explored = VoxelConstants.getVoxelMapInstance().getExploredChunksManager().playerLayerSlugs();
                 var newOld = VoxelConstants.getVoxelMapInstance().getNewerNewChunksManager().playerLayerSlugs();
                 if (explored.isEmpty() && newOld.isEmpty()) {
-                    sendChunkSync("No imported player layers in this dimension.");
+                    sendChunkSync("No imported player layers in this game.");
                 } else {
-                    sendChunkSync("Player layers (this dimension) — explored: ["
+                    sendChunkSync("Player layers (this game) - explored: ["
                             + String.join(", ", explored) + "]  new/old: [" + String.join(", ", newOld) + "]");
                 }
             }
@@ -77,6 +88,7 @@ public final class ChunkSyncCommandHandler {
                 String slug = ChunkShareService.slugFor(args[2]);
                 boolean a = VoxelConstants.getVoxelMapInstance().getExploredChunksManager().removePlayerLayer(slug);
                 boolean b = VoxelConstants.getVoxelMapInstance().getNewerNewChunksManager().removePlayerLayer(slug);
+                ChunkSharePlayerSettings.remove(slug);
                 sendChunkSync(a || b ? "Removed player layer '" + slug + "'." : "No player layer '" + slug + "' found.");
             }
             case "key" -> {
@@ -201,7 +213,7 @@ public final class ChunkSyncCommandHandler {
                     int n = asPlayer != null
                             ? ChunkShareService.importBundleAsPlayer(temp, asPlayer)
                             : ChunkShareService.importBundle(temp);
-                    sendChunkSync("Imported " + n + " chunks (all dimensions)" + (asPlayer != null ? " as layer '" + asPlayer + "'" : "") + ".");
+                    sendChunkSync("Imported " + n + " chunks into this game" + (asPlayer != null ? " as layer '" + asPlayer + "'" : "") + ".");
                 } catch (IOException e) {
                     sendChunkSync("Import of downloaded data failed: " + e.getMessage());
                 } finally {
@@ -243,9 +255,12 @@ public final class ChunkSyncCommandHandler {
     }
 
     private static void sendChunkSync(String text) {
+        if (statusSink != null) {
+            statusSink.accept(text);
+        }
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.gui != null) {
-            minecraft.gui.getChat().addClientSystemMessage(Component.literal("[ChunkSync] " + text));
+            minecraft.gui.getChat().addClientSystemMessage(AppChatMessages.prefixed("ChunkSync", text));
         }
     }
 }

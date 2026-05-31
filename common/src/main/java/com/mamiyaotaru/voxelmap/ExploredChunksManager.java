@@ -96,6 +96,18 @@ public class ExploredChunksManager {
         return buildCellGrid(c, centerChunkX, centerChunkZ, radius, cellChunkSize);
     }
 
+    public Set<ChunkPos> getPlayerExploredChunksInRange(String slug, int centerChunkX, int centerChunkZ, int radius) {
+        StoreCtx c = exploredPlayerLayers.get(slug);
+        if (c == null) {
+            return Set.of();
+        }
+        ensureLoadedForBounds(c, 0, centerChunkX, centerChunkZ, radius);
+        Set<ChunkPos> result = new HashSet<>();
+        c.store().forEachExploredChunkInRange(centerChunkX, centerChunkZ, radius,
+                (x, z) -> result.add(new ChunkPos(x, z)));
+        return result;
+    }
+
     public java.util.Set<String> playerLayerSlugs() {
         return exploredPlayerLayers.keySet();
     }

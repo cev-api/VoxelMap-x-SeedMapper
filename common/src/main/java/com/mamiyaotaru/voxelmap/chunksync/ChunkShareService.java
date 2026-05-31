@@ -96,6 +96,7 @@ public final class ChunkShareService {
             String slug = slugFor(name);
             total[0] += explored().importPlayerExplored(slug, dimension, payload.explored());
             total[0] += newold().importPlayerNewOld(slug, dimension, payload.newold());
+            ChunkSharePlayerSettings.register(slug);
         });
         return total[0];
     }
