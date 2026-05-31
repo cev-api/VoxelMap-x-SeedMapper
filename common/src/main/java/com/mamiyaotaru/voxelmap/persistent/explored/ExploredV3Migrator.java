@@ -11,6 +11,7 @@ import java.util.stream.Stream;
 
 public final class ExploredV3Migrator {
     private static final int V2_MAGIC = 0x45585032;
+    private static final int MIGRATOR_VERSION = 1;
 
     private ExploredV3Migrator() {
     }
@@ -22,43 +23,67 @@ public final class ExploredV3Migrator {
         }
         try {
             String json = Files.readString(manifest, StandardCharsets.UTF_8).replaceAll("\\s+", "");
-            return json.contains("\"formatVersion\":3") && json.contains("\"migrationComplete\":true");
+            return json.contains("\"formatVersion\":3")
+                    && json.contains("\"migrationComplete\":true")
+                    && readMigratorVersion(json) >= MIGRATOR_VERSION;
         } catch (IOException ignored) {
             return false;
         }
     }
 
+    private static int readMigratorVersion(String compactJson) {
+        String key = "\"migratorVersion\":";
+        int idx = compactJson.indexOf(key);
+        if (idx < 0) {
+            return 0; // pre-versioning manifest -> treat as the oldest
+        }
+        int start = idx + key.length();
+        int end = start;
+        while (end < compactJson.length() && Character.isDigit(compactJson.charAt(end))) {
+            end++;
+        }
+        try {
+            return Integer.parseInt(compactJson.substring(start, end));
+        } catch (NumberFormatException ignored) {
+            return 0;
+        }
+    }
+
     public static void migrate(Path v1TextFile, Path v2RegionDir, Path v3Dir) {
+        migrate(v1TextFile, v2RegionDir, v3Dir, V2_MAGIC);
+    }
+
+    public static void migrate(Path v1TextFile, Path v2RegionDir, Path v3Dir, int v2Magic) {
         ExploredDiskStore store = new ExploredDiskStore(v3Dir);
         int chunks = 0;
-        chunks += importV2(v2RegionDir, store);
+        chunks += importV2(v2RegionDir, store, v2Magic);
         chunks += importV1(v1TextFile, store);
         store.flush();
         writeManifest(v3Dir, chunks);
     }
 
-    private static int importV2(Path v2RegionDir, ExploredDiskStore store) {
+    private static int importV2(Path v2RegionDir, ExploredDiskStore store, int v2Magic) {
         if (v2RegionDir == null || Files.notExists(v2RegionDir)) {
             return 0;
         }
         int imported = 0;
         try (Stream<Path> files = Files.list(v2RegionDir)) {
             for (Path file : (Iterable<Path>) files.filter(p -> p.getFileName().toString().endsWith(".bin"))::iterator) {
-                imported += importV2Region(file, store);
+                imported += importV2Region(file, store, v2Magic);
             }
         } catch (IOException ignored) {
         }
         return imported;
     }
 
-    private static int importV2Region(Path file, ExploredDiskStore store) {
+    private static int importV2Region(Path file, ExploredDiskStore store, int v2Magic) {
         try (InputStream in = Files.newInputStream(file)) {
             int magic = readInt(in);
             readInt(in); // version
             readInt(in); // regionShift
             int rx = readInt(in);
             int rz = readInt(in);
-            if (magic != V2_MAGIC) {
+            if (magic != v2Magic) {
                 return 0;
             }
             byte[] body = in.readNBytes(ExploredTile.BYTE_SIZE);
@@ -137,6 +162,7 @@ public final class ExploredV3Migrator {
     private static void writeManifest(Path v3Dir, int migratedChunks) {
         String json = "{\n"
                 + "  \"formatVersion\": 3,\n"
+                + "  \"migratorVersion\": " + MIGRATOR_VERSION + ",\n"
                 + "  \"migrationComplete\": true,\n"
                 + "  \"migratedChunks\": " + migratedChunks + "\n"
                 + "}\n";

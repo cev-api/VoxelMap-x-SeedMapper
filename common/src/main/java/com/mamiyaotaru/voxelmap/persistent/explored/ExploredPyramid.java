@@ -1,8 +1,5 @@
 package com.mamiyaotaru.voxelmap.persistent.explored;
 
-import java.util.HashMap;
-import java.util.Map;
-
 /**
  * 4-level mip pyramid of {@link ExploredTile}s, level 0 stores per-chunk bits, each higher level's
  * bit means "the corresponding lower-level tile is non-empty", setting a chunk
@@ -14,13 +11,12 @@ public final class ExploredPyramid {
     private static final int TILE_SHIFT = 5; // 32 chunks per tile side at level 0
     private static final int TILE_MASK = (1 << TILE_SHIFT) - 1; // 31
 
-    private final Map<Long, ExploredTile>[] levels;
+    private final ExploredTileMap[] levels;
 
-    @SuppressWarnings("unchecked")
     public ExploredPyramid() {
-        levels = new Map[LEVELS];
+        levels = new ExploredTileMap[LEVELS];
         for (int l = 0; l < LEVELS; l++) {
-            levels[l] = new HashMap<>();
+            levels[l] = new ExploredTileMap();
         }
     }
 
@@ -100,5 +96,13 @@ public final class ExploredPyramid {
 
     public ExploredTile tileAt(int level, int tileX, int tileZ) {
         return levels[level].get(key(tileX, tileZ));
+    }
+
+    public int tileCount(int level) {
+        return levels[level].size();
+    }
+
+    public void forEachTile(int level, ExploredTileMap.EntryVisitor visitor) {
+        levels[level].forEach(visitor);
     }
 }

@@ -1,6 +1,7 @@
 package com.mamiyaotaru.voxelmap.persistent.explored;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -8,13 +9,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Stream;
 
 /**
  * persistent store for the explored chunk LOD pyramid that persists every level to sparse
  * container files under a base dir, disk I/O performed outside lock and only fast in-memory
  * pyramid mutation/read holds the lock, so a query thread never stalls behind a background disk read
- *
- *
  */
 public final class ExploredDiskStore {
     private static final int CONTAINER_SHIFT = ExploredContainer.CONTAINER_SHIFT; // 5
@@ -139,6 +139,42 @@ public final class ExploredDiskStore {
         }
     }
 
+    public void forEachStoredChunk(ChunkConsumer consumer) {
+        flush();
+        Path lod0 = baseDir.resolve("lod0");
+        if (Files.notExists(lod0)) {
+            return;
+        }
+        try (Stream<Path> files = Files.list(lod0)) {
+            for (Path file : (Iterable<Path>) files.filter(p -> p.getFileName().toString().endsWith(".bin"))::iterator) {
+                ExploredContainer container = ExploredContainerIo.read(file);
+                if (container == null) {
+                    continue;
+                }
+                int baseTileX = container.containerX() << CONTAINER_SHIFT;
+                int baseTileZ = container.containerZ() << CONTAINER_SHIFT;
+                for (int localX = 0; localX < ExploredContainer.TILES_PER_SIDE; localX++) {
+                    for (int localZ = 0; localZ < ExploredContainer.TILES_PER_SIDE; localZ++) {
+                        ExploredTile tile = container.getTile(localX, localZ);
+                        if (tile == null || tile.isEmpty()) {
+                            continue;
+                        }
+                        int baseChunkX = (baseTileX + localX) << TILE_SHIFT;
+                        int baseChunkZ = (baseTileZ + localZ) << TILE_SHIFT;
+                        for (int bx = 0; bx < ExploredTile.SIDE; bx++) {
+                            for (int bz = 0; bz < ExploredTile.SIDE; bz++) {
+                                if (tile.get(bx, bz)) {
+                                    consumer.accept(baseChunkX + bx, baseChunkZ + bz);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (IOException ignored) {
+        }
+    }
+
     /**
      * calls {@code consumer} exactly once for each cell (size {@code cellChunkSize}) that contains any
      * exploration within [center +/- radius] and reads from the coarsest pyramid level whose per-bit
@@ -155,7 +191,7 @@ public final class ExploredDiskStore {
         int maxChunkX = centerChunkX + radius;
         int minChunkZ = centerChunkZ - radius;
         int maxChunkZ = centerChunkZ + radius;
-        java.util.HashSet<Long> emittedCells = new java.util.HashSet<>();
+        LongHashSet emittedCells = new LongHashSet();
         lock.readLock().lock();
         try {
             int levelTileShift = TILE_SHIFT * (level + 1);
@@ -163,35 +199,53 @@ public final class ExploredDiskStore {
             int maxTileX = maxChunkX >> levelTileShift;
             int minTileZ = minChunkZ >> levelTileShift;
             int maxTileZ = maxChunkZ >> levelTileShift;
-            for (int tileX = minTileX; tileX <= maxTileX; tileX++) {
-                for (int tileZ = minTileZ; tileZ <= maxTileZ; tileZ++) {
-                    ExploredTile tile = pyramid.tileAt(level, tileX, tileZ);
-                    if (tile == null || tile.isEmpty()) {
-                        continue;
-                    }
-                    for (int bx = 0; bx < ExploredTile.SIDE; bx++) {
-                        for (int bz = 0; bz < ExploredTile.SIDE; bz++) {
-                            if (!tile.get(bx, bz)) {
-                                continue;
-                            }
-                            long blockChunkX = ((long) tileX * ExploredTile.SIDE + bx) * coverage;
-                            long blockChunkZ = ((long) tileZ * ExploredTile.SIDE + bz) * coverage;
-                            if (blockChunkX + coverage - 1 < minChunkX || blockChunkX > maxChunkX
-                                    || blockChunkZ + coverage - 1 < minChunkZ || blockChunkZ > maxChunkZ) {
-                                continue;
-                            }
-                            int cellX = (int) Math.floorDiv(blockChunkX, (long) cellChunkSize);
-                            int cellZ = (int) Math.floorDiv(blockChunkZ, (long) cellChunkSize);
-                            long cellKey = ((long) cellX << 32) ^ (cellZ & 0xFFFFFFFFL);
-                            if (emittedCells.add(cellKey)) {
-                                consumer.accept(cellX, cellZ);
-                            }
+
+            long rectTiles = (long) (maxTileX - minTileX + 1) * (long) (maxTileZ - minTileZ + 1);
+            if (rectTiles <= pyramid.tileCount(level)) {
+                for (int tileX = minTileX; tileX <= maxTileX; tileX++) {
+                    for (int tileZ = minTileZ; tileZ <= maxTileZ; tileZ++) {
+                        ExploredTile tile = pyramid.tileAt(level, tileX, tileZ);
+                        if (tile != null && !tile.isEmpty()) {
+                            emitTileCells(tileX, tileZ, coverage, cellChunkSize, minChunkX, maxChunkX, minChunkZ, maxChunkZ, tile, emittedCells, consumer);
                         }
                     }
                 }
+            } else {
+                pyramid.forEachTile(level, (key, tile) -> {
+                    int tileX = (int) (key >> 32);
+                    int tileZ = (int) key;
+                    if (tileX < minTileX || tileX > maxTileX || tileZ < minTileZ || tileZ > maxTileZ || tile.isEmpty()) {
+                        return;
+                    }
+                    emitTileCells(tileX, tileZ, coverage, cellChunkSize, minChunkX, maxChunkX, minChunkZ, maxChunkZ, tile, emittedCells, consumer);
+                });
             }
         } finally {
             lock.readLock().unlock();
+        }
+    }
+
+    private static void emitTileCells(int tileX, int tileZ, long coverage, int cellChunkSize,
+            int minChunkX, int maxChunkX, int minChunkZ, int maxChunkZ,
+            ExploredTile tile, LongHashSet emittedCells, CellConsumer consumer) {
+        for (int bx = 0; bx < ExploredTile.SIDE; bx++) {
+            for (int bz = 0; bz < ExploredTile.SIDE; bz++) {
+                if (!tile.get(bx, bz)) {
+                    continue;
+                }
+                long blockChunkX = ((long) tileX * ExploredTile.SIDE + bx) * coverage;
+                long blockChunkZ = ((long) tileZ * ExploredTile.SIDE + bz) * coverage;
+                if (blockChunkX + coverage - 1 < minChunkX || blockChunkX > maxChunkX
+                        || blockChunkZ + coverage - 1 < minChunkZ || blockChunkZ > maxChunkZ) {
+                    continue;
+                }
+                int cellX = (int) Math.floorDiv(blockChunkX, (long) cellChunkSize);
+                int cellZ = (int) Math.floorDiv(blockChunkZ, (long) cellChunkSize);
+                long cellKey = ((long) cellX << 32) ^ (cellZ & 0xFFFFFFFFL);
+                if (emittedCells.add(cellKey)) {
+                    consumer.accept(cellX, cellZ);
+                }
+            }
         }
     }
 
