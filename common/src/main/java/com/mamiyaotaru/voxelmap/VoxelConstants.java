@@ -118,6 +118,10 @@ public final class VoxelConstants {
     }
 
     public static Component getModifiedChatMessage(Component chat) {
+        Component resolvedShare = com.mamiyaotaru.voxelmap.chunksync.ChunkShareChat.maybeResolveIncoming(chat);
+        if (resolvedShare != null) {
+            return resolvedShare;
+        }
         return CommandUtils.checkForWaypoints(chat);
     }
 
