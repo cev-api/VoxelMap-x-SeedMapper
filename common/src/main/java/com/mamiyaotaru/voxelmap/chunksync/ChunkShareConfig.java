@@ -15,6 +15,7 @@ public final class ChunkShareConfig {
     private static final String FILE_NAME = "share.properties";
     private static final String KEY_PASSPHRASE = "passphrase";
     private static final String KEY_HOST = "host";
+    private static final String KEY_HIDE_PUBLIC_SHARE_WARNING = "hidePublicShareWarning";
 
     private ChunkShareConfig() {
     }
@@ -71,6 +72,16 @@ public final class ChunkShareConfig {
     public static void setHost(Host host) {
         Properties props = load();
         props.setProperty(KEY_HOST, host.id);
+        save(props);
+    }
+
+    public static boolean isPublicShareWarningHidden() {
+        return Boolean.parseBoolean(load().getProperty(KEY_HIDE_PUBLIC_SHARE_WARNING, "false"));
+    }
+
+    public static void setPublicShareWarningHidden(boolean hidden) {
+        Properties props = load();
+        props.setProperty(KEY_HIDE_PUBLIC_SHARE_WARNING, Boolean.toString(hidden));
         save(props);
     }
 }

@@ -11,6 +11,7 @@ import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperDatapackManager;
 import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperEspStyle;
 import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperEspTarget;
 import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperSettingsManager;
+import com.mamiyaotaru.voxelmap.util.AppChatMessages;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
@@ -66,10 +67,9 @@ public class GuiSeedMapperOptions extends GuiScreenMinimap {
 
         int left = this.width / 2 - 155;
         int right = this.width / 2 + 5;
-        int y = this.height / 6 - 10;
+        int y = 64;
         int fullWidth = 310;
-        int rowGap = 24;
-        int sectionGap = 32;
+        int rowGap = 22;
 
         seedInput = new GuiButtonText(font, left, y, fullWidth, 20,
                 Component.literal("Seed Input: " + settings.manualSeed),
@@ -124,7 +124,7 @@ public class GuiSeedMapperOptions extends GuiScreenMinimap {
             minecraft.setScreen(new GuiSeedMapperLootViewer(this));
         }).bounds(right, y, 150, 20).build());
 
-        y += sectionGap;
+        y = 192;
 
         espTargetInput = new GuiButtonText(font, left, y, fullWidth, 20,
                 Component.literal("ESP Target: " + settings.espTarget),
@@ -188,7 +188,7 @@ public class GuiSeedMapperOptions extends GuiScreenMinimap {
                 minecraft.setScreen(new GuiSeedMapperEspProfiles(this)))
                 .bounds(left, y, fullWidth, 20).build());
 
-        y += sectionGap;
+        y = 342;
 
         datapackUrlInput = new GuiButtonText(font, left, y, fullWidth, 20,
                 Component.literal("Datapack URL: " + settings.datapackUrl),
@@ -227,7 +227,7 @@ public class GuiSeedMapperOptions extends GuiScreenMinimap {
                 minecraft.setScreen(new GuiSeedMapperDatapackOptions(this)))
                 .bounds(left, y, fullWidth, 20).build());
 
-        y += sectionGap;
+        y = 426;
 
         exportVisibleButton = addRenderableWidget(new Button.Builder(Component.literal("Export JSON"), button -> {
             applyTextValues();
@@ -245,7 +245,7 @@ public class GuiSeedMapperOptions extends GuiScreenMinimap {
         addRenderableWidget(new Button.Builder(Component.literal("Seed Cracking"), button -> {
             applyTextValues();
             minecraft.setScreen(new GuiSeedMapperCrackingMods(this));
-        }).bounds(this.width / 2 - 75, this.height - 98, 150, 20).build());
+        }).bounds(this.width / 2 - 75, 448, 150, 20).build());
 
         addRenderableWidget(new Button.Builder(Component.translatable("gui.done"), button -> onClose())
                 .bounds(this.width / 2 - 100, this.height - 26, 200, 20).build());
@@ -383,7 +383,7 @@ public class GuiSeedMapperOptions extends GuiScreenMinimap {
         if (text == null || text.isBlank()) {
             return;
         }
-        statusMessages.add(Component.literal("[SeedMapper] " + text));
+        statusMessages.add(AppChatMessages.prefixed("SeedMapper", text));
         while (statusMessages.size() > 3) {
             statusMessages.remove(0);
         }
@@ -409,11 +409,21 @@ public class GuiSeedMapperOptions extends GuiScreenMinimap {
         if (!isEmbeddedInParent()) {
             graphics.centeredText(this.getFont(), this.screenTitle, this.width / 2, 20, 0xFFFFFFFF);
         }
+        int left = this.width / 2 - 155;
+        drawSection(graphics, "World & Structures", left, 50);
+        drawSection(graphics, "ESP Highlights", left, 178);
+        drawSection(graphics, "Datapacks", left, 328);
+        drawSection(graphics, "Tools", left, 412);
         super.extractRenderState(graphics, mouseX, mouseY, delta);
 
         int statusY = this.height - 56;
         for (int i = 0; i < statusMessages.size(); i++) {
             graphics.centeredText(this.getFont(), statusMessages.get(i), this.width / 2, statusY + i * 10, 0xFFE0E0E0);
         }
+    }
+
+    private void drawSection(GuiGraphicsExtractor graphics, String title, int x, int y) {
+        graphics.fill(x, y + 5, x + 24, y + 6, 0xFFA9B4C3);
+        graphics.text(this.getFont(), title, x + 30, y, 0xFFE6EAF0, false);
     }
 }

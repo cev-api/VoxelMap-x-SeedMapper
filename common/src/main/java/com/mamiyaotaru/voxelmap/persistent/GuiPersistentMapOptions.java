@@ -60,12 +60,11 @@ public class GuiPersistentMapOptions extends GuiScreenMinimap {
     public void init() {
         optionSections.clear();
 
-        addSection("Map Display", 0, 2);
+        addSection("Map Display", 0, 1);
         addMappedOption(EnumOptionsMinimap.SHOW_WORLDMAP_COORDS, 0, 0);
         addMappedOption(EnumOptionsMinimap.SHOW_WORLDMAP_PLAYER_DIRECTION_ARROW, 0, 1);
         addMappedOption(EnumOptionsMinimap.WORLDMAP_LITERAL_LINE_MODE, 1, 0);
         addMappedOption(EnumOptionsMinimap.CONFIRM_WAYPOINT_DELETE, 1, 1);
-        addMappedOption(EnumOptionsMinimap.WORLDMAP_SHOW_NEW_OLD_CHUNKS, 2, -1);
 
         addSection("Waypoints", 3, 4);
         addMappedOption(EnumOptionsMinimap.SHOW_WAYPOINTS, 3, 0);
@@ -73,38 +72,12 @@ public class GuiPersistentMapOptions extends GuiScreenMinimap {
         addMappedOption(EnumOptionsMinimap.SHOW_DISTANT_WAYPOINTS, 4, 0);
         addMappedOption(EnumOptionsMinimap.WORLDMAP_SHOW_WAYPOINTS_IN_PERFORMANCE_MODE, 4, 1);
 
-        addSection("Explored Chunks", 6, 7);
-        int exploredButtonY = fromSlot(6, 0)[1];
-        this.exploredChunkLinesButton = this.addRenderableWidget(new GuiOptionButtonMinimap(fromSlot(6, 0)[0], exploredButtonY, OPTION_BUTTON_WIDTH, null, Component.empty(), button -> {
-            radarOptions.showExploredChunks = !radarOptions.showExploredChunks;
-            mapOptions.saveAll();
-            refreshExploredChunkButtons();
-        }));
-        int colorInputWidth = OPTION_BUTTON_WIDTH - 32;
-        this.exploredChunkLineColorInput = new GuiButtonText(this.getFont(), fromSlot(6, 1)[0], exploredButtonY, colorInputWidth, 20, Component.literal("Line Color"), button -> {});
-        this.exploredChunkLineColorInput.active = false;
-        this.exploredChunkLineColorInput.setText(normalizeHexColor(radarOptions.exploredChunksColor));
-        this.addRenderableWidget(this.exploredChunkLineColorInput);
-        this.exploredChunkLineColorPickerButton = this.addRenderableWidget(new GuiOptionButtonMinimap(fromSlot(6, 1)[0] + colorInputWidth + 4, exploredButtonY, 28, null, Component.literal("..."), button -> openExploredChunkLineColorPicker()));
-        this.clearExploredChunksButton = this.addRenderableWidget(new GuiOptionButtonMinimap(this.getWidth() / 2 - FULL_ROW_WIDTH / 2, fromSlot(7, 0)[1], FULL_ROW_WIDTH, null, Component.literal("Clear Explored Chunks"), button -> {
-            long now = System.currentTimeMillis();
-            if (now > clearExploredConfirmUntilMs) {
-                clearExploredConfirmUntilMs = now + 4000L;
-                refreshExploredChunkButtons();
-                return;
-            }
-            clearExploredConfirmUntilMs = 0L;
-            VoxelConstants.getVoxelMapInstance().getExploredChunksManager().clearCurrentWorld();
-            refreshExploredChunkButtons();
-        }));
-        refreshExploredChunkButtons();
-
-        addSection("Zoom & Performance", 9, 12);
-        addMappedOption(EnumOptionsMinimap.MIN_ZOOM, 9, 0);
-        addMappedOption(EnumOptionsMinimap.MAX_ZOOM, 9, 1);
-        addMappedOption(EnumOptionsMinimap.WORLDMAP_PERFORMANCE_MODE_THRESHOLD, 10, 0);
-        addMappedOption(EnumOptionsMinimap.WORLDMAP_CHUNK_LINE_THICKNESS, 10, 1);
-        addMappedOption(EnumOptionsMinimap.CACHE_SIZE, 12, -1);
+        addSection("Zoom & Performance", 6, 9);
+        addMappedOption(EnumOptionsMinimap.MIN_ZOOM, 6, 0);
+        addMappedOption(EnumOptionsMinimap.MAX_ZOOM, 6, 1);
+        addMappedOption(EnumOptionsMinimap.WORLDMAP_PERFORMANCE_MODE_THRESHOLD, 7, 0);
+        addMappedOption(EnumOptionsMinimap.WORLDMAP_CHUNK_LINE_THICKNESS, 7, 1);
+        addMappedOption(EnumOptionsMinimap.CACHE_SIZE, 9, -1);
 
         this.addRenderableWidget(new Button.Builder(Component.translatable("gui.done"), buttonx -> this.onClose()).bounds(this.getWidth() / 2 - 100, this.getHeight() - 26, 200, 20).build());
 

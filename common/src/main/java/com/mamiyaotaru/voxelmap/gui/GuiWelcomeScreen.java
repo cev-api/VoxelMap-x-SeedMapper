@@ -34,11 +34,11 @@ public class GuiWelcomeScreen extends GuiScreenMinimap {
     public void init() {
         this.clearWidgets();
 
-        String maintainers = "CevAPI, Xpple (SeedMapper)";
+        String maintainers = "CevAPI & Altidias";
         this.welcomeTexts.clear();
         this.welcomeTexts.add(Component.literal("VoxelMap x SeedMapper by CevAPI").withStyle(ChatFormatting.RED));
         this.welcomeTexts.add(Component.translatable("minimap.ui.welcome1", maintainers));
-        this.welcomeTexts.add(Component.translatable("minimap.ui.welcome2"));
+        //this.welcomeTexts.add(Component.translatable("minimap.ui.welcome2"));
         this.welcomeTexts.add(Component.empty());
         this.welcomeTexts.add(Component.translatable("minimap.ui.welcome3"));
         this.welcomeTexts.add(Component.translatable("minimap.ui.welcome4"));

@@ -7,6 +7,7 @@ import com.mamiyaotaru.voxelmap.gui.GuiSeedMapperOptions;
 import com.mamiyaotaru.voxelmap.gui.GuiWaypoints;
 import com.mamiyaotaru.voxelmap.gui.GuiWelcomeScreen;
 import com.mamiyaotaru.voxelmap.gui.overridden.EnumOptionsMinimap;
+import com.mamiyaotaru.voxelmap.chunksync.ChunkSharePlayerSettings;
 import com.mamiyaotaru.voxelmap.interfaces.AbstractMapData;
 import com.mamiyaotaru.voxelmap.interfaces.IChangeObserver;
 import com.mamiyaotaru.voxelmap.persistent.GuiPersistentMap;
@@ -2264,9 +2265,19 @@ public class Map implements Runnable, IChangeObserver {
         int radius = Math.max(4, (int) Math.ceil(footprintBlocks * zoomScaleAdjusted / 16.0D) + 2);
 
         if (radarSettings.showExploredChunks) {
-            List<ChunkPos> exploredChunks = new ArrayList<>(VoxelConstants.getVoxelMapInstance().getExploredChunksManager().getExploredChunksInRange(centerChunkX, centerChunkZ, radius));
+            ExploredChunksManager exploredManager = VoxelConstants.getVoxelMapInstance().getExploredChunksManager();
+            List<ChunkPos> exploredChunks = new ArrayList<>(exploredManager.getExploredChunksInRange(centerChunkX, centerChunkZ, radius));
             for (ChunkPos chunk : exploredChunks) {
                 drawChunkSquare(matrixStack, x, y, baseX, baseZ, chunk, radarSettings.getExploredChunksColorRgb(), radarSettings.exploredChunksOpacity / 100.0F);
+            }
+            for (String slug : exploredManager.playerLayerSlugs()) {
+                if (!ChunkSharePlayerSettings.isEnabled(slug)) {
+                    continue;
+                }
+                int color = ChunkSharePlayerSettings.colorFor(slug, 0xFF000000);
+                for (ChunkPos chunk : exploredManager.getPlayerExploredChunksInRange(slug, centerChunkX, centerChunkZ, radius)) {
+                    drawChunkSquare(matrixStack, x, y, baseX, baseZ, chunk, color, radarSettings.exploredChunksOpacity / 100.0F);
+                }
             }
         }
 

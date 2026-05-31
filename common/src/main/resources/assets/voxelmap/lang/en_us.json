@@ -324,5 +324,10 @@
   "voxelmap.update.suffix": ".",
   "voxelmap.update.changes": "Changes:",
   "voxelmap.update.noChangelogAvailable": "No changelog available.",
-  "voxelmap.update.noChangelogProvided": "(No changelog provided.)"
+  "voxelmap.update.noChangelogProvided": "(No changelog provided.)",
+  "chunksync.publicShareWarning.title": "Share chunks publicly?",
+  "chunksync.publicShareWarning.line1": "Players without this mod will see random encrypted text in public chat.",
+  "chunksync.publicShareWarning.line2": "Ensure the people receiving the share have this mod installed.",
+  "chunksync.publicShareWarning.hide": "Don't show this warning again: %s",
+  "chunksync.publicShareWarning.continue": "Share Publicly"
 }
