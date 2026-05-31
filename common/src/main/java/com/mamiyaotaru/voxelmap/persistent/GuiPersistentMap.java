@@ -1147,6 +1147,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
     private void drawExploredChunkLinesWorldMap(GuiGraphicsExtractor graphics, int leftRegion, int rightRegion, int topRegion, int bottomRegion) {
         this.exploredQuadCount = 0;
+        // Clear up front so an early return (overlay off / zero alpha) leaves no stale player-layer labels.
         this.playerLayerLabelAnchors.clear();
         if (!radarOptions.showExploredChunks) {
             return;
@@ -1449,7 +1450,8 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             newOldChunkCacheHits++;
         }
 
-        // submit all rects as a single batched GUI element
+        // Submit all rects as a single batched GUI element (old first, then new on top) instead of one
+        // element per rect, avoiding the O(N^2) strata sort in the GUI renderer (same fix as explored lines).
         int rectCount = newOldChunkOldRects.size() + newOldChunkNewRects.size();
         if (rectCount > 0) {
             float[] coords = new float[rectCount * 4];
@@ -1474,7 +1476,47 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             VoxelMapGuiGraphics.fillRectsBatched(graphics, coords, colors, rectCount);
         }
 
+        renderPlayerNewOldOverlays(graphics, manager, queryMinChunkX, queryMaxChunkX, queryMinChunkZ, queryMaxChunkZ,
+                cellChunkSize, oldColor, newColor, maxDraw);
+
         maybeLogNewOldChunkOverlayDebug(manager);
+    }
+
+    private void renderPlayerNewOldOverlays(GuiGraphicsExtractor graphics, NewerNewChunksManager manager,
+            int queryMinChunkX, int queryMaxChunkX, int queryMinChunkZ, int queryMaxChunkZ,
+            int cellChunkSize, int oldColor, int newColor, int maxDraw) {
+        java.util.Set<String> slugs = manager.playerLayerSlugs();
+        if (slugs.isEmpty()) {
+            return;
+        }
+        int centerChunkX = (queryMinChunkX + queryMaxChunkX) >> 1;
+        int centerChunkZ = (queryMinChunkZ + queryMaxChunkZ) >> 1;
+        int radius = Math.max(queryMaxChunkX - centerChunkX, queryMaxChunkZ - centerChunkZ) + 2;
+        int effectiveCell = Math.max(1, cellChunkSize);
+
+        java.util.ArrayList<NewOldChunkRenderRect> rects = new java.util.ArrayList<>();
+        for (String slug : slugs) {
+            NewerNewChunksManager.NewOldCellsSnapshot snap =
+                    manager.getPlayerNewOldCellsInRange(slug, centerChunkX, centerChunkZ, radius, effectiveCell);
+            // greedyMesh consumes the grid; the snapshot grids are freshly built per call so that's fine.
+            rects.addAll(greedyMeshNewOldChunkCells(snap.oldCells(), effectiveCell, oldColor, maxDraw));
+            rects.addAll(greedyMeshNewOldChunkCells(snap.newCells(), effectiveCell, newColor, maxDraw));
+        }
+        if (rects.isEmpty()) {
+            return;
+        }
+        float[] coords = new float[rects.size() << 2];
+        int[] colors = new int[rects.size()];
+        int i = 0;
+        for (NewOldChunkRenderRect rect : rects) {
+            int o = i << 2;
+            coords[o] = rect.minX();
+            coords[o + 1] = rect.minZ();
+            coords[o + 2] = rect.maxX();
+            coords[o + 3] = rect.maxZ();
+            colors[i++] = rect.color();
+        }
+        VoxelMapGuiGraphics.fillRectsBatched(graphics, coords, colors, rects.size());
     }
 
     private void rebuildNewOldChunkOverlayRenderCache(NewerNewChunksManager manager, NewOldChunkOverlayRenderCacheKey cacheKey) {
@@ -1745,7 +1787,6 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         if (slugs.isEmpty()) {
             return;
         }
-        com.mamiyaotaru.voxelmap.NewerNewChunksManager nnc = VoxelConstants.getVoxelMapInstance().getNewerNewChunksManager();
         for (String slug : slugs) {
             int layerColor = playerLayerColor(slug, selfColor);
 
@@ -1758,18 +1799,8 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 appendThickInterpolatedLine(seg[o], seg[o + 1], seg[o + 2], seg[o + 3], lineThickness, layerColor);
             }
 
-            CellGrid area = nnc.getPlayerOldNewCellsInRange(slug, centerChunkX, centerChunkZ, radius, cellChunkSize);
-            float[] outline = CellBoundaryMesher.boundarySegments(area, cellChunkSize);
-            for (int i = 0; i + 3 < outline.length; i += 4) {
-                appendThickInterpolatedLine(outline[i], outline[i + 1], outline[i + 2], outline[i + 3], lineThickness, layerColor);
-            }
-
-            // Anchor the nametag at the centroid of this layer's visible cells (prefer explored mass,
-            // fall back to the old/new area when the player has no explored cells in view).
+            // Anchor the nametag at the centroid of this layer's visible explored cells.
             float[] anchor = cellGridCentroidWorld(cells, cellChunkSize);
-            if (anchor == null) {
-                anchor = cellGridCentroidWorld(area, cellChunkSize);
-            }
             if (anchor != null) {
                 this.playerLayerLabelAnchors.put(slug, anchor);
             }
@@ -1827,6 +1858,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
             float screenX = guiVector.x();
             float screenY = guiVector.y();
+            // Skip labels whose anchor falls outside the visible map strip.
             if (screenX < this.sideMargin || screenX > this.width - this.sideMargin
                     || screenY < this.top + 2 || screenY > this.bottom - 10) {
                 continue;
@@ -1838,6 +1870,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         }
     }
 
+    /** A human-readable label for a player layer slug (slugs use only filesystem-safe chars already). */
     private static String layerDisplayName(String slug) {
         return slug;
     }

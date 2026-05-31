@@ -208,29 +208,24 @@ public class NewerNewChunksManager {
         return map;
     }
 
-    public CellGrid getPlayerOldNewCellsInRange(String slug, int cx, int cz, int radius, int cellChunkSize) {
-        ensureTrackingWorld();
-        EnumMap<OverlayType, CategoryStore> layer = newOldPlayerLayers.get(slug);
-        if (layer == null || cellChunkSize <= 0) {
-            return EMPTY_CELL_GRID;
+    private synchronized EnumMap<OverlayType, CategoryStore> adoptPlayerLayerFromDisk(String slug) {
+        EnumMap<OverlayType, CategoryStore> existing = newOldPlayerLayers.get(slug);
+        if (existing != null) {
+            return existing;
         }
-        int cell = Math.max(1, cellChunkSize);
-        int level = com.mamiyaotaru.voxelmap.persistent.explored.ExploredDiskStore.selectLevelForCellSize(cell);
-        int minCellX = Math.floorDiv(cx - radius, cell);
-        int maxCellX = Math.floorDiv(cx + radius, cell);
-        int minCellZ = Math.floorDiv(cz - radius, cell);
-        int maxCellZ = Math.floorDiv(cz + radius, cell);
-        int gw = maxCellX - minCellX + 1;
-        int gh = maxCellZ - minCellZ + 1;
-        if (gw <= 0 || gh <= 0 || (long) gw * gh > 16_000_000L) {
-            return EMPTY_CELL_GRID;
+        String worldKey = loadedWorldKey;
+        if (worldKey == null || worldKey.isEmpty()) {
+            return null;
         }
-        CellGrid grid = new CellGrid(minCellX, minCellZ, gw, gh);
-        for (OverlayType type : new OverlayType[]{OverlayType.OLD, OverlayType.NEW}) {
-            ensureLoaded(layer, type, level, cx, cz, radius);
-            layer.get(type).store().forEachExploredCellInRange(cx, cz, radius, cell, (qx, qz) -> grid.mark(qx, qz));
+        Path slugDir = nncBaseDir(worldKey).resolve("players").resolve(slug);
+        if (!java.nio.file.Files.isDirectory(slugDir)) {
+            return null;
         }
-        return grid;
+        EnumMap<OverlayType, CategoryStore> layer = buildPlayerStores(worldKey, slug);
+        var updated = new java.util.LinkedHashMap<>(newOldPlayerLayers);
+        updated.put(slug, layer);
+        newOldPlayerLayers = updated;
+        return layer;
     }
 
     public java.util.Set<String> playerLayerSlugs() {
@@ -798,6 +793,22 @@ public class NewerNewChunksManager {
         if (s == null) {
             return NewOldCellsSnapshot.EMPTY;
         }
+        return snapshotFrom(s, cx, cz, radius, cellChunkSize);
+    }
+
+    public NewOldCellsSnapshot getPlayerNewOldCellsInRange(String slug, int cx, int cz, int radius, int cellChunkSize) {
+        ensureTrackingWorld();
+        EnumMap<OverlayType, CategoryStore> layer = newOldPlayerLayers.get(slug);
+        if (layer == null) {
+            layer = adoptPlayerLayerFromDisk(slug);
+        }
+        if (layer == null) {
+            return NewOldCellsSnapshot.EMPTY;
+        }
+        return snapshotFrom(layer, cx, cz, radius, cellChunkSize);
+    }
+
+    private NewOldCellsSnapshot snapshotFrom(EnumMap<OverlayType, CategoryStore> s, int cx, int cz, int radius, int cellChunkSize) {
         int cell = Math.max(1, cellChunkSize);
         int level = com.mamiyaotaru.voxelmap.persistent.explored.ExploredDiskStore.selectLevelForCellSize(cell);
         ensureLoaded(s, OverlayType.NEW, level, cx, cz, radius);

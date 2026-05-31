@@ -60,11 +60,13 @@ public final class ChunkSyncCommandHandler {
                 }
             }
             case "players" -> {
-                var slugs = VoxelConstants.getVoxelMapInstance().getExploredChunksManager().playerLayerSlugs();
-                if (slugs.isEmpty()) {
+                var explored = VoxelConstants.getVoxelMapInstance().getExploredChunksManager().playerLayerSlugs();
+                var newOld = VoxelConstants.getVoxelMapInstance().getNewerNewChunksManager().playerLayerSlugs();
+                if (explored.isEmpty() && newOld.isEmpty()) {
                     sendChunkSync("No imported player layers in this dimension.");
                 } else {
-                    sendChunkSync("Player layers (this dimension): " + String.join(", ", slugs));
+                    sendChunkSync("Player layers (this dimension) — explored: ["
+                            + String.join(", ", explored) + "]  new/old: [" + String.join(", ", newOld) + "]");
                 }
             }
             case "remove" -> {
@@ -82,6 +84,7 @@ public final class ChunkSyncCommandHandler {
                     sendChunkSync("Usage: /chunksync key <passphrase>  (shared secret used to encrypt/decrypt shares)");
                     return;
                 }
+                // Rejoin remaining args so spaces in the passphrase are allowed.
                 StringBuilder pass = new StringBuilder(args[2]);
                 for (int i = 3; i < args.length; i++) {
                     pass.append(' ').append(args[i]);
