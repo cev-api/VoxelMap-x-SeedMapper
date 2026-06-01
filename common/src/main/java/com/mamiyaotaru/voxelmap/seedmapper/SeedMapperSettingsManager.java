@@ -124,6 +124,9 @@ public class SeedMapperSettingsManager implements ISubSettingsManager {
             }
         } catch (IOException ignored) {
         }
+        if (datapackEnabled) {
+            enabledFeatures.add(SeedMapperFeature.DATAPACK_STRUCTURE);
+        }
     }
 
     private void loadExtendedSetting(String key, String value) {
@@ -297,8 +300,23 @@ public class SeedMapperSettingsManager implements ISubSettingsManager {
         }
     }
 
+    public void clearDisabledDatapackStructures(String worldKey) {
+        if (worldKey == null || worldKey.isBlank()) {
+            return;
+        }
+        datapackStructureDisabled.remove(worldKey);
+    }
+
     public boolean isFeatureEnabled(SeedMapperFeature feature) {
         return enabledFeatures.contains(feature);
+    }
+
+    public void setFeatureEnabled(SeedMapperFeature feature, boolean enabled) {
+        if (enabled) {
+            enabledFeatures.add(feature);
+        } else {
+            enabledFeatures.remove(feature);
+        }
     }
 
     public void toggleFeature(SeedMapperFeature feature) {

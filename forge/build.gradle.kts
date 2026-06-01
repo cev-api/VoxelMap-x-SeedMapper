@@ -8,6 +8,8 @@ val minecraftVersion: String by rootProject.extra
 val forgeVersion: String by rootProject.extra
 
 val fullVersion: String by rootProject.extra
+val forkVersion: String by rootProject.extra
+val modrinthId: String by rootProject.extra
 
 base {
     archivesName.set("voxelmap-forge")
@@ -67,6 +69,14 @@ tasks {
         inputs.property("version", fullVersion)
         filesMatching("META-INF/mods.toml") {
             expand(mapOf("version" to fullVersion))
+        }
+        filesMatching("voxelmap-build.properties") {
+            expand(
+                mapOf(
+                    "forkVersion" to forkVersion,
+                    "modrinthId" to modrinthId
+                )
+            )
         }
     }
 

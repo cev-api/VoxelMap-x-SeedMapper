@@ -217,6 +217,26 @@ final class SeedMapperDatapackWorldgen {
         return loaded;
     }
 
+    static void invalidateCache(String datapackRootPath) {
+        if (datapackRootPath == null || datapackRootPath.isBlank()) {
+            return;
+        }
+        synchronized (CACHE) {
+            List<CacheKey> matches = CACHE.keySet().stream()
+                    .filter(key -> key.path().equals(datapackRootPath))
+                    .collect(Collectors.toList());
+            for (CacheKey key : matches) {
+                LoadedDatapack removed = CACHE.remove(key);
+                if (removed != null) {
+                    try {
+                        removed.worldgen().close();
+                    } catch (Exception ignored) {
+                    }
+                }
+            }
+        }
+    }
+
     private static LoadedDatapack load(Path datapackRoot, long seed) {
         try {
             DatapackWorldgen worldgen = DatapackWorldgen.load(datapackRoot, seed);

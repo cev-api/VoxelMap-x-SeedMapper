@@ -391,6 +391,7 @@ public class VoxelMap implements PreparableReloadListener {
                 if (savedPath != null && !savedPath.isBlank()) {
                     seedMapperOptions.datapackCachePath = savedPath;
                     seedMapperOptions.datapackEnabled = true;
+                    seedMapperOptions.setFeatureEnabled(com.mamiyaotaru.voxelmap.seedmapper.SeedMapperFeature.DATAPACK_STRUCTURE, true);
                 }
             }
         }

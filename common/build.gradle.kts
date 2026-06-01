@@ -7,6 +7,8 @@ plugins {
 val minecraftVersion: String by rootProject.extra
 val fabricVersion: String by rootProject.extra
 val fabricApiVersion: String by rootProject.extra
+val forkVersion: String by rootProject.extra
+val modrinthId: String by rootProject.extra
 
 repositories {
 
@@ -38,6 +40,17 @@ loom {
 }
 
 tasks {
+    processResources {
+        filesMatching("voxelmap-build.properties") {
+            expand(
+                mapOf(
+                    "forkVersion" to forkVersion,
+                    "modrinthId" to modrinthId
+                )
+            )
+        }
+    }
+
     jar {
         from(rootDir.resolve("LICENSE.md"))
     }
