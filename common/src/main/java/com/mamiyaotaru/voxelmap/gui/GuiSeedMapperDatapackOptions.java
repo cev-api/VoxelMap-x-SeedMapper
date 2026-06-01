@@ -111,6 +111,9 @@ public class GuiSeedMapperDatapackOptions extends GuiScreenMinimap {
     }
 
     private int countEnabledStructures() {
+        if (!settings.datapackEnabled || !settings.isFeatureEnabled(com.mamiyaotaru.voxelmap.seedmapper.SeedMapperFeature.DATAPACK_STRUCTURE)) {
+            return 0;
+        }
         String worldKey = currentWorldKey();
         long seed = Long.MIN_VALUE;
         try {

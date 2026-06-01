@@ -2,39 +2,29 @@
 
 ![LOGO](https://i.imgur.com/D4uG0Fd.png)
 
-VoxelMap x SeedMapper is a heavily modified fork of [VoxelMap Updated](https://github.com/fantahund/VoxelMap) with SeedMapper integrated directly into the client.
+VoxelMap x SeedMapper is a heavily modified fork of [VoxelMap Updated](https://github.com/fantahund/VoxelMap) that integrates SeedMapper directly into the client and extends VoxelMap with advanced chunk overlays, data sharing, and world-map tooling.
 
-This fork combines VoxelMap's minimap and fullscreen world map with SeedMapper locating, overlays, loot tools, persistence, UI integration, and a range of rendering and behavior fixes.
+## What This Fork Adds
 
-## Changes From Upstream
-
-### SeedMapper Integration
-
-- Integrated SeedMapper directly into VoxelMap as a built-in client feature.
-- Added structure locating, biome locating, loot locating, slime chunk locating, ore vein locating, and terrain analysis.
-- Added SeedMapper markers to both the minimap and fullscreen world map.
-- Added SeedMapper completion state for marking located structures as done.
-- Added support for saved seeds, manual seed input, and per-server/world SeedMapper state.
-- Added cubiomes-based world generation logic and bundled native `cubiomes.dll` support.
+### SeedMapper Core
+- Integrated SeedMapper into the client (no external mod workflow required).
+- Added locating for structures, biomes, slime chunks, ore veins, terrain, caves, canyons, and loot.
+- Added world-map and minimap marker rendering for SeedMapper results.
+- Added completion tracking for located targets.
+- Added saved seeds, manual seed input, and per-world/per-server SeedMapper state.
+- Added bundled cubiomes support (native `cubiomes.dll`).
 
 #### SeedMapper Menu
-![SeedMapMenu](https://i.imgur.com/jMBkgbm.png)
+![SeedMapMenu](https://i.imgur.com/iBHVqbI.png)
 
-#### Locate structures
+#### Locate Structures
 ![LocateStructure](https://i.imgur.com/niui9AN.png)
 
 ### SeedMapper Commands
-
-- Added local client commands for SeedMapper features.
-- Added `/seedmap` and `/sm` command roots.
-- Added commands for locating structures, biomes, ore veins, slime chunks, and loot.
-- Added commands for highlighting ores, ore veins, terrain, canyons, and caves.
-- Added commands for clearing ESP highlights.
-- Added commands for exporting visible or custom map areas.
-- Added commands for running SeedMapper source-style command chains.
+- Added local command roots: `/seedmap`, `/sm`, `/voxelmap`, `/vmap`.
+- Added locate, highlight, export, and source-chain command support.
 
 Common commands:
-
 - `/seedmap help`
 - `/seedmap seed <seed>`
 - `/seedmap locate structure <feature_id>`
@@ -50,171 +40,167 @@ Common commands:
 - `/seedmap highlight clear`
 - `/seedmap export [visible|radius <blocks>|area <x> <z> <radius>]`
 - `/seedmap source <run|seeded|positioned|in|versioned|flagged|as|rotated> ...`
-- `/sm ...`
 
-### ESP And Highlighting
+### ESP, Tracing, and Loot Workflow
+- Added ESP rendering for blocks, ore veins, caves, canyons, and terrain.
+- Added configurable ESP style profiles (fill/outline/color/alpha/timeout behavior).
+- Added highlight/tracer workflow for located structures and loot results.
+- Added auto-hide for highlights when near a target.
+- Added integrated loot viewer with search (name, id, enchantments, NBT-like terms).
 
-- Added SeedMapper ESP rendering for blocks, ore veins, caves, canyons, and terrain.
-- Added configurable ESP styles, fill rendering, outline colors, alpha values, and timeout behavior.
-- Added hotkeys for toggling SeedMapper overlay, running ESP scans, clearing ESP, opening the loot viewer, and opening SeedMapper settings.
-- Added tracer/highlight support for located structures and loot results.
-- Added auto-hide behavior for highlights when the player gets near a target.
-
-#### ESP settings
+#### ESP Settings
 ![ESPSettings](https://i.imgur.com/3QQgUH6.png)
 
-#### Terrain highlighting
+#### Terrain Highlighting
 ![TerrainESP](https://i.imgur.com/XvwiaI3.png)
 
-#### Ore highlighting
+#### Ore Highlighting
 ![HardcOre](https://i.imgur.com/rEWn5PP.png)
 
-### Map And Overlay Features
-
-- **Added New Chunks detection and rendering.**
-- Added explored chunk tracking with persistent chunk history.
-- Added chunk overlays for explored chunks, new chunks, liquid exploit tracking, and block update exploit tracking.
-- Added chunk grid and slime chunk display options.
-- Added improved chunk line rendering, including solid line mode and configurable line thickness.
-- Added portal marker overlays for Nether portals, End portals, and End gateways.
-- Added automatic portal recording and improved portal detection logic.
-
-#### Chunk overlay options
-![ChunkOptions](https://i.imgur.com/jlwfn9V.png)
-
-### World Map Improvements
-
-- Added SeedMapper structure icons and loot markers to the fullscreen world map.
-- Added old/new chunk overlay display on the fullscreen world map.
-- Added world map popup actions for SeedMapper markers, loot actions, completion toggles, and waypoint interactions.
-- Added coordinate editing/recentering so the world map can jump to arbitrary coordinates.
-- Added context menu option to recenter the world map on the player.
-- Added visible-area export support for SeedMapper.
-- Extended deep zoom-out behavior.
-- Added performance mode for far zoom levels with configurable threshold.
-- Added option to keep waypoints visible while world map performance mode is active.
-- Added optional zoom level display while zooming.
-- Improved region texture processing and rendering behavior at extreme zoom levels.
-
-#### SeedMapper integration
-![LargeMap](https://i.imgur.com/qDZdMvs.png)
-
-#### Marking Nether portal as complete
-![MarkComplete](https://i.imgur.com/F6f8TF6.png)
-
-#### View other coordinates
-![View](https://i.imgur.com/q0XYZRF.png)
-
-### Minimap Improvements
-
-- Added SeedMapper marker rendering on the minimap.
-- Added Newer New Chunks display on the minimap.
-- Added explored chunk breadcrumb-style display.
-- Added structure border marker rendering on the minimap.
-- Added portal marker rendering.
-- Added minimap toggle hotkey.
-- Improved minimap zoom behavior and rendering at extreme zoom levels.
-- Added scoreboard positioning option below the minimap.
-
-#### New chunk detection and structure detection
-![NewChunks](https://i.imgur.com/oggJc4d.png)
-
-#### Explored chunks and portal detection
-![ExploredChunks+PortalDetection](https://i.imgur.com/c1Q41xy.png)
-
-### Loot Viewer
-
-- Added an integrated SeedMapper loot viewer.
-- Added loot searching by item name, item ID, enchantment, and NBT-style terms.
-- Added per-result actions for highlighting, waypoints, and coordinate copying.
-- Added loot result highlighting on the map.
-
+#### Loot Viewer
 ![LocateLoot](https://i.imgur.com/h7JtYR9.png)
 
-### Datapack Support
-
-- Added datapack import support for SeedMapper structures.
-- Added datapack URL, cache path, autoload, enable/disable, color scheme, and icon style settings.
-- Added UI for managing imported datapack structures.
-- Added persistent per-world enabled/disabled datapack structure state.
+### Datapack Structure Support
+- Added datapack import for SeedMapper structures.
+- Added datapack URL/cache path/autoload/enable controls.
+- Added icon style and color scheme controls.
+- Added per-world datapack structure enable/disable persistence.
 - Added datapack-located marker persistence.
+- Improved world map loading state behavior so SeedMapper loading text clears reliably when hidden/disabled and after exact results resolve.
 
-### Waypoint Changes
+### World Map Improvements
+- Added SeedMapper marker icons and loot markers on the fullscreen map.
+- Added marker context actions (completion toggles, loot actions, waypoint interactions).
+- Added visible-area export support.
+- Added coordinate recentering/editing and player recenter action.
+- Added deep zoom-out and performance-mode behavior improvements.
+- Added option to keep waypoints visible in world-map performance mode.
+- Added optional zoom level display while zooming.
+- Improved extreme-zoom texture processing and rendering.
 
-- Added waypoint import from Xaero's Minimap.
-- Added waypoint import from Wurst.
-- Added multi-select waypoint handling.
-- Added optional waypoint delete confirmation.
-- Added automatic portal waypoint creation.
-- Added expanded waypoint compass settings.
-- Added waypoint name/distance placement controls.
-- Added dimension filter.
-- Added copy to clipboard in share page.
-- Improved waypoint list filtering, sorting, deleting, and highlighting behavior.
+#### SeedMapper Integration
+![LargeMap](https://i.imgur.com/qDZdMvs.png)
+
+#### Mark Complete Example
+![MarkComplete](https://i.imgur.com/F6f8TF6.png)
+
+#### Coordinate View
+![View](https://i.imgur.com/q0XYZRF.png)
+
+### Minimap and Chunk Overlay Improvements
+- Added SeedMapper marker rendering on the minimap.
+- Added Newer New Chunks overlay support on minimap and world map (see New Chunks System above).
+- Added chunk grid/slime chunk options.
+- Improved chunk line rendering (solid mode and thickness controls).
+- Added scoreboard positioning option below minimap.
+
+![NewChunks](https://i.imgur.com/oggJc4d.png)
+
+### Portal and Waypoint Enhancements
+- Added portal marker overlays for Nether portals, End portals, and End beacons.
+- Added automatic portal recording and improved portal detection.
+- Added waypoint import from Xaero's Minimap and Wurst.
+- Added multi-select waypoint handling and optional delete confirmation.
+- Added expanded waypoint compass and label placement options.
+- Added dimension filtering and copy-to-clipboard in share flows.
+
+![ExploredChunks+PortalDetection](https://i.imgur.com/c1Q41xy.png)
 
 ![WayPoints](https://i.imgur.com/w2s7jOl.png)
 
-### UI And Settings
+### New Chunks System
+- Added a dedicated New Chunks feature set with its own options category/screen.
+- Added detection and rendering for:
+- Newly generated chunks
+- Explored chunk history
+- Liquid-exploit chunk signals
+- Block-update exploit chunk signals
+- Added minimap and fullscreen world-map visualization for New Chunks layers.
+- Added persistent chunk-history storage so detected states survive restarts.
+- Added chunk overlay styling controls including line mode/thickness and visibility toggles.
 
-- Improved options menu design
-- Added a dedicated SeedMapper tab in the minimap options screen.
-- Added new SeedMapper screens for locating, loot viewing, ESP profiles, datapacks, saved seeds, and saved string maps.
-- Added chunk overlay settings screen.
-- Added new world map options for performance mode, zoom, chunk lines, and waypoint visibility.
-- Added new minimap options for chunk grid, slime chunks, portal waypoints, scoreboard placement, and coordinate display modes.
-- Updated the welcome screen branding to `VoxelMap x SeedMapper by CevAPI`.
-- Added localization strings for the new UI, controls, commands, and SeedMapper features.
+#### Chunk Options
+![ChunkOptions](https://i.imgur.com/DmX10jt.png)
 
-![UI](https://i.imgur.com/AW5yD4q.png)
+### ChunkSync
+ChunkSync lets you securely share chunk-layer data with other players.
 
-### Persistence
+#### One-Time Setup
+- `/chunksync key <passphrase>`
+- `/chunksync host <litterbox|file.io>`
 
-- Seed, ESP, datapack, and completion state are saved through the VoxelMap settings system.
-- Tracer settings persist alongside other map configuration.
-- Explored chunks and portal markers are saved per world/server.
-- World and server specific SeedMapper behavior is preserved.
+#### Share
+- `/chunksync share`
+- `/chunksync share to <name>`
 
-### Rendering And Compatibility
+    - Exports your chunk-share bundle.
+    - Encrypts it with your configured passphrase.
+    - Uploads it to the selected host.
+    - Posts (or whispers) an encoded import token.
 
-- Added custom render pipeline/render type support for new overlays.
-- Added mixins for client-level updates, packet-based chunk tracking, and world renderer integration.
+#### Receive
+- `/chunksync get <code>`
+- `/chunksync get <code> as <name>`
+
+    - Default `get` merges into your own layer.
+    - `as <name>` imports as a separate colored player layer.
+    - Chat prompt import actions use the separate-layer flow automatically.
+
+#### Manual File Transfer
+- `/chunksync export [name]` writes `voxelmap/chunk_share/<name>/` (folder or zip workflow supported).
+- `/chunksync import [name] [as <name>]` imports a local folder or `.zip` bundle.
+
+#### Manage Imported Layers
+- `/chunksync players`
+- `/chunksync remove <name>`
+
+![ChunkSync](https://i.imgur.com/N43aPyV.png)
+
+### UI and Settings
+- Added dedicated SeedMapper options tab and related screens.
+- Added screens for locator, loot viewer, ESP profiles, datapacks, and saved seeds/maps.
+- Added Chunk management UI
+- Added ChunkSync management UI (passphrase/share/receive/manual import/export/player layers/status).
+- Updated branding to `VoxelMap x SeedMapper by CevAPI`.
+- Added/updated localization keys for SeedMapper and chunk-sync features.
+
+![UI](https://i.imgur.com/UOuLcFS.png)
+
+### Persistence and Compatibility
+- SeedMapper state, datapack state, ESP settings, and completion state persist via VoxelMap settings.
+- Explored chunks and portal markers persist per world/server context.
 - Added compatibility helpers for Wurst waypoint data.
-- Added Minecraft palette classes used by the fork's map/chunk handling.
-- Improved map update handling around chunk changes and loaded chunk checks.
+- Added rendering pipeline/types and mixin integrations needed by new overlays.
 
-### Loader And Build Changes
+### Update Checking
+This fork includes an in-client update checker/notification system.
 
-- Added SeedMapper command registration for Fabric, Forge, and NeoForge.
-- Updated mod metadata to use `voxelmap-cevapi`.
-- Renamed the mod display name to `VoxelMap x SeedMapper by CevAPI`.
-- Updated project links to this fork.
-- Added fork versioning via `forkVersion`.
-- Changed generated jar names to `voxelmap-x-seedmapper_<loader>_v<version>.jar`.
-- Added VS Code launch configuration.
+Common commands:
+- `/voxelmap updatechecker status`
+- `/voxelmap updatechecker off`
+- `/voxelmap updatechecker on`
+- `/voxelmap updatechecker toggle`
+- `/voxelmap updatechecker check`
 
-Root build output jars are generated under names like:
+Quick disable:
+- Run `/voxelmap updatechecker off` to stop update notifications.
 
-- `build/libs/voxelmap-x-seedmapper_fabric_v0.03.jar`
-- `build/libs/voxelmap-x-seedmapper_forge_v0.03.jar`
-- `build/libs/voxelmap-x-seedmapper_neoforge_v0.03.jar`
+### Loader and Build Changes
+- Added SeedMapper/ChunkSync client command registration for Fabric, Forge, and NeoForge.
+- Updated metadata and fork versioning for this project.
+- Changed output artifact naming to `voxelmap-x-seedmapper_<loader>_v<version>.jar`.
 
-### Documentation And Assets
-
-- Rewrote the README around the forked SeedMapper feature set.
-- Added SeedMapper icons for structures, loot, portals, ores, slime chunks, waypoints, and player markers.
-- Added SeedMapper UI assets such as arrows and chest container imagery.
+Example outputs:
+- `build/libs/voxelmap-x-seedmapper_fabric_v0.x.jar`
+- `build/libs/voxelmap-x-seedmapper_forge_v0.x.jar`
+- `build/libs/voxelmap-x-seedmapper_neoforge_v0.0x.jar`
 
 ## Platform Support
-
 - Fabric
 - Forge (Needs Testing)
 - NeoForge (Needs Testing)
 
-Builds are produced for all supported loaders from one codebase, with client command registration and mod metadata wired separately for each loader.
-
 ## Notes
-
-- This is not intended to be an upstream-equivalent release.
-- Some legacy localization keys may still remain after UI changes or removals.
-- The project prioritizes SeedMapper integration and UI consistency over strict upstream parity.
-- Project is still undergoing and there may be some bugs. 
+- This fork is feature-focused and not intended as strict upstream parity.
+- Some legacy localization keys may still exist after UI refactors.
+- Active development is ongoing; occasional regressions are still possible.

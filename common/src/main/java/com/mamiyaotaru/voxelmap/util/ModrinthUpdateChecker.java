@@ -43,8 +43,8 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.Comparator;
 import java.util.List;
+import java.util.Properties;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -70,6 +70,7 @@ public class ModrinthUpdateChecker {
 
     private static final int green = 0xA8E6CF;
     private static final int red = 0xFF9AA2;
+    private static final Properties BUILD_PROPERTIES = loadBuildProperties();
 
     /**
      * Data we need for update UI:
@@ -115,16 +116,18 @@ public class ModrinthUpdateChecker {
             HttpRequest request = HttpRequest.newBuilder().uri(URI.create(API_URL.replace("{id}", projectId))).GET().build();
 
             client.sendAsync(request, HttpResponse.BodyHandlers.ofString()).thenAcceptAsync(response -> {
-                if (response.statusCode() != 200) return;
+                if (response.statusCode() != 200) {
+                    consumer.accept(null);
+                    return;
+                }
 
                 JsonArray versionsArray = JsonParser.parseString(response.body()).getAsJsonArray();
                 UpdateResult result = buildUpdateResult(installedModVersion, versionsArray);
-                if (result == null) return;
-
                 consumer.accept(result);
             });
         } catch (Exception exception) {
             VoxelConstants.getLogger().log(Level.ERROR, exception);
+            consumer.accept(null);
         }
     }
 
@@ -141,21 +144,40 @@ public class ModrinthUpdateChecker {
 
         List<VersionInfo> compatible = versions.asList().stream()
                 .map(JsonElement::getAsJsonObject)
-                .filter(this::isVersionCompatible)
+                .filter(version -> isVersionCompatible(version, true, true))
                 .map(obj -> new VersionInfo(
                         getRawVersion(obj.get("version_number").getAsString()),
                         (obj.has("changelog") && !obj.get("changelog").isJsonNull()) ? obj.get("changelog").getAsString() : null
                 )).collect(Collectors.toList());
 
+        if (compatible.isEmpty()) {
+            compatible = versions.asList().stream()
+                    .map(JsonElement::getAsJsonObject)
+                    .filter(version -> isVersionCompatible(version, false, true))
+                    .map(obj -> new VersionInfo(
+                            getRawVersion(obj.get("version_number").getAsString()),
+                            (obj.has("changelog") && !obj.get("changelog").isJsonNull()) ? obj.get("changelog").getAsString() : null
+                    )).collect(Collectors.toList());
+        }
+
+        if (compatible.isEmpty()) {
+            compatible = versions.asList().stream()
+                    .map(JsonElement::getAsJsonObject)
+                    .map(obj -> new VersionInfo(
+                            getRawVersion(obj.get("version_number").getAsString()),
+                            (obj.has("changelog") && !obj.get("changelog").isJsonNull()) ? obj.get("changelog").getAsString() : null
+                    )).collect(Collectors.toList());
+        }
+
         if (compatible.isEmpty()) return null;
 
-        String latest = compatible.stream().map(VersionInfo::version).max(String::compareTo).orElse(null);
+        String latest = compatible.stream().map(VersionInfo::version).max(ModrinthUpdateChecker::compareVersions).orElse(null);
 
         if (latest == null) return null;
 
         List<VersionInfo> updates = compatible.stream()
-                .filter(v -> v.version().compareTo(installedRaw) > 0)
-                .sorted(Comparator.comparing(VersionInfo::version))
+                .filter(v -> compareVersions(v.version(), installedRaw) > 0)
+                .sorted((a, b) -> compareVersions(a.version(), b.version()))
                 .collect(Collectors.toList());
 
         return new UpdateResult(latest, updates);
@@ -165,11 +187,15 @@ public class ModrinthUpdateChecker {
      * Modrinth version objects include "game_versions" and "loaders". [page:2]
      */
     protected boolean isVersionCompatible(JsonObject version) {
+        return isVersionCompatible(version, true, true);
+    }
+
+    protected boolean isVersionCompatible(JsonObject version, boolean requireLoaderMatch, boolean requireMcMatch) {
         JsonArray gameVersions = version.get("game_versions").getAsJsonArray();
         JsonArray loaders = version.get("loaders").getAsJsonArray();
 
-        boolean mcOk = (minecraftVersion == null) || gameVersions.contains(new JsonPrimitive(minecraftVersion));
-        boolean loaderOk = loaders.contains(new JsonPrimitive(loader));
+        boolean mcOk = !requireMcMatch || (minecraftVersion == null) || gameVersions.contains(new JsonPrimitive(minecraftVersion));
+        boolean loaderOk = !requireLoaderMatch || loaders.contains(new JsonPrimitive(loader));
         return mcOk && loaderOk;
     }
 
@@ -199,26 +225,20 @@ public class ModrinthUpdateChecker {
             return Component.translatable("voxelmap.update.noChangelogAvailable");
         }
 
+        VersionInfo latest = updates.stream()
+                .max((a, b) -> compareVersions(a.version(), b.version()))
+                .orElse(updates.get(updates.size() - 1));
+
         Component out = Component.translatable("voxelmap.update.changes").setStyle(Style.EMPTY.withColor(red)).append("\n");
+        out = out.copy().append(Component.literal(latest.version() + ":").setStyle(Style.EMPTY.withColor(red)));
 
-        for (int i = 0; i < updates.size(); i++) {
-            VersionInfo v = updates.get(i);
-
-            if (i > 0) out = out.copy().append(Component.literal("\n"));
-
-            out = out.copy().append(Component.literal(v.version() + ":").setStyle(Style.EMPTY.withColor(red)));
-
-            String changelog = (v.changelog() == null) ? "" : v.changelog();
-            String[] lines = changelog.split("\\R", -1);
-
-            if (lines.length == 0 || (lines.length == 1 && lines[0].isBlank())) {
-                out = out.copy().append(Component.literal("\n ").append(Component.translatable("voxelmap.update.noChangelogProvided")).setStyle(Style.EMPTY.withColor(green)));
-                continue;
-            }
-
-            for (String line : lines) {
-                out = out.copy().append(Component.literal("\n " + line).setStyle(Style.EMPTY.withColor(green)));
-            }
+        String changelog = (latest.changelog() == null) ? "" : latest.changelog();
+        String[] lines = changelog.split("\\R", -1);
+        if (lines.length == 0 || (lines.length == 1 && lines[0].isBlank())) {
+            return out.copy().append(Component.literal("\n ").append(Component.translatable("voxelmap.update.noChangelogProvided")).setStyle(Style.EMPTY.withColor(green)));
+        }
+        for (String line : lines) {
+            out = out.copy().append(Component.literal("\n " + line).setStyle(Style.EMPTY.withColor(green)));
         }
 
         return out;
@@ -228,20 +248,31 @@ public class ModrinthUpdateChecker {
         if (!VoxelConstants.getVoxelMapInstance().getMapOptions().updateNotifier) {
             return;
         }
-        String modVersion = VoxelConstants.getModVersion();
+        String modVersion = getBuildProperty("forkVersion",
+                VoxelConstants.getModVersion() == null || VoxelConstants.getModVersion().isBlank()
+                        ? "0.01"
+                        : VoxelConstants.getModVersion());
+        String projectId = getBuildProperty("modrinthId", "cVrDroCh");
 
         if (modVersion == null) return;
 
         String mcVersion = SharedConstants.getCurrentVersion().name();
 
-        new ModrinthUpdateChecker("voxelmap-updated", VoxelConstants.getModApiBridge().getModLoader(), mcVersion).checkUpdates(modVersion, result -> {
+        new ModrinthUpdateChecker(projectId, VoxelConstants.getModApiBridge().getModLoader(), mcVersion).checkUpdates(modVersion, result -> {
+            if (result == null || result.latestVersion() == null) {
+                VoxelConstants.getLogger().warn("Update check failed or returned no compatible versions.");
+                VoxelConstants.getMinecraft().execute(() ->
+                        VoxelConstants.getMinecraft().gui.getChat().addClientSystemMessage(
+                                Component.literal("[VoxelMap] Update check failed.")));
+                return;
+            }
             String installedRaw = getRawVersion(modVersion);
-            if (installedRaw.equals(result.latestVersion())) {
+            if (compareVersions(installedRaw, result.latestVersion()) >= 0) {
                 VoxelConstants.getLogger().info("Voxelmap is up to date.");
                 return;
             }
 
-            String url = "https://modrinth.com/mod/voxelmap-updated/version/" + result.latestVersion();
+            String url = "https://modrinth.com/mod/" + projectId + "/version/" + result.latestVersion();
             Component prefix = Component.translatable("voxelmap.update.prefix", result.latestVersion()).setStyle(Style.EMPTY.withColor(TextColor.fromRgb(green)));
             Component suffix = Component.translatable("voxelmap.update.suffix").setStyle(Style.EMPTY.withColor(TextColor.fromRgb(green)));
             Component hover = buildAggregatedChangelogHover(result.updates());
@@ -251,5 +282,61 @@ public class ModrinthUpdateChecker {
             Component msg = prefix.copy().append(link).append(suffix);
             VoxelConstants.getMinecraft().execute(() -> VoxelConstants.getMinecraft().gui.getChat().addClientSystemMessage(msg));
         });
+    }
+
+    public static int compareVersions(String left, String right) {
+        String[] a = splitVersion(left);
+        String[] b = splitVersion(right);
+        int max = Math.max(a.length, b.length);
+        for (int i = 0; i < max; i++) {
+            String pa = i < a.length ? a[i] : "0";
+            String pb = i < b.length ? b[i] : "0";
+            int cmp = comparePart(pa, pb);
+            if (cmp != 0) {
+                return cmp;
+            }
+        }
+        return 0;
+    }
+
+    private static String[] splitVersion(String version) {
+        if (version == null || version.isBlank()) {
+            return new String[0];
+        }
+        return version.trim().split("[^0-9A-Za-z]+");
+    }
+
+    private static int comparePart(String a, String b) {
+        boolean aNum = a.chars().allMatch(Character::isDigit);
+        boolean bNum = b.chars().allMatch(Character::isDigit);
+        if (aNum && bNum) {
+            String aa = a.replaceFirst("^0+(?!$)", "");
+            String bb = b.replaceFirst("^0+(?!$)", "");
+            if (aa.length() != bb.length()) {
+                return Integer.compare(aa.length(), bb.length());
+            }
+            return aa.compareTo(bb);
+        }
+        return a.compareToIgnoreCase(b);
+    }
+
+    private static Properties loadBuildProperties() {
+        Properties properties = new Properties();
+        try (var stream = ModrinthUpdateChecker.class.getClassLoader().getResourceAsStream("voxelmap-build.properties")) {
+            if (stream != null) {
+                properties.load(stream);
+            }
+        } catch (Exception exception) {
+            VoxelConstants.getLogger().warn("Unable to load voxelmap-build.properties", exception);
+        }
+        return properties;
+    }
+
+    public static String getBuildProperty(String key, String fallback) {
+        String value = BUILD_PROPERTIES.getProperty(key);
+        if (value == null || value.isBlank() || value.startsWith("${")) {
+            return fallback;
+        }
+        return value.trim();
     }
 }

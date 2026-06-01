@@ -54,6 +54,9 @@ public final class SeedMapperDatapackManager {
         Files.deleteIfExists(tempZip);
 
         Path datapackRoot = resolveDatapackRoot(unpackRoot);
+        String datapackRootPath = datapackRoot.toAbsolutePath().normalize().toString();
+        SeedMapperImportedDatapackManager.invalidateCache(datapackRootPath);
+        SeedMapperDatapackWorldgen.invalidateCache(datapackRootPath);
         List<String> structures = listStructureIds(datapackRoot);
         if (structures.isEmpty()) {
             throw new IOException("Datapack world generation is not supported, only structures.");

@@ -625,19 +625,19 @@ public class GuiRadarChunkOverlays extends GuiScreenMinimap {
         if (syncPage) {
             int left = this.width / 2 - 260;
             drawSyncSection(graphics, "One Time Setup", left, 94);
-            graphics.text(this.getFont(), "Passphrase", left, 107, 0xFFAAAAAA, false);
+            graphics.text(this.getFont(), "Passphrase", left, 107, 0xFFFFFFFF, false);
             drawSyncSection(graphics, "Share", left, 166);
-            graphics.text(this.getFont(), "Player name", left, 179, 0xFFAAAAAA, false);
+            graphics.text(this.getFont(), "Player name", left, 179, 0xFFFFFFFF, false);
             drawSyncSection(graphics, "Receive", left, 224);
-            graphics.text(this.getFont(), "Share code or URL", left, 237, 0xFFAAAAAA, false);
-            graphics.text(this.getFont(), "Separate player layer name", left, 273, 0xFFAAAAAA, false);
+            graphics.text(this.getFont(), "Share code or URL", left, 237, 0xFFFFFFFF, false);
+            graphics.text(this.getFont(), "Separate player layer name", left, 273, 0xFFFFFFFF, false);
             drawSyncSection(graphics, "Manual File Transfer", left, 318);
-            graphics.text(this.getFont(), "Folder or .zip name", left, 331, 0xFFAAAAAA, false);
-            graphics.text(this.getFont(), "Import as layer", left + 240, 331, 0xFFAAAAAA, false);
+            graphics.text(this.getFont(), "Folder or .zip name", left, 331, 0xFFFFFFFF, false);
+            graphics.text(this.getFont(), "Import as layer", left + 240, 331, 0xFFFFFFFF, false);
             drawSyncSection(graphics, "Imported Player Layers", left, 376);
-            graphics.text(this.getFont(), "Player", syncPlayerListLeft + 6, 398, 0xFFAAAAAA, false);
-            graphics.text(this.getFont(), "Visible", syncPlayerListLeft + syncPlayerListWidth - 276, 398, 0xFFAAAAAA, false);
-            graphics.text(this.getFont(), "Color / HSV", syncPlayerListLeft + syncPlayerListWidth - 216, 398, 0xFFAAAAAA, false);
+            graphics.text(this.getFont(), "Player", syncPlayerListLeft + 6, 398, 0xFFFFFFFF, false);
+            graphics.text(this.getFont(), "Visible", syncPlayerListLeft + syncPlayerListWidth - 276, 398, 0xFFFFFFFF, false);
+            graphics.text(this.getFont(), "Color / HSV", syncPlayerListLeft + syncPlayerListWidth - 216, 398, 0xFFFFFFFF, false);
             graphics.fill(syncPlayerListLeft, 412, syncPlayerListLeft + syncPlayerListWidth, 412 + syncPlayerListHeight, 0x66000000);
             super.extractRenderState(graphics, isModalOpen() ? 0 : mouseX, isModalOpen() ? 0 : mouseY, delta);
 

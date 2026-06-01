@@ -9,7 +9,7 @@ public final class AppChatMessages {
     }
 
     public static MutableComponent prefixed(String app, String text) {
-        return Component.literal("[" + app + "] ").withStyle(ChatFormatting.AQUA)
+        return Component.literal("[Voxel x Seedmap] ").withStyle(ChatFormatting.AQUA)
                 .append(Component.literal(text).withStyle(ChatFormatting.WHITE));
     }
 }

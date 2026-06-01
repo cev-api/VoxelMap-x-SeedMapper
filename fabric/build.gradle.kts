@@ -9,6 +9,8 @@ val fabricVersion: String by rootProject.extra
 val fabricApiVersion: String by rootProject.extra
 
 val fullVersion: String by rootProject.extra
+val forkVersion: String by rootProject.extra
+val modrinthId: String by rootProject.extra
 
 base {
     archivesName.set("voxelmap-fabric")
@@ -56,6 +58,14 @@ tasks {
 
         filesMatching("fabric.mod.json") {
             expand(mapOf("version" to fullVersion))
+        }
+        filesMatching("voxelmap-build.properties") {
+            expand(
+                mapOf(
+                    "forkVersion" to forkVersion,
+                    "modrinthId" to modrinthId
+                )
+            )
         }
     }
 

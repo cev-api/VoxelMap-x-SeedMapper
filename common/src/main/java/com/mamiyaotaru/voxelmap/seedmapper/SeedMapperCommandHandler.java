@@ -13,10 +13,12 @@ import com.github.cubiomes.TerrainNoise;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.mamiyaotaru.voxelmap.chunksync.ChunkSyncCommandHandler;
 import com.mamiyaotaru.voxelmap.VoxelConstants;
 import com.mamiyaotaru.voxelmap.util.DimensionContainer;
 import com.mamiyaotaru.voxelmap.util.GameVariableAccessShim;
 import com.mamiyaotaru.voxelmap.util.AppChatMessages;
+import com.mamiyaotaru.voxelmap.util.ModrinthUpdateChecker;
 import com.mamiyaotaru.voxelmap.util.Waypoint;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
@@ -101,7 +103,8 @@ public final class SeedMapperCommandHandler {
         String command = rawCommand.trim();
         if (command.startsWith("/")) command = command.substring(1);
         String lower = command.toLowerCase(Locale.ROOT);
-        if (!lower.startsWith("seedmap") && !lower.startsWith("sm")) return false;
+        if (!lower.startsWith("seedmap") && !lower.startsWith("sm")
+                && !lower.startsWith("voxelmap") && !lower.startsWith("vmap")) return false;
         if (lower.equals("seedmap source") || lower.startsWith("seedmap source ")
                 || lower.equals("sm source") || lower.startsWith("sm source ")
                 || lower.equals("sm:source") || lower.startsWith("sm:source ")) {
@@ -126,8 +129,67 @@ public final class SeedMapperCommandHandler {
             case "highlight", "esp" -> { handleHighlight(args); yield true; }
             case "export" -> { handleExport(args); yield true; }
             case "source" -> { handleSource(args); yield true; }
+            case "updatechecker", "updatecheck", "updates", "update" -> { handleUpdateChecker(args); yield true; }
+            case "chunksync" -> {
+                String forwarded = args.length > 2 ? String.join(" ", Arrays.copyOfRange(args, 2, args.length)) : "";
+                ChunkSyncCommandHandler.runFromGui(forwarded);
+                yield true;
+            }
             default -> { send("Unknown subcommand. Use /seedmap help"); yield true; }
         };
+    }
+
+    private static void handleUpdateChecker(String[] args) {
+        if (args.length < 3) {
+            boolean enabled = VoxelConstants.getVoxelMapInstance().getMapOptions().updateNotifier;
+            send("Update checker is currently " + (enabled ? "ON" : "OFF") + ".");
+            send("Usage: /voxelmap updatechecker <on|off|toggle|status|check>");
+            return;
+        }
+        String action = args[2].toLowerCase(Locale.ROOT);
+        var options = VoxelConstants.getVoxelMapInstance().getMapOptions();
+        switch (action) {
+            case "on" -> options.updateNotifier = true;
+            case "off" -> options.updateNotifier = false;
+            case "toggle" -> options.updateNotifier = !options.updateNotifier;
+            case "check" -> {
+                String projectId = ModrinthUpdateChecker.getBuildProperty("modrinthId", "cVrDroCh");
+                String version = ModrinthUpdateChecker.getBuildProperty("forkVersion",
+                        VoxelConstants.getModVersion() == null || VoxelConstants.getModVersion().isBlank()
+                                ? "0.01"
+                                : VoxelConstants.getModVersion());
+                if (version == null || version.isBlank()) {
+                    send("Update check failed: local version is unknown.");
+                    return;
+                }
+                String mcVersion = net.minecraft.SharedConstants.getCurrentVersion().name();
+                send("Checking Modrinth for updates...");
+                new ModrinthUpdateChecker(projectId, VoxelConstants.getModApiBridge().getModLoader(), mcVersion)
+                        .checkUpdates(version, result -> {
+                            if (result == null || result.latestVersion() == null) {
+                                send("Update check failed: no compatible versions found.");
+                                return;
+                            }
+                            int cmp = ModrinthUpdateChecker.compareVersions(ModrinthUpdateChecker.getRawVersion(version), result.latestVersion());
+                            if (cmp >= 0) {
+                                send("No update available. Current version: " + version);
+                            } else {
+                                send("Update available: " + result.latestVersion());
+                            }
+                        });
+                return;
+            }
+            case "status" -> {
+                send("Update checker is currently " + (options.updateNotifier ? "ON" : "OFF") + ".");
+                return;
+            }
+            default -> {
+                send("Unknown value '" + args[2] + "'. Use /voxelmap updatechecker <on|off|toggle|status|check>.");
+                return;
+            }
+        }
+        com.mamiyaotaru.voxelmap.MapSettingsManager.instance.saveAll();
+        send("Update checker is now " + (options.updateNotifier ? "ON" : "OFF") + ".");
     }
 
     public static void handlePotentialLocateResult(String chatMessage) {
@@ -1744,6 +1806,8 @@ public final class SeedMapperCommandHandler {
         lines.add("/seedmap highlight clear");
         lines.add("/seedmap export [visible|radius <blocks>|area <x> <z> <radius>]");
         lines.add("/seedmap source <run|seeded|positioned|in|versioned|flagged|as|rotated> ...");
+        lines.add("/voxelmap chunksync <share|get|key|host|export|import|players|remove> ...");
+        lines.add("/voxelmap updatechecker <on|off|toggle|status|check>");
         for (String line : lines) send(line);
     }
 

@@ -14,6 +14,8 @@ public final class SeedMapperClientCommands {
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
             dispatcher.register(SeedMapperCommandTree.buildRoot("seedmap", SeedMapperClientCommands::run));
             dispatcher.register(SeedMapperCommandTree.buildRoot("sm", SeedMapperClientCommands::run));
+            dispatcher.register(SeedMapperCommandTree.buildRoot("voxelmap", SeedMapperClientCommands::run));
+            dispatcher.register(SeedMapperCommandTree.buildRoot("vmap", SeedMapperClientCommands::run));
             dispatcher.register(SeedMapperCommandTree.buildSourceRoot(SeedMapperClientCommands::run));
             dispatcher.register(ChunkSyncCommands.buildRoot("chunksync", SeedMapperClientCommands::runChunkSync));
         });

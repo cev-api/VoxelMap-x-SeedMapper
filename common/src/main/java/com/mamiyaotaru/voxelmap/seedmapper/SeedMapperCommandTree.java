@@ -20,7 +20,7 @@ public final class SeedMapperCommandTree {
     private static final List<String> ORE_VEIN_TYPES = List.of("iron", "copper");
     private static final List<String> ESP_TYPES = List.of("terrain", "canyon", "cave");
     private static final List<String> SOURCE_WRAPPERS = List.of("run", "seeded", "positioned", "in", "versioned", "flagged", "as", "rotated");
-    private static final List<String> ROOT_COMMANDS = List.of("help", "seed", "locate", "highlight", "export");
+    private static final List<String> ROOT_COMMANDS = List.of("help", "seed", "locate", "highlight", "export", "chunksync", "updatechecker");
     private static final List<String> LOCATE_TYPES = List.of("structure", "feature", "biome", "orevein", "slime", "slimechunk", "slime_chunk", "loot");
     private static final List<String> LOOT_QUERY_TERMS = List.of(
             "sentry_armor_trim_smithing_template", "vex_armor_trim_smithing_template",
@@ -97,6 +97,23 @@ public final class SeedMapperCommandTree {
                                         .executes(context -> run(context, runner,
                                                 "highlight " + StringArgumentType.getString(context, "mode") + " " + IntegerArgumentType.getInteger(context, "chunks"))))))
                 .then(LiteralArgumentBuilder.<S>literal("export").executes(context -> runRaw(context, runner, "export")))
+                .then(LiteralArgumentBuilder.<S>literal("chunksync")
+                        .executes(context -> runRaw(context, runner, "chunksync"))
+                        .then(LiteralArgumentBuilder.<S>literal("share").executes(context -> runRaw(context, runner, "chunksync share")))
+                        .then(LiteralArgumentBuilder.<S>literal("get").executes(context -> runRaw(context, runner, "chunksync get")))
+                        .then(LiteralArgumentBuilder.<S>literal("key").executes(context -> runRaw(context, runner, "chunksync key")))
+                        .then(LiteralArgumentBuilder.<S>literal("host").executes(context -> runRaw(context, runner, "chunksync host")))
+                        .then(LiteralArgumentBuilder.<S>literal("export").executes(context -> runRaw(context, runner, "chunksync export")))
+                        .then(LiteralArgumentBuilder.<S>literal("import").executes(context -> runRaw(context, runner, "chunksync import")))
+                        .then(LiteralArgumentBuilder.<S>literal("players")
+                                .executes(context -> runRaw(context, runner, "chunksync players")))
+                        .then(LiteralArgumentBuilder.<S>literal("remove").executes(context -> runRaw(context, runner, "chunksync remove"))))
+                .then(LiteralArgumentBuilder.<S>literal("updatechecker")
+                        .then(LiteralArgumentBuilder.<S>literal("on").executes(context -> runRaw(context, runner, "updatechecker on")))
+                        .then(LiteralArgumentBuilder.<S>literal("off").executes(context -> runRaw(context, runner, "updatechecker off")))
+                        .then(LiteralArgumentBuilder.<S>literal("toggle").executes(context -> runRaw(context, runner, "updatechecker toggle")))
+                        .then(LiteralArgumentBuilder.<S>literal("status").executes(context -> runRaw(context, runner, "updatechecker status")))
+                        .then(LiteralArgumentBuilder.<S>literal("check").executes(context -> runRaw(context, runner, "updatechecker check"))))
                 .then(buildSourceSubtree("source", "seedmap source ", runner));
     }
 

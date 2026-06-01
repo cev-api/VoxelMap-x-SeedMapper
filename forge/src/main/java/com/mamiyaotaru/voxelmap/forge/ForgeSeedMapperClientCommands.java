@@ -13,6 +13,8 @@ public final class ForgeSeedMapperClientCommands {
     public static void register(final RegisterClientCommandsEvent event) {
         event.getDispatcher().register(SeedMapperCommandTree.buildRoot("seedmap", ForgeSeedMapperClientCommands::run));
         event.getDispatcher().register(SeedMapperCommandTree.buildRoot("sm", ForgeSeedMapperClientCommands::run));
+        event.getDispatcher().register(SeedMapperCommandTree.buildRoot("voxelmap", ForgeSeedMapperClientCommands::run));
+        event.getDispatcher().register(SeedMapperCommandTree.buildRoot("vmap", ForgeSeedMapperClientCommands::run));
         event.getDispatcher().register(SeedMapperCommandTree.buildSourceRoot(ForgeSeedMapperClientCommands::run));
         event.getDispatcher().register(ChunkSyncCommands.buildRoot("chunksync", ForgeSeedMapperClientCommands::runChunkSync));
     }

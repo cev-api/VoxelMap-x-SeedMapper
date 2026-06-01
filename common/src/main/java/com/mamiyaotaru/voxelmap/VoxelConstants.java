@@ -5,6 +5,8 @@ import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperCommandHandler;
 import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperEspRenderer;
 import com.mamiyaotaru.voxelmap.util.BiomeRepository;
 import com.mamiyaotaru.voxelmap.util.CommandUtils;
+import com.mamiyaotaru.voxelmap.util.MessageUtils;
+import com.mamiyaotaru.voxelmap.util.ModrinthUpdateChecker;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
@@ -24,6 +26,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Locale;
 import java.util.Optional;
 
 public final class VoxelConstants {
@@ -126,6 +129,9 @@ public final class VoxelConstants {
     }
 
     public static boolean onSendChatMessage(String message) {
+        if (handleUpdateCheckerCommand(message)) {
+            return false;
+        }
         if (SeedMapperCommandHandler.handleChatCommand(message)) {
             return false;
         }
@@ -229,5 +235,73 @@ public final class VoxelConstants {
 
     public static String getModVersion() {
         return modVersion;
+    }
+
+    private static boolean handleUpdateCheckerCommand(String message) {
+        if (message == null || message.isBlank()) {
+            return false;
+        }
+
+        String normalized = message.trim();
+        if (normalized.startsWith("/")) {
+            normalized = normalized.substring(1);
+        }
+
+        String[] args = normalized.split("\\s+");
+        if (args.length < 2) {
+            return false;
+        }
+
+        String root = args[0].toLowerCase(Locale.ROOT);
+        String sub = args[1].toLowerCase(Locale.ROOT);
+        if (!(root.equals("voxelmap") || root.equals("vmap")) || !sub.equals("updatechecker")) {
+            return false;
+        }
+
+        MapSettingsManager options = VoxelConstants.getVoxelMapInstance().getMapOptions();
+        if (args.length == 2 || "status".equalsIgnoreCase(args[2])) {
+            MessageUtils.chatInfo("Update checker is currently " + (options.updateNotifier ? "ON" : "OFF") + ".");
+            MessageUtils.chatInfo("Usage: /voxelmap updatechecker <on|off|toggle|status|check>");
+            return true;
+        }
+
+        String action = args[2].toLowerCase(Locale.ROOT);
+        switch (action) {
+            case "on" -> options.updateNotifier = true;
+            case "off" -> options.updateNotifier = false;
+            case "toggle" -> options.updateNotifier = !options.updateNotifier;
+            case "check" -> {
+                String projectId = ModrinthUpdateChecker.getBuildProperty("modrinthId", "cVrDroCh");
+                String version = ModrinthUpdateChecker.getBuildProperty("forkVersion", VoxelConstants.getModVersion());
+                if (version == null || version.isBlank()) {
+                    MessageUtils.chatInfo("Update check failed: local version is unknown.");
+                    return true;
+                }
+                String mcVersion = net.minecraft.SharedConstants.getCurrentVersion().name();
+                MessageUtils.chatInfo("Checking Modrinth for updates...");
+                new ModrinthUpdateChecker(projectId, VoxelConstants.getModApiBridge().getModLoader(), mcVersion)
+                        .checkUpdates(version, result -> {
+                            if (result == null || result.latestVersion() == null) {
+                                MessageUtils.chatInfo("Update check failed: no compatible versions found.");
+                                return;
+                            }
+                            int cmp = ModrinthUpdateChecker.compareVersions(ModrinthUpdateChecker.getRawVersion(version), result.latestVersion());
+                            if (cmp >= 0) {
+                                MessageUtils.chatInfo("No update available. Current version: " + version);
+                            } else {
+                                MessageUtils.chatInfo("Update available: " + result.latestVersion());
+                            }
+                        });
+                return true;
+            }
+            default -> {
+                MessageUtils.chatInfo("Unknown value '" + args[2] + "'. Use on, off, toggle, status, or check.");
+                return true;
+            }
+        }
+
+        options.saveAll();
+        MessageUtils.chatInfo("Update checker is now " + (options.updateNotifier ? "ON" : "OFF") + ".");
+        return true;
     }
 }

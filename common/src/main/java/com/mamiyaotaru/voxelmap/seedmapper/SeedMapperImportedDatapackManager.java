@@ -37,6 +37,13 @@ public final class SeedMapperImportedDatapackManager {
         return CACHE.computeIfAbsent(datapackRootPath, SeedMapperImportedDatapackManager::loadImportedDatapack);
     }
 
+    public static synchronized void invalidateCache(String datapackRootPath) {
+        if (datapackRootPath == null || datapackRootPath.isBlank()) {
+            return;
+        }
+        CACHE.remove(datapackRootPath);
+    }
+
     private static ImportedDatapack loadImportedDatapack(String datapackRootPath) {
         Path root;
         try {

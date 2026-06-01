@@ -201,16 +201,25 @@ public class GuiSeedMapperOptions extends GuiScreenMinimap {
 
         datapackEnabledButton = addRenderableWidget(new Button.Builder(toggleLabel("Datapack Structures", settings.datapackEnabled), button -> {
             settings.datapackEnabled = !settings.datapackEnabled;
+            settings.setFeatureEnabled(com.mamiyaotaru.voxelmap.seedmapper.SeedMapperFeature.DATAPACK_STRUCTURE, settings.datapackEnabled);
             MapSettingsManager.instance.saveAll();
             refreshLabels();
         }).bounds(left, y, 150, 20).build());
 
-        datapackImportButton = addRenderableWidget(new Button.Builder(Component.literal("Import Datapack"), button -> {
+        datapackImportButton = addRenderableWidget(new Button.Builder(Component.literal("Datapack Settings"), button ->
+                minecraft.setScreen(new GuiSeedMapperDatapackOptions(this)))
+                .bounds(right, y, 150, 20).build());
+
+        y += rowGap;
+
+        datapackSettingsButton = addRenderableWidget(new Button.Builder(Component.literal("Import Datapack"), button -> {
             applyTextValues();
             try {
                 SeedMapperDatapackManager.ImportResult result = SeedMapperDatapackManager.importFromUrl(settings.datapackUrl);
                 settings.datapackEnabled = true;
+                settings.setFeatureEnabled(com.mamiyaotaru.voxelmap.seedmapper.SeedMapperFeature.DATAPACK_STRUCTURE, true);
                 settings.datapackCachePath = result.datapackRoot().toAbsolutePath().toString();
+                settings.clearDisabledDatapackStructures(currentWorldKey());
                 settings.putDatapackSavedUrl(settings.getCurrentServerKey(), settings.datapackUrl);
                 settings.putDatapackSavedCachePath(settings.getCurrentServerKey(), settings.datapackCachePath);
                 showStatusMessage("Imported " + result.structureIds().size() + " datapack structures.");
@@ -219,13 +228,7 @@ public class GuiSeedMapperOptions extends GuiScreenMinimap {
             }
             MapSettingsManager.instance.saveAll();
             refreshLabels();
-        }).bounds(right, y, 150, 20).build());
-
-        y += rowGap;
-
-        datapackSettingsButton = addRenderableWidget(new Button.Builder(Component.literal("Datapack Settings"), button ->
-                minecraft.setScreen(new GuiSeedMapperDatapackOptions(this)))
-                .bounds(left, y, fullWidth, 20).build());
+        }).bounds(left, y, fullWidth, 20).build());
 
         y = 426;
 
@@ -298,6 +301,14 @@ public class GuiSeedMapperOptions extends GuiScreenMinimap {
 
     private String toggleText(boolean enabled) {
         return enabled ? "ON" : "OFF";
+    }
+
+    private String currentWorldKey() {
+        String world = VoxelConstants.getVoxelMapInstance().getWaypointManager().getCurrentWorldName();
+        String sub = VoxelConstants.getVoxelMapInstance().getWaypointManager().getCurrentSubworldDescriptor(false);
+        var level = com.mamiyaotaru.voxelmap.util.GameVariableAccessShim.getWorld();
+        String dim = level == null ? "unknown" : level.dimension().identifier().toString();
+        return (world == null ? "unknown" : world) + "|" + (sub == null ? "" : sub) + "|" + dim;
     }
 
     private void applyTextValues() {

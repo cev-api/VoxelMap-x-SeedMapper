@@ -13,6 +13,8 @@ public final class NeoForgeSeedMapperClientCommands {
     public static void register(final RegisterClientCommandsEvent event) {
         event.getDispatcher().register(SeedMapperCommandTree.buildRoot("seedmap", NeoForgeSeedMapperClientCommands::run));
         event.getDispatcher().register(SeedMapperCommandTree.buildRoot("sm", NeoForgeSeedMapperClientCommands::run));
+        event.getDispatcher().register(SeedMapperCommandTree.buildRoot("voxelmap", NeoForgeSeedMapperClientCommands::run));
+        event.getDispatcher().register(SeedMapperCommandTree.buildRoot("vmap", NeoForgeSeedMapperClientCommands::run));
         event.getDispatcher().register(SeedMapperCommandTree.buildSourceRoot(NeoForgeSeedMapperClientCommands::run));
         event.getDispatcher().register(ChunkSyncCommands.buildRoot("chunksync", NeoForgeSeedMapperClientCommands::runChunkSync));
     }
