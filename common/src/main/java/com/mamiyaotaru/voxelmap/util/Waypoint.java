@@ -70,23 +70,34 @@ public class Waypoint implements Serializable, Comparable<Waypoint> {
     }
 
     public int getXInCurrentDimension() {
-        return convertToCurrentDimension(this.x);
+        return convertToDimension(this.x, getCurrentCoordinateScale());
     }
 
     public int getZInCurrentDimension() {
-        return convertToCurrentDimension(this.z);
+        return convertToDimension(this.z, getCurrentCoordinateScale());
+    }
+
+    public int getXInDimension(DimensionContainer targetDimension) {
+        return convertToDimension(this.x, getTargetCoordinateScale(targetDimension));
+    }
+
+    public int getZInDimension(DimensionContainer targetDimension) {
+        return convertToDimension(this.z, getTargetCoordinateScale(targetDimension));
     }
 
     public void setXFromCurrentDimension(int x) {
-        this.x = convertFromCurrentDimension(x);
+        this.x = convertFromCurrentDimension(x, getCurrentCoordinateScale());
     }
 
     public void setZFromCurrentDimension(int z) {
-        this.z = convertFromCurrentDimension(z);
+        this.z = convertFromCurrentDimension(z, getCurrentCoordinateScale());
     }
 
-    private int convertToCurrentDimension(int coordinate) {
-        double targetScale = VoxelConstants.getPlayer().level().dimensionType().coordinateScale();
+    public boolean isInDimension(DimensionContainer targetDimension) {
+        return this.dimensions == null || this.dimensions.isEmpty() || targetDimension == null || this.dimensions.contains(targetDimension);
+    }
+
+    private int convertToDimension(int coordinate, double targetScale) {
         double sourceScale = getSourceCoordinateScale();
         if (sourceScale == targetScale) {
             return coordinate;
@@ -94,13 +105,20 @@ public class Waypoint implements Serializable, Comparable<Waypoint> {
         return Mth.floor(coordinate * sourceScale / targetScale);
     }
 
-    private int convertFromCurrentDimension(int coordinate) {
-        double currentScale = VoxelConstants.getPlayer().level().dimensionType().coordinateScale();
+    private int convertFromCurrentDimension(int coordinate, double currentScale) {
         double sourceScale = getSourceCoordinateScale();
         if (sourceScale == currentScale) {
             return coordinate;
         }
         return Mth.floor(coordinate * currentScale / sourceScale);
+    }
+
+    private double getCurrentCoordinateScale() {
+        return VoxelConstants.getPlayer().level().dimensionType().coordinateScale();
+    }
+
+    private double getTargetCoordinateScale(DimensionContainer targetDimension) {
+        return targetDimension == null || targetDimension.type == null ? 1.0D : targetDimension.type.coordinateScale();
     }
 
     private double getSourceCoordinateScale() {
