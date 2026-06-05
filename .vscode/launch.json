@@ -12,11 +12,11 @@
       "projectName": "neoforge",
       "mainClass": "net.neoforged.devlaunch.Main",
       "args": [
-        "@\\\\NAS\\Applications\\Programmin\\Minecraft\\VoxelMap\\VoxelMap\\neoforge\\build\\moddev\\clientRunProgramArgs.txt"
+        "@Z:\\Programmin\\Minecraft\\VoxelMap\\VoxelMap\\neoforge\\build\\moddev\\clientRunProgramArgs.txt"
       ],
       "vmArgs": [
-        "@\\\\NAS\\Applications\\Programmin\\Minecraft\\VoxelMap\\VoxelMap\\neoforge\\build\\moddev\\clientRunVmArgs.txt",
-        "-Dfml.modFolders\u003dvoxelmap%%\\\\NAS\\Applications\\Programmin\\Minecraft\\VoxelMap\\VoxelMap\\neoforge\\bin\\main;voxelmap%%\\\\NAS\\Applications\\Programmin\\Minecraft\\VoxelMap\\VoxelMap\\common\\bin\\main"
+        "@Z:\\Programmin\\Minecraft\\VoxelMap\\VoxelMap\\neoforge\\build\\moddev\\clientRunVmArgs.txt",
+        "-Dfml.modFolders\u003dvoxelmap%%Z:\\Programmin\\Minecraft\\VoxelMap\\VoxelMap\\neoforge\\bin\\main;voxelmap%%Z:\\Programmin\\Minecraft\\VoxelMap\\VoxelMap\\common\\bin\\main"
       ],
       "cwd": "${workspaceFolder}\\neoforge\\run",
       "env": {},

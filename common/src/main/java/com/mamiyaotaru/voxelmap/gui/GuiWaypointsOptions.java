@@ -52,18 +52,11 @@ public class GuiWaypointsOptions extends GuiScreenMinimap {
                 float value = this.options.getFloatValue(option);
                 switch (option) {
                     case WAYPOINT_DISTANCE -> {
-                        if (value < 0.0F) {
-                            value = 10001.0F;
-                        }
-
-                        value = (value - 50.0F) / 9951.0F;
+                        value = MapSettingsManager.distanceToSlider((int) value);
                     }
                     case WAYPOINT_SIGN_SCALE -> value = value - 0.5F;
                     case WAYPOINT_COMPASS_ICON_RANGE -> {
-                        if (value < 0.0F) {
-                            value = 10001.0F;
-                        }
-                        value = (value - 100.0F) / 9901.0F;
+                        value = MapSettingsManager.distanceToSlider((int) value);
                     }
                     case WAYPOINT_COMPASS_MAX_WAYPOINTS -> value = (value - 1.0F) / 63.0F;
                     case WAYPOINT_COMPASS_X, WAYPOINT_COMPASS_TEXT_OPACITY, WAYPOINT_COMPASS_OUTLINE_OPACITY, WAYPOINT_COMPASS_BACKGROUND_OPACITY -> value = value / 100.0F;

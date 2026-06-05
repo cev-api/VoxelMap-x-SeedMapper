@@ -221,12 +221,12 @@ public class MapSettingsManager implements ISettingsManager {
                         case "Teleport Command" -> teleportCommand = curLine[1];
 
                         case "Waypoint Sort By" -> waypointSort = Mth.clamp(Integer.parseInt(curLine[1]), 1, 4);
-                        case "Waypoint Max Distance" -> maxWaypointDisplayDistance = Mth.clamp(Integer.parseInt(curLine[1]), -1, 10000);
+                        case "Waypoint Max Distance" -> maxWaypointDisplayDistance = Mth.clamp(Integer.parseInt(curLine[1]), -1, 1000000);
                         case "Waypoint Sign Scale" -> waypointSignScale = Mth.clamp(Float.parseFloat(curLine[1]), 0.5F, 1.5F);
                         case "Waypoint Compass" -> waypointCompass = Boolean.parseBoolean(curLine[1]);
                         case "Waypoint Compass Show Coords" -> waypointCompassShowCoords = Boolean.parseBoolean(curLine[1]);
                         case "Waypoint Compass Text Outline" -> waypointCompassTextOutline = Boolean.parseBoolean(curLine[1]);
-                        case "Waypoint Compass Icon Range" -> waypointCompassIconRange = Mth.clamp(Integer.parseInt(curLine[1]), -1, 10000);
+                        case "Waypoint Compass Icon Range" -> waypointCompassIconRange = Mth.clamp(Integer.parseInt(curLine[1]), -1, 1000000);
                         case "Waypoint Compass Max Waypoints" -> waypointCompassMaxWaypoints = Mth.clamp(Integer.parseInt(curLine[1]), 1, 64);
                         case "Waypoint Compass X" -> waypointCompassX = Mth.clamp(Integer.parseInt(curLine[1]), 0, 100);
                         case "Waypoint Compass Y" -> waypointCompassY = Mth.clamp(Integer.parseInt(curLine[1]), 0, 40);
@@ -680,12 +680,7 @@ public class MapSettingsManager implements ISettingsManager {
                 zoom = Mth.clamp(Math.round(value), 0, 4);
             }
             case WAYPOINT_DISTANCE -> {
-                float distance = Mth.lerp(value, 50.0F, 10001.0F);
-                if (distance > 10000.0F) {
-                    distance = -1.0F;
-                }
-
-                maxWaypointDisplayDistance = (int) distance;
+                maxWaypointDisplayDistance = sliderToDistance(value);
             }
             case WAYPOINT_SIGN_SCALE -> {
                 int stepCount = 100;
@@ -694,8 +689,7 @@ public class MapSettingsManager implements ISettingsManager {
                 waypointSignScale = Mth.lerp(value2, 0.5F, 1.5F);
             }
             case WAYPOINT_COMPASS_ICON_RANGE -> {
-                float distance = Mth.lerp(value, 100.0F, 10001.0F);
-                waypointCompassIconRange = distance > 10000.0F ? -1 : (int) distance;
+                waypointCompassIconRange = sliderToDistance(value);
             }
             case WAYPOINT_COMPASS_MAX_WAYPOINTS -> waypointCompassMaxWaypoints = Mth.clamp(Math.round(Mth.lerp(value, 1.0F, 64.0F)), 1, 64);
             case WAYPOINT_COMPASS_X -> waypointCompassX = Mth.clamp(Math.round(value * 100.0F), 0, 100);
@@ -715,6 +709,34 @@ public class MapSettingsManager implements ISettingsManager {
             case BOOLEAN -> settingsManager.toggleBooleanValue(option);
             case LIST -> settingsManager.cycleListValue(option);
         }
+    }
+
+    private static int sliderToDistance(float slider) {
+        if (slider >= 1.0F) return -1;
+        if (slider <= 0.0F) return 0;
+        if (slider <= 0.5F) {
+            return Math.round(slider / 0.5F * 100000.0F);
+        }
+        if (slider <= 0.96F) {
+            float t = (slider - 0.5F) / 0.46F;
+            return 100000 + Math.round(t * 900000.0F / 100000.0F) * 100000;
+        }
+        float t = (slider - 0.96F) / 0.04F;
+        return 1000000 + Math.round(t * 1000000.0F);
+    }
+
+    public static float distanceToSlider(int distance) {
+        if (distance < 0) return 1.0F;
+        if (distance <= 0) return 0.0F;
+        if (distance <= 100000) {
+            return distance / 100000.0F * 0.5F;
+        }
+        if (distance <= 1000000) {
+            float t = (float)(distance - 100000) / 900000.0F;
+            return 0.5F + t * 0.46F;
+        }
+        float t = (float)(distance - 1000000) / 1000000.0F;
+        return Math.min(1.0F, 0.96F + t * 0.04F);
     }
 
     public static int cycleInRange(int current, int min, int max) {
