@@ -5,7 +5,9 @@ import com.mamiyaotaru.voxelmap.VoxelConstants;
 import com.mamiyaotaru.voxelmap.gui.overridden.EnumOptionsMinimap;
 import com.mamiyaotaru.voxelmap.interfaces.ISubSettingsManager;
 import net.minecraft.client.resources.language.I18n;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
+import net.minecraft.world.level.Level;
 
 import java.util.Locale;
 
@@ -16,6 +18,85 @@ import java.io.IOException;
 import java.io.PrintWriter;
 
 public class PersistentMapSettingsManager implements ISubSettingsManager {
+    public enum WorldMapDimensionView {
+        CURRENT("worldmap.realm.current"),
+        OVERWORLD("worldmap.realm.overworld"),
+        NETHER("worldmap.realm.nether"),
+        END("worldmap.realm.end");
+
+        private final String translationKey;
+
+        WorldMapDimensionView(String translationKey) {
+            this.translationKey = translationKey;
+        }
+
+        public String displayName() {
+            return I18n.get(this.translationKey);
+        }
+
+        public String displayName(Level currentLevel) {
+            if (this == CURRENT) {
+                return currentRealmView(currentLevel).displayName();
+            }
+            return this.displayName();
+        }
+
+        public WorldMapDimensionView next(Level currentLevel) {
+            WorldMapDimensionView currentRealm = currentRealmView(currentLevel);
+            WorldMapDimensionView[] orderedAlternates = orderedAlternates(currentRealm);
+            if (this == CURRENT || this == currentRealm) {
+                return orderedAlternates[0];
+            }
+            if (this == orderedAlternates[0]) {
+                return orderedAlternates[1];
+            }
+            return CURRENT;
+        }
+
+        public Identifier resolveIdentifier(Level currentLevel) {
+            return switch (this) {
+                case CURRENT -> currentLevel == null ? Level.OVERWORLD.identifier() : currentLevel.dimension().identifier();
+                case OVERWORLD -> Level.OVERWORLD.identifier();
+                case NETHER -> Level.NETHER.identifier();
+                case END -> Level.END.identifier();
+            };
+        }
+
+        public static WorldMapDimensionView fromString(String value) {
+            if (value == null || value.isBlank()) {
+                return CURRENT;
+            }
+
+            try {
+                return valueOf(value.trim().toUpperCase(Locale.ROOT));
+            } catch (IllegalArgumentException ignored) {
+                return CURRENT;
+            }
+        }
+
+        private static WorldMapDimensionView currentRealmView(Level currentLevel) {
+            if (currentLevel == null) {
+                return OVERWORLD;
+            }
+            Identifier currentIdentifier = currentLevel.dimension().identifier();
+            if (Level.NETHER.identifier().equals(currentIdentifier)) {
+                return NETHER;
+            }
+            if (Level.END.identifier().equals(currentIdentifier)) {
+                return END;
+            }
+            return OVERWORLD;
+        }
+
+        private static WorldMapDimensionView[] orderedAlternates(WorldMapDimensionView currentRealm) {
+            return switch (currentRealm) {
+                case NETHER -> new WorldMapDimensionView[]{OVERWORLD, END};
+                case END -> new WorldMapDimensionView[]{OVERWORLD, NETHER};
+                case CURRENT, OVERWORLD -> new WorldMapDimensionView[]{NETHER, END};
+            };
+        }
+    }
+
     private static final int MIN_WORLDMAP_ZOOM_POWER = -9;
     private static final int MAX_WORLDMAP_ZOOM_POWER = 8;
     private static final int MAX_WORLDMAP_CACHE_SIZE = 20000;
@@ -42,6 +123,7 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
     public boolean showWaypointNames = true;
     public boolean showDistantWaypoints = true;
     public boolean showNewOldChunks = false;
+    public WorldMapDimensionView worldMapDimensionView = WorldMapDimensionView.CURRENT;
 
     @Override
     public void loadAll(File settingsFile) {
@@ -66,6 +148,7 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
                     case "Show Worldmap Waypoints" -> showWaypoints = Boolean.parseBoolean(curLine[1]);
                     case "Show Worldmap Waypoint Names" -> showWaypointNames = Boolean.parseBoolean(curLine[1]);
                     case "Show Worldmap Distant Waypoints" -> showDistantWaypoints = Boolean.parseBoolean(curLine[1]);
+                    case "Worldmap Dimension View" -> worldMapDimensionView = WorldMapDimensionView.fromString(curLine[1]);
                     case "Output Images" -> outputImages = Boolean.parseBoolean(curLine[1]);
                 }
             }
@@ -117,6 +200,7 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
         out.println("Show Worldmap Waypoints:" + showWaypoints);
         out.println("Show Worldmap Waypoint Names:" + showWaypointNames);
         out.println("Show Worldmap Distant Waypoints:" + showDistantWaypoints);
+        out.println("Worldmap Dimension View:" + worldMapDimensionView.name());
     }
 
     @Override

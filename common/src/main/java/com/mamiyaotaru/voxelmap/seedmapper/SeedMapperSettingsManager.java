@@ -43,6 +43,7 @@ public class SeedMapperSettingsManager implements ISubSettingsManager {
     public int espDefaultChunks = 4;
     public double espTimeoutMinutes = 5.0D;
     public int worldMapMarkerLimit = 5000;
+    public boolean worldMapSeedPreview = false;
     public int minimapDistantMarkerRange = 2048;
 
     private final Set<SeedMapperFeature> enabledFeatures = EnumSet.allOf(SeedMapperFeature.class);
@@ -91,6 +92,7 @@ public class SeedMapperSettingsManager implements ISubSettingsManager {
                     case "SeedMapper ESP Default Chunks" -> espDefaultChunks = Mth.clamp(Integer.parseInt(curLine[1]), 0, 8);
                     case "SeedMapper ESP Timeout Minutes" -> espTimeoutMinutes = Math.max(0.0D, Double.parseDouble(curLine[1]));
                     case "SeedMapper WorldMap Marker Limit" -> worldMapMarkerLimit = Mth.clamp(Integer.parseInt(curLine[1]), 200, 20000);
+                    case "SeedMapper WorldMap Seed Preview" -> worldMapSeedPreview = Boolean.parseBoolean(curLine[1]);
                     case "SeedMapper Minimap Distant Marker Range" -> minimapDistantMarkerRange = Mth.clamp(Integer.parseInt(curLine[1]), 128, 32768);
                     case "SeedMapper Datapack Random Colors" -> loadIntList(curLine[1], datapackRandomColors);
                     case "SeedMapper Datapack Saved URLs" -> loadMap(curLine[1], datapackSavedUrls);
@@ -175,6 +177,7 @@ public class SeedMapperSettingsManager implements ISubSettingsManager {
         out.println("SeedMapper ESP Default Chunks:" + espDefaultChunks);
         out.println("SeedMapper ESP Timeout Minutes:" + espTimeoutMinutes);
         out.println("SeedMapper WorldMap Marker Limit:" + worldMapMarkerLimit);
+        out.println("SeedMapper WorldMap Seed Preview:" + worldMapSeedPreview);
         out.println("SeedMapper Minimap Distant Marker Range:" + minimapDistantMarkerRange);
         out.println("SeedMapper Datapack Random Colors:" + saveIntList(datapackRandomColors));
         out.println("SeedMapper Datapack Saved URLs:" + saveMap(datapackSavedUrls));
@@ -191,8 +194,23 @@ public class SeedMapperSettingsManager implements ISubSettingsManager {
         }
     }
 
+    public String resolveSeedText(String fallback) {
+        if (manualSeed != null) {
+            String manualValue = manualSeed.trim();
+            if (!manualValue.isEmpty()) {
+                return manualValue;
+            }
+        }
+
+        return fallback == null ? "" : fallback.trim();
+    }
+
+    public boolean hasSeed(String fallback) {
+        return !resolveSeedText(fallback).isBlank();
+    }
+
     public long resolveSeed(String fallback) {
-        String value = manualSeed == null || manualSeed.isBlank() ? fallback : manualSeed.trim();
+        String value = resolveSeedText(fallback);
         if (value == null || value.isBlank()) {
             throw new IllegalArgumentException("No seed available");
         }

@@ -40,6 +40,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.thread.BlockableEventLoop;
 import net.minecraft.world.level.CardinalLighting;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
@@ -47,7 +48,6 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.level.dimension.DimensionType;
 import net.minecraft.world.level.storage.LevelResource;
-import org.apache.logging.log4j.Level;
 
 public class CachedRegion {
     private final static int CHUNKS_WIDTH = 16;
@@ -59,6 +59,7 @@ public class CachedRegion {
     private long mostRecentChange;
     private final PersistentMap persistentMap;
     private String key;
+    private String fileKey;
     private final ClientLevel world;
     private ServerLevel worldServer;
     private ServerChunkCache chunkProvider;
@@ -68,6 +69,8 @@ public class CachedRegion {
     private String worldNamePathPart;
     private String subworldNamePathPart = "";
     private String dimensionNamePathPart;
+    private final Identifier viewedDimensionIdentifier;
+    private final boolean canLoadLiveDimensionData;
     private boolean underground;
     private int x;
     private int z;
@@ -99,41 +102,53 @@ public class CachedRegion {
     public CachedRegion() {
         this.world = null;
         this.persistentMap = null;
+        this.viewedDimensionIdentifier = Level.OVERWORLD.identifier();
+        this.canLoadLiveDimensionData = false;
     }
 
-    public CachedRegion(PersistentMap persistentMap, String key, ClientLevel world, String worldName, String subworldName, int x, int z) {
+    public CachedRegion(PersistentMap persistentMap, String key, String fileKey, ClientLevel world, String worldName, String subworldName, int x, int z, Identifier viewedDimensionIdentifier) {
         this.persistentMap = persistentMap;
         this.key = key;
+        this.fileKey = fileKey;
         this.world = world;
+        this.viewedDimensionIdentifier = viewedDimensionIdentifier == null ? Level.OVERWORLD.identifier() : viewedDimensionIdentifier;
         this.subworldName = subworldName;
         this.worldNamePathPart = TextUtils.scrubNameFile(worldName);
         if (!Objects.equals(subworldName, "")) {
             this.subworldNamePathPart = TextUtils.scrubNameFile(subworldName) + "/";
         }
 
-        String dimensionName = VoxelConstants.getVoxelMapInstance().getDimensionManager().getDimensionContainerByWorld(world).getStorageName();
+        var dimensionManager = VoxelConstants.getVoxelMapInstance().getDimensionManager();
+        var viewedDimension = dimensionManager.getDimensionContainerByIdentifier(this.viewedDimensionIdentifier);
+        String dimensionName = viewedDimension == null ? this.viewedDimensionIdentifier.toString() : viewedDimension.getStorageName();
         this.dimensionNamePathPart = TextUtils.scrubNameFile(dimensionName);
+        this.canLoadLiveDimensionData = world != null && this.viewedDimensionIdentifier.equals(world.dimension().identifier());
         boolean knownUnderground;
         knownUnderground = dimensionName.toLowerCase().contains("erebus");
-        this.underground = world.dimensionType().cardinalLightType() != CardinalLighting.Type.NETHER && !world.dimensionType().hasSkyLight() || world.dimensionType().hasCeiling() || knownUnderground;
+        DimensionType dimensionType = this.canLoadLiveDimensionData && world != null ? world.dimensionType() : viewedDimension == null ? null : viewedDimension.type;
+        this.underground = isUndergroundDimension(dimensionType, dimensionName, knownUnderground);
         this.remoteWorld = !VoxelConstants.getMinecraft().hasSingleplayerServer();
         persistentMap.getSettingsAndLightingChangeNotifier().addObserver(this);
         this.x = x;
         this.z = z;
         if (!this.remoteWorld) {
-            Optional<net.minecraft.world.level.Level> optionalWorld = VoxelConstants.getWorldByKey(world.dimension());
-
-            if (optionalWorld.isEmpty()) {
-                String error = "Attempted to fetch World, but none was found!";
-
-                VoxelConstants.getLogger().fatal(error);
-                throw new IllegalStateException(error);
+            Optional<net.minecraft.world.level.Level> optionalWorld = resolveViewedServerWorld(this.viewedDimensionIdentifier);
+            if (optionalWorld.isEmpty() && this.canLoadLiveDimensionData && world != null) {
+                optionalWorld = VoxelConstants.getWorldByKey(world.dimension());
             }
 
-            this.worldServer = (ServerLevel) optionalWorld.get();
-            this.chunkProvider = worldServer.getChunkSource();
-            this.executor = chunkProvider.mainThreadProcessor;
-            this.chunkLoader = chunkProvider.chunkMap;
+            if (optionalWorld.isEmpty()) {
+                if (this.canLoadLiveDimensionData) {
+                    String error = "Attempted to fetch World, but none was found!";
+                    VoxelConstants.getLogger().fatal(error);
+                    throw new IllegalStateException(error);
+                }
+            } else {
+                this.worldServer = (ServerLevel) optionalWorld.get();
+                this.chunkProvider = worldServer.getChunkSource();
+                this.executor = chunkProvider.mainThreadProcessor;
+                this.chunkLoader = chunkProvider.chunkMap;
+            }
         }
 
         Arrays.fill(this.liveChunkUpdateQueued, false);
@@ -206,8 +221,10 @@ public class CachedRegion {
         this.data = new CompressibleMapData(world);
         this.image = new CompressibleMapRegionTexture();
         this.loadCachedData();
-        this.loadCurrentData(this.world);
-        if (!this.remoteWorld) {
+        if (this.canLoadLiveDimensionData) {
+            this.loadCurrentData(this.world);
+        }
+        if (!this.remoteWorld && this.worldServer != null) {
             this.loadAnvilData(this.world);
         }
 
@@ -244,14 +261,14 @@ public class CachedRegion {
     private void loadChunkData(LevelChunk chunk, int chunkX, int chunkZ) {
         boolean isEmpty = this.isChunkEmptyOrUnlit(chunk);
         boolean isSurroundedByLoaded = this.isSurroundedByLoaded(chunk);
-        if (!this.closed && this.world == GameVariableAccessShim.getWorld() && !isEmpty && isSurroundedByLoaded) {
+        if (!this.closed && this.canLoadLiveDimensionData && this.world == GameVariableAccessShim.getWorld() && !isEmpty && isSurroundedByLoaded) {
             this.doLoadChunkData(chunk, chunkX, chunkZ);
         }
 
     }
 
     private void loadChunkDataSkipLightCheck(LevelChunk chunk, int chunkX, int chunkZ) {
-        if (!this.closed && this.world == GameVariableAccessShim.getWorld() && !this.isChunkEmpty(chunk)) {
+        if (!this.closed && !this.isChunkEmpty(chunk)) {
             this.doLoadChunkData(chunk, chunkX, chunkZ);
         }
 
@@ -454,7 +471,7 @@ public class CachedRegion {
         try {
             File cachedRegionFileDir = new File(VoxelConstants.getMinecraft().gameDirectory, "/voxelmap/cache/" + this.worldNamePathPart + "/" + this.subworldNamePathPart + this.dimensionNamePathPart);
             cachedRegionFileDir.mkdirs();
-            File cachedRegionFile = new File(cachedRegionFileDir, "/" + this.key + ".zip");
+            File cachedRegionFile = new File(cachedRegionFileDir, "/" + this.fileKey + ".zip");
             if (cachedRegionFile.exists()) {
                 ZipFile zFile = new ZipFile(cachedRegionFile);
                 ZipEntry ze = zFile.getEntry("data");
@@ -564,7 +581,7 @@ public class CachedRegion {
         if (byteArray.length == this.data.getExpectedDataLength(CompressibleMapData.DATA_VERSION)) {
             File cachedRegionFileDir = new File(VoxelConstants.getMinecraft().gameDirectory, "/voxelmap/cache/" + this.worldNamePathPart + "/" + this.subworldNamePathPart + this.dimensionNamePathPart);
             cachedRegionFileDir.mkdirs();
-            File cachedRegionFile = new File(cachedRegionFileDir, "/" + this.key + ".zip");
+            File cachedRegionFile = new File(cachedRegionFileDir, "/" + this.fileKey + ".zip");
             FileOutputStream fos = new FileOutputStream(cachedRegionFile);
             ZipOutputStream zos = new ZipOutputStream(fos);
             ZipEntry ze = new ZipEntry("data");
@@ -637,7 +654,7 @@ public class CachedRegion {
 
             File imageFileDir = new File(VoxelConstants.getMinecraft().gameDirectory, "/voxelmap/cache/" + this.worldNamePathPart + "/" + this.subworldNamePathPart + this.dimensionNamePathPart + "/images/z1");
             imageFileDir.mkdirs();
-            final File imageFile = new File(imageFileDir, this.key + ".png");
+            final File imageFile = new File(imageFileDir, this.fileKey + ".png");
                        
             if (this.liveChunksUpdated || !imageFile.exists()) {
                 NativeImage toSave = new NativeImage(REGION_WIDTH, REGION_WIDTH, false);
@@ -666,6 +683,27 @@ public class CachedRegion {
 
     public String getKey() {
         return this.key;
+    }
+
+    private static Optional<net.minecraft.world.level.Level> resolveViewedServerWorld(Identifier dimensionIdentifier) {
+        if (Level.OVERWORLD.identifier().equals(dimensionIdentifier)) {
+            return VoxelConstants.getWorldByKey(Level.OVERWORLD);
+        }
+        if (Level.NETHER.identifier().equals(dimensionIdentifier)) {
+            return VoxelConstants.getWorldByKey(Level.NETHER);
+        }
+        if (Level.END.identifier().equals(dimensionIdentifier)) {
+            return VoxelConstants.getWorldByKey(Level.END);
+        }
+        return Optional.empty();
+    }
+
+    private static boolean isUndergroundDimension(DimensionType dimensionType, String dimensionName, boolean knownUnderground) {
+        if (dimensionType != null) {
+            return dimensionType.cardinalLightType() != CardinalLighting.Type.NETHER && !dimensionType.hasSkyLight() || dimensionType.hasCeiling() || knownUnderground;
+        }
+        String normalized = dimensionName == null ? "" : dimensionName.toLowerCase();
+        return knownUnderground || normalized.contains("nether") || normalized.contains("end");
     }
 
     public int getX() {
@@ -795,7 +833,7 @@ public class CachedRegion {
                 int chunkZ = this.chunk.getPos().z() - CachedRegion.this.z * CHUNKS_WIDTH;
                 CachedRegion.this.loadChunkData(this.chunk, chunkX, chunkZ);
             } catch (Exception ex) {
-                VoxelConstants.getLogger().log(Level.ERROR, "Error in FillChunkRunnable", ex);
+                VoxelConstants.getLogger().log(org.apache.logging.log4j.Level.ERROR, "Error in FillChunkRunnable", ex);
             } finally {
                 CachedRegion.this.threadLock.unlock();
                 CachedRegion.this.chunkUpdateQueued[this.index] = false;

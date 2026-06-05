@@ -17,6 +17,7 @@ import com.mamiyaotaru.voxelmap.util.TextUtils;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.ARGB;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LightLayer;
@@ -60,6 +61,7 @@ public class PersistentMap implements IChangeObserver {
     int lastRight;
     int lastTop;
     int lastBottom;
+    String lastDimensionCacheKey = "";
     CachedRegion[] lastRegionsArray = new CachedRegion[0];
     final Comparator<CachedRegion> ageThenDistanceSorter = (region1, region2) -> {
         long mostRecentAccess1 = region1.getMostRecentView();
@@ -745,7 +747,12 @@ public class PersistentMap implements IChangeObserver {
     }
 
     public CachedRegion[] getRegions(int left, int right, int top, int bottom) {
-        if (left == this.lastLeft && right == this.lastRight && top == this.lastTop && bottom == this.lastBottom) {
+        return getRegions(left, right, top, bottom, getCurrentDimensionIdentifier());
+    }
+
+    public CachedRegion[] getRegions(int left, int right, int top, int bottom, Identifier viewedDimension) {
+        String dimensionCacheKey = dimensionCacheKey(viewedDimension);
+        if (left == this.lastLeft && right == this.lastRight && top == this.lastTop && bottom == this.lastBottom && dimensionCacheKey.equals(this.lastDimensionCacheKey)) {
             return this.lastRegionsArray;
         } else {
             ThreadManager.emptyQueue();
@@ -766,13 +773,14 @@ public class PersistentMap implements IChangeObserver {
             for (RegionCoordinates regionCoordinates : regionsToDisplay) {
                 int x = regionCoordinates.x;
                 int z = regionCoordinates.z;
-                String key = x + "," + z;
+                String fileKey = x + "," + z;
+                String cacheKey = buildRegionCacheKey(viewedDimension, x, z);
                 CachedRegion cachedRegion;
                 synchronized (this.cachedRegions) {
-                    cachedRegion = this.cachedRegions.get(key);
+                    cachedRegion = this.cachedRegions.get(cacheKey);
                     if (cachedRegion == null) {
-                        cachedRegion = new CachedRegion(this, key, this.world, worldName, subWorldName, x, z);
-                        this.cachedRegions.put(key, cachedRegion);
+                        cachedRegion = new CachedRegion(this, cacheKey, fileKey, this.world, worldName, subWorldName, x, z, viewedDimension);
+                        this.cachedRegions.put(cacheKey, cachedRegion);
                         synchronized (this.cachedRegionsPool) {
                             this.cachedRegionsPool.add(cachedRegion);
                         }
@@ -789,6 +797,7 @@ public class PersistentMap implements IChangeObserver {
                 this.lastRight = right;
                 this.lastTop = top;
                 this.lastBottom = bottom;
+                this.lastDimensionCacheKey = dimensionCacheKey;
                 this.lastRegionsArray = visibleCachedRegionsArray;
                 return visibleCachedRegionsArray;
             }
@@ -873,21 +882,24 @@ public class PersistentMap implements IChangeObserver {
             int chunkZ = chunk.getPos().z();
             int regionX = (int) Math.floor(chunkX / 16.0);
             int regionZ = (int) Math.floor(chunkZ / 16.0);
-            String key = regionX + "," + regionZ;
+            Identifier currentDimension = this.world.dimension().identifier();
+            String fileKey = regionX + "," + regionZ;
+            String cacheKey = buildRegionCacheKey(currentDimension, regionX, regionZ);
             CachedRegion cachedRegion;
             synchronized (this.cachedRegions) {
-                cachedRegion = this.cachedRegions.get(key);
+                cachedRegion = this.cachedRegions.get(cacheKey);
                 if (cachedRegion == null || cachedRegion == CachedRegion.EMPTY_REGION) {
                     String worldName = VoxelConstants.getVoxelMapInstance().getWaypointManager().getCurrentWorldName();
                     String subWorldName = VoxelConstants.getVoxelMapInstance().getWaypointManager().getCurrentSubworldDescriptor(false);
-                    cachedRegion = new CachedRegion(this, key, this.world, worldName, subWorldName, regionX, regionZ);
-                    this.cachedRegions.put(key, cachedRegion);
+                    cachedRegion = new CachedRegion(this, cacheKey, fileKey, this.world, worldName, subWorldName, regionX, regionZ, currentDimension);
+                    this.cachedRegions.put(cacheKey, cachedRegion);
                     synchronized (this.cachedRegionsPool) {
                         this.cachedRegionsPool.add(cachedRegion);
                     }
 
                     synchronized (this.lastRegionsArray) {
-                        if (regionX >= this.lastLeft && regionX <= this.lastRight && regionZ >= this.lastTop && regionZ <= this.lastBottom) {
+                        if (dimensionCacheKey(currentDimension).equals(this.lastDimensionCacheKey)
+                                && regionX >= this.lastLeft && regionX <= this.lastRight && regionZ >= this.lastTop && regionZ <= this.lastBottom) {
                             this.lastRegionsArray[(regionZ - this.lastTop) * (this.lastRight - this.lastLeft + 1) + (regionX - this.lastLeft)] = cachedRegion;
                         }
                     }
@@ -911,23 +923,35 @@ public class PersistentMap implements IChangeObserver {
     }
 
     public boolean isRegionLoaded(int blockX, int blockZ) {
+        return isRegionLoaded(blockX, blockZ, getCurrentDimensionIdentifier());
+    }
+
+    public boolean isRegionLoaded(int blockX, int blockZ, Identifier viewedDimension) {
         int x = (int) Math.floor(blockX / 256.0F);
         int z = (int) Math.floor(blockZ / 256.0F);
-        CachedRegion cachedRegion = this.cachedRegions.get(x + "," + z);
+        CachedRegion cachedRegion = this.cachedRegions.get(buildRegionCacheKey(viewedDimension, x, z));
         return cachedRegion != null && cachedRegion.isLoaded();
     }
 
     public int getHeightAt(int blockX, int blockZ) {
+        return getHeightAt(blockX, blockZ, getCurrentDimensionIdentifier());
+    }
+
+    public int getHeightAt(int blockX, int blockZ, Identifier viewedDimension) {
         int x = (int) Math.floor(blockX / 256.0F);
         int z = (int) Math.floor(blockZ / 256.0F);
-        CachedRegion cachedRegion = this.cachedRegions.get(x + "," + z);
+        CachedRegion cachedRegion = this.cachedRegions.get(buildRegionCacheKey(viewedDimension, x, z));
         return cachedRegion == null ? Short.MIN_VALUE : cachedRegion.getHeightAt(blockX, blockZ);
     }
 
     public void debugLog(int blockX, int blockZ) {
+        debugLog(blockX, blockZ, getCurrentDimensionIdentifier());
+    }
+
+    public void debugLog(int blockX, int blockZ, Identifier viewedDimension) {
         int x = (int) Math.floor(blockX / 256.0F);
         int z = (int) Math.floor(blockZ / 256.0F);
-        CachedRegion cachedRegion = this.cachedRegions.get(x + "," + z);
+        CachedRegion cachedRegion = this.cachedRegions.get(buildRegionCacheKey(viewedDimension, x, z));
         if (cachedRegion == null) {
             VoxelConstants.getLogger().info("No Region " + x + "," + z + " at " + blockX + "," + blockZ);
         } else {
@@ -945,6 +969,18 @@ public class PersistentMap implements IChangeObserver {
                 VoxelConstants.getLogger().info("  Biome: " + world.registryAccess().lookupOrThrow(Registries.BIOME).getKey(data.getBiome(localx, localz)) + " (" + data.getBiomeId(localx, localz) + ")");
             }
         }
+    }
+
+    private Identifier getCurrentDimensionIdentifier() {
+        return this.world == null ? Level.OVERWORLD.identifier() : this.world.dimension().identifier();
+    }
+
+    private String buildRegionCacheKey(Identifier viewedDimension, int regionX, int regionZ) {
+        return dimensionCacheKey(viewedDimension) + "|" + regionX + "," + regionZ;
+    }
+
+    private String dimensionCacheKey(Identifier viewedDimension) {
+        return (viewedDimension == null ? Level.OVERWORLD.identifier() : viewedDimension).toString();
     }
 
     private record ChunkWithAge(LevelChunk chunk, int tick) {}

@@ -1201,10 +1201,38 @@ public final class SeedMapperCommandHandler {
         exportBounds(minX, maxX, minZ, maxZ, sourceLabel, centerX, centerZ, radius);
     }
 
+    public static void exportBounds(int minX, int maxX, int minZ, int maxZ, String sourceLabel, int dimension, String worldKey, int playerX, int playerZ) {
+        int centerX = (minX + maxX) / 2;
+        int centerZ = (minZ + maxZ) / 2;
+        int radius = Math.max(Math.abs(maxX - centerX), Math.abs(maxZ - centerZ));
+        exportBounds(minX, maxX, minZ, maxZ, sourceLabel, centerX, centerZ, radius, dimension, worldKey, playerX, playerZ);
+    }
+
     private static void exportBounds(int minX, int maxX, int minZ, int maxZ, String sourceLabel, int centerX, int centerZ, int radius) {
+        int dimension = getCurrentCubiomesDimension();
+        if (dimension == Integer.MIN_VALUE) {
+            send("No world loaded.");
+            return;
+        }
+        exportBounds(
+                minX,
+                maxX,
+                minZ,
+                maxZ,
+                sourceLabel,
+                centerX,
+                centerZ,
+                radius,
+                dimension,
+                currentWorldKey(),
+                GameVariableAccessShim.xCoord(),
+                GameVariableAccessShim.zCoord()
+        );
+    }
+
+    private static void exportBounds(int minX, int maxX, int minZ, int maxZ, String sourceLabel, int centerX, int centerZ, int radius, int dimension, String worldKey, int playerX, int playerZ) {
         long seed = resolveSeed();
         if (seed == Long.MIN_VALUE) return;
-        int dimension = getCurrentCubiomesDimension();
         if (dimension == Integer.MIN_VALUE) {
             send("No world loaded.");
             return;
@@ -1212,21 +1240,25 @@ public final class SeedMapperCommandHandler {
 
         SeedMapperSettingsManager settings = VoxelConstants.getVoxelMapInstance().getSeedMapperOptions();
         int flags = 0;
-        List<SeedMapperMarker> markers = queryMarkers(seed, dimension, flags, minX, maxX, minZ, maxZ, settings);
-        writeExport(seed, dimension, centerX, centerZ, radius, minX, maxX, minZ, maxZ, sourceLabel, markers, settings);
+        List<SeedMapperMarker> markers = queryMarkers(seed, dimension, flags, minX, maxX, minZ, maxZ, settings, worldKey);
+        writeExport(seed, dimension, playerX, playerZ, centerX, centerZ, radius, minX, maxX, minZ, maxZ, sourceLabel, markers, settings, worldKey);
     }
 
     private static List<SeedMapperMarker> queryMarkers(long seed, int dimension, int flags, int minX, int maxX, int minZ, int maxZ, SeedMapperSettingsManager settings) {
-        return SeedMapperLocatorService.get().queryBlocking(seed, dimension, SeedMapperCompat.getMcVersion(), flags, minX, maxX, minZ, maxZ, settings);
+        return queryMarkers(seed, dimension, flags, minX, maxX, minZ, maxZ, settings, currentWorldKey());
     }
 
-    private static void writeExport(long seed, int dimension, int centerX, int centerZ, int radius, int minX, int maxX, int minZ, int maxZ,
-                                    String sourceLabel, List<SeedMapperMarker> markers, SeedMapperSettingsManager settings) {
+    private static List<SeedMapperMarker> queryMarkers(long seed, int dimension, int flags, int minX, int maxX, int minZ, int maxZ, SeedMapperSettingsManager settings, String worldKey) {
+        return SeedMapperLocatorService.get().queryBlocking(seed, dimension, SeedMapperCompat.getMcVersion(), flags, minX, maxX, minZ, maxZ, settings, worldKey);
+    }
+
+    private static void writeExport(long seed, int dimension, int playerX, int playerZ, int centerX, int centerZ, int radius, int minX, int maxX, int minZ, int maxZ,
+                                    String sourceLabel, List<SeedMapperMarker> markers, SeedMapperSettingsManager settings, String worldKey) {
         JsonObject root = new JsonObject();
         root.addProperty("seed", seed);
         root.addProperty("dimension", dimension);
-        root.addProperty("playerX", GameVariableAccessShim.xCoord());
-        root.addProperty("playerZ", GameVariableAccessShim.zCoord());
+        root.addProperty("playerX", playerX);
+        root.addProperty("playerZ", playerZ);
         root.addProperty("centerX", centerX);
         root.addProperty("centerZ", centerZ);
         root.addProperty("radius", radius);
@@ -1238,7 +1270,6 @@ public final class SeedMapperCommandHandler {
         root.addProperty("datapackEnabled", settings.datapackEnabled);
         root.addProperty("datapackCachePath", settings.datapackCachePath);
 
-        String worldKey = currentWorldKey();
         JsonArray arr = new JsonArray();
         for (SeedMapperMarker marker : markers) {
             JsonObject entry = new JsonObject();

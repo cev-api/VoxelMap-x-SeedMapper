@@ -1,5 +1,7 @@
 package com.mamiyaotaru.voxelmap.persistent;
 
+import com.github.cubiomes.Cubiomes;
+import com.github.cubiomes.Generator;
 import com.mamiyaotaru.voxelmap.MapSettingsManager;
 import com.mamiyaotaru.voxelmap.NewerNewChunksManager;
 import com.mamiyaotaru.voxelmap.RadarSettingsManager;
@@ -26,14 +28,17 @@ import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperSettingsManager;
 import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperCompat;
 import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperCommandHandler;
 import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperImportedDatapackManager;
+import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperNative;
 import com.mamiyaotaru.voxelmap.textures.Sprite;
 import com.mamiyaotaru.voxelmap.textures.TextureAtlas;
 import com.mamiyaotaru.voxelmap.util.BackgroundImageInfo;
 import com.mamiyaotaru.voxelmap.util.BiomeMapData;
+import com.mamiyaotaru.voxelmap.util.BiomeRepository;
 import com.mamiyaotaru.voxelmap.util.CellGrid;
 import com.mamiyaotaru.voxelmap.util.CommandUtils;
 import com.mamiyaotaru.voxelmap.util.AppChatMessages;
 import com.mamiyaotaru.voxelmap.util.DimensionContainer;
+import com.mamiyaotaru.voxelmap.util.DynamicMutableTexture;
 import com.mamiyaotaru.voxelmap.util.EasingUtils;
 import com.mamiyaotaru.voxelmap.util.GameVariableAccessShim;
 import com.mamiyaotaru.voxelmap.util.ImageUtils;
@@ -56,9 +61,11 @@ import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.client.resources.language.I18n;
+import net.minecraft.core.QuartPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.Identifier;
+import net.minecraft.util.ARGB;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.entity.player.PlayerModelPart;
@@ -69,6 +76,8 @@ import net.minecraft.world.level.border.WorldBorder;
 import org.joml.Vector2f;
 import org.lwjgl.glfw.GLFW;
 
+import java.lang.foreign.Arena;
+import java.lang.foreign.MemorySegment;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -80,6 +89,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
@@ -173,10 +183,13 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     Waypoint selectedSeedMapperAssociatedWaypoint;
     private final Map<String, String> seedMapperHighlightWaypoints = new HashMap<>();
     private PopupGuiButton buttonWaypoints;
+    private PopupGuiButton buttonRealmView;
+    private PopupGuiButton buttonSeedPreview;
     private final Minecraft minecraft = Minecraft.getInstance();
     private final Identifier voxelmapSkinLocation = Identifier.fromNamespaceAndPath(VoxelConstants.MOD_ID, "persistentmap/playerskin");
     private final Identifier crosshairResource = Identifier.parse("textures/gui/sprites/hud/crosshair.png");
     private final Identifier seedMapperDirectionArrowResource = Identifier.fromNamespaceAndPath(VoxelConstants.MOD_ID, "images/seedmapper/arrow.png");
+    private final Identifier seedPreviewTextureLocation = Identifier.fromNamespaceAndPath(VoxelConstants.MOD_ID, "persistentmap/seedpreview");
     private final List<FeatureIconHitbox> seedMapperIconHitboxes = new ArrayList<>();
     private final List<SeedMapperMarkerHitbox> seedMapperMarkerHitboxes = new ArrayList<>();
     private final Set<Long> visibleSeedMapperMarkerCoords = new HashSet<>();
@@ -209,6 +222,22 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     private String seedMapperLoadingSummary = "";
     private SeedMapperQueryCacheKey seedMapperLoadingKey;
     private long seedMapperLoadingStickyUntilMs = 0L;
+    private static final int SEED_PREVIEW_MIN_TEXTURE_WIDTH = 256;
+    private static final int SEED_PREVIEW_MIN_TEXTURE_HEIGHT = 128;
+    private static final int SEED_PREVIEW_MAX_TEXTURE_WIDTH = 1024;
+    private static final int SEED_PREVIEW_MAX_TEXTURE_HEIGHT = 1024;
+    private static final int SEED_PREVIEW_SAMPLE_BLOCK_Y = 64;
+    private static final int SEED_PREVIEW_MIN_PADDING_BLOCKS = 512;
+    private static final long SEED_PREVIEW_REQUEST_INTERVAL_MOVING_MS = 125L;
+    private static final long SEED_PREVIEW_REQUEST_INTERVAL_STILL_MS = 50L;
+    private DynamicMutableTexture seedPreviewTexture;
+    private SeedPreviewQueryCacheKey seedPreviewDisplayedKey;
+    private SeedPreviewQueryCacheKey seedPreviewPendingKey;
+    private int[] seedPreviewPendingPixels;
+    private Future<?> seedPreviewFuture;
+    private long seedPreviewLastRequestMs = 0L;
+    private final Object seedPreviewLock = new Object();
+    private final Map<Integer, Integer> seedPreviewBiomeColorCache = new HashMap<>();
     private long exploredLinesLastQueryMs = 0L;
     private long exploredLinesLastDataVersion = Long.MIN_VALUE;
     private ExploredLinesQueryCacheKey exploredLinesLastQueryKey;
@@ -254,6 +283,9 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         this.persistentMap = VoxelConstants.getVoxelMapInstance().getPersistentMap();
         this.options = VoxelConstants.getVoxelMapInstance().getPersistentMapOptions();
         this.seedMapperOptions = VoxelConstants.getVoxelMapInstance().getSeedMapperOptions();
+        if (parent == null) {
+            this.options.worldMapDimensionView = PersistentMapSettingsManager.WorldMapDimensionView.CURRENT;
+        }
         this.zoom = this.options.zoom;
         this.zoomStart = this.options.zoom;
         this.zoomGoal = this.options.zoom;
@@ -299,11 +331,12 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             this.closed = false;
         }
 
+        normalizeWorldMapDimensionView();
         this.screenTitle = I18n.get("worldmap.title");
         this.buildWorldName();
         this.leftMouseButtonDown = false;
         this.sideMargin = 10;
-        this.buttonCount = 5;
+        this.buttonCount = 6;
         this.buttonSeparation = 4;
         this.buttonWidth = (this.width - this.sideMargin * 2 - this.buttonSeparation * (this.buttonCount - 1)) / this.buttonCount;
         this.buttonWaypoints = new PopupGuiButton(this.sideMargin, this.getHeight() - 26, this.buttonWidth, 20, Component.translatable("options.minimap.waypoints"), button -> minecraft.setScreen(new GuiWaypoints(this)), this);
@@ -314,8 +347,11 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             this.addRenderableWidget(this.buttonMultiworld = new PopupGuiButton(this.sideMargin + (this.buttonWidth + this.buttonSeparation), this.getHeight() - 26, this.buttonWidth, 20, this.multiworldButtonName, button -> minecraft.setScreen(new GuiSubworldsSelect(this)), this));
         }
 
-        this.addRenderableWidget(new PopupGuiButton(this.sideMargin + 3 * (this.buttonWidth + this.buttonSeparation), this.getHeight() - 26, this.buttonWidth, 20, Component.translatable("menu.options"), button -> minecraft.setScreen(new GuiMinimapOptions(this)), this));
-        this.addRenderableWidget(new PopupGuiButton(this.sideMargin + 4 * (this.buttonWidth + this.buttonSeparation), this.getHeight() - 26, this.buttonWidth, 20, Component.translatable("gui.done"), button -> this.onClose(), this));
+        this.buttonRealmView = this.addRenderableWidget(new PopupGuiButton(this.sideMargin + 2 * (this.buttonWidth + this.buttonSeparation), this.getHeight() - 26, this.buttonWidth, 20, Component.translatable("worldmap.realm.button", getDisplayedWorldMapDimensionName()), button -> cycleWorldMapDimensionView(), this));
+        this.buttonSeedPreview = this.addRenderableWidget(new PopupGuiButton(this.sideMargin + 3 * (this.buttonWidth + this.buttonSeparation), this.getHeight() - 26, this.buttonWidth, 20, Component.translatable("worldmap.seedpreview.button", I18n.get(this.seedMapperOptions.worldMapSeedPreview ? "options.on" : "options.off")), button -> toggleSeedPreview(), this));
+        this.addRenderableWidget(new PopupGuiButton(this.sideMargin + 4 * (this.buttonWidth + this.buttonSeparation), this.getHeight() - 26, this.buttonWidth, 20, Component.translatable("menu.options"), button -> minecraft.setScreen(new GuiMinimapOptions(this)), this));
+        this.addRenderableWidget(new PopupGuiButton(this.sideMargin + 5 * (this.buttonWidth + this.buttonSeparation), this.getHeight() - 26, this.buttonWidth, 20, Component.translatable("gui.done"), button -> this.onClose(), this));
+        refreshWorldMapControlLabels();
         this.coordinateXInput = new EditBox(this.getFont(), this.sideMargin, 10, 68, 20, Component.literal("X"));
         this.coordinateZInput = new EditBox(this.getFont(), this.sideMargin + 74, 10, 68, 20, Component.literal("Z"));
         this.coordinateXInput.setMaxLength(12);
@@ -337,6 +373,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         this.mapPixelsY = (minecraft.getWindow().getHeight() - (int) (64.0F * this.scScale));
         this.lastStill = false;
         this.timeAtLastTick = System.currentTimeMillis();
+        ensureSeedPreviewTextureSize(resolveSeedPreviewTextureWidth(), resolveSeedPreviewTextureHeight());
     }
 
     @Override
@@ -346,6 +383,10 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     }
 
     private void centerAt(int x, int z) {
+        centerAt((double) x, (double) z);
+    }
+
+    private void centerAt(double x, double z) {
         // Stop ongoing inertial panning so manual coordinate jumps stay put.
         this.deltaX = 0.0F;
         this.deltaY = 0.0F;
@@ -353,13 +394,86 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         this.deltaYonRelease = 0.0F;
         this.timeOfRelease = 0L;
         if (this.oldNorth) {
-            this.mapCenterX = (-z);
-            this.mapCenterZ = x;
+            this.mapCenterX = (float) (-z);
+            this.mapCenterZ = (float) x;
         } else {
-            this.mapCenterX = x;
-            this.mapCenterZ = z;
+            this.mapCenterX = (float) x;
+            this.mapCenterZ = (float) z;
         }
 
+    }
+
+    private void refreshWorldMapControlLabels() {
+        if (this.buttonRealmView != null) {
+            this.buttonRealmView.setMessage(Component.translatable("worldmap.realm.button", getDisplayedWorldMapDimensionName()));
+        }
+        if (this.buttonSeedPreview != null) {
+            boolean seedPreviewAvailable = hasWorldMapSeed();
+            this.buttonSeedPreview.active = seedPreviewAvailable;
+            this.buttonSeedPreview.setMessage(Component.translatable(
+                    "worldmap.seedpreview.button",
+                    I18n.get(seedPreviewAvailable
+                            ? (this.seedMapperOptions.worldMapSeedPreview ? "options.on" : "options.off")
+                            : "worldmap.seedpreview.unavailable")));
+        }
+    }
+
+    private String getWorldMapSeedFallbackText() {
+        String worldSeed = VoxelConstants.getVoxelMapInstance().getWorldSeed();
+        return worldSeed == null ? "" : worldSeed.trim();
+    }
+
+    private String getWorldMapSeedText() {
+        return this.seedMapperOptions.resolveSeedText(getWorldMapSeedFallbackText());
+    }
+
+    private boolean hasWorldMapSeed() {
+        return this.seedMapperOptions.hasSeed(getWorldMapSeedFallbackText());
+    }
+
+    private long resolveWorldMapSeed() {
+        return this.seedMapperOptions.resolveSeed(getWorldMapSeedFallbackText());
+    }
+
+    private void cycleWorldMapDimensionView() {
+        Level currentLevel = GameVariableAccessShim.getWorld();
+        this.options.worldMapDimensionView = this.options.worldMapDimensionView.next(currentLevel);
+        recenterForViewedDimension();
+        clearSeedMapperLoadingState();
+        synchronized (this.seedPreviewLock) {
+            if (this.seedPreviewFuture != null) {
+                this.seedPreviewFuture.cancel(false);
+                this.seedPreviewFuture = null;
+            }
+            this.seedPreviewDisplayedKey = null;
+            this.seedPreviewPendingKey = null;
+            this.seedPreviewPendingPixels = null;
+        }
+        refreshWorldMapControlLabels();
+        buildWorldName();
+        MapSettingsManager.instance.saveAll();
+    }
+
+    private void normalizeWorldMapDimensionView() {
+        Level currentLevel = GameVariableAccessShim.getWorld();
+        if (currentLevel != null
+                && this.options.worldMapDimensionView != PersistentMapSettingsManager.WorldMapDimensionView.CURRENT
+                && currentLevel.dimension().identifier().equals(this.options.worldMapDimensionView.resolveIdentifier(currentLevel))) {
+            this.options.worldMapDimensionView = PersistentMapSettingsManager.WorldMapDimensionView.CURRENT;
+        }
+    }
+
+    private String getDisplayedWorldMapDimensionName() {
+        return this.options.worldMapDimensionView.displayName(GameVariableAccessShim.getWorld());
+    }
+
+    private void toggleSeedPreview() {
+        if (!hasWorldMapSeed()) {
+            return;
+        }
+        this.seedMapperOptions.worldMapSeedPreview = !this.seedMapperOptions.worldMapSeedPreview;
+        refreshWorldMapControlLabels();
+        MapSettingsManager.instance.saveAll();
     }
 
     private void buildWorldName() {
@@ -388,6 +502,9 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         StringBuilder worldNameBuilder = (new StringBuilder("§r")).append(worldName.get());
         String subworldName = VoxelConstants.getVoxelMapInstance().getWaypointManager().getCurrentSubworldDescriptor(true);
         this.subworldName = subworldName;
+        String viewSuffix = this.options.worldMapDimensionView == PersistentMapSettingsManager.WorldMapDimensionView.CURRENT
+                ? ""
+                : " [" + this.options.worldMapDimensionView.displayName() + "]";
         if ((subworldName == null || subworldName.isEmpty()) && VoxelConstants.getVoxelMapInstance().getWaypointManager().isMultiworld()) {
             subworldName = "???";
         }
@@ -395,6 +512,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         if (subworldName != null && !subworldName.isEmpty()) {
             worldNameBuilder.append(" - ").append(subworldName);
         }
+        worldNameBuilder.append(viewSuffix);
 
         this.worldNameDisplay = worldNameBuilder.toString();
         this.worldNameDisplayLength = this.getFont().width(this.worldNameDisplay);
@@ -407,6 +525,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             if (subworldName != null && !subworldName.isEmpty()) {
                 worldNameBuilder.append(" - ").append(subworldName);
             }
+            worldNameBuilder.append(viewSuffix);
 
             this.worldNameDisplay = worldNameBuilder.toString();
         }
@@ -417,6 +536,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 worldNameBuilder.append("...");
                 subworldName = subworldName.substring(0, subworldName.length() - 1);
                 worldNameBuilder.append(" - ").append(subworldName);
+                worldNameBuilder.append(viewSuffix);
                 this.worldNameDisplay = worldNameBuilder.toString();
                 this.worldNameDisplayLength = this.getFont().width(this.worldNameDisplay);
             }
@@ -719,6 +839,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
         graphics.pose().pushMatrix();
         this.buttonWaypoints.active = mapOptions.waypointsAllowed;
+        refreshWorldMapControlLabels();
         this.zoomGoal = this.bindZoom(this.zoomGoal);
         if (this.mouseX != mouseX || this.mouseY != mouseY) {
             this.timeOfLastMouseInput = System.currentTimeMillis();
@@ -850,6 +971,8 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             top = (int) Math.floor((this.mapCenterZ - this.centerY * this.guiToMap) / 256.0F);
             bottom = (int) Math.floor((this.mapCenterZ + this.centerY * this.guiToMap) / 256.0F);
         }
+        Identifier viewedDimension = getViewedDimensionIdentifier();
+        PreviewBounds visibleBounds = getVisibleWorldBounds();
         boolean farZoomPerformanceMode = isFarZoomPerformanceMode();
         int exploredLeftRegion = left - 1;
         int exploredRightRegion = right + 1;
@@ -862,7 +985,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 return;
             }
             if (!farZoomPerformanceMode && mapOptions.worldmapAllowed) {
-                this.regions = this.persistentMap.getRegions(left - 1, right + 1, top - 1, bottom + 1);
+                this.regions = this.persistentMap.getRegions(left - 1, right + 1, top - 1, bottom + 1, viewedDimension);
             } else {
                 this.regions = new CachedRegion[0];
             }
@@ -889,6 +1012,9 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                         graphics.blit(RenderPipelines.GUI_TEXTURED, resource, region.getX() * 256, region.getZ() * 256, 0, 0, region.getWidth(), region.getWidth(), region.getWidth(), region.getWidth());
                     }
                 }
+            }
+            if (!farZoomPerformanceMode) {
+                drawSeedPreview(graphics, visibleBounds);
             }
             drawExploredChunkLinesWorldMap(graphics, exploredLeftRegion, exploredRightRegion, exploredTopRegion, exploredBottomRegion);
             drawNewOldChunkOverlayWorldMap(graphics, exploredLeftRegion, exploredRightRegion, exploredTopRegion, exploredBottomRegion);
@@ -1032,8 +1158,8 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             TextureAtlas textureAtlas = VoxelConstants.getVoxelMapInstance().getWaypointManager().getTextureAtlas();
 
             for (Waypoint waypoint : waypointManager.getWaypoints()) {
-                if (!waypoint.inWorld || !waypoint.inDimension) continue;
-                if (hasVisibleSeedMapperMarkerAt(waypoint.getXInCurrentDimension(), waypoint.getZInCurrentDimension())) continue;
+                if (!isWaypointVisibleInViewedDimension(waypoint)) continue;
+                if (hasVisibleSeedMapperMarkerAt(getWaypointXInViewedDimension(waypoint), getWaypointZInViewedDimension(waypoint))) continue;
 
                 boolean isHighlighted = waypointManager.isHighlightedWaypoint(waypoint);
                 boolean isHovered = drawWaypoint(graphics, waypoint, textureAtlas, null, isHighlighted, -1, mouseX, mouseY);
@@ -1057,9 +1183,9 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             this.overlayBackground(graphics, this.bottom, this.getHeight(), 255, 255);
         }
 
-        if (gotSkin) {
-            float playerX = (float) GameVariableAccessShim.xCoordDouble();
-            float playerZ = (float) GameVariableAccessShim.zCoordDouble();
+        if (gotSkin && hasMeaningfulViewedPositionForCurrentPlayer()) {
+            float playerX = (float) convertCurrentCoordinateToViewed(GameVariableAccessShim.xCoordDouble());
+            float playerZ = (float) convertCurrentCoordinateToViewed(GameVariableAccessShim.zCoordDouble());
             drawPlayer(graphics, voxelmapSkinLocation, playerX, playerZ, mouseX, mouseY);
         }
 
@@ -1091,14 +1217,14 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                     this.coordinateLabelBottom = 16 + this.getFont().lineHeight + 1;
                 }
             }
-            String enteredSeed = seedMapperOptions.manualSeed == null ? "" : seedMapperOptions.manualSeed.trim();
-            boolean showSeedHeader = !enteredSeed.isEmpty();
+            String seedTextValue = getWorldMapSeedText();
+            boolean showSeedHeader = !seedTextValue.isEmpty();
             seedHeaderLeft = -1;
             seedHeaderRight = -1;
             seedHeaderTop = -1;
             seedHeaderBottom = -1;
             if (showSeedHeader) {
-                String seedText = "Seed: " + enteredSeed;
+                String seedText = "Seed: " + seedTextValue;
                 int seedWidth = this.getFont().width(seedText);
                 int seedX = this.getWidth() - this.sideMargin - seedWidth;
                 int seedY = 16;
@@ -1963,7 +2089,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         if (isHovered) {
             graphics.requestCursor(CursorTypes.CROSSHAIR);
             if (options.showCoordinates) {
-                renderTooltip(graphics, Component.literal("X: " + GameVariableAccessShim.xCoord() + ", Y: " + GameVariableAccessShim.yCoord() + ", Z: " + GameVariableAccessShim.zCoord()), this.mouseX, this.mouseY);
+                renderTooltip(graphics, Component.literal("X: " + Math.round(playerX) + ", Y: " + GameVariableAccessShim.yCoord() + ", Z: " + Math.round(playerZ)), this.mouseX, this.mouseY);
             }
         }
 
@@ -1997,8 +2123,10 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     }
 
     private boolean drawWaypoint(GuiGraphicsExtractor graphics, Waypoint waypoint, TextureAtlas textureAtlas, Sprite icon, boolean isHighlighted, int color, int mouseX, int mouseY) {
-        float ptX = waypoint.getXInCurrentDimension() + 0.5F;
-        float ptZ = waypoint.getZInCurrentDimension() + 0.5F;
+        int viewedX = getWaypointXInViewedDimension(waypoint);
+        int viewedZ = getWaypointZInViewedDimension(waypoint);
+        float ptX = viewedX + 0.5F;
+        float ptZ = viewedZ + 0.5F;
 
         int x = this.width / 2;
         int y = this.height / 2;
@@ -2028,7 +2156,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
         String name = waypoint.name;
         if (waypointManager.isCoordinateHighlight(waypoint)) {
-            name = "X:" + waypoint.getXInCurrentDimension() + ", Y:" + waypoint.getY() + ", Z:" + waypoint.getZInCurrentDimension();
+            name = "X:" + viewedX + ", Y:" + waypoint.getY() + ", Z:" + viewedZ;
         }
 
         if (icon == null) {
@@ -2069,7 +2197,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         if (isHovered) {
             graphics.requestCursor(CursorTypes.CROSSHAIR);
             if (options.showCoordinates) {
-                renderTooltip(graphics, Component.literal("X: " + waypoint.getXInCurrentDimension() + ", Y: " + waypoint.getY() + ", Z: " + waypoint.getZInCurrentDimension()), this.mouseX, this.mouseY);
+                renderTooltip(graphics, Component.literal("X: " + viewedX + ", Y: " + waypoint.getY() + ", Z: " + viewedZ), this.mouseX, this.mouseY);
             }
         }
 
@@ -2092,6 +2220,231 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         return isHovered;
     }
 
+    private void drawSeedPreview(GuiGraphicsExtractor graphics, PreviewBounds visibleBounds) {
+        if (!this.seedMapperOptions.worldMapSeedPreview || this.seedPreviewTexture == null) {
+            return;
+        }
+
+        applyPendingSeedPreview();
+
+        long seed;
+        try {
+            seed = resolveWorldMapSeed();
+        } catch (IllegalArgumentException ignored) {
+            return;
+        }
+
+        int dimension = getCurrentCubiomesDimension();
+        if (dimension == Integer.MIN_VALUE) {
+            return;
+        }
+
+        boolean mapInMotion = currentDragging
+                || Math.abs(this.deltaX) > 0.01F
+                || Math.abs(this.deltaY) > 0.01F
+                || this.zoom != this.zoomGoal;
+        PreviewBounds requestBounds = getSeedPreviewRequestBounds(visibleBounds, mapInMotion);
+        SeedPreviewQueryCacheKey requestKey = new SeedPreviewQueryCacheKey(
+                seed,
+                getViewedDimensionIdentifier(),
+                dimension,
+                requestBounds.minX(),
+                requestBounds.maxX(),
+                requestBounds.minZ(),
+                requestBounds.maxZ(),
+                getSeedMapperGeneratorFlags(),
+                resolveSeedPreviewTextureWidth(),
+                resolveSeedPreviewTextureHeight(),
+                SeedMapperCompat.getMcVersion()
+        );
+        synchronized (this.seedPreviewLock) {
+            boolean workerIdle = this.seedPreviewFuture == null || this.seedPreviewFuture.isDone() || this.seedPreviewFuture.isCancelled();
+            long minRequestIntervalMs = mapInMotion ? SEED_PREVIEW_REQUEST_INTERVAL_MOVING_MS : SEED_PREVIEW_REQUEST_INTERVAL_STILL_MS;
+            if (workerIdle
+                    && (this.seedPreviewDisplayedKey == null || !canReuseSeedPreviewForRequest(this.seedPreviewDisplayedKey, requestKey))
+                    && System.currentTimeMillis() - this.seedPreviewLastRequestMs >= minRequestIntervalMs) {
+                queueSeedPreview(requestKey);
+            }
+        }
+
+        if (this.seedPreviewDisplayedKey == null || !canReuseSeedPreviewForRequest(this.seedPreviewDisplayedKey, requestKey)) {
+            return;
+        }
+
+        int overlapMinX = Math.max(this.seedPreviewDisplayedKey.minX(), visibleBounds.minX());
+        int overlapMaxX = Math.min(this.seedPreviewDisplayedKey.maxX(), visibleBounds.maxX());
+        int overlapMinZ = Math.max(this.seedPreviewDisplayedKey.minZ(), visibleBounds.minZ());
+        int overlapMaxZ = Math.min(this.seedPreviewDisplayedKey.maxZ(), visibleBounds.maxZ());
+        if (overlapMaxX <= overlapMinX || overlapMaxZ <= overlapMinZ) {
+            return;
+        }
+
+        float previewSpanX = Math.max(1.0F, this.seedPreviewDisplayedKey.maxX() - this.seedPreviewDisplayedKey.minX());
+        float previewSpanZ = Math.max(1.0F, this.seedPreviewDisplayedKey.maxZ() - this.seedPreviewDisplayedKey.minZ());
+        float minU = (overlapMinX - this.seedPreviewDisplayedKey.minX()) / previewSpanX;
+        float maxU = (overlapMaxX - this.seedPreviewDisplayedKey.minX()) / previewSpanX;
+        float minV = (overlapMinZ - this.seedPreviewDisplayedKey.minZ()) / previewSpanZ;
+        float maxV = (overlapMaxZ - this.seedPreviewDisplayedKey.minZ()) / previewSpanZ;
+        VoxelMapGuiGraphics.blitFloat(
+                graphics,
+                RenderPipelines.GUI_TEXTURED,
+                this.seedPreviewTexture,
+                overlapMinX,
+                overlapMinZ,
+                overlapMaxX - overlapMinX,
+                overlapMaxZ - overlapMinZ,
+                minU,
+                maxU,
+                minV,
+                maxV,
+                0xFFFFFFFF
+        );
+    }
+
+    private void queueSeedPreview(SeedPreviewQueryCacheKey requestKey) {
+        this.seedPreviewLastRequestMs = System.currentTimeMillis();
+        this.seedPreviewFuture = ThreadManager.executorService.submit(() -> {
+            int[] pixels = buildSeedPreviewPixels(requestKey);
+            synchronized (this.seedPreviewLock) {
+                this.seedPreviewPendingPixels = pixels;
+                this.seedPreviewPendingKey = requestKey;
+            }
+        });
+    }
+
+    private boolean canReuseSeedPreviewForRequest(SeedPreviewQueryCacheKey displayedKey, SeedPreviewQueryCacheKey requestKey) {
+        return displayedKey.seed() == requestKey.seed()
+                && displayedKey.dimensionIdentifier().equals(requestKey.dimensionIdentifier())
+                && displayedKey.dimension() == requestKey.dimension()
+                && displayedKey.generatorFlags() == requestKey.generatorFlags()
+                && displayedKey.textureWidth() == requestKey.textureWidth()
+                && displayedKey.textureHeight() == requestKey.textureHeight()
+                && displayedKey.mcVersion() == requestKey.mcVersion()
+                && displayedKey.minX() <= requestKey.minX()
+                && displayedKey.maxX() >= requestKey.maxX()
+                && displayedKey.minZ() <= requestKey.minZ()
+                && displayedKey.maxZ() >= requestKey.maxZ();
+    }
+
+    private void applyPendingSeedPreview() {
+        synchronized (this.seedPreviewLock) {
+            if (this.seedPreviewTexture == null || this.seedPreviewPendingPixels == null || this.seedPreviewPendingKey == null) {
+                return;
+            }
+
+            ensureSeedPreviewTextureSize(this.seedPreviewPendingKey.textureWidth(), this.seedPreviewPendingKey.textureHeight());
+            int[] pendingPixels = this.seedPreviewPendingPixels;
+            int textureWidth = this.seedPreviewPendingKey.textureWidth();
+            int textureHeight = this.seedPreviewPendingKey.textureHeight();
+            for (int y = 0; y < textureHeight; y++) {
+                int rowOffset = y * textureWidth;
+                for (int x = 0; x < textureWidth; x++) {
+                    this.seedPreviewTexture.setRGB(x, y, pendingPixels[rowOffset + x]);
+                }
+            }
+            this.seedPreviewTexture.upload();
+            this.seedPreviewDisplayedKey = this.seedPreviewPendingKey;
+            this.seedPreviewPendingPixels = null;
+            this.seedPreviewPendingKey = null;
+        }
+    }
+
+    private int[] buildSeedPreviewPixels(SeedPreviewQueryCacheKey requestKey) {
+        int[] pixels = new int[requestKey.textureWidth() * requestKey.textureHeight()];
+        try {
+            SeedMapperNative.ensureLoaded();
+            synchronized (SeedMapperNative.cubiomesLock()) {
+                try (Arena arena = Arena.ofConfined()) {
+                    MemorySegment generator = Generator.allocate(arena);
+                    Cubiomes.setupGenerator(generator, requestKey.mcVersion(), requestKey.generatorFlags());
+                    Cubiomes.applySeed(generator, requestKey.dimension(), requestKey.seed());
+                    int sampleY = getSeedPreviewSampleQuartY(requestKey.dimension());
+                    double spanX = Math.max(1.0D, requestKey.maxX() - requestKey.minX());
+                    double spanZ = Math.max(1.0D, requestKey.maxZ() - requestKey.minZ());
+                    for (int y = 0; y < requestKey.textureHeight(); y++) {
+                        double sampleZ = requestKey.minZ() + (y + 0.5D) * spanZ / requestKey.textureHeight();
+                        int blockZ = Mth.floor(sampleZ);
+                        int quartZ = blockZ >> 2;
+                        int rowOffset = y * requestKey.textureWidth();
+                        for (int x = 0; x < requestKey.textureWidth(); x++) {
+                            double sampleX = requestKey.minX() + (x + 0.5D) * spanX / requestKey.textureWidth();
+                            int blockX = Mth.floor(sampleX);
+                            int quartX = blockX >> 2;
+                            int biomeId = Cubiomes.getBiomeAt(generator, 4, quartX, sampleY, quartZ);
+                            pixels[rowOffset + x] = resolveSeedPreviewColor(biomeId, requestKey.mcVersion());
+                        }
+                    }
+                }
+            }
+        } catch (RuntimeException ex) {
+            VoxelConstants.getLogger().warn("Failed generating SeedMapper world-map preview", ex);
+        }
+        return pixels;
+    }
+
+    private int resolveSeedPreviewColor(int biomeId, int mcVersion) {
+        Integer cached = this.seedPreviewBiomeColorCache.get(biomeId);
+        if (cached != null) {
+            return cached;
+        }
+
+        String biomeName = null;
+        try {
+            MemorySegment biomeNameSegment = Cubiomes.biome2str(mcVersion, biomeId);
+            if (biomeNameSegment != null && biomeNameSegment.address() != 0L) {
+                biomeName = biomeNameSegment.getString(0);
+            }
+        } catch (RuntimeException ignored) {
+        }
+
+        int rgb = fallbackSeedPreviewColor(biomeName == null ? Integer.toString(biomeId) : biomeName);
+        Identifier biomeIdentifier = parseCubiomesBiomeIdentifier(biomeName);
+        Level currentLevel = GameVariableAccessShim.getWorld();
+        if (biomeIdentifier != null && currentLevel != null) {
+            try {
+                var biomeHolder = currentLevel.registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.BIOME).get(biomeIdentifier);
+                if (biomeHolder.isPresent()) {
+                    rgb = BiomeRepository.getBiomeColor(biomeHolder.get().value());
+                }
+            } catch (RuntimeException ignored) {
+            }
+        }
+
+        int color = ARGB.toABGR(0x96000000 | rgb);
+        this.seedPreviewBiomeColorCache.put(biomeId, color);
+        return color;
+    }
+
+    private Identifier parseCubiomesBiomeIdentifier(String biomeName) {
+        if (biomeName == null || biomeName.isBlank()) {
+            return null;
+        }
+
+        Identifier parsed = Identifier.tryParse(biomeName);
+        if (parsed != null) {
+            return parsed;
+        }
+
+        if (biomeName.contains("/")) {
+            parsed = Identifier.tryParse(biomeName.replace('/', ':'));
+            if (parsed != null) {
+                return parsed;
+            }
+            String tail = biomeName.substring(biomeName.lastIndexOf('/') + 1);
+            return Identifier.tryParse("minecraft:" + tail);
+        }
+
+        return Identifier.tryParse("minecraft:" + biomeName);
+    }
+
+    private int fallbackSeedPreviewColor(String biomeName) {
+        int hash = biomeName == null ? 0 : biomeName.hashCode();
+        int red = 64 + (hash & 0x5F);
+        int green = 64 + (hash >> 8 & 0x5F);
+        int blue = 64 + (hash >> 16 & 0x5F);
+        return red << 16 | green << 8 | blue;
+    }
+
     private void drawSeedMapperMarkers(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
         seedMapperMarkerHitboxes.clear();
         visibleSeedMapperMarkerCoords.clear();
@@ -2112,13 +2465,12 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             return;
         }
 
-        int mapHalfWidth = (int) (this.centerX * this.guiToMap);
-        int mapHalfHeight = (int) (this.centerY * this.guiToMap);
+        PreviewBounds visibleBounds = getVisibleWorldBounds();
         int margin = 256;
-        int rawMinX = (int) Math.floor(this.mapCenterX - mapHalfWidth) - margin;
-        int rawMaxX = (int) Math.ceil(this.mapCenterX + mapHalfWidth) + margin;
-        int rawMinZ = (int) Math.floor(this.mapCenterZ - mapHalfHeight) - margin;
-        int rawMaxZ = (int) Math.ceil(this.mapCenterZ + mapHalfHeight) + margin;
+        int rawMinX = visibleBounds.minX() - margin;
+        int rawMaxX = visibleBounds.maxX() + margin;
+        int rawMinZ = visibleBounds.minZ() - margin;
+        int rawMaxZ = visibleBounds.maxZ() + margin;
         int keySnap = mapInMotion ? 4096 : 512;
         int minX = Math.floorDiv(rawMinX, keySnap) * keySnap;
         int maxX = Math.floorDiv(rawMaxX + keySnap - 1, keySnap) * keySnap;
@@ -2150,8 +2502,8 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 && !enabledSeedMapperFeatures.isEmpty()
                 && !mapInMotion) {
             try {
-                long seed = seedMapperOptions.resolveSeed(VoxelConstants.getVoxelMapInstance().getWorldSeed());
-                int generatorFlags = 0;
+                long seed = resolveWorldMapSeed();
+                int generatorFlags = getSeedMapperGeneratorFlags();
                 SeedMapperQueryCacheKey key = new SeedMapperQueryCacheKey(
                         seed,
                         dimension,
@@ -2607,7 +2959,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     private List<String> allDatapackLegendStructureIds() {
         long seed;
         try {
-            seed = seedMapperOptions.resolveSeed(VoxelConstants.getVoxelMapInstance().getWorldSeed());
+            seed = resolveWorldMapSeed();
         } catch (IllegalArgumentException ignored) {
             return List.of();
         }
@@ -2767,18 +3119,175 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         graphics.fill(Math.round(left), Math.round(top), Math.round(left + iconWidth), Math.round(top + iconHeight), color);
     }
 
-    private int getCurrentCubiomesDimension() {
+    private Identifier getViewedDimensionIdentifier() {
+        Level currentLevel = GameVariableAccessShim.getWorld();
+        return this.options.worldMapDimensionView.resolveIdentifier(currentLevel);
+    }
+
+    private DimensionContainer getViewedDimensionContainer() {
+        Level currentLevel = GameVariableAccessShim.getWorld();
+        if (this.options.worldMapDimensionView == PersistentMapSettingsManager.WorldMapDimensionView.CURRENT && currentLevel != null) {
+            return VoxelConstants.getVoxelMapInstance().getDimensionManager().getDimensionContainerByWorld(currentLevel);
+        }
+        return VoxelConstants.getVoxelMapInstance().getDimensionManager().getDimensionContainerByIdentifier(getViewedDimensionIdentifier());
+    }
+
+    private boolean isViewingCurrentDimension() {
+        Level currentLevel = GameVariableAccessShim.getWorld();
+        return currentLevel != null && currentLevel.dimension().identifier().equals(getViewedDimensionIdentifier());
+    }
+
+    private double viewedCoordinateScale() {
+        return coordinateScaleForDimension(getViewedDimensionContainer());
+    }
+
+    private double coordinateScaleForDimension(DimensionContainer dimension) {
+        return dimension == null || dimension.type == null ? 1.0D : dimension.type.coordinateScale();
+    }
+
+    private double convertCurrentCoordinateToViewed(double coordinate) {
         Level currentLevel = GameVariableAccessShim.getWorld();
         if (currentLevel == null) {
-            return Integer.MIN_VALUE;
+            return coordinate;
         }
-        if (currentLevel.dimension() == Level.NETHER) {
-            return com.github.cubiomes.Cubiomes.DIM_NETHER();
+        double currentScale = currentLevel.dimensionType().coordinateScale();
+        double targetScale = viewedCoordinateScale();
+        if (currentScale == targetScale) {
+            return coordinate;
         }
-        if (currentLevel.dimension() == Level.END) {
-            return com.github.cubiomes.Cubiomes.DIM_END();
+        return coordinate * currentScale / targetScale;
+    }
+
+    private boolean hasMeaningfulViewedPositionForCurrentPlayer() {
+        Level currentLevel = GameVariableAccessShim.getWorld();
+        if (currentLevel == null) {
+            return false;
         }
-        return com.github.cubiomes.Cubiomes.DIM_OVERWORLD();
+        Identifier currentDimension = currentLevel.dimension().identifier();
+        Identifier viewedDimension = getViewedDimensionIdentifier();
+        return currentDimension.equals(viewedDimension)
+                || (!Level.END.identifier().equals(currentDimension) && !Level.END.identifier().equals(viewedDimension));
+    }
+
+    private void recenterForViewedDimension() {
+        if (!hasMeaningfulViewedPositionForCurrentPlayer() || this.options.worldMapDimensionView == PersistentMapSettingsManager.WorldMapDimensionView.END) {
+            centerAt(0.0D, 0.0D);
+        } else {
+            centerAt(convertCurrentCoordinateToViewed(GameVariableAccessShim.xCoordDouble()), convertCurrentCoordinateToViewed(GameVariableAccessShim.zCoordDouble()));
+        }
+        switchToKeyboardInput();
+    }
+
+    private boolean isWaypointVisibleInViewedDimension(Waypoint waypoint) {
+        return waypoint != null && waypoint.inWorld && waypoint.isInDimension(getViewedDimensionContainer());
+    }
+
+    private int getWaypointXInViewedDimension(Waypoint waypoint) {
+        return waypoint == null ? 0 : waypoint.getXInDimension(getViewedDimensionContainer());
+    }
+
+    private int getWaypointZInViewedDimension(Waypoint waypoint) {
+        return waypoint == null ? 0 : waypoint.getZInDimension(getViewedDimensionContainer());
+    }
+
+    private PreviewBounds getVisibleWorldBounds() {
+        if (this.oldNorth) {
+            int minX = (int) Math.floor(this.mapCenterZ - this.centerY * this.guiToMap);
+            int maxX = (int) Math.ceil(this.mapCenterZ + this.centerY * this.guiToMap);
+            int minZ = (int) Math.floor(-this.mapCenterX - this.centerX * this.guiToMap);
+            int maxZ = (int) Math.ceil(-this.mapCenterX + this.centerX * this.guiToMap);
+            return new PreviewBounds(minX, maxX, minZ, maxZ);
+        }
+        int minX = (int) Math.floor(this.mapCenterX - this.centerX * this.guiToMap);
+        int maxX = (int) Math.ceil(this.mapCenterX + this.centerX * this.guiToMap);
+        int minZ = (int) Math.floor(this.mapCenterZ - this.centerY * this.guiToMap);
+        int maxZ = (int) Math.ceil(this.mapCenterZ + this.centerY * this.guiToMap);
+        return new PreviewBounds(minX, maxX, minZ, maxZ);
+    }
+
+    private ExportPlayerCoords getViewedExportPlayerCoords(PreviewBounds visibleBounds) {
+        if (hasMeaningfulViewedPositionForCurrentPlayer()) {
+            return new ExportPlayerCoords(
+                    Mth.floor(convertCurrentCoordinateToViewed(GameVariableAccessShim.xCoordDouble())),
+                    Mth.floor(convertCurrentCoordinateToViewed(GameVariableAccessShim.zCoordDouble()))
+            );
+        }
+        return new ExportPlayerCoords(
+                (visibleBounds.minX() + visibleBounds.maxX()) / 2,
+                (visibleBounds.minZ() + visibleBounds.maxZ()) / 2
+        );
+    }
+
+    private int resolveSeedPreviewTextureWidth() {
+        int viewportWidth = Math.max(1, Math.round((this.centerX * 2) * this.guiToDirectMouse));
+        float downsampleFactor = this.guiToMap <= 4.0F ? 1.0F : Mth.clamp(4.0F / this.guiToMap, 0.25F, 1.0F);
+        int targetWidth = Mth.ceil(viewportWidth * downsampleFactor);
+        return quantizeSeedPreviewTextureSize(targetWidth, SEED_PREVIEW_MIN_TEXTURE_WIDTH, SEED_PREVIEW_MAX_TEXTURE_WIDTH);
+    }
+
+    private int resolveSeedPreviewTextureHeight() {
+        int viewportHeight = Math.max(1, Math.round((this.centerY * 2) * this.guiToDirectMouse));
+        float downsampleFactor = this.guiToMap <= 4.0F ? 1.0F : Mth.clamp(4.0F / this.guiToMap, 0.25F, 1.0F);
+        int targetHeight = Mth.ceil(viewportHeight * downsampleFactor);
+        return quantizeSeedPreviewTextureSize(targetHeight, SEED_PREVIEW_MIN_TEXTURE_HEIGHT, SEED_PREVIEW_MAX_TEXTURE_HEIGHT);
+    }
+
+    private int quantizeSeedPreviewTextureSize(int value, int min, int max) {
+        int clamped = Mth.clamp(value, min, max);
+        return Math.max(min, ((clamped + 63) / 64) * 64);
+    }
+
+    private PreviewBounds getSeedPreviewRequestBounds(PreviewBounds visibleBounds, boolean mapInMotion) {
+        int spanX = Math.max(1, visibleBounds.maxX() - visibleBounds.minX());
+        int spanZ = Math.max(1, visibleBounds.maxZ() - visibleBounds.minZ());
+        int span = Math.max(spanX, spanZ);
+        int padding = Math.max(SEED_PREVIEW_MIN_PADDING_BLOCKS, span / (mapInMotion ? 3 : 4));
+        int snap = Math.max(256, Math.min(8192, Integer.highestOneBit(Math.max(256, padding))));
+        int minX = Math.floorDiv(visibleBounds.minX() - padding, snap) * snap;
+        int maxX = Math.floorDiv(visibleBounds.maxX() + padding + snap - 1, snap) * snap;
+        int minZ = Math.floorDiv(visibleBounds.minZ() - padding, snap) * snap;
+        int maxZ = Math.floorDiv(visibleBounds.maxZ() + padding + snap - 1, snap) * snap;
+        return new PreviewBounds(minX, maxX, minZ, maxZ);
+    }
+
+    private void ensureSeedPreviewTextureSize(int width, int height) {
+        if (this.seedPreviewTexture != null && this.seedPreviewTexture.getWidth() == width && this.seedPreviewTexture.getHeight() == height) {
+            return;
+        }
+        if (this.seedPreviewTexture != null) {
+            minecraft.getTextureManager().release(seedPreviewTextureLocation);
+        }
+        this.seedPreviewTexture = new DynamicMutableTexture("Voxelmap Seed Preview", width, height, true);
+        minecraft.getTextureManager().register(seedPreviewTextureLocation, this.seedPreviewTexture);
+    }
+
+    private int getSeedPreviewSampleQuartY(int dimension) {
+        return dimension == Cubiomes.DIM_END() ? 0 : QuartPos.fromBlock(SEED_PREVIEW_SAMPLE_BLOCK_Y);
+    }
+
+    private int getSeedMapperGeneratorFlags() {
+        return this.seedMapperOptions.largeBiomes ? Cubiomes.LARGE_BIOMES() : 0;
+    }
+
+    private int getCurrentCubiomesDimension() {
+        return switch (this.options.worldMapDimensionView) {
+            case CURRENT -> {
+                Level currentLevel = GameVariableAccessShim.getWorld();
+                if (currentLevel == null) {
+                    yield Integer.MIN_VALUE;
+                }
+                if (currentLevel.dimension() == Level.NETHER) {
+                    yield Cubiomes.DIM_NETHER();
+                }
+                if (currentLevel.dimension() == Level.END) {
+                    yield Cubiomes.DIM_END();
+                }
+                yield Cubiomes.DIM_OVERWORLD();
+            }
+            case OVERWORLD -> Cubiomes.DIM_OVERWORLD();
+            case NETHER -> Cubiomes.DIM_NETHER();
+            case END -> Cubiomes.DIM_END();
+        };
     }
 
     private boolean handleSeedMapperMarkerRightClick(int mouseX, int mouseY) {
@@ -2814,13 +3323,13 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
             long seed;
             try {
-                seed = seedMapperOptions.resolveSeed(VoxelConstants.getVoxelMapInstance().getWorldSeed());
+                seed = resolveWorldMapSeed();
             } catch (IllegalArgumentException ignored) {
                 return true;
             }
 
             int dimension = getCurrentCubiomesDimension();
-            int generatorFlags = 0;
+            int generatorFlags = getSeedMapperGeneratorFlags();
             List<SeedMapperChestLootData> chestData = SeedMapperLootService.buildStructureChestLoot(
                     seed,
                     dimension,
@@ -3016,8 +3525,10 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         }
 
         TreeSet<DimensionContainer> dimensions = new TreeSet<>();
-        DimensionContainer currentDimension = VoxelConstants.getVoxelMapInstance().getDimensionManager().getDimensionContainerByWorld(VoxelConstants.getPlayer().level());
-        dimensions.add(currentDimension);
+        DimensionContainer viewedDimension = getViewedDimensionContainer();
+        if (viewedDimension != null) {
+            dimensions.add(viewedDimension);
+        }
 
         int y = terrainHighlightY(marker.blockX(), marker.blockZ());
 
@@ -3046,7 +3557,10 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
     private Waypoint createTransientStructureWaypoint(SeedMapperMarker marker) {
         TreeSet<DimensionContainer> dimensions = new TreeSet<>();
-        dimensions.add(VoxelConstants.getVoxelMapInstance().getDimensionManager().getDimensionContainerByWorld(VoxelConstants.getPlayer().level()));
+        DimensionContainer viewedDimension = getViewedDimensionContainer();
+        if (viewedDimension != null) {
+            dimensions.add(viewedDimension);
+        }
         int y = terrainHighlightY(marker.blockX(), marker.blockZ());
         return new Waypoint(
                 displayMarkerName(marker),
@@ -3065,11 +3579,15 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
     private int terrainHighlightY(int x, int z) {
         Level level = VoxelConstants.getPlayer().level();
-        int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) + 1;
-        if (y < level.getMinY()) {
-            y = this.persistentMap.getHeightAt(x, z);
+        if (isViewingCurrentDimension()) {
+            int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) + 1;
+            if (y < level.getMinY()) {
+                y = this.persistentMap.getHeightAt(x, z, getViewedDimensionIdentifier());
+            }
+            return Math.max(y, 64);
         }
-        return Math.max(y, 64);
+        int cachedHeight = this.persistentMap.getHeightAt(x, z, getViewedDimensionIdentifier());
+        return cachedHeight == Short.MIN_VALUE ? 64 : Math.max(cachedHeight, 64);
     }
 
     private Waypoint findSeedMapperHighlightWaypoint(SeedMapperMarker marker) {
@@ -3089,8 +3607,8 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
         Waypoint highlighted = waypointManager.getHighlightedWaypoint();
         if (highlighted != null
-                && highlighted.getXInCurrentDimension() == marker.blockX()
-                && highlighted.getZInCurrentDimension() == marker.blockZ()
+                && getWaypointXInViewedDimension(highlighted) == marker.blockX()
+                && getWaypointZInViewedDimension(highlighted) == marker.blockZ()
                 && isSeedMapperHighlightName(highlighted.name)) {
             return highlighted;
         }
@@ -3125,10 +3643,10 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             return false;
         }
 
-        return waypoint.getXInCurrentDimension() == marker.blockX()
-                && waypoint.getZInCurrentDimension() == marker.blockZ()
+        return getWaypointXInViewedDimension(waypoint) == marker.blockX()
+                && getWaypointZInViewedDimension(waypoint) == marker.blockZ()
                 && waypoint.inWorld
-                && waypoint.inDimension;
+                && waypoint.isInDimension(getViewedDimensionContainer());
     }
 
     private boolean isMarkerHighlighted(SeedMapperMarker marker) {
@@ -3160,7 +3678,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     }
 
     private String seedMapperHighlightKey(SeedMapperMarker marker) {
-        return marker.feature().id() + "|" + marker.blockX() + "|" + marker.blockZ();
+        return currentSeedMapperWorldKey() + "|" + marker.feature().id() + "|" + marker.blockX() + "|" + marker.blockZ();
     }
 
     private String seedMapperHighlightName(SeedMapperMarker marker) {
@@ -3219,14 +3737,14 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             return null;
         }
         for (Waypoint waypoint : waypointManager.getWaypoints()) {
-            if (!waypoint.inWorld || !waypoint.inDimension) continue;
-            if (waypoint.getXInCurrentDimension() == marker.blockX() && waypoint.getZInCurrentDimension() == marker.blockZ() && isSeedMapperHighlightWaypoint(waypoint)) {
+            if (!isWaypointVisibleInViewedDimension(waypoint)) continue;
+            if (getWaypointXInViewedDimension(waypoint) == marker.blockX() && getWaypointZInViewedDimension(waypoint) == marker.blockZ() && isSeedMapperHighlightWaypoint(waypoint)) {
                 return waypoint;
             }
         }
         for (Waypoint waypoint : waypointManager.getWaypoints()) {
-            if (!waypoint.inWorld || !waypoint.inDimension) continue;
-            if (waypoint.getXInCurrentDimension() == marker.blockX() && waypoint.getZInCurrentDimension() == marker.blockZ()) {
+            if (!isWaypointVisibleInViewedDimension(waypoint)) continue;
+            if (getWaypointXInViewedDimension(waypoint) == marker.blockX() && getWaypointZInViewedDimension(waypoint) == marker.blockZ()) {
                 return waypoint;
             }
         }
@@ -3265,8 +3783,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     private String currentSeedMapperWorldKey() {
         String world = waypointManager.getCurrentWorldName();
         String sub = waypointManager.getCurrentSubworldDescriptor(false);
-        Level level = GameVariableAccessShim.getWorld();
-        String dim = level == null ? "unknown" : level.dimension().identifier().toString();
+        String dim = getViewedDimensionIdentifier().toString();
         return (world == null ? "unknown" : world) + "|" + (sub == null ? "" : sub) + "|" + dim;
     }
 
@@ -3277,7 +3794,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         }
         long seed;
         try {
-            seed = seedMapperOptions.resolveSeed(VoxelConstants.getVoxelMapInstance().getWorldSeed());
+            seed = resolveWorldMapSeed();
         } catch (IllegalArgumentException ignored) {
             return;
         }
@@ -3285,7 +3802,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 seed,
                 com.github.cubiomes.Cubiomes.DIM_OVERWORLD(),
                 SeedMapperCompat.getMcVersion(),
-                0,
+                getSeedMapperGeneratorFlags(),
                 -8192,
                 8192,
                 -8192,
@@ -3309,6 +3826,15 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         private static LegendEntry datapack(String structureId) {
             return new LegendEntry(SeedMapperFeature.DATAPACK_STRUCTURE, structureId);
         }
+    }
+
+    private record PreviewBounds(int minX, int maxX, int minZ, int maxZ) {
+    }
+
+    private record ExportPlayerCoords(int x, int z) {
+    }
+
+    private record SeedPreviewQueryCacheKey(long seed, Identifier dimensionIdentifier, int dimension, int minX, int maxX, int minZ, int maxZ, int generatorFlags, int textureWidth, int textureHeight, int mcVersion) {
     }
 
     private record FeatureIconHitbox(SeedMapperFeature feature, String datapackStructureId, int x, int y, int size) {
@@ -3367,6 +3893,15 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             this.persistentMap.getRegions(0, -1, 0, -1);
             this.regions = new CachedRegion[0];
         }
+        if (this.seedPreviewFuture != null) {
+            this.seedPreviewFuture.cancel(false);
+            this.seedPreviewFuture = null;
+        }
+        minecraft.getTextureManager().release(seedPreviewTextureLocation);
+        this.seedPreviewTexture = null;
+        this.seedPreviewDisplayedKey = null;
+        this.seedPreviewPendingKey = null;
+        this.seedPreviewPendingPixels = null;
         VoxelConstants.getVoxelMapInstance().getNewerNewChunksManager().flushStorage();
     }
 
@@ -3410,7 +3945,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
         this.createPopup(x, y, directX, directY, 60, entries);
         if (VoxelConstants.DEBUG) {
-            persistentMap.debugLog((int) cursorCoordX, (int) cursorCoordZ);
+            persistentMap.debugLog((int) cursorCoordX, (int) cursorCoordZ, getViewedDimensionIdentifier());
         }
     }
 
@@ -3464,15 +3999,15 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
         int x = (int) Math.floor(cursorCoordX);
         int z = (int) Math.floor(cursorCoordZ);
-        int y = this.persistentMap.getHeightAt(x, z);
+        int y = this.persistentMap.getHeightAt(x, z, getViewedDimensionIdentifier());
         this.editClicked = false;
         this.addClicked = false;
         this.deleteClicked = false;
         switch (action) {
             case 0 -> {
                 if (selectedWaypoint != null) {
-                    x = selectedWaypoint.getXInCurrentDimension();
-                    z = selectedWaypoint.getZInCurrentDimension();
+                    x = getWaypointXInViewedDimension(selectedWaypoint);
+                    z = getWaypointZInViewedDimension(selectedWaypoint);
                 }
                 this.addClicked = true;
                 float r;
@@ -3488,7 +4023,10 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                     b = this.generator.nextFloat();
                 }
                 TreeSet<DimensionContainer> dimensions = new TreeSet<>();
-                dimensions.add(VoxelConstants.getVoxelMapInstance().getDimensionManager().getDimensionContainerByWorld(VoxelConstants.getPlayer().level()));
+                DimensionContainer viewedDimension = getViewedDimensionContainer();
+                if (viewedDimension != null) {
+                    dimensions.add(viewedDimension);
+                }
                 y = terrainHighlightY(x, z);
                 this.newWaypoint = new Waypoint("", x, z, y, true, r, g, b, "", VoxelConstants.getVoxelMapInstance().getWaypointManager().getCurrentSubworldDescriptor(false), dimensions);
                 minecraft.setScreen(new GuiAddWaypoint(this, this.newWaypoint, false));
@@ -3500,7 +4038,10 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                         this.waypointManager.setHighlightedWaypoint(null, false);
                     } else {
                         TreeSet<DimensionContainer> dimensions2 = new TreeSet<>();
-                        dimensions2.add(VoxelConstants.getVoxelMapInstance().getDimensionManager().getDimensionContainerByWorld(VoxelConstants.getPlayer().level()));
+                        DimensionContainer viewedDimension = getViewedDimensionContainer();
+                        if (viewedDimension != null) {
+                            dimensions2.add(viewedDimension);
+                        }
                         int markerX = selectedSeedMapperMarker.blockX();
                         int markerZ = selectedSeedMapperMarker.blockZ();
                         Waypoint highlightWaypoint = new Waypoint(seedMapperHighlightName(selectedSeedMapperMarker), markerX, markerZ, terrainHighlightY(markerX, markerZ), true, 1.0F, 0.0F, 0.0F, "target", VoxelConstants.getVoxelMapInstance().getWaypointManager().getCurrentSubworldDescriptor(false), dimensions2);
@@ -3515,7 +4056,10 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 } else {
                     y = terrainHighlightY(x, z);
                     TreeSet<DimensionContainer> dimensions2 = new TreeSet<>();
-                    dimensions2.add(VoxelConstants.getVoxelMapInstance().getDimensionManager().getDimensionContainerByWorld(VoxelConstants.getPlayer().level()));
+                    DimensionContainer viewedDimension = getViewedDimensionContainer();
+                    if (viewedDimension != null) {
+                        dimensions2.add(viewedDimension);
+                    }
                     Waypoint highlightWaypoint = new Waypoint("", x, z, y, true, 1.0F, 0.0F, 0.0F, "", VoxelConstants.getVoxelMapInstance().getWaypointManager().getCurrentSubworldDescriptor(false), dimensions2);
                     this.waypointManager.setHighlightedWaypoint(highlightWaypoint, false);
                     selectedSeedMapperWaypoint = highlightWaypoint;
@@ -3540,7 +4084,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 }
 
                 y = selectedWaypoint.getY() > VoxelConstants.getPlayer().level().getMinY() ? selectedWaypoint.getY() : (!(VoxelConstants.getPlayer().level().dimensionType().hasCeiling()) ? VoxelConstants.getPlayer().level().getMaxY() : 64);
-                VoxelConstants.playerRunTeleportCommand(selectedWaypoint.getXInCurrentDimension(), y, selectedWaypoint.getZInCurrentDimension());
+                VoxelConstants.playerRunTeleportCommand(getWaypointXInViewedDimension(selectedWaypoint), y, getWaypointZInViewedDimension(selectedWaypoint));
             }
             case 4 -> {
                 if (selectedWaypoint != null) {
@@ -3559,11 +4103,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 }
             }
             case 6 -> {
-                int minX = (int) Math.floor(this.mapCenterX - this.centerX * this.guiToMap);
-                int maxX = (int) Math.ceil(this.mapCenterX + this.centerX * this.guiToMap);
-                int minZ = (int) Math.floor(this.mapCenterZ - this.centerY * this.guiToMap);
-                int maxZ = (int) Math.ceil(this.mapCenterZ + this.centerY * this.guiToMap);
-                SeedMapperCommandHandler.exportBounds(minX, maxX, minZ, maxZ, "persistent_map_visible");
+                exportVisibleSeedMap();
             }
             case 7 -> {
                 if (selectedSeedMapperMarker != null) {
@@ -3579,7 +4119,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 if (selectedSeedMapperMarker != null) {
                     long seed;
                     try {
-                        seed = seedMapperOptions.resolveSeed(VoxelConstants.getVoxelMapInstance().getWorldSeed());
+                        seed = resolveWorldMapSeed();
                     } catch (IllegalArgumentException ignored) {
                         break;
                     }
@@ -3606,8 +4146,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             case 10 -> deleteSelectedWaypoint();
             case 11 -> pendingDeleteWaypoint = null;
             case 12 -> {
-                centerAt(GameVariableAccessShim.xCoord(), GameVariableAccessShim.zCoord());
-                switchToKeyboardInput();
+                recenterForViewedDimension();
             }
             default -> VoxelConstants.getLogger().warn("unimplemented command");
         }
@@ -3700,11 +4239,23 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     }
 
     public void exportVisibleSeedMap() {
-        int minX = (int) Math.floor(this.mapCenterX - this.centerX * this.guiToMap);
-        int maxX = (int) Math.ceil(this.mapCenterX + this.centerX * this.guiToMap);
-        int minZ = (int) Math.floor(this.mapCenterZ - this.centerY * this.guiToMap);
-        int maxZ = (int) Math.ceil(this.mapCenterZ + this.centerY * this.guiToMap);
-        SeedMapperCommandHandler.exportBounds(minX, maxX, minZ, maxZ, "persistent_map_visible");
+        PreviewBounds visibleBounds = getVisibleWorldBounds();
+        int dimension = getCurrentCubiomesDimension();
+        if (dimension == Integer.MIN_VALUE) {
+            return;
+        }
+        ExportPlayerCoords exportPlayerCoords = getViewedExportPlayerCoords(visibleBounds);
+        SeedMapperCommandHandler.exportBounds(
+                visibleBounds.minX(),
+                visibleBounds.maxX(),
+                visibleBounds.minZ(),
+                visibleBounds.maxZ(),
+                "persistent_map_visible",
+                dimension,
+                currentSeedMapperWorldKey(),
+                exportPlayerCoords.x(),
+                exportPlayerCoords.z()
+        );
     }
 }
 
