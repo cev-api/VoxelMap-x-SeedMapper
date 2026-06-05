@@ -596,7 +596,7 @@ public class Map implements Runnable, IChangeObserver {
             double dx = waypoint.getXInCurrentDimension() + 0.5D - playerX;
             double dz = waypoint.getZInCurrentDimension() + 0.5D - playerZ;
             double distanceSq = dx * dx + dz * dz + Math.pow(waypoint.getY() + 0.5D - playerY, 2.0D);
-            if (maxDistance > -1 && distanceSq > maxDistance * maxDistance) {
+            if (maxDistance > -1 && distanceSq > (long) maxDistance * (long) maxDistance) {
                 continue;
             }
 

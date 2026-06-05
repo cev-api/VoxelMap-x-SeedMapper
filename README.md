@@ -111,10 +111,10 @@ Common commands:
 ### New Chunks System
 - Added a dedicated New Chunks feature set with its own options category/screen.
 - Added detection and rendering for:
-- Newly generated chunks
-- Explored chunk history
-- Liquid-exploit chunk signals
-- Block-update exploit chunk signals
+    - Newly generated chunks
+    - Explored chunk history
+    - Liquid-exploit chunk signals
+    - Block-update exploit chunk signals
 - Added minimap and fullscreen world-map visualization for New Chunks layers.
 - Added persistent chunk-history storage so detected states survive restarts.
 - Added chunk overlay styling controls including line mode/thickness and visibility toggles.

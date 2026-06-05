@@ -41,8 +41,15 @@ public class CompressibleMapRegionTexture extends AbstractTexture {
     public CompressibleMapRegionTexture() {
         this.compressNotDelete = VoxelConstants.getVoxelMapInstance().getPersistentMapOptions().outputImages;
 
-        this.pixels = new NativeImage(CachedRegion.REGION_WIDTH, CachedRegion.REGION_WIDTH, false);
-        clearImage(this.pixels);
+        try {
+            this.pixels = new NativeImage(CachedRegion.REGION_WIDTH, CachedRegion.REGION_WIDTH, false);
+        } catch (IllegalStateException | OutOfMemoryError e) {
+            this.pixels = null;
+            VoxelConstants.getLogger().warn("VoxelMap: Failed to allocate map region texture; will retry later.");
+        }
+        if (this.pixels != null) {
+            clearImage(this.pixels);
+        }
         this.samplerSmall = RenderSystem.getSamplerCache().getSampler(AddressMode.CLAMP_TO_EDGE, AddressMode.CLAMP_TO_EDGE, FilterMode.LINEAR, FilterMode.LINEAR, true);
         this.samplerLarge = RenderSystem.getSamplerCache().getSampler(AddressMode.CLAMP_TO_EDGE, AddressMode.CLAMP_TO_EDGE, FilterMode.LINEAR, FilterMode.NEAREST, true);
         this.sampler = samplerLarge;
@@ -151,7 +158,17 @@ public class CompressibleMapRegionTexture extends AbstractTexture {
 
     private synchronized void decompress() {
         if (pixels == null) {
-            this.pixels = new NativeImage(CachedRegion.REGION_WIDTH, CachedRegion.REGION_WIDTH, false);
+            try {
+                this.pixels = new NativeImage(CachedRegion.REGION_WIDTH, CachedRegion.REGION_WIDTH, false);
+            } catch (IllegalStateException | OutOfMemoryError e) {
+                this.pixels = null;
+                long now = System.currentTimeMillis();
+                if (now - this.lastAllocationWarnMs > 5000L) {
+                    this.lastAllocationWarnMs = now;
+                    VoxelConstants.getLogger().warn("VoxelMap: Failed to allocate texture during decompress; will retry.");
+                }
+                return;
+            }
             clearImage(this.pixels);
             if (this.compressNotDelete && this.bytes != null) {
                 try {
