@@ -108,6 +108,8 @@ public class Map implements Runnable, IChangeObserver {
     private long seedMapperLastMinimapQueryMs = 0L;
     private SeedMapperMinimapQueryKey seedMapperLastMinimapQueryKey;
     private List<SeedMapperMarker> seedMapperLastMinimapMarkers = List.of();
+    private boolean seedMapperMinimapQueryLoading = false;
+    private long seedMapperMinimapLoadingStickyUntilMs = 0L;
 
     // Map UI
     private static final float MAP_IMAGE_DEPTH = 0.0F;
@@ -899,6 +901,8 @@ public class Map implements Runnable, IChangeObserver {
         });
 
         VoxelMapGuiGraphics.blitFloat(graphics, RenderPipelines.GUI_TEXTURED, hudRenderTarget.colorTextureId, 0.0F, 0.0F, RenderUtils.getGuiWidth(), RenderUtils.getGuiHeight(), 0.0F, 1.0F, 0.0F, 1.0F, 0xFFFFFFFF);
+
+        this.drawSeedMapperMinimapLoadingStatus(graphics);
     }
 
     private float stabilizeMinimapScaleProjection(float rawScaleProj) {
@@ -906,8 +910,8 @@ public class Map implements Runnable, IChangeObserver {
             return this.lastStableMinimapScaleProj;
         }
 
-        float immediateDeltaThreshold = 0.35F;
-        int persistFramesRequired = 3;
+        float immediateDeltaThreshold = 1.5F;
+        int persistFramesRequired = 2;
 
         float delta = Math.abs(rawScaleProj - this.lastStableMinimapScaleProj);
         if (delta <= immediateDeltaThreshold) {
@@ -924,7 +928,6 @@ public class Map implements Runnable, IChangeObserver {
             this.pendingMinimapScaleProjFrames = 1;
         }
 
-        // Accept only if the jump persists, so one-frame spikes are ignored.
         if (this.pendingMinimapScaleProjFrames >= persistFramesRequired) {
             this.lastStableMinimapScaleProj = this.pendingMinimapScaleProj;
             this.pendingMinimapScaleProjFrames = 0;
@@ -1996,13 +1999,27 @@ public class Map implements Runnable, IChangeObserver {
         }
     }
 
+    private void drawSeedMapperMinimapLoadingStatus(GuiGraphicsExtractor graphics) {
+        if (!seedMapperMinimapQueryLoading) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        if (now >= seedMapperMinimapLoadingStickyUntilMs) {
+            seedMapperMinimapQueryLoading = false;
+            return;
+        }
+        graphics.text(minecraft.font, "Loading SeedMap...", 2, (int) RenderUtils.getGuiHeight() - 14, 0xFFE0E0E0);
+    }
+
     private void drawSeedMapperMinimapMarkers(Matrix4fStack matrixStack, int x, int y, double baseX, double baseZ) {
         if (!seedMapperOptions.enabled) {
+            seedMapperMinimapQueryLoading = false;
             return;
         }
 
         int dimension = getCurrentCubiomesDimension();
         if (dimension == Integer.MIN_VALUE) {
+            seedMapperMinimapQueryLoading = false;
             return;
         }
 
@@ -2043,6 +2060,14 @@ public class Map implements Runnable, IChangeObserver {
                     seedMapperOptions,
                     datapackWorldKey
             );
+            if (!result.exact()) {
+                seedMapperMinimapQueryLoading = true;
+                seedMapperMinimapLoadingStickyUntilMs = now + 1200L;
+            } else {
+                if (now >= seedMapperMinimapLoadingStickyUntilMs) {
+                    seedMapperMinimapQueryLoading = false;
+                }
+            }
             if (result.exact() || seedMapperLastMinimapMarkers.isEmpty()) {
                 seedMapperLastMinimapMarkers = result.markers();
                 seedMapperLastMinimapQueryKey = key;

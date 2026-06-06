@@ -87,6 +87,11 @@ public enum EnumOptionsMinimap {
     MAX_ZOOM("options.worldmap.maxZoom", Type.FLOAT),
     WORLDMAP_PERFORMANCE_MODE_THRESHOLD("options.worldmap.performanceModeThreshold", Type.FLOAT),
     WORLDMAP_CHUNK_LINE_THICKNESS("options.worldmap.chunkLineThickness", Type.FLOAT),
+    WORLDMAP_SEEDMAP_CONTOURS("options.worldmap.seedmapContours", Type.BOOLEAN),
+    WORLDMAP_SEEDMAP_PALETTE("options.worldmap.seedmapPalette", Type.LIST),
+    WORLDMAP_SEEDMAP_CONTOUR_STRENGTH("options.worldmap.seedmapContourStrength", Type.FLOAT),
+    WORLDMAP_SEEDMAP_MIN_ZOOM("options.worldmap.seedmapMinZoom", Type.FLOAT),
+    WORLDMAP_SEEDMAP_TERRAIN_MIN_ZOOM("options.worldmap.seedmapTerrainMinZoom", Type.FLOAT),
     CACHE_SIZE("options.worldmap.cacheSize", Type.FLOAT);
 
     public enum Type { NONE, BOOLEAN, LIST, FLOAT }
