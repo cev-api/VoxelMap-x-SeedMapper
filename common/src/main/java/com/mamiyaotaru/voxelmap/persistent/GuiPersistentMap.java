@@ -2,6 +2,7 @@ package com.mamiyaotaru.voxelmap.persistent;
 
 import com.github.cubiomes.Cubiomes;
 import com.github.cubiomes.Generator;
+import com.github.cubiomes.TerrainNoise;
 import com.mamiyaotaru.voxelmap.MapSettingsManager;
 import com.mamiyaotaru.voxelmap.NewerNewChunksManager;
 import com.mamiyaotaru.voxelmap.RadarSettingsManager;
@@ -228,6 +229,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     private static final int SEED_PREVIEW_MAX_TEXTURE_HEIGHT = 1024;
     private static final int SEED_PREVIEW_SAMPLE_BLOCK_Y = 64;
     private static final int SEED_PREVIEW_MIN_PADDING_BLOCKS = 512;
+    private static final int SEED_PREVIEW_CONTOUR_INTERVAL = 16;
     private static final long SEED_PREVIEW_REQUEST_INTERVAL_MOVING_MS = 125L;
     private static final long SEED_PREVIEW_REQUEST_INTERVAL_STILL_MS = 50L;
     private DynamicMutableTexture seedPreviewTexture;
@@ -236,6 +238,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     private int[] seedPreviewPendingPixels;
     private Future<?> seedPreviewFuture;
     private long seedPreviewLastRequestMs = 0L;
+    private boolean seedPreviewLoading = false;
     private final Object seedPreviewLock = new Object();
     private final Map<Integer, Integer> seedPreviewBiomeColorCache = new HashMap<>();
     private long exploredLinesLastQueryMs = 0L;
@@ -448,6 +451,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             this.seedPreviewDisplayedKey = null;
             this.seedPreviewPendingKey = null;
             this.seedPreviewPendingPixels = null;
+            this.seedPreviewLoading = false;
         }
         refreshWorldMapControlLabels();
         buildWorldName();
@@ -1149,6 +1153,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         if (!farZoomPerformanceMode) {
             drawSeedMapperMarkers(graphics, mouseX, mouseY);
             drawSeedMapperLoadingStatus(graphics);
+            drawSeedPreviewLoadingStatus(graphics);
         }
         drawPlayerLayerStatuses(graphics);
 
@@ -2224,6 +2229,10 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         if (!this.seedMapperOptions.worldMapSeedPreview || this.seedPreviewTexture == null) {
             return;
         }
+        if (this.zoom < this.options.getSeedMapMinZoom()) {
+            this.seedPreviewLoading = false;
+            return;
+        }
 
         applyPendingSeedPreview();
 
@@ -2255,7 +2264,9 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 getSeedMapperGeneratorFlags(),
                 resolveSeedPreviewTextureWidth(),
                 resolveSeedPreviewTextureHeight(),
-                SeedMapperCompat.getMcVersion()
+                SeedMapperCompat.getMcVersion(),
+                this.zoom >= this.options.getSeedMapTerrainMinZoom(),
+                this.options.getSeedMapPreviewSettingsHash()
         );
         synchronized (this.seedPreviewLock) {
             boolean workerIdle = this.seedPreviewFuture == null || this.seedPreviewFuture.isDone() || this.seedPreviewFuture.isCancelled();
@@ -2303,6 +2314,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
     private void queueSeedPreview(SeedPreviewQueryCacheKey requestKey) {
         this.seedPreviewLastRequestMs = System.currentTimeMillis();
+        this.seedPreviewLoading = true;
         this.seedPreviewFuture = ThreadManager.executorService.submit(() -> {
             int[] pixels = buildSeedPreviewPixels(requestKey);
             synchronized (this.seedPreviewLock) {
@@ -2320,6 +2332,8 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 && displayedKey.textureWidth() == requestKey.textureWidth()
                 && displayedKey.textureHeight() == requestKey.textureHeight()
                 && displayedKey.mcVersion() == requestKey.mcVersion()
+                && displayedKey.terrainEnabled() == requestKey.terrainEnabled()
+                && displayedKey.settingsHash() == requestKey.settingsHash()
                 && displayedKey.minX() <= requestKey.minX()
                 && displayedKey.maxX() >= requestKey.maxX()
                 && displayedKey.minZ() <= requestKey.minZ()
@@ -2346,6 +2360,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             this.seedPreviewDisplayedKey = this.seedPreviewPendingKey;
             this.seedPreviewPendingPixels = null;
             this.seedPreviewPendingKey = null;
+            this.seedPreviewLoading = false;
         }
     }
 
@@ -2361,6 +2376,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                     int sampleY = getSeedPreviewSampleQuartY(requestKey.dimension());
                     double spanX = Math.max(1.0D, requestKey.maxX() - requestKey.minX());
                     double spanZ = Math.max(1.0D, requestKey.maxZ() - requestKey.minZ());
+                    int[] heights = requestKey.terrainEnabled() ? buildSeedPreviewHeights(arena, requestKey) : null;
                     for (int y = 0; y < requestKey.textureHeight(); y++) {
                         double sampleZ = requestKey.minZ() + (y + 0.5D) * spanZ / requestKey.textureHeight();
                         int blockZ = Mth.floor(sampleZ);
@@ -2371,7 +2387,11 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                             int blockX = Mth.floor(sampleX);
                             int quartX = blockX >> 2;
                             int biomeId = Cubiomes.getBiomeAt(generator, 4, quartX, sampleY, quartZ);
-                            pixels[rowOffset + x] = resolveSeedPreviewColor(biomeId, requestKey.mcVersion());
+                            int color = resolveSeedPreviewColor(biomeId, requestKey.mcVersion());
+                            if (heights != null) {
+                                color = applySeedPreviewTerrainStyle(color, heights, requestKey.textureWidth(), x, y);
+                            }
+                            pixels[rowOffset + x] = color;
                         }
                     }
                 }
@@ -2380,6 +2400,100 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             VoxelConstants.getLogger().warn("Failed generating SeedMapper world-map preview", ex);
         }
         return pixels;
+    }
+
+    private int[] buildSeedPreviewHeights(Arena arena, SeedPreviewQueryCacheKey requestKey) {
+        if (requestKey.dimension() != Cubiomes.DIM_OVERWORLD()) {
+            return null;
+        }
+
+        MemorySegment params = TerrainNoise.allocate(arena);
+        if (Cubiomes.setupTerrainNoise(params, requestKey.mcVersion(), requestKey.generatorFlags()) == 0
+                || Cubiomes.initTerrainNoise(params, requestKey.seed(), requestKey.dimension()) == 0) {
+            return null;
+        }
+
+        int[] heights = new int[requestKey.textureWidth() * requestKey.textureHeight()];
+        double spanX = Math.max(1.0D, requestKey.maxX() - requestKey.minX());
+        double spanZ = Math.max(1.0D, requestKey.maxZ() - requestKey.minZ());
+        for (int y = 0; y < requestKey.textureHeight(); y++) {
+            int rowOffset = y * requestKey.textureWidth();
+            int blockZ = Mth.floor(requestKey.minZ() + (y + 0.5D) * spanZ / requestKey.textureHeight());
+            for (int x = 0; x < requestKey.textureWidth(); x++) {
+                int blockX = Mth.floor(requestKey.minX() + (x + 0.5D) * spanX / requestKey.textureWidth());
+                heights[rowOffset + x] = Cubiomes.samplePreliminarySurfaceLevel(params, blockX, blockZ);
+            }
+        }
+        return heights;
+    }
+
+    private int applySeedPreviewTerrainStyle(int color, int[] heights, int width, int x, int y) {
+        int index = y * width + x;
+        int h = heights[index];
+        if (h == Integer.MIN_VALUE) {
+            return color;
+        }
+
+        color = applySeedPreviewPalette(color, h);
+        int left = x > 0 ? heights[index - 1] : h;
+        int up = y > 0 ? heights[index - width] : h;
+        int shade = Mth.clamp((h - left) * 4 + (h - up) * 3, -36, 36);
+        int styled = adjustSeedPreviewBrightness(color, shade);
+        if (this.options.seedMapContours && (crossesSeedPreviewContour(h, left) || crossesSeedPreviewContour(h, up))) {
+            styled = blendSeedPreviewColor(styled, 0xD0000000, this.options.getSeedMapContourStrength());
+        }
+        return styled;
+    }
+
+    private int applySeedPreviewPalette(int biomeColor, int height) {
+        return switch (this.options.seedMapPalette) {
+            case BIOME -> biomeColor;
+            case HEIGHT -> heightPaletteColor(height);
+            case TOPOGRAPHIC -> blendSeedPreviewColor(heightPaletteColor(height), biomeColor, 0.35F);
+        };
+    }
+
+    private int heightPaletteColor(int height) {
+        int rgb;
+        if (height < 62) {
+            rgb = 0x0B3C78;
+        } else if (height < 72) {
+            rgb = 0xD8C890;
+        } else if (height < 96) {
+            rgb = 0x4E9A4D;
+        } else if (height < 128) {
+            rgb = 0x7EAD5A;
+        } else if (height < 160) {
+            rgb = 0xA99268;
+        } else if (height < 200) {
+            rgb = 0x8E8E83;
+        } else {
+            rgb = 0xE8E8E8;
+        }
+        return ARGB.toABGR(0x96000000 | rgb);
+    }
+
+    private boolean crossesSeedPreviewContour(int heightA, int heightB) {
+        if (heightA == Integer.MIN_VALUE || heightB == Integer.MIN_VALUE) {
+            return false;
+        }
+        return Math.floorDiv(heightA, SEED_PREVIEW_CONTOUR_INTERVAL) != Math.floorDiv(heightB, SEED_PREVIEW_CONTOUR_INTERVAL);
+    }
+
+    private int adjustSeedPreviewBrightness(int color, int amount) {
+        int alpha = color >>> 24;
+        int red = Mth.clamp((color >>> 16 & 0xFF) + amount, 0, 255);
+        int green = Mth.clamp((color >>> 8 & 0xFF) + amount, 0, 255);
+        int blue = Mth.clamp((color & 0xFF) + amount, 0, 255);
+        return alpha << 24 | red << 16 | green << 8 | blue;
+    }
+
+    private int blendSeedPreviewColor(int base, int overlay, float overlayAlpha) {
+        int alpha = base >>> 24;
+        int red = Mth.clamp(Math.round((base >>> 16 & 0xFF) * (1.0F - overlayAlpha) + (overlay >>> 16 & 0xFF) * overlayAlpha), 0, 255);
+        int green = Mth.clamp(Math.round((base >>> 8 & 0xFF) * (1.0F - overlayAlpha) + (overlay >>> 8 & 0xFF) * overlayAlpha), 0, 255);
+        int blue = Mth.clamp(Math.round((base & 0xFF) * (1.0F - overlayAlpha) + (overlay & 0xFF) * overlayAlpha), 0, 255);
+        return alpha << 24 | red << 16 | green << 8 | blue;
     }
 
     private int resolveSeedPreviewColor(int biomeId, int mcVersion) {
@@ -2693,6 +2807,15 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 ? "structures"
                 : seedMapperLoadingSummary;
         graphics.text(this.getFont(), "Loading SeedMapper: " + summary, this.sideMargin + 2, this.bottom - 14, 0xFFE0E0E0);
+    }
+
+    private void drawSeedPreviewLoadingStatus(GuiGraphicsExtractor graphics) {
+        if (!this.seedMapperOptions.worldMapSeedPreview || !this.seedPreviewLoading) {
+            return;
+        }
+
+        int y = seedMapperQueryLoading ? this.bottom - 26 : this.bottom - 14;
+        graphics.text(this.getFont(), "Loading SeedMap terrain...", this.sideMargin + 2, y, 0xFFE0E0E0);
     }
 
     private String buildSeedMapperLoadingSummary() {
@@ -3834,7 +3957,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     private record ExportPlayerCoords(int x, int z) {
     }
 
-    private record SeedPreviewQueryCacheKey(long seed, Identifier dimensionIdentifier, int dimension, int minX, int maxX, int minZ, int maxZ, int generatorFlags, int textureWidth, int textureHeight, int mcVersion) {
+    private record SeedPreviewQueryCacheKey(long seed, Identifier dimensionIdentifier, int dimension, int minX, int maxX, int minZ, int maxZ, int generatorFlags, int textureWidth, int textureHeight, int mcVersion, boolean terrainEnabled, int settingsHash) {
     }
 
     private record FeatureIconHitbox(SeedMapperFeature feature, String datapackStructureId, int x, int y, int size) {
@@ -3902,6 +4025,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         this.seedPreviewDisplayedKey = null;
         this.seedPreviewPendingKey = null;
         this.seedPreviewPendingPixels = null;
+        this.seedPreviewLoading = false;
         VoxelConstants.getVoxelMapInstance().getNewerNewChunksManager().flushStorage();
     }
 

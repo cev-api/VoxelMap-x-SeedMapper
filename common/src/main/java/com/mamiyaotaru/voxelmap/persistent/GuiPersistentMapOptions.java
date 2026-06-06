@@ -80,6 +80,13 @@ public class GuiPersistentMapOptions extends GuiScreenMinimap {
         addMappedOption(EnumOptionsMinimap.WORLDMAP_CHUNK_LINE_THICKNESS, 7, 1);
         addMappedOption(EnumOptionsMinimap.CACHE_SIZE, 9, -1);
 
+        addSection("SeedMap Preview", 11, 13);
+        addMappedOption(EnumOptionsMinimap.WORLDMAP_SEEDMAP_CONTOURS, 11, 0);
+        addMappedOption(EnumOptionsMinimap.WORLDMAP_SEEDMAP_PALETTE, 11, 1);
+        addMappedOption(EnumOptionsMinimap.WORLDMAP_SEEDMAP_CONTOUR_STRENGTH, 12, 0);
+        addMappedOption(EnumOptionsMinimap.WORLDMAP_SEEDMAP_MIN_ZOOM, 12, 1);
+        addMappedOption(EnumOptionsMinimap.WORLDMAP_SEEDMAP_TERRAIN_MIN_ZOOM, 13, -1);
+
         this.addRenderableWidget(new Button.Builder(Component.translatable("gui.done"), buttonx -> this.onClose()).bounds(this.getWidth() / 2 - 100, this.getHeight() - 26, 200, 20).build());
 
         setButtonsActive();
@@ -108,6 +115,21 @@ public class GuiPersistentMapOptions extends GuiScreenMinimap {
                 case WORLDMAP_CHUNK_LINE_THICKNESS -> Mth.clamp(
                         (sValue - PersistentMapSettingsManager.MIN_CHUNK_LINE_THICKNESS)
                                 / (PersistentMapSettingsManager.MAX_CHUNK_LINE_THICKNESS - PersistentMapSettingsManager.MIN_CHUNK_LINE_THICKNESS),
+                        0.0F,
+                        1.0F);
+                case WORLDMAP_SEEDMAP_CONTOUR_STRENGTH -> Mth.clamp(
+                        (sValue - PersistentMapSettingsManager.MIN_SEEDMAP_CONTOUR_STRENGTH)
+                                / (PersistentMapSettingsManager.MAX_SEEDMAP_CONTOUR_STRENGTH - PersistentMapSettingsManager.MIN_SEEDMAP_CONTOUR_STRENGTH),
+                        0.0F,
+                        1.0F);
+                case WORLDMAP_SEEDMAP_MIN_ZOOM -> Mth.clamp(
+                        (sValue - PersistentMapSettingsManager.MIN_SEEDMAP_MIN_ZOOM)
+                                / (PersistentMapSettingsManager.MAX_SEEDMAP_MIN_ZOOM - PersistentMapSettingsManager.MIN_SEEDMAP_MIN_ZOOM),
+                        0.0F,
+                        1.0F);
+                case WORLDMAP_SEEDMAP_TERRAIN_MIN_ZOOM -> Mth.clamp(
+                        (sValue - PersistentMapSettingsManager.MIN_SEEDMAP_TERRAIN_MIN_ZOOM)
+                                / (PersistentMapSettingsManager.MAX_SEEDMAP_TERRAIN_MIN_ZOOM - PersistentMapSettingsManager.MIN_SEEDMAP_TERRAIN_MIN_ZOOM),
                         0.0F,
                         1.0F);
                 case CACHE_SIZE -> Mth.clamp(sValue / WORLDMAP_CACHE_MAX, 0.0F, 1.0F);
@@ -192,6 +214,12 @@ public class GuiPersistentMapOptions extends GuiScreenMinimap {
                 case SHOW_WAYPOINT_NAMES, SHOW_DISTANT_WAYPOINTS -> button.active = options.showWaypoints && mapOptions.waypointsAllowed;
             }
         }
+        for (GuiEventListener renderable : this.children()) {
+            if (renderable instanceof GuiOptionSliderMinimap slider
+                    && slider.returnEnumOptions() == EnumOptionsMinimap.WORLDMAP_SEEDMAP_CONTOUR_STRENGTH) {
+                slider.active = options.seedMapContours;
+            }
+        }
     }
 
     @Override
@@ -213,6 +241,21 @@ public class GuiPersistentMapOptions extends GuiScreenMinimap {
                     case WORLDMAP_CHUNK_LINE_THICKNESS -> Mth.clamp(
                             (sValue - PersistentMapSettingsManager.MIN_CHUNK_LINE_THICKNESS)
                                     / (PersistentMapSettingsManager.MAX_CHUNK_LINE_THICKNESS - PersistentMapSettingsManager.MIN_CHUNK_LINE_THICKNESS),
+                            0.0F,
+                            1.0F);
+                    case WORLDMAP_SEEDMAP_CONTOUR_STRENGTH -> Mth.clamp(
+                            (sValue - PersistentMapSettingsManager.MIN_SEEDMAP_CONTOUR_STRENGTH)
+                                    / (PersistentMapSettingsManager.MAX_SEEDMAP_CONTOUR_STRENGTH - PersistentMapSettingsManager.MIN_SEEDMAP_CONTOUR_STRENGTH),
+                            0.0F,
+                            1.0F);
+                    case WORLDMAP_SEEDMAP_MIN_ZOOM -> Mth.clamp(
+                            (sValue - PersistentMapSettingsManager.MIN_SEEDMAP_MIN_ZOOM)
+                                    / (PersistentMapSettingsManager.MAX_SEEDMAP_MIN_ZOOM - PersistentMapSettingsManager.MIN_SEEDMAP_MIN_ZOOM),
+                            0.0F,
+                            1.0F);
+                    case WORLDMAP_SEEDMAP_TERRAIN_MIN_ZOOM -> Mth.clamp(
+                            (sValue - PersistentMapSettingsManager.MIN_SEEDMAP_TERRAIN_MIN_ZOOM)
+                                    / (PersistentMapSettingsManager.MAX_SEEDMAP_TERRAIN_MIN_ZOOM - PersistentMapSettingsManager.MIN_SEEDMAP_TERRAIN_MIN_ZOOM),
                             0.0F,
                             1.0F);
                     case CACHE_SIZE -> Mth.clamp(sValue / WORLDMAP_CACHE_MAX, 0.0F, 1.0F);
