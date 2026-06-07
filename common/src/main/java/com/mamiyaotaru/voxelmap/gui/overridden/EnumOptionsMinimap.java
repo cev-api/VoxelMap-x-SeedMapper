@@ -87,11 +87,15 @@ public enum EnumOptionsMinimap {
     MAX_ZOOM("options.worldmap.maxZoom", Type.FLOAT),
     WORLDMAP_PERFORMANCE_MODE_THRESHOLD("options.worldmap.performanceModeThreshold", Type.FLOAT),
     WORLDMAP_CHUNK_LINE_THICKNESS("options.worldmap.chunkLineThickness", Type.FLOAT),
-    WORLDMAP_SEEDMAP_CONTOURS("options.worldmap.seedmapContours", Type.BOOLEAN),
-    WORLDMAP_SEEDMAP_PALETTE("options.worldmap.seedmapPalette", Type.LIST),
+    WORLDMAP_SEEDMAP_STYLE("options.worldmap.seedmapStyle", Type.LIST),
     WORLDMAP_SEEDMAP_CONTOUR_STRENGTH("options.worldmap.seedmapContourStrength", Type.FLOAT),
     WORLDMAP_SEEDMAP_MIN_ZOOM("options.worldmap.seedmapMinZoom", Type.FLOAT),
     WORLDMAP_SEEDMAP_TERRAIN_MIN_ZOOM("options.worldmap.seedmapTerrainMinZoom", Type.FLOAT),
+    WORLDMAP_SEEDMAP_PREVIEW_PADDING("options.worldmap.seedmapPreviewPadding", Type.FLOAT),
+    WORLDMAP_SEEDMAP_PREVIEW_RESOLUTION("options.worldmap.seedmapPreviewResolution", Type.FLOAT),
+    WORLDMAP_SEEDMAP_PREVIEW_CACHE("options.worldmap.seedmapPreviewCache", Type.FLOAT),
+    WORLDMAP_SEEDMAP_UPDATE_WHILE_MOVING("options.worldmap.seedmapUpdateWhileMoving", Type.BOOLEAN),
+    WORLDMAP_SEEDMAP_BIOME_UNDER_CURSOR("options.worldmap.seedmapBiomeUnderCursor", Type.BOOLEAN),
     CACHE_SIZE("options.worldmap.cacheSize", Type.FLOAT);
 
     public enum Type { NONE, BOOLEAN, LIST, FLOAT }
