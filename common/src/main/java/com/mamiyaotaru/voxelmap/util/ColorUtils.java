@@ -40,6 +40,9 @@ public final class ColorUtils {
         if (alpha == 0xFF) {
             return color;
         }
+        if (alpha == 0) {
+            return 0;
+        }
         byte r = (byte) ((color & 0xFF) * alpha / 255);
         byte g = (byte) ((color >> 8 & 0xFF) * alpha / 255);
         byte b = (byte) ((color >> 16 & 0xFF) * alpha / 255);
