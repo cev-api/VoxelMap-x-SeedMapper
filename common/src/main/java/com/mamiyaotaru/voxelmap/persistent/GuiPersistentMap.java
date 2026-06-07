@@ -267,6 +267,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 return t;
             });
     private final Map<Integer, Integer> seedPreviewBiomeColorCache = new HashMap<>();
+    private final Map<Integer, Boolean> seedPreviewOceanicCache = new HashMap<>();
     private long exploredLinesLastQueryMs = 0L;
     private long exploredLinesLastDataVersion = Long.MIN_VALUE;
     private ExploredLinesQueryCacheKey exploredLinesLastQueryKey;
@@ -2446,7 +2447,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                     int idx = rowOffset + x;
                     int color = resolveSeedPreviewColor(biomeIds[idx], requestKey.mcVersion());
                     if (effectiveHeights != null) {
-                        color = applySeedPreviewTerrainStyle(color, effectiveHeights, width, x, y);
+                        color = applySeedPreviewTerrainStyle(color, biomeIds[idx], effectiveHeights, width, x, y);
                     }
                     pixels[idx] = ColorUtils.premultiplyWithAlpha(color);
                 }
@@ -2535,14 +2536,14 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         }
     }
 
-    private int applySeedPreviewTerrainStyle(int color, int[] heights, int width, int x, int y) {
+    private int applySeedPreviewTerrainStyle(int color, int biomeId, int[] heights, int width, int x, int y) {
         int index = y * width + x;
         int h = heights[index];
         if (h == Integer.MIN_VALUE) {
             return color;
         }
 
-        color = applySeedPreviewPalette(color, h);
+        color = applySeedPreviewPalette(color, biomeId, h);
         int left = x > 0 ? heights[index - 1] : h;
         int up = y > 0 ? heights[index - width] : h;
         int shade = Mth.clamp((h - left) * 4 + (h - up) * 3, -36, 36);
@@ -2553,32 +2554,53 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         return styled;
     }
 
-    private int applySeedPreviewPalette(int biomeColor, int height) {
+    private int applySeedPreviewPalette(int biomeColor, int biomeId, int height) {
+        int base = isSeedBiomeOceanic(biomeId) ? waterPaletteColor(height) : landPaletteColor(height);
         return switch (this.options.seedMapStyle.palette()) {
             case BIOME -> biomeColor;
-            case HEIGHT -> heightPaletteColor(height);
-            case TOPOGRAPHIC -> blendSeedPreviewColor(heightPaletteColor(height), biomeColor, 0.35F);
+            case HEIGHT -> base;
+            case TOPOGRAPHIC -> blendSeedPreviewColor(base, biomeColor, 0.35F);
         };
     }
 
-    private int heightPaletteColor(int height) {
+    private int waterPaletteColor(int height) {
+        int deep = ARGB.toABGR(0x96000000 | 0x0A2342);
+        int shallow = ARGB.toABGR(0x96000000 | 0x3D86C6);
+        float t = Mth.clamp((height - 20) / 44.0F, 0.0F, 1.0F);
+        return blendSeedPreviewColor(deep, shallow, t);
+    }
+
+    private int landPaletteColor(int height) {
         int rgb;
-        if (height < 62) {
-            rgb = 0x0B3C78;
-        } else if (height < 72) {
-            rgb = 0xD8C890;
-        } else if (height < 96) {
-            rgb = 0x4E9A4D;
-        } else if (height < 128) {
-            rgb = 0x7EAD5A;
-        } else if (height < 160) {
+        if (height < 50) {
+            rgb = 0x9DBE74;
+        } else if (height < 70) {
+            rgb = 0x5DA34E;
+        } else if (height < 95) {
+            rgb = 0x4E8A45;
+        } else if (height < 125) {
             rgb = 0xA99268;
-        } else if (height < 200) {
+        } else if (height < 160) {
             rgb = 0x8E8E83;
         } else {
             rgb = 0xE8E8E8;
         }
         return ARGB.toABGR(0x96000000 | rgb);
+    }
+
+    private boolean isSeedBiomeOceanic(int biomeId) {
+        Boolean cached = this.seedPreviewOceanicCache.get(biomeId);
+        if (cached != null) {
+            return cached;
+        }
+        boolean oceanic;
+        try {
+            oceanic = Cubiomes.isOceanic(biomeId) != 0;
+        } catch (RuntimeException ex) {
+            oceanic = false;
+        }
+        this.seedPreviewOceanicCache.put(biomeId, oceanic);
+        return oceanic;
     }
 
     private boolean crossesSeedPreviewContour(int heightA, int heightB) {
