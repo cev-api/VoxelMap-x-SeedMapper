@@ -108,8 +108,6 @@ public class Map implements Runnable, IChangeObserver {
     private long seedMapperLastMinimapQueryMs = 0L;
     private SeedMapperMinimapQueryKey seedMapperLastMinimapQueryKey;
     private List<SeedMapperMarker> seedMapperLastMinimapMarkers = List.of();
-    private boolean seedMapperMinimapQueryLoading = false;
-    private long seedMapperMinimapLoadingStickyUntilMs = 0L;
 
     // Map UI
     private static final float MAP_IMAGE_DEPTH = 0.0F;
@@ -901,8 +899,6 @@ public class Map implements Runnable, IChangeObserver {
         });
 
         VoxelMapGuiGraphics.blitFloat(graphics, RenderPipelines.GUI_TEXTURED, hudRenderTarget.colorTextureId, 0.0F, 0.0F, RenderUtils.getGuiWidth(), RenderUtils.getGuiHeight(), 0.0F, 1.0F, 0.0F, 1.0F, 0xFFFFFFFF);
-
-        this.drawSeedMapperMinimapLoadingStatus(graphics);
     }
 
     private float stabilizeMinimapScaleProjection(float rawScaleProj) {
@@ -1999,27 +1995,13 @@ public class Map implements Runnable, IChangeObserver {
         }
     }
 
-    private void drawSeedMapperMinimapLoadingStatus(GuiGraphicsExtractor graphics) {
-        if (!seedMapperMinimapQueryLoading) {
-            return;
-        }
-        long now = System.currentTimeMillis();
-        if (now >= seedMapperMinimapLoadingStickyUntilMs) {
-            seedMapperMinimapQueryLoading = false;
-            return;
-        }
-        graphics.text(minecraft.font, "Loading SeedMap...", 2, (int) RenderUtils.getGuiHeight() - 14, 0xFFE0E0E0);
-    }
-
     private void drawSeedMapperMinimapMarkers(Matrix4fStack matrixStack, int x, int y, double baseX, double baseZ) {
         if (!seedMapperOptions.enabled) {
-            seedMapperMinimapQueryLoading = false;
             return;
         }
 
         int dimension = getCurrentCubiomesDimension();
         if (dimension == Integer.MIN_VALUE) {
-            seedMapperMinimapQueryLoading = false;
             return;
         }
 
@@ -2035,7 +2017,7 @@ public class Map implements Runnable, IChangeObserver {
         int visibleQueryRadius = Math.max(256, (int) Math.ceil(40.0D * zoomScaleAdjusted)) + 64;
         int distantRange = seedMapperOptions.showDistant ? Math.max(128, seedMapperOptions.minimapDistantMarkerRange) : 0;
         int queryRadius = Math.max(visibleQueryRadius, distantRange + 64);
-        int keySnap = Math.max(64, queryRadius / 4);
+        int keySnap = Math.max(128, queryRadius / 3);
         int queryCenterX = Math.floorDiv(centerX, keySnap) * keySnap;
         int queryCenterZ = Math.floorDiv(centerZ, keySnap) * keySnap;
         int generatorFlags = 0;
@@ -2060,14 +2042,6 @@ public class Map implements Runnable, IChangeObserver {
                     seedMapperOptions,
                     datapackWorldKey
             );
-            if (!result.exact()) {
-                seedMapperMinimapQueryLoading = true;
-                seedMapperMinimapLoadingStickyUntilMs = now + 1200L;
-            } else {
-                if (now >= seedMapperMinimapLoadingStickyUntilMs) {
-                    seedMapperMinimapQueryLoading = false;
-                }
-            }
             if (result.exact() || seedMapperLastMinimapMarkers.isEmpty()) {
                 seedMapperLastMinimapMarkers = result.markers();
                 seedMapperLastMinimapQueryKey = key;

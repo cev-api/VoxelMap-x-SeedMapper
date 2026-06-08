@@ -50,6 +50,65 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
         }
     }
 
+    public enum SeedMapStyle {
+        FLAT("Flat", SeedMapPalette.BIOME, false, false),
+        TOPOGRAPHIC("Topographic", SeedMapPalette.TOPOGRAPHIC, false, true),
+        TOPOGRAPHIC_LINES("Topographic + Lines", SeedMapPalette.TOPOGRAPHIC, true, true),
+        HEIGHT("Height", SeedMapPalette.HEIGHT, false, true);
+
+        private final String displayName;
+        private final SeedMapPalette palette;
+        private final boolean contours;
+        private final boolean needsTerrain;
+
+        SeedMapStyle(String displayName, SeedMapPalette palette, boolean contours, boolean needsTerrain) {
+            this.displayName = displayName;
+            this.palette = palette;
+            this.contours = contours;
+            this.needsTerrain = needsTerrain;
+        }
+
+        public String displayName() {
+            return displayName;
+        }
+
+        public SeedMapPalette palette() {
+            return palette;
+        }
+
+        public boolean drawsContours() {
+            return contours;
+        }
+
+        public boolean needsTerrain() {
+            return needsTerrain;
+        }
+
+        public SeedMapStyle next() {
+            SeedMapStyle[] values = values();
+            return values[(ordinal() + 1) % values.length];
+        }
+
+        public static SeedMapStyle fromString(String value) {
+            if (value == null || value.isBlank()) {
+                return FLAT;
+            }
+            try {
+                return valueOf(value.trim().toUpperCase(Locale.ROOT));
+            } catch (IllegalArgumentException ignored) {
+                return FLAT;
+            }
+        }
+
+        public static SeedMapStyle fromLegacy(SeedMapPalette palette, boolean contours) {
+            return switch (palette) {
+                case TOPOGRAPHIC -> contours ? TOPOGRAPHIC_LINES : TOPOGRAPHIC;
+                case HEIGHT -> HEIGHT;
+                case BIOME -> FLAT;
+            };
+        }
+    }
+
     public enum WorldMapDimensionView {
         CURRENT("worldmap.realm.current"),
         OVERWORLD("worldmap.realm.overworld"),
@@ -142,6 +201,12 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
     public static final float MAX_SEEDMAP_MIN_ZOOM = 0.30F;
     public static final float MIN_SEEDMAP_TERRAIN_MIN_ZOOM = 0.001953125F;
     public static final float MAX_SEEDMAP_TERRAIN_MIN_ZOOM = 0.30F;
+    public static final float MIN_SEEDMAP_PREVIEW_PADDING = 256.0F;
+    public static final float MAX_SEEDMAP_PREVIEW_PADDING = 4096.0F;
+    public static final float MIN_SEEDMAP_PREVIEW_RESOLUTION = 256.0F;
+    public static final float MAX_SEEDMAP_PREVIEW_RESOLUTION = 2048.0F;
+    public static final float MIN_SEEDMAP_PREVIEW_CACHE = 1.0F;
+    public static final float MAX_SEEDMAP_PREVIEW_CACHE = 16.0F;
     protected int mapX;
     protected int mapZ;
     protected float zoom = 8.0F;
@@ -161,17 +226,25 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
     public boolean showWaypointNames = true;
     public boolean showDistantWaypoints = true;
     public boolean showNewOldChunks = false;
-    public boolean seedMapContours = true;
-    public SeedMapPalette seedMapPalette = SeedMapPalette.BIOME;
+    public SeedMapStyle seedMapStyle = SeedMapStyle.FLAT;
     private float seedMapContourStrength = 0.55F;
     private float seedMapMinZoom = MIN_SEEDMAP_MIN_ZOOM;
     private float seedMapTerrainMinZoom = MIN_SEEDMAP_TERRAIN_MIN_ZOOM;
+    private float seedMapPreviewPadding = 512.0F;
+    private float seedMapPreviewResolution = 1024.0F;
+    private float seedMapPreviewCacheSize = 8.0F;
+    public boolean seedMapPreviewUpdateWhileMoving = true;
+    public boolean seedMapShowBiomeUnderCursor = false;
     public WorldMapDimensionView worldMapDimensionView = WorldMapDimensionView.CURRENT;
 
     @Override
     public void loadAll(File settingsFile) {
         try {
             BufferedReader in = new BufferedReader(new FileReader(settingsFile));
+
+            boolean styleKeySeen = false;
+            SeedMapPalette legacyPalette = SeedMapPalette.BIOME;
+            boolean legacyContours = false;
 
             String sCurrentLine;
             while ((sCurrentLine = in.readLine()) != null) {
@@ -183,11 +256,20 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
                     case "Worldmap Cache Size" -> cacheSize = Integer.parseInt(curLine[1]);
                     case "Worldmap Performance Mode Threshold" -> performanceModeThreshold = Float.parseFloat(curLine[1]);
                     case "Worldmap Chunk Line Thickness" -> chunkLineThickness = Float.parseFloat(curLine[1]);
-                    case "Worldmap SeedMap Contours" -> seedMapContours = Boolean.parseBoolean(curLine[1]);
-                    case "Worldmap SeedMap Palette" -> seedMapPalette = SeedMapPalette.fromString(curLine[1]);
+                    case "Worldmap SeedMap Style" -> {
+                        seedMapStyle = SeedMapStyle.fromString(curLine[1]);
+                        styleKeySeen = true;
+                    }
+                    case "Worldmap SeedMap Contours" -> legacyContours = Boolean.parseBoolean(curLine[1]);
+                    case "Worldmap SeedMap Palette" -> legacyPalette = SeedMapPalette.fromString(curLine[1]);
                     case "Worldmap SeedMap Contour Strength" -> seedMapContourStrength = Float.parseFloat(curLine[1]);
                     case "Worldmap SeedMap Minimum Zoom" -> seedMapMinZoom = Float.parseFloat(curLine[1]);
                     case "Worldmap SeedMap Terrain Minimum Zoom" -> seedMapTerrainMinZoom = Float.parseFloat(curLine[1]);
+                    case "Worldmap SeedMap Preview Padding" -> seedMapPreviewPadding = Float.parseFloat(curLine[1]);
+                    case "Worldmap SeedMap Preview Resolution" -> seedMapPreviewResolution = Float.parseFloat(curLine[1]);
+                    case "Worldmap SeedMap Preview Cache Size" -> seedMapPreviewCacheSize = Float.parseFloat(curLine[1]);
+                    case "Worldmap SeedMap Preview Update While Moving" -> seedMapPreviewUpdateWhileMoving = Boolean.parseBoolean(curLine[1]);
+                    case "Worldmap SeedMap Biome Under Cursor" -> seedMapShowBiomeUnderCursor = Boolean.parseBoolean(curLine[1]);
                     case "Worldmap Show Waypoints In Performance Mode" -> showWaypointsInPerformanceMode = Boolean.parseBoolean(curLine[1]);
                     case "Worldmap Literal Line Mode" -> literalLineMode = Boolean.parseBoolean(curLine[1]);
                     case "Worldmap Show New Old Chunks" -> showNewOldChunks = Boolean.parseBoolean(curLine[1]);
@@ -202,6 +284,10 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
             }
 
             in.close();
+
+            if (!styleKeySeen) {
+                seedMapStyle = SeedMapStyle.fromLegacy(legacyPalette, legacyContours);
+            }
         } catch (IOException ignored) {}
 
         for (int power = MIN_WORLDMAP_ZOOM_POWER; power <= MAX_WORLDMAP_ZOOM_POWER; ++power) {
@@ -233,6 +319,9 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
         bindSeedMapContourStrength();
         bindSeedMapMinZoom();
         bindSeedMapTerrainMinZoom();
+        bindSeedMapPreviewPadding();
+        bindSeedMapPreviewResolution();
+        bindSeedMapPreviewCacheSize();
     }
 
     @Override
@@ -243,11 +332,15 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
         out.println("Worldmap Cache Size:" + cacheSize);
         out.println("Worldmap Performance Mode Threshold:" + performanceModeThreshold);
         out.println("Worldmap Chunk Line Thickness:" + chunkLineThickness);
-        out.println("Worldmap SeedMap Contours:" + seedMapContours);
-        out.println("Worldmap SeedMap Palette:" + seedMapPalette.name());
+        out.println("Worldmap SeedMap Style:" + seedMapStyle.name());
         out.println("Worldmap SeedMap Contour Strength:" + seedMapContourStrength);
         out.println("Worldmap SeedMap Minimum Zoom:" + seedMapMinZoom);
         out.println("Worldmap SeedMap Terrain Minimum Zoom:" + seedMapTerrainMinZoom);
+        out.println("Worldmap SeedMap Preview Padding:" + seedMapPreviewPadding);
+        out.println("Worldmap SeedMap Preview Resolution:" + seedMapPreviewResolution);
+        out.println("Worldmap SeedMap Preview Cache Size:" + seedMapPreviewCacheSize);
+        out.println("Worldmap SeedMap Preview Update While Moving:" + seedMapPreviewUpdateWhileMoving);
+        out.println("Worldmap SeedMap Biome Under Cursor:" + seedMapShowBiomeUnderCursor);
         out.println("Worldmap Show Waypoints In Performance Mode:" + showWaypointsInPerformanceMode);
         out.println("Worldmap Literal Line Mode:" + literalLineMode);
         out.println("Worldmap Show New Old Chunks:" + showNewOldChunks);
@@ -282,6 +375,9 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
                     case WORLDMAP_SEEDMAP_CONTOUR_STRENGTH -> s + String.format(Locale.ROOT, "%.0f%%", value * 100.0F);
                     case WORLDMAP_SEEDMAP_MIN_ZOOM -> s + String.format(Locale.ROOT, "%.4fx", value);
                     case WORLDMAP_SEEDMAP_TERRAIN_MIN_ZOOM -> s + String.format(Locale.ROOT, "%.4fx", value);
+                    case WORLDMAP_SEEDMAP_PREVIEW_PADDING -> s + String.format(Locale.ROOT, "%.0f blocks", value);
+                    case WORLDMAP_SEEDMAP_PREVIEW_RESOLUTION -> s + String.format(Locale.ROOT, "%.0f px", value);
+                    case WORLDMAP_SEEDMAP_PREVIEW_CACHE -> s + String.format(Locale.ROOT, "%.0f", value);
 
                     default -> s + (value <= 0.0F ? I18n.get("options.off") : (int) value + "%");
                 };
@@ -302,7 +398,8 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
             case WORLDMAP_SHOW_WAYPOINTS_IN_PERFORMANCE_MODE -> showWaypointsInPerformanceMode;
             case WORLDMAP_LITERAL_LINE_MODE -> literalLineMode;
             case WORLDMAP_SHOW_NEW_OLD_CHUNKS -> showNewOldChunks;
-            case WORLDMAP_SEEDMAP_CONTOURS -> seedMapContours;
+            case WORLDMAP_SEEDMAP_UPDATE_WHILE_MOVING -> seedMapPreviewUpdateWhileMoving;
+            case WORLDMAP_SEEDMAP_BIOME_UNDER_CURSOR -> seedMapShowBiomeUnderCursor;
 
             default -> throw new IllegalArgumentException("Invalid boolean value! Add code to handle EnumOptionMinimap: " + option.getName());
         };
@@ -319,7 +416,8 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
             case WORLDMAP_SHOW_WAYPOINTS_IN_PERFORMANCE_MODE -> showWaypointsInPerformanceMode = !showWaypointsInPerformanceMode;
             case WORLDMAP_LITERAL_LINE_MODE -> literalLineMode = !literalLineMode;
             case WORLDMAP_SHOW_NEW_OLD_CHUNKS -> showNewOldChunks = !showNewOldChunks;
-            case WORLDMAP_SEEDMAP_CONTOURS -> seedMapContours = !seedMapContours;
+            case WORLDMAP_SEEDMAP_UPDATE_WHILE_MOVING -> seedMapPreviewUpdateWhileMoving = !seedMapPreviewUpdateWhileMoving;
+            case WORLDMAP_SEEDMAP_BIOME_UNDER_CURSOR -> seedMapShowBiomeUnderCursor = !seedMapShowBiomeUnderCursor;
 
             default -> throw new IllegalArgumentException("Invalid boolean value! Add code to handle EnumOptionMinimap: " + option.getName());
         }
@@ -328,7 +426,7 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
     @Override
     public String getListValue(EnumOptionsMinimap option) {
         return switch (option) {
-            case WORLDMAP_SEEDMAP_PALETTE -> seedMapPalette.displayName();
+            case WORLDMAP_SEEDMAP_STYLE -> seedMapStyle.displayName();
 
             default -> throw new IllegalArgumentException("Invalid list value! Add code to handle EnumOptionMinimap: " + option.getName());
         };
@@ -337,7 +435,7 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
     @Override
     public void cycleListValue(EnumOptionsMinimap option) {
         switch (option) {
-            case WORLDMAP_SEEDMAP_PALETTE -> seedMapPalette = seedMapPalette.next();
+            case WORLDMAP_SEEDMAP_STYLE -> seedMapStyle = seedMapStyle.next();
 
             default -> throw new IllegalArgumentException("Invalid list value! Add code to handle EnumOptionMinimap: " + option.getName());
         }
@@ -354,6 +452,9 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
             case WORLDMAP_SEEDMAP_CONTOUR_STRENGTH -> seedMapContourStrength;
             case WORLDMAP_SEEDMAP_MIN_ZOOM -> seedMapMinZoom;
             case WORLDMAP_SEEDMAP_TERRAIN_MIN_ZOOM -> seedMapTerrainMinZoom;
+            case WORLDMAP_SEEDMAP_PREVIEW_PADDING -> seedMapPreviewPadding;
+            case WORLDMAP_SEEDMAP_PREVIEW_RESOLUTION -> seedMapPreviewResolution;
+            case WORLDMAP_SEEDMAP_PREVIEW_CACHE -> seedMapPreviewCacheSize;
 
             default -> throw new IllegalArgumentException("Invalid float value! Add code to handle EnumOptionMinimap: " + option.getName());
         };
@@ -402,6 +503,18 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
                     Mth.clamp(MIN_SEEDMAP_TERRAIN_MIN_ZOOM + value * (MAX_SEEDMAP_TERRAIN_MIN_ZOOM - MIN_SEEDMAP_TERRAIN_MIN_ZOOM),
                             MIN_SEEDMAP_TERRAIN_MIN_ZOOM,
                             MAX_SEEDMAP_TERRAIN_MIN_ZOOM);
+            case WORLDMAP_SEEDMAP_PREVIEW_PADDING -> seedMapPreviewPadding =
+                    Mth.clamp(MIN_SEEDMAP_PREVIEW_PADDING + value * (MAX_SEEDMAP_PREVIEW_PADDING - MIN_SEEDMAP_PREVIEW_PADDING),
+                            MIN_SEEDMAP_PREVIEW_PADDING,
+                            MAX_SEEDMAP_PREVIEW_PADDING);
+            case WORLDMAP_SEEDMAP_PREVIEW_RESOLUTION -> seedMapPreviewResolution =
+                    Mth.clamp(MIN_SEEDMAP_PREVIEW_RESOLUTION + value * (MAX_SEEDMAP_PREVIEW_RESOLUTION - MIN_SEEDMAP_PREVIEW_RESOLUTION),
+                            MIN_SEEDMAP_PREVIEW_RESOLUTION,
+                            MAX_SEEDMAP_PREVIEW_RESOLUTION);
+            case WORLDMAP_SEEDMAP_PREVIEW_CACHE -> seedMapPreviewCacheSize =
+                    Mth.clamp(MIN_SEEDMAP_PREVIEW_CACHE + value * (MAX_SEEDMAP_PREVIEW_CACHE - MIN_SEEDMAP_PREVIEW_CACHE),
+                            MIN_SEEDMAP_PREVIEW_CACHE,
+                            MAX_SEEDMAP_PREVIEW_CACHE);
 
             default -> throw new IllegalArgumentException("Invalid float value! Add code to handle EnumOptionMinimap: " + option.getName());
         }
@@ -413,6 +526,9 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
         bindSeedMapContourStrength();
         bindSeedMapMinZoom();
         bindSeedMapTerrainMinZoom();
+        bindSeedMapPreviewPadding();
+        bindSeedMapPreviewResolution();
+        bindSeedMapPreviewCacheSize();
     }
 
     private int calculateMinCacheSize() {
@@ -453,6 +569,18 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
         seedMapTerrainMinZoom = Mth.clamp(seedMapTerrainMinZoom, MIN_SEEDMAP_TERRAIN_MIN_ZOOM, MAX_SEEDMAP_TERRAIN_MIN_ZOOM);
     }
 
+    private void bindSeedMapPreviewPadding() {
+        seedMapPreviewPadding = Mth.clamp(seedMapPreviewPadding, MIN_SEEDMAP_PREVIEW_PADDING, MAX_SEEDMAP_PREVIEW_PADDING);
+    }
+
+    private void bindSeedMapPreviewResolution() {
+        seedMapPreviewResolution = Mth.clamp(seedMapPreviewResolution, MIN_SEEDMAP_PREVIEW_RESOLUTION, MAX_SEEDMAP_PREVIEW_RESOLUTION);
+    }
+
+    private void bindSeedMapPreviewCacheSize() {
+        seedMapPreviewCacheSize = Mth.clamp(seedMapPreviewCacheSize, MIN_SEEDMAP_PREVIEW_CACHE, MAX_SEEDMAP_PREVIEW_CACHE);
+    }
+
     public float getPerformanceModeThreshold() {
         return performanceModeThreshold;
     }
@@ -481,9 +609,20 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
         return seedMapTerrainMinZoom;
     }
 
+    public int getSeedMapPreviewPadding() {
+        return Math.round(seedMapPreviewPadding);
+    }
+
+    public int getSeedMapPreviewResolution() {
+        return Math.round(seedMapPreviewResolution);
+    }
+
+    public int getSeedMapPreviewCacheSize() {
+        return Math.max(1, Math.round(seedMapPreviewCacheSize));
+    }
+
     public int getSeedMapPreviewSettingsHash() {
-        int hash = Boolean.hashCode(seedMapContours);
-        hash = 31 * hash + seedMapPalette.ordinal();
+        int hash = seedMapStyle.ordinal();
         hash = 31 * hash + Float.floatToIntBits(seedMapContourStrength);
         hash = 31 * hash + Float.floatToIntBits(seedMapMinZoom);
         hash = 31 * hash + Float.floatToIntBits(seedMapTerrainMinZoom);
