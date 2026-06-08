@@ -45,7 +45,11 @@ public class CompressibleMapRegionTexture extends AbstractTexture {
             this.pixels = new NativeImage(CachedRegion.REGION_WIDTH, CachedRegion.REGION_WIDTH, false);
         } catch (IllegalStateException | OutOfMemoryError e) {
             this.pixels = null;
-            VoxelConstants.getLogger().warn("VoxelMap: Failed to allocate map region texture; will retry later.");
+            long now = System.currentTimeMillis();
+            if (now - this.lastAllocationWarnMs > 5000L) {
+                this.lastAllocationWarnMs = now;
+                VoxelConstants.getLogger().warn("VoxelMap: Failed to allocate map region texture; will retry later.");
+            }
         }
         if (this.pixels != null) {
             clearImage(this.pixels);

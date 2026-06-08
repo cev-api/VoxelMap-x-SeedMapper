@@ -786,10 +786,11 @@ public class NewerNewChunksManager {
     }
 
     public NewOldCellsSnapshot getNewOldCellsInRange(int cx, int cz, int radius, int cellChunkSize) {
-        if (!ensureTrackingWorld()) {
-            return NewOldCellsSnapshot.EMPTY;
-        }
-        var s = stores;
+        return getNewOldCellsInRange(cx, cz, radius, cellChunkSize, null);
+    }
+
+    public NewOldCellsSnapshot getNewOldCellsInRange(int cx, int cz, int radius, int cellChunkSize, Identifier viewedDimension) {
+        EnumMap<OverlayType, CategoryStore> s = resolveStores(viewedDimension);
         if (s == null) {
             return NewOldCellsSnapshot.EMPTY;
         }
@@ -797,6 +798,19 @@ public class NewerNewChunksManager {
     }
 
     public NewOldCellsSnapshot getPlayerNewOldCellsInRange(String slug, int cx, int cz, int radius, int cellChunkSize) {
+        return getPlayerNewOldCellsInRange(slug, cx, cz, radius, cellChunkSize, null);
+    }
+
+    public NewOldCellsSnapshot getPlayerNewOldCellsInRange(String slug, int cx, int cz, int radius, int cellChunkSize, Identifier viewedDimension) {
+        if (viewedDimension != null && !getWorldKeyForDimension(viewedDimension).equals(loadedWorldKey)) {
+            // Different dimension — create a temporary store from disk
+            String worldKey = getWorldKeyForDimension(viewedDimension);
+            EnumMap<OverlayType, CategoryStore> layer = buildPlayerStoresIfNeeded(worldKey, slug);
+            if (layer == null) {
+                return NewOldCellsSnapshot.EMPTY;
+            }
+            return snapshotFrom(layer, cx, cz, radius, cellChunkSize);
+        }
         ensureTrackingWorld();
         EnumMap<OverlayType, CategoryStore> layer = newOldPlayerLayers.get(slug);
         if (layer == null) {
@@ -878,8 +892,13 @@ public class NewerNewChunksManager {
         for (int ccx = minCX; ccx <= maxCX; ccx++) {
             for (int ccz = minCZ; ccz <= maxCZ; ccz++) {
                 if (!cs.store().isContainerLoaded(level, ccx, ccz)) {
-                    missing = true;
-                    cs.loader().requestLoad(level, ccx, ccz);
+                    if (cs.loader() != null) {
+                        missing = true;
+                        cs.loader().requestLoad(level, ccx, ccz);
+                    } else {
+                        // Synchronous load for temporary/alternate-dimension stores
+                        cs.store().loadContainer(level, ccx, ccz);
+                    }
                 }
             }
         }
@@ -893,13 +912,23 @@ public class NewerNewChunksManager {
     // -------------------------------------------------------------------------
 
     public long getDataVersion() {
-        ensureTrackingWorld();
+        return getDataVersion(null);
+    }
+
+    public long getDataVersion(Identifier viewedDimension) {
+        EnumMap<OverlayType, CategoryStore> s = resolveStores(viewedDimension);
+        if (s == null) {
+            return 0L;
+        }
         return dataVersion;
     }
 
     public String getLoadedWorldKey() {
-        ensureTrackingWorld();
-        return loadedWorldKey;
+        return getLoadedWorldKey(null);
+    }
+
+    public String getLoadedWorldKey(Identifier viewedDimension) {
+        return viewedDimension != null ? getWorldKeyForDimension(viewedDimension) : loadedWorldKey;
     }
 
     // Debug getters
@@ -1358,6 +1387,57 @@ public class NewerNewChunksManager {
     // -------------------------------------------------------------------------
     // World key helpers
     // -------------------------------------------------------------------------
+
+    private String getWorldKeyForDimension(Identifier dimensionId) {
+        String dimension = dimensionId.toString().replace(':', '_');
+        Minecraft minecraft = Minecraft.getInstance();
+        ServerData serverData = minecraft.getCurrentServer();
+        String server = serverData != null && serverData.ip != null && !serverData.ip.isBlank()
+                ? serverData.ip.replace(':', '_')
+                : minecraft.hasSingleplayerServer() ? "singleplayer" : "unknown";
+        return server + "_" + dimension;
+    }
+
+    private EnumMap<OverlayType, CategoryStore> resolveStores(Identifier viewedDimension) {
+        if (viewedDimension == null) {
+            if (!ensureTrackingWorld()) {
+                return null;
+            }
+            return stores;
+        }
+        String viewedKey = getWorldKeyForDimension(viewedDimension);
+        if (viewedKey.equals(loadedWorldKey)) {
+            if (!ensureTrackingWorld()) {
+                return null;
+            }
+            return stores;
+        }
+        // Different dimension — create temporary read-only stores from disk (no async loaders)
+        return buildStoresNoLoaders(viewedKey);
+    }
+
+    private EnumMap<OverlayType, CategoryStore> buildPlayerStoresIfNeeded(String worldKey, String slug) {
+        Path slugDir = nncBaseDir(worldKey).resolve("players").resolve(slug);
+        if (!java.nio.file.Files.isDirectory(slugDir)) {
+            return null;
+        }
+        // Temporary read-only stores (no async loaders)
+        EnumMap<OverlayType, CategoryStore> map = new EnumMap<>(OverlayType.class);
+        for (OverlayType type : OverlayType.values()) {
+            var store = new com.mamiyaotaru.voxelmap.persistent.explored.ExploredDiskStore(playerV3Dir(worldKey, slug, type));
+            map.put(type, new CategoryStore(store, null));
+        }
+        return map;
+    }
+
+    private EnumMap<OverlayType, CategoryStore> buildStoresNoLoaders(String worldKey) {
+        EnumMap<OverlayType, CategoryStore> map = new EnumMap<>(OverlayType.class);
+        for (OverlayType type : OverlayType.values()) {
+            var store = new com.mamiyaotaru.voxelmap.persistent.explored.ExploredDiskStore(v3DirFor(worldKey, type));
+            map.put(type, new CategoryStore(store, null));
+        }
+        return map;
+    }
 
     private String getWorldKey() {
         Level level = GameVariableAccessShim.getWorld();

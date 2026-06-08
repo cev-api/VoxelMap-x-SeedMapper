@@ -470,6 +470,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         this.options.worldMapDimensionView = this.options.worldMapDimensionView.next(currentLevel);
         recenterForViewedDimension();
         clearSeedMapperLoadingState();
+        clearExploredLineCaches();
         synchronized (this.seedPreviewLock) {
             if (this.seedPreviewFuture != null) {
                 this.seedPreviewFuture.cancel(false);
@@ -1426,7 +1427,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         int queryMaxChunkX = Math.floorDiv(maxChunkX + querySnap - 1, querySnap) * querySnap;
         int queryMinChunkZ = Math.floorDiv(minChunkZ, querySnap) * querySnap;
         int queryMaxChunkZ = Math.floorDiv(maxChunkZ + querySnap - 1, querySnap) * querySnap;
-        ExploredLinesQueryCacheKey queryKey = new ExploredLinesQueryCacheKey(queryMinChunkX, queryMaxChunkX, queryMinChunkZ, queryMaxChunkZ, querySnap);
+        ExploredLinesQueryCacheKey queryKey = new ExploredLinesQueryCacheKey(queryMinChunkX, queryMaxChunkX, queryMinChunkZ, queryMaxChunkZ, querySnap, getViewedDimensionIdentifier());
         long now = System.currentTimeMillis();
         long minIntervalMs;
         if (literalLineMode) {
@@ -1464,7 +1465,8 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         }
 
         com.mamiyaotaru.voxelmap.ExploredChunksManager exploredChunksManager = VoxelConstants.getVoxelMapInstance().getExploredChunksManager();
-        long exploredDataVersion = exploredChunksManager.getDataVersion();
+        Identifier viewedDimension = getViewedDimensionIdentifier();
+        long exploredDataVersion = exploredChunksManager.getDataVersion(viewedDimension);
         boolean queryKeyChanged = exploredLinesLastQueryKey == null || !exploredLinesLastQueryKey.equals(queryKey);
         boolean queryIntervalElapsed = now - exploredLinesLastQueryMs >= minIntervalMs;
         boolean dataChanged = exploredLinesLastDataVersion != exploredDataVersion;
@@ -1474,7 +1476,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             if (!renderCacheKey.equals(exploredLineRenderCacheKey) || dataChanged) {
                 CellGrid previousCells = exploredLinesLastCellResult;
                 ExploredLineMesher.Result previousMesh = exploredLineMesh;
-                CellGrid queriedCells = exploredChunksManager.getExploredCellsInRange(centerChunkX, centerChunkZ, radius, cellChunkSize);
+                CellGrid queriedCells = exploredChunksManager.getExploredCellsInRange(centerChunkX, centerChunkZ, radius, cellChunkSize, viewedDimension);
                 if (exploredChunksManager.consumeStorageLoadIncomplete()) {
                     exploredLinesLastCellResult = previousCells;
                     exploredLineMesh = previousMesh;
@@ -1510,13 +1512,13 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                     }
                 }
             }
-            renderPlayerExploredLayers(graphics, exploredChunksManager, centerChunkX, centerChunkZ, radius, cellChunkSize, lineThickness, color);
+            renderPlayerExploredLayers(graphics, exploredChunksManager, centerChunkX, centerChunkZ, radius, cellChunkSize, lineThickness, color, viewedDimension);
             flushExploredQuads(graphics);
             return;
         }
 
         if (refreshChunks) {
-            exploredLinesLastResult = new ArrayList<>(exploredChunksManager.getExploredChunksInRange(centerChunkX, centerChunkZ, radius));
+            exploredLinesLastResult = new ArrayList<>(exploredChunksManager.getExploredChunksInRange(centerChunkX, centerChunkZ, radius, viewedDimension));
             exploredLinesLastQueryKey = queryKey;
             exploredLinesLastQueryMs = now;
             exploredLinesLastDataVersion = exploredDataVersion;
@@ -1552,7 +1554,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             drawn++;
         }
 
-        renderPlayerExploredLayers(graphics, exploredChunksManager, centerChunkX, centerChunkZ, radius, cellChunkSize, lineThickness, color);
+        renderPlayerExploredLayers(graphics, exploredChunksManager, centerChunkX, centerChunkZ, radius, cellChunkSize, lineThickness, color, viewedDimension);
         flushExploredQuads(graphics);
     }
 
@@ -1601,15 +1603,16 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         int queryMaxChunkZ = Math.floorDiv(maxChunkZ + querySnap, querySnap) * querySnap - 1;
 
         NewerNewChunksManager manager = VoxelConstants.getVoxelMapInstance().getNewerNewChunksManager();
+        Identifier viewedDimensionOverlay = getViewedDimensionIdentifier();
         NewOldChunkOverlayRenderCacheKey cacheKey = new NewOldChunkOverlayRenderCacheKey(
                 queryMinChunkX, queryMaxChunkX, queryMinChunkZ, queryMaxChunkZ,
                 zoomBucket, cellChunkSize, oldColor, newColor, farZoomPerformanceMode, movingLod,
-                maxDraw, manager.getDataVersion(), manager.getLoadedWorldKey());
+                maxDraw, manager.getDataVersion(viewedDimensionOverlay), manager.getLoadedWorldKey(viewedDimensionOverlay));
         if (!cacheKey.equals(newOldChunkOverlayRenderCacheKey)) {
             List<NewOldChunkRenderRect> previousOldRects = newOldChunkOldRects;
             List<NewOldChunkRenderRect> previousNewRects = newOldChunkNewRects;
-            rebuildNewOldChunkOverlayRenderCache(manager, cacheKey);
-            long rebuiltDataVersion = manager.getDataVersion();
+            rebuildNewOldChunkOverlayRenderCache(manager, cacheKey, viewedDimensionOverlay);
+            long rebuiltDataVersion = manager.getDataVersion(viewedDimensionOverlay);
             if (manager.consumeStorageLoadIncomplete()) {
                 newOldChunkOverlayRenderCacheKey = null;
                 newOldChunkOldRects = previousOldRects;
@@ -1653,14 +1656,14 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         }
 
         renderPlayerNewOldOverlays(graphics, manager, queryMinChunkX, queryMaxChunkX, queryMinChunkZ, queryMaxChunkZ,
-                cellChunkSize, oldColor, newColor, maxDraw);
+                cellChunkSize, oldColor, newColor, maxDraw, viewedDimensionOverlay);
 
         maybeLogNewOldChunkOverlayDebug(manager);
     }
 
     private void renderPlayerNewOldOverlays(GuiGraphicsExtractor graphics, NewerNewChunksManager manager,
             int queryMinChunkX, int queryMaxChunkX, int queryMinChunkZ, int queryMaxChunkZ,
-            int cellChunkSize, int oldColor, int newColor, int maxDraw) {
+            int cellChunkSize, int oldColor, int newColor, int maxDraw, Identifier viewedDimension) {
         java.util.Set<String> slugs = manager.playerLayerSlugs();
         if (slugs.isEmpty()) {
             return;
@@ -1676,7 +1679,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 continue;
             }
             NewerNewChunksManager.NewOldCellsSnapshot snap =
-                    manager.getPlayerNewOldCellsInRange(slug, centerChunkX, centerChunkZ, radius, effectiveCell);
+                    manager.getPlayerNewOldCellsInRange(slug, centerChunkX, centerChunkZ, radius, effectiveCell, viewedDimension);
             // greedyMesh consumes the grid; the snapshot grids are freshly built per call so that's fine.
             rects.addAll(greedyMeshNewOldChunkCells(snap.oldCells(), effectiveCell,
                     ChunkSharePlayerSettings.colorFor(slug, oldColor), maxDraw));
@@ -1700,7 +1703,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         VoxelMapGuiGraphics.fillRectsBatched(graphics, coords, colors, rects.size());
     }
 
-    private void rebuildNewOldChunkOverlayRenderCache(NewerNewChunksManager manager, NewOldChunkOverlayRenderCacheKey cacheKey) {
+    private void rebuildNewOldChunkOverlayRenderCache(NewerNewChunksManager manager, NewOldChunkOverlayRenderCacheKey cacheKey, Identifier viewedDimension) {
         long start = System.nanoTime();
         int centerChunkX = (cacheKey.minChunkX() + cacheKey.maxChunkX()) >> 1;
         int centerChunkZ = (cacheKey.minChunkZ() + cacheKey.maxChunkZ()) >> 1;
@@ -1708,7 +1711,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
         int remainingDraw = cacheKey.maxDraw();
         int effectiveCell = Math.max(1, cacheKey.cellChunkSize());
-        NewerNewChunksManager.NewOldCellsSnapshot snapshot = manager.getNewOldCellsInRange(centerChunkX, centerChunkZ, radius, effectiveCell);
+        NewerNewChunksManager.NewOldCellsSnapshot snapshot = manager.getNewOldCellsInRange(centerChunkX, centerChunkZ, radius, effectiveCell, viewedDimension);
         newOldChunkLastOldReturned = snapshot.oldChunks();
         newOldChunkLastNewReturned = snapshot.newChunks();
         BuildNewOldChunkRectsResult oldResult = buildNewOldChunkRectsFromCells(snapshot.oldCells(), cacheKey.oldColor(), effectiveCell, remainingDraw, newOldChunkLastOldReturned);
@@ -1950,13 +1953,24 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 chunkSet, cellChunkSize, buildNodes, exploredLineMesh.segmentCount(), exploredLineMesh.nodeCount());
     }
 
+    private void clearExploredLineCaches() {
+        exploredLinesLastQueryMs = 0L;
+        exploredLinesLastDataVersion = Long.MIN_VALUE;
+        exploredLinesLastQueryKey = null;
+        exploredLinesLastResult = List.of();
+        exploredLinesLastCellResult = new CellGrid(0, 0, 0, 0);
+        exploredLineRenderCacheKey = null;
+        exploredLineMesh = ExploredLineMesher.Result.EMPTY;
+    }
+
     private static int playerLayerColor(String slug, int alphaSource) {
         return ChunkSharePlayerSettings.colorFor(slug, alphaSource);
     }
 
     /** Draws each imported player's explored lattice and their old/new area outline, in the player's colour. */
     private void renderPlayerExploredLayers(GuiGraphicsExtractor graphics, com.mamiyaotaru.voxelmap.ExploredChunksManager mgr,
-            int centerChunkX, int centerChunkZ, int radius, int cellChunkSize, float lineThickness, int selfColor) {
+            int centerChunkX, int centerChunkZ, int radius, int cellChunkSize, float lineThickness, int selfColor,
+            Identifier viewedDimension) {
         java.util.Set<String> slugs = mgr.playerLayerSlugs();
         if (slugs.isEmpty()) {
             return;
@@ -1967,7 +1981,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             }
             int layerColor = playerLayerColor(slug, selfColor);
 
-            CellGrid cells = mgr.getPlayerExploredCellsInRange(slug, centerChunkX, centerChunkZ, radius, cellChunkSize);
+            CellGrid cells = mgr.getPlayerExploredCellsInRange(slug, centerChunkX, centerChunkZ, radius, cellChunkSize, viewedDimension);
             ExploredLineMesher.Result mesh = ExploredLineMesher.build(cells, cellChunkSize, false, 0, 0);
             float[] seg = mesh.segments();
             int segCount = mesh.segmentCount();
@@ -4189,7 +4203,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     private record SeedMapperQueryCacheKey(long seed, int dimension, int generatorFlags, int minX, int maxX, int minZ, int maxZ, boolean lootOnly, int enabledFeatureHash, int datapackHash, String lootSearch, String datapackWorldKey) {
     }
 
-    private record ExploredLinesQueryCacheKey(int minChunkX, int maxChunkX, int minChunkZ, int maxChunkZ, int snap) {
+    private record ExploredLinesQueryCacheKey(int minChunkX, int maxChunkX, int minChunkZ, int maxChunkZ, int snap, Identifier viewedDimension) {
     }
 
     private record ExploredLineRenderCacheKey(ExploredLinesQueryCacheKey queryKey, int cellChunkSize, long dataVersion) {

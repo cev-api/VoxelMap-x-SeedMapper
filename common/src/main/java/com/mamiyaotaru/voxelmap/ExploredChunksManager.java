@@ -8,6 +8,7 @@ import com.mamiyaotaru.voxelmap.util.CellGrid;
 import com.mamiyaotaru.voxelmap.util.GameVariableAccessShim;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ServerData;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 
@@ -60,10 +61,11 @@ public class ExploredChunksManager {
     }
 
     public Set<ChunkPos> getExploredChunksInRange(int centerChunkX, int centerChunkZ, int radius) {
-        if (!ensureTrackingWorld()) {
-            return Set.of();
-        }
-        StoreCtx c = ctx;
+        return getExploredChunksInRange(centerChunkX, centerChunkZ, radius, null);
+    }
+
+    public Set<ChunkPos> getExploredChunksInRange(int centerChunkX, int centerChunkZ, int radius, Identifier viewedDimension) {
+        StoreCtx c = resolveStore(viewedDimension);
         if (c == null) {
             return Set.of();
         }
@@ -75,10 +77,14 @@ public class ExploredChunksManager {
     }
 
     public CellGrid getExploredCellsInRange(int centerChunkX, int centerChunkZ, int radius, int cellChunkSize) {
-        if (!ensureTrackingWorld() || cellChunkSize <= 0) {
+        return getExploredCellsInRange(centerChunkX, centerChunkZ, radius, cellChunkSize, null);
+    }
+
+    public CellGrid getExploredCellsInRange(int centerChunkX, int centerChunkZ, int radius, int cellChunkSize, Identifier viewedDimension) {
+        if (cellChunkSize <= 0) {
             return EMPTY_CELLS;
         }
-        StoreCtx c = ctx;
+        StoreCtx c = resolveStore(viewedDimension);
         if (c == null) {
             return EMPTY_CELLS;
         }
@@ -86,10 +92,20 @@ public class ExploredChunksManager {
     }
 
     public CellGrid getPlayerExploredCellsInRange(String slug, int centerChunkX, int centerChunkZ, int radius, int cellChunkSize) {
+        return getPlayerExploredCellsInRange(slug, centerChunkX, centerChunkZ, radius, cellChunkSize, null);
+    }
+
+    public CellGrid getPlayerExploredCellsInRange(String slug, int centerChunkX, int centerChunkZ, int radius, int cellChunkSize, Identifier viewedDimension) {
         if (cellChunkSize <= 0) {
             return EMPTY_CELLS;
         }
-        StoreCtx c = exploredPlayerLayers.get(slug);
+        StoreCtx c;
+        if (viewedDimension != null) {
+            String worldKey = getWorldKeyForDimension(viewedDimension);
+            c = resolvePlayerLayerStore(slug, worldKey);
+        } else {
+            c = exploredPlayerLayers.get(slug);
+        }
         if (c == null) {
             return EMPTY_CELLS;
         }
@@ -131,8 +147,11 @@ public class ExploredChunksManager {
     }
 
     public long getDataVersion() {
-        ensureTrackingWorld();
-        StoreCtx c = ctx;
+        return getDataVersion(null);
+    }
+
+    public long getDataVersion(Identifier viewedDimension) {
+        StoreCtx c = resolveStore(viewedDimension);
         long base = c == null ? 0L : c.store().dataVersion();
         return (((long) worldGen) << 48) ^ base; // changes on world transition AND on data change
     }
@@ -328,6 +347,49 @@ public class ExploredChunksManager {
         }
     }
 
+    // ---- dimension-aware store resolution ----
+
+    /**
+     * Resolves the appropriate StoreCtx for the viewed dimension.
+     * If viewedDimension is null or matches the player's current dimension, uses the tracked ctx.
+     * Otherwise, creates a temporary read-only store that queries the disk directly (no async loader).
+     */
+    private StoreCtx resolveStore(Identifier viewedDimension) {
+        if (viewedDimension == null) {
+            if (!ensureTrackingWorld()) {
+                return null;
+            }
+            return ctx;
+        }
+        String viewedKey = getWorldKeyForDimension(viewedDimension);
+        if (viewedKey.equals(loadedWorldKey)) {
+            if (!ensureTrackingWorld()) {
+                return null;
+            }
+            return ctx;
+        }
+        // Different dimension — create a temporary read-only store (no async loading for now;
+        // data loads synchronously on first access via the store's own lazy-load mechanism).
+        Path v3Dir = v3DirFor(viewedKey);
+        ExploredDiskStore store = new ExploredDiskStore(v3Dir);
+        return new StoreCtx(store, null);
+    }
+
+    private StoreCtx resolvePlayerLayerStore(String slug, String worldKey) {
+        if (worldKey.equals(loadedWorldKey)) {
+            return exploredPlayerLayers.get(slug);
+        }
+        // Different dimension's player layer — create temporary read-only store
+        Path v3Dir = playerV3Dir(worldKey, slug);
+        ExploredDiskStore store = new ExploredDiskStore(v3Dir);
+        return new StoreCtx(store, null);
+    }
+
+    private String getWorldKeyForDimension(Identifier dimensionId) {
+        String dimension = dimensionId.toString().replace(':', '_');
+        return serverName() + "_" + dimension;
+    }
+
     // ---- internals ----
 
     private void ensureLoadedForBounds(StoreCtx c, int level, int centerChunkX, int centerChunkZ, int radius) {
@@ -340,8 +402,13 @@ public class ExploredChunksManager {
         for (int cx = minContainerX; cx <= maxContainerX; cx++) {
             for (int cz = minContainerZ; cz <= maxContainerZ; cz++) {
                 if (!c.store().isContainerLoaded(level, cx, cz)) {
-                    anyMissing = true;
-                    c.loader().requestLoad(level, cx, cz);
+                    if (c.loader() != null) {
+                        anyMissing = true;
+                        c.loader().requestLoad(level, cx, cz);
+                    } else {
+                        // Synchronous load for temporary/alternate-dimension stores
+                        c.store().loadContainer(level, cx, cz);
+                    }
                 }
             }
         }
