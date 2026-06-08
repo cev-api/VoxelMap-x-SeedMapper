@@ -48,4 +48,11 @@ public class DynamicMutableTexture extends DynamicTexture {
     public void setRGB(int x, int y, int color24) {
         this.getPixels().setPixelABGR(x, y, ColorUtils.premultiplyWithAlpha(color24));
     }
+
+    public void setPixelsPremultipliedABGR(int[] premultipliedAbgr) {
+        synchronized (this.bufferLock) {
+            int count = Math.min(premultipliedAbgr.length, this.getWidth() * this.getHeight());
+            MemoryUtil.memIntBuffer(this.getPixels().getPointer(), count).put(premultipliedAbgr, 0, count);
+        }
+    }
 }
