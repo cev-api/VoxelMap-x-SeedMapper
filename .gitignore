@@ -1,5 +1,10 @@
 # User-specific stuff
 .idea/
+.settings/
+.vscode/
+bin/
+.classpath
+.project
 
 *.iml
 *.ipr
@@ -107,9 +112,11 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
-.gradle
+.gradle/
 build/
-*.launch
+out/
+classes/
+logs/
 
 # Ignore Gradle GUI config
 gradle-app.setting
