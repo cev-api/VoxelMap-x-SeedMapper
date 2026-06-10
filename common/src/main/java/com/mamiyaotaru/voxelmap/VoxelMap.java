@@ -183,6 +183,7 @@ public class VoxelMap implements PreparableReloadListener {
             world = newWorld;
             waypointManager.newWorld(world);
             persistentMap.newWorld(world);
+            map.newWorld(world);
             if (world != null) {
                 MapUtils.reset();
                 // send "new" world_id packet
@@ -193,7 +194,6 @@ public class VoxelMap implements PreparableReloadListener {
                     worldName = waypointManager.getCurrentWorldName();
                 }
 
-                map.newWorld(world);
                 while (!runOnWorldSet.isEmpty()) {
                     runOnWorldSet.removeFirst().run();
                 }

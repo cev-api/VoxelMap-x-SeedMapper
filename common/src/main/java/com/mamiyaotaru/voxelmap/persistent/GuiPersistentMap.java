@@ -103,6 +103,8 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     private static final int COORD_TEXT_COLOR_ERROR = 0xFFFF0000;
     private static final int FAR_ZOOM_MAX_REGION_RADIUS_MOVING = 320;
     private static final int FAR_ZOOM_MAX_REGION_RADIUS_STILL = 768;
+    private static double pendingCenterX = Double.NaN;
+    private static double pendingCenterZ = Double.NaN;
     private final Random generator = new Random();
     private final PersistentMap persistentMap;
     private final WaypointManager waypointManager;
@@ -326,6 +328,12 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
     }
 
+    public static void openAndCenterOn(Screen parent, double x, double z) {
+        pendingCenterX = x;
+        pendingCenterZ = z;
+        VoxelConstants.getMinecraft().setScreen(new GuiPersistentMap(parent));
+    }
+
     private void getSkin() {
         BufferedImage skinImage = ImageUtils.createBufferedImageFromIdentifier(VoxelConstants.getPlayer().getSkin().body().texturePath());
 
@@ -357,6 +365,11 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     public void init() {
         this.oldNorth = mapOptions.oldNorth;
         this.centerAt(this.options.mapX, this.options.mapZ);
+        if (!Double.isNaN(pendingCenterX) && !Double.isNaN(pendingCenterZ)) {
+            this.centerAt(pendingCenterX, pendingCenterZ);
+            pendingCenterX = Double.NaN;
+            pendingCenterZ = Double.NaN;
+        }
         if (minecraft.screen == this) {
             this.closed = false;
         }

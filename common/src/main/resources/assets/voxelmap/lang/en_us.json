@@ -167,6 +167,7 @@
   "minimap.waypoints.title": "Waypoints",
   "minimap.waypoints.teleportTo": "Teleport To",
   "minimap.waypoints.highlight": "Highlight",
+  "minimap.waypoints.showOnMap": "Show on Map",
   "minimap.waypoints.removeHighlight": "Remove Highlight",
   "minimap.waypoints.highlightTooltip": "Click to highlight waypoint",
   "minimap.waypoints.removeHighlightTooltip": "Click to unhighlight waypoint",

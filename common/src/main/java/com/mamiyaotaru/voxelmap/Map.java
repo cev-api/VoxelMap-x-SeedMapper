@@ -300,7 +300,7 @@ public class Map implements Runnable, IChangeObserver {
     public void run() {
         if (minecraft != null) {
             while (true) {
-                if (this.world != null) {
+                if (this.world != null && minecraft.player != null) {
                     if (!this.options.hide && this.options.minimapAllowed) {
                         try {
                             this.mapCalc(this.doFullRender);
@@ -519,7 +519,7 @@ public class Map implements Runnable, IChangeObserver {
                 }
             }
         } else {
-            if (!this.options.hide && this.options.minimapAllowed && this.world != null) {
+            if (!this.options.hide && this.options.minimapAllowed && this.world != null && minecraft.player != null) {
                 this.mapCalc(this.doFullRender);
                 if (!this.doFullRender) {
                     MutableBlockPos blockPos = MutableBlockPosCache.get();

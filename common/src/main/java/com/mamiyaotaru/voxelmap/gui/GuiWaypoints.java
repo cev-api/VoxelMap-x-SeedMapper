@@ -5,6 +5,8 @@ import com.mamiyaotaru.voxelmap.VoxelConstants;
 import com.mamiyaotaru.voxelmap.WaypointManager;
 import com.mamiyaotaru.voxelmap.gui.overridden.Popup;
 import com.mamiyaotaru.voxelmap.gui.overridden.PopupGuiScreen;
+import com.mamiyaotaru.voxelmap.persistent.GuiPersistentMap;
+import com.mamiyaotaru.voxelmap.persistent.PersistentMapSettingsManager;
 import com.mamiyaotaru.voxelmap.util.CommandUtils;
 import com.mamiyaotaru.voxelmap.util.DimensionContainer;
 import com.mamiyaotaru.voxelmap.util.GameVariableAccessShim;
@@ -36,6 +38,7 @@ public class GuiWaypoints extends PopupGuiScreen implements IGuiWaypoints {
     private Button buttonDelete;
     private boolean deleteClicked;
     private Button buttonHighlight;
+    private Button buttonShowOnMap;
     private Button buttonShare;
     private Button buttonTeleport;
     private Button buttonDimensionFilter;
@@ -91,12 +94,13 @@ public class GuiWaypoints extends PopupGuiScreen implements IGuiWaypoints {
         setFocused(filter);
         int topButtonWidth = 74;
         int topGap = 4;
-        int topLeft = getWidth() / 2 - (topButtonWidth * 5 + topGap * 4) / 2;
+        int topLeft = getWidth() / 2 - (topButtonWidth * 6 + topGap * 5) / 2;
         addRenderableWidget(new Button.Builder(Component.translatable("minimap.waypoints.add"), button -> addWaypoint()).bounds(topLeft, getHeight() - 50, topButtonWidth, 20).build());
         addRenderableWidget(buttonEdit = new Button.Builder(Component.translatable("selectServer.edit"), button -> editWaypoint(selectedWaypoint)).bounds(topLeft + (topButtonWidth + topGap), getHeight() - 50, topButtonWidth, 20).build());
         addRenderableWidget(buttonDelete = new Button.Builder(Component.translatable("selectServer.delete"), button -> deleteClicked()).bounds(topLeft + (topButtonWidth + topGap) * 2, getHeight() - 50, topButtonWidth, 20).build());
         addRenderableWidget(buttonHighlight = new Button.Builder(Component.translatable("minimap.waypoints.highlight"), button -> setHighlightedWaypoint()).bounds(topLeft + (topButtonWidth + topGap) * 3, getHeight() - 50, topButtonWidth, 20).build());
-        addRenderableWidget(buttonDimensionFilter = new Button.Builder(getDimensionFilterLabel(), button -> cycleDimensionFilter()).bounds(topLeft + (topButtonWidth + topGap) * 4, getHeight() - 50, topButtonWidth, 20).build());
+        addRenderableWidget(buttonShowOnMap = new Button.Builder(Component.translatable("minimap.waypoints.showOnMap"), button -> showOnMapClicked()).bounds(topLeft + (topButtonWidth + topGap) * 4, getHeight() - 50, topButtonWidth, 20).build());
+        addRenderableWidget(buttonDimensionFilter = new Button.Builder(getDimensionFilterLabel(), button -> cycleDimensionFilter()).bounds(topLeft + (topButtonWidth + topGap) * 5, getHeight() - 50, topButtonWidth, 20).build());
         int bottomButtonWidth = 74;
         int bottomGap = 4;
         int bottomLeft = getWidth() / 2 - (bottomButtonWidth * 6 + bottomGap * 5) / 2;
@@ -211,6 +215,40 @@ public class GuiWaypoints extends PopupGuiScreen implements IGuiWaypoints {
         VoxelConstants.getMinecraft().setScreen(null);
     }
 
+    private void showOnMapClicked() {
+        if (selectedWaypoint == null) {
+            return;
+        }
+
+        // Determine the waypoint's native coordinate dimension
+        String coordinateDim = selectedWaypoint.coordinateDimension;
+        if (coordinateDim == null || coordinateDim.isBlank()) {
+            if (!selectedWaypoint.dimensions.isEmpty()) {
+                coordinateDim = selectedWaypoint.dimensions.first().getStorageName();
+            }
+        }
+
+        // Match the waypoint dimension to a world map dimension view
+        PersistentMapSettingsManager.WorldMapDimensionView targetView = null;
+        if (coordinateDim != null && !coordinateDim.isBlank()) {
+            if (coordinateDim.equals("overworld") || coordinateDim.equals("minecraft:overworld")) {
+                targetView = PersistentMapSettingsManager.WorldMapDimensionView.OVERWORLD;
+            } else if (coordinateDim.equals("the_nether") || coordinateDim.equals("minecraft:the_nether")) {
+                targetView = PersistentMapSettingsManager.WorldMapDimensionView.NETHER;
+            } else if (coordinateDim.equals("the_end") || coordinateDim.equals("minecraft:the_end")) {
+                targetView = PersistentMapSettingsManager.WorldMapDimensionView.END;
+            }
+        }
+
+        // Switch the map to the waypoint's dimension before opening
+        if (targetView != null) {
+            VoxelConstants.getVoxelMapInstance().getPersistentMapOptions().worldMapDimensionView = targetView;
+        }
+
+        // Use the waypoint's native coordinates (stored in its coordinate dimension's scale)
+        GuiPersistentMap.openAndCenterOn(this, selectedWaypoint.x, selectedWaypoint.z);
+    }
+
     protected void sortClicked(int id) {
         options.setWaypointSort(id);
         changedSort = true;
@@ -302,6 +340,7 @@ public class GuiWaypoints extends PopupGuiScreen implements IGuiWaypoints {
         buttonDelete.setMessage(selectionCount > 1 ? Component.literal("Delete (" + selectionCount + ")") : Component.translatable("selectServer.delete"));
         buttonHighlight.active = isSingleSelected;
         buttonHighlight.setMessage(Component.translatable(isSingleSelected && selectedWaypoint == highlightedWaypoint ? "minimap.waypoints.removeHighlight" : "minimap.waypoints.highlight"));
+        buttonShowOnMap.active = isSingleSelected;
         buttonShare.active = isSingleSelected;
         buttonTeleport.active = isSingleSelected && canTeleport();
     }
