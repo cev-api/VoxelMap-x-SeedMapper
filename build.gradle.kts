@@ -58,7 +58,7 @@ subprojects {
             val forkSuffix = if (forkVersion.startsWith("v")) forkVersion else "v$forkVersion"
             val moduleSuffix = archiveBaseName.get()
                 .substringAfter("voxelmap-", archiveBaseName.get())
-            "voxelmap-x-seedmapper_${moduleSuffix}${classifier}_${forkSuffix}.jar"
+            "voxelmap-x-seedmapper_${minecraftVersion}_${moduleSuffix}${classifier}_${forkSuffix}.jar"
         })
     }
 

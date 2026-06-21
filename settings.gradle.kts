@@ -12,7 +12,16 @@ pluginManagement {
 
 include("common")
 include("server-common")
-include("fabric")
-include("paper")
-include("forge")
-include("neoforge")
+
+when (providers.gradleProperty("targetLoader").orNull) {
+    "fabric" -> include("fabric")
+    "forge" -> include("forge")
+    "neoforge" -> include("neoforge")
+    "paper" -> include("paper")
+    else -> {
+        include("fabric")
+        include("paper")
+        include("forge")
+        include("neoforge")
+    }
+}
