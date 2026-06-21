@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.IntStream;
@@ -84,6 +85,7 @@ public class PersistentMap implements IChangeObserver {
     private MapChunkCache chunkCache;
     private int lastRenderDistance;
     private final ConcurrentLinkedQueue<ChunkWithAge> chunkUpdateQueue = new ConcurrentLinkedQueue<>();
+    private final Set<Long> queuedChunkUpdates = ConcurrentHashMap.newKeySet();
 
     public PersistentMap() {
         this.colorManager = VoxelConstants.getVoxelMapInstance().getColorManager();
@@ -98,6 +100,7 @@ public class PersistentMap implements IChangeObserver {
         this.purgeCachedRegions();
         this.queuedChangedChunks = false;
         this.chunkUpdateQueue.clear();
+        this.queuedChunkUpdates.clear();
         this.world = world;
         if (this.worldMatcher != null) {
             this.worldMatcher.cancel();
@@ -187,7 +190,9 @@ public class PersistentMap implements IChangeObserver {
             this.chunkCache.checkIfChunksBecameSurroundedByLoaded();
 
             while (!this.chunkUpdateQueue.isEmpty() && Math.abs(VoxelConstants.getElapsedTicks() - this.chunkUpdateQueue.peek().tick) >= 20) {
-                this.doProcessChunk(this.chunkUpdateQueue.remove().chunk);
+                ChunkWithAge update = this.chunkUpdateQueue.remove();
+                this.queuedChunkUpdates.remove(chunkKey(update.chunk));
+                this.doProcessChunk(update.chunk);
             }
         }
 
@@ -860,9 +865,13 @@ public class PersistentMap implements IChangeObserver {
 
     @Override
     public void processChunk(LevelChunk chunk) {
-        if (mapOptions.worldmapAllowed) {
+        if (mapOptions.worldmapAllowed && this.queuedChunkUpdates.add(chunkKey(chunk))) {
             this.chunkUpdateQueue.add(new ChunkWithAge(chunk, VoxelConstants.getElapsedTicks()));
         }
+    }
+
+    private static long chunkKey(LevelChunk chunk) {
+        return (Integer.toUnsignedLong(chunk.getPos().x()) << 32) | Integer.toUnsignedLong(chunk.getPos().z());
     }
 
     private void doProcessChunk(LevelChunk chunk) {
