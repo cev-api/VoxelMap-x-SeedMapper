@@ -6,6 +6,8 @@ import com.mamiyaotaru.voxelmap.VoxelConstants;
 import com.mamiyaotaru.voxelmap.gui.overridden.GuiIconElement;
 import com.mamiyaotaru.voxelmap.textures.Sprite;
 import com.mamiyaotaru.voxelmap.util.VoxelMapMobCategory;
+import java.util.ArrayList;
+import java.util.Iterator;
 import net.minecraft.client.GameNarrator;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractSelectionList;
@@ -18,9 +20,6 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
-
-import java.util.ArrayList;
-import java.util.Iterator;
 
 class GuiListMobs extends AbstractSelectionList<GuiListMobs.MobItem> {
     private final ArrayList<MobItem> mobs;
@@ -107,6 +106,7 @@ class GuiListMobs extends AbstractSelectionList<GuiListMobs.MobItem> {
         private final GuiIconElement mobIcon;
         private final GuiIconElement mobToggle;
         private Sprite mobIconSprite;
+        private boolean mobIconRequestAttempted;
 
         protected MobItem(GuiMobs mobsScreen, EntityType<?> type, Identifier id) {
             parentGui = mobsScreen;
@@ -132,12 +132,15 @@ class GuiListMobs extends AbstractSelectionList<GuiListMobs.MobItem> {
             int color = 0xFF000000 + (red << 16) + (green << 8);
             graphics.centeredText(parentGui.getFont(), name, parentGui.getWidth() / 2, getY() + 5, color);
 
-            if (mobIconSprite == null) {
+            if (mobIconSprite == null && !mobIconRequestAttempted) {
                 Radar radar = VoxelConstants.getVoxelMapInstance().getFullRadar();
                 if (radar != null) {
+                    mobIconRequestAttempted = true;
                     mobIconSprite = radar.getEntityMapImageManager().requestImageForMobType(type, true);
                 }
-            } else {
+            }
+
+            if (mobIconSprite != null) {
                 int iconWidth = Math.min(18, mobIconSprite.getIconWidth() / 3);
                 int iconHeight = Math.min(18, mobIconSprite.getIconHeight() / 3);
                 mobIcon.setPosition(getX() + 2, getY());
@@ -149,7 +152,7 @@ class GuiListMobs extends AbstractSelectionList<GuiListMobs.MobItem> {
             mobToggle.setIconForRender(RenderPipelines.GUI_TEXTURED, isEnabled ? VoxelConstants.getCheckMarkerTexture() : VoxelConstants.getCrossMarkerTexture(), 0xFFFFFFFF);
             mobToggle.extractRenderState(graphics, mouseX, mouseY, tickDelta);
 
-            if (mobIcon.isMouseOver(mouseX, mouseY)) {
+            if (mobIconSprite != null && mobIcon.isMouseOver(mouseX, mouseY)) {
                 parentGui.setTooltip(isEnabled ? GuiListMobs.ENABLED : GuiListMobs.DISABLED);
             } else if (mobToggle.isMouseOver(mouseX, mouseY)) {
                 parentGui.setTooltip(isEnabled ? GuiListMobs.TOOLTIP_DISABLE : GuiListMobs.TOOLTIP_ENABLE);

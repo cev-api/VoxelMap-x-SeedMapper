@@ -82,16 +82,16 @@ public class GuiSeedMapperDatapackOptions extends GuiScreenMinimap {
 
         y += 24;
         savedUrlsButton = addRenderableWidget(new Button.Builder(Component.literal("Saved URLs"), button ->
-                minecraft.setScreen(new GuiSeedMapperSavedStringMap(this, GuiSeedMapperSavedStringMap.Mode.URLS)))
+                minecraft.gui.setScreen(new GuiSeedMapperSavedStringMap(this, GuiSeedMapperSavedStringMap.Mode.URLS)))
                 .bounds(left, y, 150, 20).build());
 
         savedCachePathsButton = addRenderableWidget(new Button.Builder(Component.literal("Saved Cache Paths"), button ->
-                minecraft.setScreen(new GuiSeedMapperSavedStringMap(this, GuiSeedMapperSavedStringMap.Mode.CACHE_PATHS)))
+                minecraft.gui.setScreen(new GuiSeedMapperSavedStringMap(this, GuiSeedMapperSavedStringMap.Mode.CACHE_PATHS)))
                 .bounds(right, y, 150, 20).build());
 
         y += 24;
         structureDisabledButton = addRenderableWidget(new Button.Builder(Component.empty(), button ->
-                minecraft.setScreen(new GuiSeedMapperDatapackStructures(this)))
+                minecraft.gui.setScreen(new GuiSeedMapperDatapackStructures(this)))
                 .bounds(left, y, 310, 20).build());
 
         addRenderableWidget(new Button.Builder(Component.translatable("gui.done"), button -> onClose())

@@ -104,24 +104,24 @@ public class GuiSeedMapperOptions extends GuiScreenMinimap {
 
         locateStructureButton = addRenderableWidget(new Button.Builder(Component.literal("Locate Structure"), button -> {
             applyTextValues();
-            minecraft.setScreen(new GuiSeedMapperLocator(this, GuiSeedMapperLocator.Mode.STRUCTURE));
+            minecraft.gui.setScreen(new GuiSeedMapperLocator(this, GuiSeedMapperLocator.Mode.STRUCTURE));
         }).bounds(left, y, 150, 20).build());
 
         locateBiomeButton = addRenderableWidget(new Button.Builder(Component.literal("Locate Biome"), button -> {
             applyTextValues();
-            minecraft.setScreen(new GuiSeedMapperLocator(this, GuiSeedMapperLocator.Mode.BIOME));
+            minecraft.gui.setScreen(new GuiSeedMapperLocator(this, GuiSeedMapperLocator.Mode.BIOME));
         }).bounds(right, y, 150, 20).build());
 
         y += rowGap;
 
         locateLootButton = addRenderableWidget(new Button.Builder(Component.literal("Locate Loot"), button -> {
             applyTextValues();
-            minecraft.setScreen(new GuiSeedMapperLocator(this, GuiSeedMapperLocator.Mode.LOOT));
+            minecraft.gui.setScreen(new GuiSeedMapperLocator(this, GuiSeedMapperLocator.Mode.LOOT));
         }).bounds(left, y, 150, 20).build());
 
         lootViewerButton = addRenderableWidget(new Button.Builder(Component.literal("Loot Viewer"), button -> {
             applyTextValues();
-            minecraft.setScreen(new GuiSeedMapperLootViewer(this));
+            minecraft.gui.setScreen(new GuiSeedMapperLootViewer(this));
         }).bounds(right, y, 150, 20).build());
 
         y = 192;
@@ -185,7 +185,7 @@ public class GuiSeedMapperOptions extends GuiScreenMinimap {
         y += rowGap;
 
         espSettingsButton = addRenderableWidget(new Button.Builder(Component.literal("ESP Settings"), button ->
-                minecraft.setScreen(new GuiSeedMapperEspProfiles(this)))
+                minecraft.gui.setScreen(new GuiSeedMapperEspProfiles(this)))
                 .bounds(left, y, fullWidth, 20).build());
 
         y = 342;
@@ -207,7 +207,7 @@ public class GuiSeedMapperOptions extends GuiScreenMinimap {
         }).bounds(left, y, 150, 20).build());
 
         datapackImportButton = addRenderableWidget(new Button.Builder(Component.literal("Datapack Settings"), button ->
-                minecraft.setScreen(new GuiSeedMapperDatapackOptions(this)))
+                minecraft.gui.setScreen(new GuiSeedMapperDatapackOptions(this)))
                 .bounds(right, y, 150, 20).build());
 
         y += rowGap;
@@ -242,12 +242,12 @@ public class GuiSeedMapperOptions extends GuiScreenMinimap {
         exportVisibleButton.active = findPersistentMapScreen() != null;
 
         savedSeedsButton = addRenderableWidget(new Button.Builder(Component.literal("Saved Seeds"), button ->
-                minecraft.setScreen(new GuiSeedMapperSavedSeeds(this)))
+                minecraft.gui.setScreen(new GuiSeedMapperSavedSeeds(this)))
                 .bounds(right, y, 150, 20).build());
 
         addRenderableWidget(new Button.Builder(Component.literal("Seed Cracking"), button -> {
             applyTextValues();
-            minecraft.setScreen(new GuiSeedMapperCrackingMods(this));
+            minecraft.gui.setScreen(new GuiSeedMapperCrackingMods(this));
         }).bounds(this.width / 2 - 75, 448, 150, 20).build());
 
         addRenderableWidget(new Button.Builder(Component.translatable("gui.done"), button -> onClose())

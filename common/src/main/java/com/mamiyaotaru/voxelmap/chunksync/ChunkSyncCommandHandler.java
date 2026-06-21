@@ -260,7 +260,7 @@ public final class ChunkSyncCommandHandler {
         }
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.gui != null) {
-            minecraft.gui.getChat().addClientSystemMessage(AppChatMessages.prefixed("ChunkSync", text));
+            minecraft.gui.hud.getChat().addClientSystemMessage(AppChatMessages.prefixed("ChunkSync", text));
         }
     }
 }

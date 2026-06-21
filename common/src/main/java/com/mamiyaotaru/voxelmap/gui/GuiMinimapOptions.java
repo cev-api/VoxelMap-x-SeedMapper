@@ -19,10 +19,12 @@ import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.components.events.GuiEventListener;
+import net.minecraft.client.gui.components.tabs.MenuTabBar;
 import net.minecraft.client.gui.components.tabs.Tab;
 import net.minecraft.client.gui.components.tabs.TabManager;
-import net.minecraft.client.gui.components.tabs.TabNavigationBar;
+import net.minecraft.client.gui.layouts.GridLayout;
 import net.minecraft.client.gui.layouts.HeaderAndFooterLayout;
+import net.minecraft.client.gui.layouts.Layout;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.tooltip.TooltipRenderUtil;
@@ -40,6 +42,9 @@ import java.util.ArrayList;
 import java.util.Locale;
 import java.util.function.Consumer;
 
+import net.minecraft.network.chat.MutableComponent;
+import org.lwjgl.glfw.GLFW;
+
 public class GuiMinimapOptions extends GuiScreenMinimap {
     protected String screenTitle = "Minimap Options";
     private final VoxelMap voxelMap = VoxelConstants.getVoxelMapInstance();
@@ -49,7 +54,7 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
 
     private final HeaderAndFooterLayout layout = new HeaderAndFooterLayout(this);
     private final TabManager tabManager = new TabManager(this::addRenderableWidget, this::removeWidget);
-    private TabNavigationBar tabNavigationBar;
+    private MenuTabBar tabNavigationBar;
 
     private final ArrayList<AbstractWidget> optionButtons = new ArrayList<>();
     private int pageIndex = 0;
@@ -64,7 +69,7 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
     private final ArrayList<OptionSection> optionSections = new ArrayList<>();
 
     private static final EnumOptionsMinimap[] GENERAL_OPTIONS = { EnumOptionsMinimap.HIDE_MINIMAP, EnumOptionsMinimap.UPDATE_NOTIFIER, EnumOptionsMinimap.SHOW_BIOME, EnumOptionsMinimap.SHOW_COORDS, EnumOptionsMinimap.SHOW_FACING_DEGREES, EnumOptionsMinimap.LOCATION, EnumOptionsMinimap.SIZE, EnumOptionsMinimap.SQUARE_MAP, EnumOptionsMinimap.ROTATES, EnumOptionsMinimap.IN_GAME_WAYPOINTS, EnumOptionsMinimap.CAVE_MODE, EnumOptionsMinimap.MOVE_MAP_BELOW_STATUS_EFFECT_ICONS, EnumOptionsMinimap.MOVE_SCOREBOARD_BELOW_MAP};
-    private static final EnumOptionsMinimap[] PERFORMANCE_OPTIONS = { EnumOptionsMinimap.DYNAMIC_LIGHTING, EnumOptionsMinimap.TERRAIN_DEPTH, EnumOptionsMinimap.WATER_TRANSPARENCY, EnumOptionsMinimap.BLOCK_TRANSPARENCY, EnumOptionsMinimap.BIOMES, EnumOptionsMinimap.BIOME_OVERLAY, EnumOptionsMinimap.WORLD_BORDER,  EnumOptionsMinimap.FILTERING, EnumOptionsMinimap.TELEPORT_COMMAND };
+    private static final EnumOptionsMinimap[] PERFORMANCE_OPTIONS = { EnumOptionsMinimap.DYNAMIC_LIGHTING, EnumOptionsMinimap.TERRAIN_DEPTH, EnumOptionsMinimap.WATER_TRANSPARENCY, EnumOptionsMinimap.BLOCK_TRANSPARENCY, EnumOptionsMinimap.BIOMES, EnumOptionsMinimap.BIOME_OVERLAY, EnumOptionsMinimap.CHUNK_GRID, EnumOptionsMinimap.SLIME_CHUNKS, EnumOptionsMinimap.WORLD_BORDER, EnumOptionsMinimap.FILTERING, EnumOptionsMinimap.TELEPORT_COMMAND };
     private static final EnumOptionsMinimap[] RADAR_FULL_OPTIONS = { EnumOptionsMinimap.SHOW_RADAR, EnumOptionsMinimap.RADAR_MODE, EnumOptionsMinimap.SHOW_MOBS, EnumOptionsMinimap.SHOW_PLAYERS, EnumOptionsMinimap.SHOW_MOB_NAMES, EnumOptionsMinimap.SHOW_PLAYER_NAMES, EnumOptionsMinimap.SHOW_MOB_HELMETS, EnumOptionsMinimap.SHOW_PLAYER_HELMETS, EnumOptionsMinimap.RADAR_FILTERING, EnumOptionsMinimap.RADAR_OUTLINES, EnumOptionsMinimap.RADAR_CPU_RENDERING, EnumOptionsMinimap.SHOW_FULL_ENTITY_NAMES, EnumOptionsMinimap.SHOW_ENTITY_ELEVATION, EnumOptionsMinimap.HIDE_SNEAKING_PLAYERS, EnumOptionsMinimap.HIDE_INVISIBLE_ENTITIES };
     private static final EnumOptionsMinimap[] RADAR_SIMPLE_OPTIONS = { EnumOptionsMinimap.SHOW_RADAR, EnumOptionsMinimap.RADAR_MODE, EnumOptionsMinimap.SHOW_MOBS, EnumOptionsMinimap.SHOW_PLAYERS, EnumOptionsMinimap.SHOW_FACING, EnumOptionsMinimap.SHOW_ENTITY_ELEVATION, EnumOptionsMinimap.HIDE_SNEAKING_PLAYERS, EnumOptionsMinimap.HIDE_INVISIBLE_ENTITIES };
 
@@ -115,7 +120,7 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
     public void init() {
         screenTitle = I18n.get("options.minimap.title");
 
-        tabNavigationBar = TabNavigationBar.builder(tabManager, width).addTabs(
+        tabNavigationBar = MenuTabBar.builder(tabManager, width).addTabs(
                 new OptionsTab(Component.literal("Minimap"), 0),
                 new OptionsTab(Component.literal("Visuals"), 1),
                 new OptionsTab(Component.literal("Entities"), 2),
@@ -126,7 +131,7 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
                 new OptionsTab(Component.translatable("options.seedmapper.tab"), 7)).build();
 
         tabNavigationBar.selectTab(tabIndex, false);
-        tabNavigationBar.arrangeElements();
+        tabNavigationBar.arrangeElements(width);
         setFocused(tabNavigationBar);
         addRenderableWidget(tabNavigationBar);
 
@@ -373,7 +378,7 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
             row++;
             int actionY = fromSlot(row, 0)[1];
             if (relevantOptions == RADAR_FULL_OPTIONS) {
-                mobListButton = createModernButton(fromSlot(row, 0)[0], actionY, OPTION_BUTTON_WIDTH, Component.translatable("options.minimap.radar.selectMobs"), x -> minecraft.setScreen(new GuiMobs(this, radarOptions)));
+                mobListButton = createModernButton(fromSlot(row, 0)[0], actionY, OPTION_BUTTON_WIDTH, Component.translatable("options.minimap.radar.selectMobs"), x -> minecraft.gui.setScreen(new GuiMobs(this, radarOptions)));
                 addOptionButton(mobListButton);
             }
 
@@ -405,7 +410,6 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
         }
 
         layoutPageNavigation(0);
-
         setButtonsActive();
         updateMinimapZoomSlider();
 
@@ -562,7 +566,7 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
                 continue;
             }
 
-            boolean radarBlocked = !radarOptions.radarAllowed && !radarOptions.radarPlayersAllowed && !radarOptions.radarMobsAllowed;
+            boolean radarBlocked = !radarOptions.radarAllowed || (!radarOptions.radarPlayersAllowed && !radarOptions.radarMobsAllowed);
 
             if (containsOption(option, RADAR_FULL_OPTIONS) || containsOption(option, RADAR_SIMPLE_OPTIONS)) {
                 button2.active = radarOptions.showRadar && !radarBlocked;
@@ -944,6 +948,10 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
         public void doLayout(ScreenRectangle screenRectangle) {
         }
 
+        @Override
+        public Layout getLayout() {
+            return new GridLayout();
+        }
     }
 
     private record OptionSection(String title, int x, int y, int width, int height) {

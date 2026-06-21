@@ -14,6 +14,16 @@ import com.mamiyaotaru.voxelmap.util.MapChunkCache;
 import com.mamiyaotaru.voxelmap.util.MapUtils;
 import com.mamiyaotaru.voxelmap.util.MutableBlockPos;
 import com.mamiyaotaru.voxelmap.util.TextUtils;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.stream.IntStream;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
@@ -34,17 +44,6 @@ import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.stream.IntStream;
 
 public class PersistentMap implements IChangeObserver {
     final MutableBlockPos blockPos = new MutableBlockPos(0, 0, 0);
@@ -158,7 +157,7 @@ public class PersistentMap implements IChangeObserver {
         if (VoxelConstants.getMinecraft().getCameraEntity() == null) {
             return;
         }
-        if (VoxelConstants.getMinecraft().screen == null) {
+        if (VoxelConstants.getMinecraft().gui.screen() == null) {
             this.options.mapX = GameVariableAccessShim.xCoord();
             this.options.mapZ = GameVariableAccessShim.zCoord();
         }
@@ -906,7 +905,7 @@ public class PersistentMap implements IChangeObserver {
                 }
             }
 
-            if (VoxelConstants.getMinecraft().screen != null && VoxelConstants.getMinecraft().screen instanceof GuiPersistentMap) {
+            if (VoxelConstants.getMinecraft().gui.screen() != null && VoxelConstants.getMinecraft().gui.screen() instanceof GuiPersistentMap) {
                 cachedRegion.registerChangeAt(chunkX, chunkZ);
                 cachedRegion.refresh(false);
             } else {

@@ -84,7 +84,7 @@ public class GuiSelectPlayer extends GuiScreenMinimap implements BooleanConsumer
 
                 onClose();
             } else {
-                VoxelConstants.getMinecraft().setScreen(this);
+                VoxelConstants.getMinecraft().gui.setScreen(this);
             }
         }
 

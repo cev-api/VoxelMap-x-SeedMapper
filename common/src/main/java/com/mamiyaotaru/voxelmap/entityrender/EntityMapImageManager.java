@@ -17,6 +17,18 @@ import com.mamiyaotaru.voxelmap.textures.TextureAtlas;
 import com.mamiyaotaru.voxelmap.util.EmptySubmitNodeCollector;
 import com.mamiyaotaru.voxelmap.util.ImageUtils;
 import com.mojang.blaze3d.vertex.PoseStack;
+import java.awt.AlphaComposite;
+import java.awt.Graphics2D;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
+import javax.imageio.ImageIO;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.model.animal.camel.CamelModel;
@@ -47,23 +59,14 @@ import net.minecraft.util.Util;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.animal.fish.Pufferfish;
 import net.minecraft.world.entity.animal.fish.Salmon;
 import net.minecraft.world.entity.animal.fish.TropicalFish;
 import net.minecraft.world.entity.boss.enderdragon.EnderDragon;
+import net.minecraft.world.entity.monster.cubemob.SulfurCube;
 import org.joml.Matrix4fStack;
-
-import javax.imageio.ImageIO;
-import java.awt.AlphaComposite;
-import java.awt.Graphics2D;
-import java.awt.image.BufferedImage;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.HashMap;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class EntityMapImageManager {
     public static final Identifier resourceTextureAtlasMarker = Identifier.fromNamespaceAndPath(VoxelConstants.MOD_ID, "atlas/mobs");
@@ -78,6 +81,8 @@ public class EntityMapImageManager {
     private final EmptySubmitNodeCollector emptySubmitNodeCollector = new EmptySubmitNodeCollector();
     private final Class<?>[] fullRenderModels;
     private final HashMap<EntityType<?>, Properties> customMobProperties = new HashMap<>();
+    private final HashSet<EntityType<?>> failedPreviewIconTypes = new HashSet<>();
+    private final AtomicInteger previewEntityIds = new AtomicInteger(-1);
 
     private int imageCreationRequests;
     private int fulfilledImageCreationRequests;
@@ -94,7 +99,7 @@ public class EntityMapImageManager {
         this.textureAtlas = new TextureAtlas("mobsmap", resourceTextureAtlasMarker);
         this.textureAtlas.setFilter(true, false);
 
-        this.fullRenderModels = new Class[] { CodModel.class, MagmaCubeModel.class, SalmonModel.class, SlimeModel.class, TropicalFishSmallModel.class, TropicalFishLargeModel.class };
+        this.fullRenderModels = new Class[] { CodModel.class, MagmaCubeModel.class, SalmonModel.class, SlimeModel.class, SulfurCube.class, TropicalFishSmallModel.class, TropicalFishLargeModel.class };
         reset();
     }
 
@@ -109,17 +114,19 @@ public class EntityMapImageManager {
 
         variantDataFactories.clear();
         customMobProperties.clear();
+        failedPreviewIconTypes.clear();
+        previewEntityIds.set(-1);
 
-        addVariantDataFactory(new DefaultEntityVariantDataFactory(EntityType.BOGGED, Identifier.withDefaultNamespace("textures/entity/skeleton/bogged_overlay.png"), null, null));
-        addVariantDataFactory(new DefaultEntityVariantDataFactory(EntityType.DROWNED, Identifier.withDefaultNamespace("textures/entity/zombie/drowned_outer_layer.png"), null, null));
-        addVariantDataFactory(new DefaultEntityVariantDataFactory(EntityType.ENDERMAN, Identifier.withDefaultNamespace("textures/entity/enderman/enderman_eyes.png"), null, null));
-        addVariantDataFactory(new HorseVariantDataFactory(EntityType.HORSE));
-        addVariantDataFactory(new EnderDragonVarintDataFactory(EntityType.ENDER_DRAGON));
-        addVariantDataFactory(new VillagerVariantDataFactory(EntityType.VILLAGER));
-        addVariantDataFactory(new VillagerVariantDataFactory(EntityType.ZOMBIE_VILLAGER));
-        addVariantDataFactory(new TropicalFishVariantDataFactory(EntityType.TROPICAL_FISH));
+        addVariantDataFactory(new DefaultEntityVariantDataFactory(EntityTypes.BOGGED, Identifier.withDefaultNamespace("textures/entity/skeleton/bogged_overlay.png"), null, null));
+        addVariantDataFactory(new DefaultEntityVariantDataFactory(EntityTypes.DROWNED, Identifier.withDefaultNamespace("textures/entity/zombie/drowned_outer_layer.png"), null, null));
+        addVariantDataFactory(new DefaultEntityVariantDataFactory(EntityTypes.ENDERMAN, Identifier.withDefaultNamespace("textures/entity/enderman/enderman_eyes.png"), null, null));
+        addVariantDataFactory(new HorseVariantDataFactory(EntityTypes.HORSE));
+        addVariantDataFactory(new EnderDragonVarintDataFactory(EntityTypes.ENDER_DRAGON));
+        addVariantDataFactory(new VillagerVariantDataFactory(EntityTypes.VILLAGER));
+        addVariantDataFactory(new VillagerVariantDataFactory(EntityTypes.ZOMBIE_VILLAGER));
+        addVariantDataFactory(new TropicalFishVariantDataFactory(EntityTypes.TROPICAL_FISH));
 
-        addArmorHandler(EntityType.SHEEP, new SheepOverlayHandler());
+        addArmorHandler(EntityTypes.SHEEP, new SheepOverlayHandler());
 
         if (VoxelConstants.DEBUG) {
             BuiltInRegistries.ENTITY_TYPE.forEach(t -> {
@@ -179,7 +186,11 @@ public class EntityMapImageManager {
     }
 
     private AbstractEntityRenderer getEntityRenderer() {
-        return cpuRendering ? cpuRenderer : gpuRenderer;
+        return shouldUseCpuRendering() ? cpuRenderer : gpuRenderer;
+    }
+
+    private boolean shouldUseCpuRendering() {
+        return radarOptions.cpuRendering || radarOptions.forceCpuRendering;
     }
 
     private void addVariantDataFactory(EntityVariantDataFactory factory) {
@@ -191,9 +202,30 @@ public class EntityMapImageManager {
     }
 
     public Sprite requestImageForMobType(EntityType<?> type, int size, boolean addBorder) {
-        if (minecraft.level != null && type.create(minecraft.level, EntitySpawnReason.LOAD) instanceof LivingEntity le) {
-            return requestImageForMob(le, size, addBorder);
+        if (failedPreviewIconTypes.contains(type)) {
+            return null;
         }
+
+        LivingEntity previewEntity = createPreviewEntity(type);
+        if (previewEntity == null) {
+            return null;
+        }
+
+        try {
+            return requestImageForMob(previewEntity, size, addBorder);
+        } catch (RuntimeException e) {
+            failedPreviewIconTypes.add(type);
+            VoxelConstants.getLogger().warn("Failed to render radar preview icon for mob type {}", BuiltInRegistries.ENTITY_TYPE.getKey(type), e);
+            return null;
+        }
+    }
+
+    private LivingEntity createPreviewEntity(EntityType<?> type) {
+        if (minecraft.level != null && type.create(minecraft.level, EntitySpawnReason.LOAD) instanceof LivingEntity livingEntity) {
+            livingEntity.setId(previewEntityIds.getAndDecrement());
+            return livingEntity;
+        }
+
         return null;
     }
 
@@ -272,7 +304,7 @@ public class EntityMapImageManager {
         renderer.enableCull(false);
 
         EntityRenderState renderState = ((EntityRenderer) baseRenderer).createRenderState(entity, 0.5F);
-        ((EntityRenderer) baseRenderer).submit(renderState, emptyPoseStack, emptySubmitNodeCollector, minecraft.gameRenderer.getGameRenderState().levelRenderState.cameraRenderState);
+        ((EntityRenderer) baseRenderer).submit(renderState, emptyPoseStack, emptySubmitNodeCollector, minecraft.gameRenderer.gameRenderState().levelRenderState.cameraRenderState);
 
         EntityModel model = getEntityModel(baseRenderer);
         if (model == null) {
@@ -552,7 +584,7 @@ public class EntityMapImageManager {
             task.run();
         }
 
-        if ((cpuRendering = radarOptions.cpuRendering || radarOptions.forceCpuRendering) != lastCpuRendering) {
+        if ((cpuRendering = shouldUseCpuRendering()) != lastCpuRendering) {
             reset();
             lastCpuRendering = cpuRendering;
         }

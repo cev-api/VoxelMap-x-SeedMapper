@@ -2,6 +2,11 @@ package com.mamiyaotaru.voxelmap.gui;
 
 import com.mamiyaotaru.voxelmap.VoxelConstants;
 import com.mojang.authlib.GameProfile;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Optional;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractSelectionList;
 import net.minecraft.client.gui.components.Button;
@@ -17,12 +22,6 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.player.PlayerModelPart;
 import net.minecraft.world.entity.player.PlayerSkin;
-
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Optional;
 
 public class GuiListPlayers extends AbstractSelectionList<GuiListPlayers.Row> {
     private final ArrayList<PlayerInfo> players;
@@ -115,7 +114,7 @@ public class GuiListPlayers extends AbstractSelectionList<GuiListPlayers.Row> {
         if (id == -1) {
             parentGui.allClicked = true;
             ConfirmScreen confirmScreen = new ConfirmScreen(parentGui, CONFIRM_TITLE, CONFIRM_EXPLANATION, CONFIRM_AFFIRM, CONFIRM_DENY);
-            minecraft.setScreen(confirmScreen);
+            minecraft.gui.setScreen(confirmScreen);
         } else {
             PlayerInfo ScoreboardEntry = playersFiltered.get(id);
             String name = getPlayerName(ScoreboardEntry).getString();

@@ -5,17 +5,16 @@ import com.mamiyaotaru.voxelmap.RadarSettingsManager;
 import com.mamiyaotaru.voxelmap.VoxelConstants;
 import com.mamiyaotaru.voxelmap.util.Contact;
 import com.mamiyaotaru.voxelmap.util.MinimapContext;
+import com.mamiyaotaru.voxelmap.util.RenderUtils;
 import com.mamiyaotaru.voxelmap.util.VoxelMapMobCategory;
+import java.util.ArrayList;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import org.joml.Matrix4fStack;
-
-import java.util.ArrayList;
 
 public abstract class AbstractRadar {
     protected final Minecraft minecraft = Minecraft.getInstance();
@@ -35,14 +34,14 @@ public abstract class AbstractRadar {
 
     public abstract void onResourceManagerReload(ResourceManager resourceManager);
 
-    public abstract void renderMapMobs(Matrix4fStack matrixStack, MultiBufferSource.BufferSource bufferSource, Contact.DisplayState displayState, int x, int y, int scScale, float scaleProj);
+    public abstract void renderMapMobs(Matrix4fStack matrixStack, RenderUtils.SubmitContext context, Contact.DisplayState displayState, int x, int y, int scScale, float scaleProj);
 
     protected abstract void initContact(Contact contact);
 
     public void onTickInGame(Matrix4fStack matrixStack, MinimapContext minimapContext) {
         this.minimapContext = minimapContext;
 
-        if (radarOptions.radarAllowed || radarOptions.radarMobsAllowed || radarOptions.radarPlayersAllowed) {
+        if (radarOptions.radarAllowed && (radarOptions.radarMobsAllowed || radarOptions.radarPlayersAllowed)) {
             if (radarOptions.isChanged()) {
                 timer = 500;
             }
@@ -56,6 +55,10 @@ public abstract class AbstractRadar {
 
             for (Contact contact : contacts) {
                 updateContact(contact);
+            }
+        } else {
+            if (!contacts.isEmpty()) {
+                contacts.clear();
             }
         }
     }
@@ -141,8 +144,8 @@ public abstract class AbstractRadar {
             return false;
         }
 
-        boolean playersAllowed = radarOptions.radarAllowed || radarOptions.radarPlayersAllowed;
-        boolean mobsAllowed = radarOptions.radarAllowed || radarOptions.radarMobsAllowed;
+        boolean playersAllowed = radarOptions.radarAllowed && radarOptions.radarPlayersAllowed;
+        boolean mobsAllowed = radarOptions.radarAllowed && radarOptions.radarMobsAllowed;
 
         return switch (VoxelMapMobCategory.forEntity(entity)) {
             case PLAYER -> playersAllowed;
@@ -152,7 +155,7 @@ public abstract class AbstractRadar {
     }
 
     protected float getEntityMaxHeight(Entity entity) {
-        if (entity.getType() == EntityType.PHANTOM) {
+        if (entity.getType() == EntityTypes.PHANTOM) {
             return 64.0F;
         }
 

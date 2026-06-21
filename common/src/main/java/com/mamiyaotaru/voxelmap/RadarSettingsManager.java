@@ -3,18 +3,17 @@ package com.mamiyaotaru.voxelmap;
 import com.mamiyaotaru.voxelmap.gui.overridden.EnumOptionsMinimap;
 import com.mamiyaotaru.voxelmap.interfaces.ISubSettingsManager;
 import com.mojang.serialization.DataResult;
-import net.minecraft.client.resources.language.I18n;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.Identifier;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.LivingEntity;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.HashSet;
+import net.minecraft.client.resources.language.I18n;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
 
 public class RadarSettingsManager implements ISubSettingsManager {
     private boolean somethingChanged;
@@ -97,6 +96,7 @@ public class RadarSettingsManager implements ISubSettingsManager {
                     case "Newer New Chunks Block Opacity" -> newerNewChunksBlockOpacity = clampOpacity(Integer.parseInt(curLine[1]));
                     case "Newer New Chunks Window Radius Chunks" -> newerNewChunksWindowRadiusChunks = clampRange(Integer.parseInt(curLine[1]), 16, 256);
                     case "Newer New Chunks Refresh Distance Chunks" -> newerNewChunksRefreshDistanceChunks = clampRange(Integer.parseInt(curLine[1]), 8, 128);
+                    case "Radar CPU Rendering" -> cpuRendering = Boolean.parseBoolean(curLine[1]);
                     case "Show Full Entity Names" -> showFullEntityNames = Boolean.parseBoolean(curLine[1]);
                     case "Show Entity Elevation" -> showEntityElevation = Boolean.parseBoolean(curLine[1]);
                     case "Hide Sneaking Players" -> hideSneakingPlayers = Boolean.parseBoolean(curLine[1]);
@@ -153,6 +153,7 @@ public class RadarSettingsManager implements ISubSettingsManager {
         out.println("Newer New Chunks Block Opacity:" + newerNewChunksBlockOpacity);
         out.println("Newer New Chunks Window Radius Chunks:" + newerNewChunksWindowRadiusChunks);
         out.println("Newer New Chunks Refresh Distance Chunks:" + newerNewChunksRefreshDistanceChunks);
+        out.println("Radar CPU Rendering:" + cpuRendering);
         out.println("Show Full Entity Names:" + showFullEntityNames);
         out.println("Show Entity Elevation:" + showEntityElevation);
         out.println("Hide Sneaking Players:" + hideSneakingPlayers);

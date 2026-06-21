@@ -416,7 +416,7 @@ public final class GuiSeedMapperLootViewer extends Screen {
     }
 
     private void closeToPreviousScreen() {
-        this.minecraft.setScreen(resolveCloseTarget(this.prev));
+        this.minecraft.gui.setScreen(resolveCloseTarget(this.prev));
     }
 
     private Screen resolveCloseTarget(Screen target) {

@@ -24,7 +24,6 @@ import net.minecraft.client.User;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.core.BlockPos;
-import net.minecraft.client.renderer.MultiBufferSource.BufferSource;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.client.server.IntegratedServer;
 import net.minecraft.network.Connection;
@@ -66,6 +65,22 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
+import javax.imageio.ImageIO;
+import net.minecraft.client.Camera;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.User;
+import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.client.multiplayer.ServerData;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.resources.language.I18n;
+import net.minecraft.client.server.IntegratedServer;
+import net.minecraft.network.Connection;
+import net.minecraft.resources.Identifier;
+import net.minecraft.server.packs.resources.Resource;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.dimension.BuiltinDimensionTypes;
+import net.minecraft.world.level.storage.LevelResource;
 
 public class WaypointManager {
     public final MapSettingsManager options;
@@ -1262,16 +1277,16 @@ public class WaypointManager {
         return false;
     }
 
-    public void renderWaypoints(float gameTimeDeltaPartialTick, PoseStack poseStack, BufferSource bufferSource, Camera camera) {
-        if (this.waypointContainer == null) {
-            return;
+    public void renderWaypoints(float gameTimeDeltaPartialTick, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, Camera camera) {
+        if (options.waypointsAllowed && this.waypointContainer != null) {
+            this.waypointContainer.renderWaypoints(gameTimeDeltaPartialTick, poseStack, submitNodeCollector, camera);
         }
 
         if (!options.waypointsAllowed && !options.highlightTracerEnabled) {
             return;
         }
 
-        this.waypointContainer.renderWaypoints(gameTimeDeltaPartialTick, poseStack, bufferSource, camera);
+        this.waypointContainer.renderWaypoints(gameTimeDeltaPartialTick, poseStack, submitNodeCollector, camera);
     }
 
     private void loadBackgroundMapImage() {

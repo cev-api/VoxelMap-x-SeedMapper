@@ -4,7 +4,7 @@ import com.mamiyaotaru.voxelmap.util.VoxelMapRenderTypes;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Camera;
-import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.ARGB;
 import net.minecraft.util.Mth;
@@ -50,7 +50,7 @@ public final class SeedMapperEspManager {
         drawBoxes(SeedMapperEspTarget.BLOCK_HIGHLIGHT, blocks, fallbackColor);
     }
 
-    public static void render(PoseStack poseStack, MultiBufferSource.BufferSource bufferSource, Camera camera, SeedMapperSettingsManager settings) {
+    public static void render(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, Camera camera, SeedMapperSettingsManager settings) {
         if (!settings.espEnabled) {
             return;
         }
@@ -73,7 +73,7 @@ public final class SeedMapperEspManager {
             styledBlocks.add(new StyledBlock(box.pos(), outline, snapshot.outlineAlpha(), snapshot.fillEnabled(), fill, snapshot.fillAlpha()));
         }
 
-        renderStyledBoxes(poseStack, bufferSource, camera, styledBlocks);
+        renderStyledBoxes(poseStack, submitNodeCollector, camera, styledBlocks);
     }
 
     private static int resolveColor(int baseColor, boolean rainbow, float rainbowSpeed, BlockPos pos, long now) {
@@ -84,7 +84,7 @@ public final class SeedMapperEspManager {
         return Color.HSBtoRGB(hue, 0.9F, 1.0F);
     }
 
-    private static void renderStyledBoxes(PoseStack poseStack, MultiBufferSource.BufferSource bufferSource, Camera camera, Set<StyledBlock> styledBlocks) {
+    private static void renderStyledBoxes(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, Camera camera, Set<StyledBlock> styledBlocks) {
         if (styledBlocks.isEmpty()) {
             return;
         }
@@ -140,19 +140,18 @@ public final class SeedMapperEspManager {
             });
         }
 
-        PoseStack.Pose pose = poseStack.last();
-        VertexConsumer lineBuffer = bufferSource.getBuffer(VoxelMapRenderTypes.SEEDMAPPER_LINES_NO_DEPTH);
-        for (Line line : lines) {
-            drawLine(lineBuffer, pose, line);
-        }
-        bufferSource.endBatch(VoxelMapRenderTypes.SEEDMAPPER_LINES_NO_DEPTH);
+        submitNodeCollector.submitCustomGeometry(poseStack, VoxelMapRenderTypes.SEEDMAPPER_LINES_NO_DEPTH, (pose, lineBuffer) -> {
+            for (Line line : lines) {
+                drawLine(lineBuffer, pose, line);
+            }
+        });
 
         if (!fillFaces.isEmpty()) {
-            VertexConsumer fillBuffer = bufferSource.getBuffer(VoxelMapRenderTypes.SEEDMAPPER_QUADS_NO_DEPTH);
-            for (FillFace face : fillFaces) {
-                drawQuadFill(fillBuffer, pose, face);
-            }
-            bufferSource.endBatch(VoxelMapRenderTypes.SEEDMAPPER_QUADS_NO_DEPTH);
+            submitNodeCollector.submitCustomGeometry(poseStack, VoxelMapRenderTypes.SEEDMAPPER_QUADS_NO_DEPTH, (pose, fillBuffer) -> {
+                for (FillFace face : fillFaces) {
+                    drawQuadFill(fillBuffer, pose, face);
+                }
+            });
         }
     }
 

@@ -7,16 +7,19 @@ import com.mamiyaotaru.voxelmap.util.BiomeRepository;
 import com.mamiyaotaru.voxelmap.util.CommandUtils;
 import com.mamiyaotaru.voxelmap.util.MessageUtils;
 import com.mamiyaotaru.voxelmap.util.ModrinthUpdateChecker;
+import com.mojang.blaze3d.systems.GpuDevice;
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
+import java.util.Locale;
+import java.util.Optional;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.input.InputQuirks;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.client.renderer.MultiBufferSource.BufferSource;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.server.IntegratedServer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -25,9 +28,6 @@ import net.minecraft.world.level.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.Locale;
-import java.util.Optional;
 
 public final class VoxelConstants {
     private static final Logger LOGGER = LogManager.getLogger("VoxelMap");
@@ -58,7 +58,21 @@ public final class VoxelConstants {
         return serverInfo != null && serverInfo.isRealm();
     }
 
-    public static boolean hasVulkanMod() { return modApiBridge.isModEnabled("vulkanmod"); }
+    public static boolean hasVulkanMod() { return modApiBridge != null && modApiBridge.isModEnabled("vulkanmod"); }
+
+    public static boolean isVulkanRenderer() {
+        if (hasVulkanMod()) {
+            return true;
+        }
+
+        GpuDevice device = RenderSystem.tryGetDevice();
+        if (device == null) {
+            return false;
+        }
+
+        String backendName = device.getDeviceInfo().backendName();
+        return backendName != null && backendName.toLowerCase(Locale.ROOT).contains("vulkan");
+    }
 
     @NotNull
     public static Logger getLogger() { return LOGGER; }
@@ -146,10 +160,10 @@ public final class VoxelConstants {
         }
     }
 
-    public static void onRenderWaypoints(float gameTimeDeltaPartialTick, PoseStack poseStack, BufferSource bufferSource, Camera camera) {
+    public static void onRenderWaypoints(float gameTimeDeltaPartialTick, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, Camera camera) {
         try {
-            VoxelConstants.getVoxelMapInstance().getWaypointManager().renderWaypoints(gameTimeDeltaPartialTick, poseStack, bufferSource, camera);
-            SeedMapperEspRenderer.render(gameTimeDeltaPartialTick, poseStack, bufferSource, camera);
+            VoxelConstants.getVoxelMapInstance().getWaypointManager().renderWaypoints(gameTimeDeltaPartialTick, poseStack, submitNodeCollector, camera);
+            SeedMapperEspRenderer.render(gameTimeDeltaPartialTick, poseStack, submitNodeCollector, camera);
         } catch (RuntimeException e) {
             VoxelConstants.getLogger().log(org.apache.logging.log4j.Level.ERROR, "Error while render waypoints", e);
         }
@@ -236,7 +250,6 @@ public final class VoxelConstants {
     public static String getModVersion() {
         return modVersion;
     }
-
     private static boolean handleUpdateCheckerCommand(String message) {
         if (message == null || message.isBlank()) {
             return false;

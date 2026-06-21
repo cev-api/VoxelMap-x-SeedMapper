@@ -35,7 +35,7 @@ public class GuiSeedMapperSavedSeeds extends GuiScreenMinimap {
         int buttonY = this.height - 48;
         int buttonWidth = 72;
         addButton = addRenderableWidget(new Button.Builder(Component.literal("Add"), button ->
-                this.minecraft.setScreen(new GuiSeedMapperEditSavedSeed(this, null, null)))
+                this.minecraft.gui.setScreen(new GuiSeedMapperEditSavedSeed(this, null, null)))
                 .bounds(this.width / 2 - 155, buttonY, buttonWidth, 20).build());
         editButton = addRenderableWidget(new Button.Builder(Component.literal("Edit"), button -> editSelected())
                 .bounds(this.width / 2 - 79, buttonY, buttonWidth, 20).build());
@@ -113,7 +113,7 @@ public class GuiSeedMapperSavedSeeds extends GuiScreenMinimap {
             return;
         }
         Map.Entry<String, String> entry = entries.get(selectedIndex);
-        this.minecraft.setScreen(new GuiSeedMapperEditSavedSeed(this, entry.getKey(), entry.getValue()));
+        this.minecraft.gui.setScreen(new GuiSeedMapperEditSavedSeed(this, entry.getKey(), entry.getValue()));
     }
 
     private void removeSelected() {

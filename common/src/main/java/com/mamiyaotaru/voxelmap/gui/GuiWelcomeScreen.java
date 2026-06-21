@@ -4,6 +4,8 @@ import com.mamiyaotaru.voxelmap.MapSettingsManager;
 import com.mamiyaotaru.voxelmap.VoxelConstants;
 import com.mamiyaotaru.voxelmap.gui.overridden.EnumOptionsMinimap;
 import com.mamiyaotaru.voxelmap.gui.overridden.GuiScreenMinimap;
+import java.util.ArrayList;
+import java.util.Arrays;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -13,9 +15,6 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.ARGB;
 import org.lwjgl.glfw.GLFW;
-
-import java.util.ArrayList;
-import java.util.Arrays;
 
 public class GuiWelcomeScreen extends GuiScreenMinimap {
     private MapSettingsManager options;
@@ -72,7 +71,7 @@ public class GuiWelcomeScreen extends GuiScreenMinimap {
         }, getFont()));
 
         Component controls = Component.translatable("options.controls").withStyle(ChatFormatting.GRAY);
-        this.addRenderableWidget(this.controlsButton = new PlainTextButton(0, 0, 100, 10, controls, button -> minecraft.setScreen(new GuiMinimapControls(this)), getFont()));
+        this.addRenderableWidget(this.controlsButton = new PlainTextButton(0, 0, 100, 10, controls, button -> minecraft.gui.setScreen(new GuiMinimapControls(this)), getFont()));
     }
 
     @Override

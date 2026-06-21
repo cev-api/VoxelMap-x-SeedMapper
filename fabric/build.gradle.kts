@@ -22,6 +22,7 @@ dependencies {
     implementation("net.fabricmc:fabric-loader:${fabricVersion}")
     implementation("net.fabricmc.fabric-api:fabric-api:${fabricApiVersion}")
 
+    implementation(project.project(":server-common").sourceSets.getByName("main").output)
     implementation(project.project(":common").sourceSets.getByName("main").output)
 }
 
@@ -73,6 +74,7 @@ tasks {
         duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 
         from(zipTree(project.project(":common").tasks.jar.get().archiveFile))
+        from(zipTree(project.project(":server-common").tasks.jar.get().archiveFile))
     }
 
     jar.get().destinationDirectory = rootDir.resolve("build").resolve("libs")

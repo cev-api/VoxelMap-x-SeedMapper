@@ -12,6 +12,12 @@ import com.mamiyaotaru.voxelmap.util.GameVariableAccessShim;
 import com.mamiyaotaru.voxelmap.util.MapUtils;
 import com.mamiyaotaru.voxelmap.util.ModrinthUpdateChecker;
 import com.mamiyaotaru.voxelmap.util.WorldUpdateListener;
+import java.io.InputStream;
+import java.util.ArrayDeque;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.network.chat.Component;
@@ -92,12 +98,12 @@ public class VoxelMap implements PreparableReloadListener {
             boolean mobsAllowed = radarOptions.radarMobsAllowed;
             boolean playersAllowed = radarOptions.radarPlayersAllowed;
 
-            if (radarAllowed || mobsAllowed || playersAllowed) {
+            if (radarAllowed && (mobsAllowed || playersAllowed)) {
                 radar = new Radar();
                 radarSimple = new RadarSimple();
             }
-        } catch (RuntimeException var4) {
-            VoxelConstants.getLogger().error("Failed creating radar " + var4.getLocalizedMessage(), var4);
+        } catch (RuntimeException e) {
+            VoxelConstants.getLogger().error("Failed creating radar " + e.getLocalizedMessage(), e);
             radarOptions.radarAllowed = false;
             radarOptions.radarMobsAllowed = false;
             radarOptions.radarPlayersAllowed = false;
@@ -162,7 +168,7 @@ public class VoxelMap implements PreparableReloadListener {
 
         map.onTickInGame(graphics);
         if (passMessage != null) {
-            VoxelConstants.getMinecraft().gui.getChat().addClientSystemMessage(Component.literal(passMessage));
+            VoxelConstants.getMinecraft().gui.hud.getChat().addClientSystemMessage(Component.literal(passMessage));
             passMessage = null;
         }
 
@@ -418,7 +424,12 @@ public class VoxelMap implements PreparableReloadListener {
         } catch (RuntimeException e) {
             VoxelConstants.getLogger().warn("Error during VoxelMap shutdown preparation; continuing.", e);
         }
+        if (map != null) {
+            map.shutdown();
+        }
+        VoxelConstants.onShutDown();
         ThreadManager.flushSaveQueue();
+        ThreadManager.shutdownCalculationQueue();
     }
 
     public Properties getImageProperties() {

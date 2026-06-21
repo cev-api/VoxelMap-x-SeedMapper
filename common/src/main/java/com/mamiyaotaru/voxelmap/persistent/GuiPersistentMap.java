@@ -49,6 +49,11 @@ import com.mamiyaotaru.voxelmap.util.Waypoint;
 import com.mojang.blaze3d.platform.cursor.CursorTypes;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.FilterMode;
+import java.awt.image.BufferedImage;
+import java.util.ArrayList;
+import java.util.Random;
+import java.util.TreeSet;
+import java.util.concurrent.atomic.AtomicReference;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -97,7 +102,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-
 public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     private static final int COORD_TEXT_COLOR_OK = 0xFFFFFFFF;
     private static final int COORD_TEXT_COLOR_ERROR = 0xFFFF0000;
@@ -331,7 +335,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     public static void openAndCenterOn(Screen parent, double x, double z) {
         pendingCenterX = x;
         pendingCenterZ = z;
-        VoxelConstants.getMinecraft().setScreen(new GuiPersistentMap(parent));
+        VoxelConstants.getMinecraft().gui.setScreen(new GuiPersistentMap(parent));
     }
 
     private void getSkin() {
@@ -370,7 +374,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             pendingCenterX = Double.NaN;
             pendingCenterZ = Double.NaN;
         }
-        if (minecraft.screen == this) {
+        if (minecraft.gui.screen() == this) {
             this.closed = false;
         }
 
@@ -382,17 +386,17 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         this.buttonCount = 6;
         this.buttonSeparation = 4;
         this.buttonWidth = (this.width - this.sideMargin * 2 - this.buttonSeparation * (this.buttonCount - 1)) / this.buttonCount;
-        this.buttonWaypoints = new PopupGuiButton(this.sideMargin, this.getHeight() - 26, this.buttonWidth, 20, Component.translatable("options.minimap.waypoints"), button -> minecraft.setScreen(new GuiWaypoints(this)), this);
+        this.buttonWaypoints = new PopupGuiButton(this.sideMargin, this.getHeight() - 26, this.buttonWidth, 20, Component.translatable("options.minimap.waypoints"), button -> minecraft.gui.setScreen(new GuiWaypoints(this)), this);
         this.addRenderableWidget(this.buttonWaypoints);
         this.multiworldButtonName = Component.translatable(VoxelConstants.isRealmServer() ? "menu.online" : "options.worldmap.multiworld");
         this.multiworldButtonNameRed = (Component.translatable(VoxelConstants.isRealmServer() ? "menu.online" : "options.worldmap.multiworld")).withStyle(ChatFormatting.RED);
         if (!minecraft.hasSingleplayerServer() && !VoxelConstants.getVoxelMapInstance().getWaypointManager().receivedAutoSubworldName()) {
-            this.addRenderableWidget(this.buttonMultiworld = new PopupGuiButton(this.sideMargin + (this.buttonWidth + this.buttonSeparation), this.getHeight() - 26, this.buttonWidth, 20, this.multiworldButtonName, button -> minecraft.setScreen(new GuiSubworldsSelect(this)), this));
+            this.addRenderableWidget(this.buttonMultiworld = new PopupGuiButton(this.sideMargin + (this.buttonWidth + this.buttonSeparation), this.getHeight() - 26, this.buttonWidth, 20, this.multiworldButtonName, button -> minecraft.gui.setScreen(new GuiSubworldsSelect(this)), this));
         }
 
         this.buttonRealmView = this.addRenderableWidget(new PopupGuiButton(this.sideMargin + 2 * (this.buttonWidth + this.buttonSeparation), this.getHeight() - 26, this.buttonWidth, 20, Component.translatable("worldmap.realm.button", getDisplayedWorldMapDimensionName()), button -> cycleWorldMapDimensionView(), this));
         this.buttonSeedPreview = this.addRenderableWidget(new PopupGuiButton(this.sideMargin + 3 * (this.buttonWidth + this.buttonSeparation), this.getHeight() - 26, this.buttonWidth, 20, Component.translatable("worldmap.seedpreview.button", I18n.get(this.seedMapperOptions.worldMapSeedPreview ? "options.on" : "options.off")), button -> toggleSeedPreview(), this));
-        this.addRenderableWidget(new PopupGuiButton(this.sideMargin + 4 * (this.buttonWidth + this.buttonSeparation), this.getHeight() - 26, this.buttonWidth, 20, Component.translatable("menu.options"), button -> minecraft.setScreen(new GuiMinimapOptions(this)), this));
+        this.addRenderableWidget(new PopupGuiButton(this.sideMargin + 4 * (this.buttonWidth + this.buttonSeparation), this.getHeight() - 26, this.buttonWidth, 20, Component.translatable("menu.options"), button -> minecraft.gui.setScreen(new GuiMinimapOptions(this)), this));
         this.addRenderableWidget(new PopupGuiButton(this.sideMargin + 5 * (this.buttonWidth + this.buttonSeparation), this.getHeight() - 26, this.buttonWidth, 20, Component.translatable("gui.done"), button -> this.onClose(), this));
         refreshWorldMapControlLabels();
         this.coordinateXInput = new EditBox(this.getFont(), this.sideMargin, 10, 68, 20, Component.literal("X"));
@@ -707,7 +711,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
         if (mapOptions.worldmapAllowed && isInSeedHeader(mouseX, mouseY)) {
             if (mouseButtonEvent.button() == 0) {
-                minecraft.setScreen(new GuiSeedMapperOptions(this));
+                minecraft.gui.setScreen(new GuiSeedMapperOptions(this));
             }
             return true;
         }
@@ -3703,7 +3707,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                     marker.blockZ()
             );
             if (chestData.isEmpty()) {
-                minecraft.gui.getChat().addClientSystemMessage(AppChatMessages.prefixed("SeedMapper", "No chest loot data available for this structure."));
+                minecraft.gui.hud.getChat().addClientSystemMessage(AppChatMessages.prefixed("SeedMapper", "No chest loot data available for this structure."));
                 return true;
             }
 
@@ -3915,7 +3919,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 dimensions
         );
         waypointManager.addWaypoint(waypoint);
-        minecraft.gui.getChat().addClientSystemMessage(AppChatMessages.prefixed("SeedMapper", "Waypoint created for " + name));
+        minecraft.gui.hud.getChat().addClientSystemMessage(AppChatMessages.prefixed("SeedMapper", "Waypoint created for " + name));
     }
 
     private Waypoint createTransientStructureWaypoint(SeedMapperMarker marker) {
@@ -4396,7 +4400,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 }
                 y = terrainHighlightY(x, z);
                 this.newWaypoint = new Waypoint("", x, z, y, true, r, g, b, "", VoxelConstants.getVoxelMapInstance().getWaypointManager().getCurrentSubworldDescriptor(false), dimensions);
-                minecraft.setScreen(new GuiAddWaypoint(this, this.newWaypoint, false));
+                minecraft.gui.setScreen(new GuiAddWaypoint(this, this.newWaypoint, false));
             }
             case 1 -> {
                 if (selectedSeedMapperMarker != null) {
@@ -4456,7 +4460,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             case 4 -> {
                 if (selectedWaypoint != null) {
                     this.editClicked = true;
-                    minecraft.setScreen(new GuiAddWaypoint(this, selectedWaypoint, true));
+                    minecraft.gui.setScreen(new GuiAddWaypoint(this, selectedWaypoint, true));
                 }
             }
             case 5 -> {
@@ -4502,7 +4506,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                             selectedSeedMapperMarker.blockZ()
                     );
                     if (chestData.isEmpty()) {
-                        minecraft.gui.getChat().addClientSystemMessage(AppChatMessages.prefixed("SeedMapper", "No chest loot data available for this structure."));
+                        minecraft.gui.hud.getChat().addClientSystemMessage(AppChatMessages.prefixed("SeedMapper", "No chest loot data available for this structure."));
                     } else {
                         int widgetX = Mth.clamp((int) popup.getClickedDirectX() / (int) this.guiToDirectMouse + 10, 4, this.width - SeedMapperChestLootWidget.WIDTH - 4);
                         int widgetY = Mth.clamp((int) (popup.getClickedDirectY() / this.guiToDirectMouse) + 10, this.top + 4, this.bottom - SeedMapperChestLootWidget.HEIGHT - 4);
@@ -4555,7 +4559,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             }
         }
 
-        minecraft.setScreen(this);
+        minecraft.gui.setScreen(this);
     }
 
     private void createDeleteConfirmationPopup() {

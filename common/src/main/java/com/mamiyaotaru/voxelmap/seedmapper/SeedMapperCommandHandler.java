@@ -1894,7 +1894,7 @@ public final class SeedMapperCommandHandler {
             statusSink.accept(text);
         }
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.gui != null) minecraft.gui.getChat().addClientSystemMessage(AppChatMessages.prefixed("SeedMapper", text));
+        if (minecraft.gui != null) minecraft.gui.hud.getChat().addClientSystemMessage(AppChatMessages.prefixed("SeedMapper", text));
     }
 
     public static void setStatusSink(Consumer<String> sink) {
