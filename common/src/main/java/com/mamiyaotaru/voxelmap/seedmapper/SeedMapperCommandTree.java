@@ -20,7 +20,7 @@ public final class SeedMapperCommandTree {
     private static final List<String> ORE_VEIN_TYPES = List.of("iron", "copper");
     private static final List<String> ESP_TYPES = List.of("terrain", "canyon", "cave");
     private static final List<String> SOURCE_WRAPPERS = List.of("run", "seeded", "positioned", "in", "versioned", "flagged", "as", "rotated");
-    private static final List<String> ROOT_COMMANDS = List.of("help", "seed", "locate", "highlight", "export", "chunksync", "updatechecker");
+    private static final List<String> ROOT_COMMANDS = List.of("help", "seed", "locate", "highlight", "mine", "export", "chunksync", "updatechecker");
     private static final List<String> LOCATE_TYPES = List.of("structure", "feature", "biome", "orevein", "slime", "slimechunk", "slime_chunk", "loot");
     private static final List<String> LOOT_QUERY_TERMS = List.of(
             "sentry_armor_trim_smithing_template", "vex_armor_trim_smithing_template",
@@ -97,6 +97,12 @@ public final class SeedMapperCommandTree {
                                         .executes(context -> run(context, runner,
                                                 "highlight " + StringArgumentType.getString(context, "mode") + " " + IntegerArgumentType.getInteger(context, "chunks"))))))
                 .then(LiteralArgumentBuilder.<S>literal("export").executes(context -> runRaw(context, runner, "export")))
+                .then(LiteralArgumentBuilder.<S>literal("mine")
+                        .then(LiteralArgumentBuilder.<S>literal("orevein")
+                                .executes(context -> runRaw(context, runner, "mine orevein"))
+                                .then(RequiredArgumentBuilder.<S, Integer>argument("chunks", IntegerArgumentType.integer(0, 8))
+                                        .executes(context -> run(context, runner, "mine orevein " + IntegerArgumentType.getInteger(context, "chunks")))))
+                        .then(LiteralArgumentBuilder.<S>literal("stop").executes(context -> runRaw(context, runner, "mine stop"))))
                 .then(LiteralArgumentBuilder.<S>literal("chunksync")
                         .executes(context -> runRaw(context, runner, "chunksync"))
                         .then(LiteralArgumentBuilder.<S>literal("share").executes(context -> runRaw(context, runner, "chunksync share")))

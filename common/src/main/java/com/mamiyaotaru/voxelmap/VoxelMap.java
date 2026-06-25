@@ -166,6 +166,7 @@ public class VoxelMap implements PreparableReloadListener {
     public void onTickInGame(GuiGraphicsExtractor graphics) {
         if (!initialized) return;
 
+        com.mamiyaotaru.voxelmap.integration.BaritoneOreMiner.getInstance().tick();
         map.onTickInGame(graphics);
         if (passMessage != null) {
             VoxelConstants.getMinecraft().gui.hud.getChat().addClientSystemMessage(Component.literal(passMessage));
