@@ -8,7 +8,6 @@ import com.github.cubiomes.Pos3;
 import com.github.cubiomes.StrongholdIter;
 import com.github.cubiomes.StructureConfig;
 import com.github.cubiomes.SurfaceNoise;
-import com.github.cubiomes.OreVeinParameters;
 import net.minecraft.util.Mth;
 
 import java.lang.foreign.Arena;
@@ -435,35 +434,41 @@ public final class SeedMapperLocatorService {
         if (key.dimension != Cubiomes.DIM_OVERWORLD() || key.showLootableOnly) {
             return;
         }
-        MemorySegment params = OreVeinParameters.allocate(arena);
-        if (Cubiomes.initOreVeinNoise(params, key.seed, key.mcVersion) == 0) {
+        OreVeinPredictor.State predictor = OreVeinPredictor.prepare(key.seed);
+        if (predictor == null) {
             return;
         }
-        int sampleY = copper ? 48 : -8;
+        int[] sampleYs = copper ? new int[]{15, 25, 35} : new int[]{-45, -34, -23};
+        int wantType = copper ? 1 : -1;
+        SeedMapperFeature feature = copper ? SeedMapperFeature.COPPER_ORE_VEIN : SeedMapperFeature.IRON_ORE_VEIN;
         int span = Math.max(Math.abs(key.maxX - key.minX), Math.abs(key.maxZ - key.minZ));
-        int step = span > 8192 ? 512 : (span > 4096 ? 256 : (span > 2048 ? 128 : 64));
-        if (fastMode) {
-            step = Math.max(step, span > 4096 ? 512 : 256);
-        }
+        int budget = fastMode ? 8000 : 50000;
+        int detStep = Math.max(24, Math.min(96, (int) Math.ceil(span / Math.sqrt((double) budget))));
+        int cell = 96;
+        int maxSamples = budget + 4096;
+        int maxMarkers = fastMode ? 900 : 8000;
+        java.util.Set<Long> emitted = new java.util.HashSet<>();
         int samples = 0;
-        int maxSamples = fastMode ? 4000 : 25000;
-        int maxMarkers = fastMode ? 900 : Integer.MAX_VALUE;
         int found = 0;
-        for (int x = (key.minX / step) * step; x <= key.maxX; x += step) {
-            for (int z = (key.minZ / step) * step; z <= key.maxZ; z += step) {
+        for (int x = Math.floorDiv(key.minX, detStep) * detStep; x <= key.maxX; x += detStep) {
+            for (int z = Math.floorDiv(key.minZ, detStep) * detStep; z <= key.maxZ; z += detStep) {
                 if (++samples > maxSamples) {
                     return;
                 }
-                int block = Cubiomes.getOreVeinBlockAt(x, sampleY, z, params);
-                if (copper) {
-                    if (block == Cubiomes.COPPER_ORE() || block == Cubiomes.RAW_COPPER_BLOCK()) {
-                        out.add(new SeedMapperMarker(SeedMapperFeature.COPPER_ORE_VEIN, x, z));
-                        if (++found >= maxMarkers) {
-                            return;
-                        }
+                long cellKey = (((long) Math.floorDiv(x, cell)) << 32) ^ (Math.floorDiv(z, cell) & 0xFFFFFFFFL);
+                if (emitted.contains(cellKey)) {
+                    continue;
+                }
+                boolean hit = false;
+                for (int y : sampleYs) {
+                    if (OreVeinPredictor.regionTypeAt(predictor, x, y, z) == wantType) {
+                        hit = true;
+                        break;
                     }
-                } else if (block == Cubiomes.IRON_ORE() || block == Cubiomes.RAW_IRON_BLOCK()) {
-                    out.add(new SeedMapperMarker(SeedMapperFeature.IRON_ORE_VEIN, x, z));
+                }
+                if (hit) {
+                    emitted.add(cellKey);
+                    out.add(new SeedMapperMarker(feature, x, z));
                     if (++found >= maxMarkers) {
                         return;
                     }

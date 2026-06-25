@@ -4345,6 +4345,11 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         if (selectedSeedMapperMarker.feature().lootable()) {
             entries.add(new Popup.PopupEntry("Open Loot", 9, true, true));
         }
+        if (BaritoneHelper.isPresent()
+                && (selectedSeedMapperMarker.feature() == SeedMapperFeature.IRON_ORE_VEIN
+                    || selectedSeedMapperMarker.feature() == SeedMapperFeature.COPPER_ORE_VEIN)) {
+            entries.add(new Popup.PopupEntry("Mine with Baritone", 14, true, true));
+        }
         this.createPopup(x, y, directX, directY, 110, entries);
     }
 
@@ -4526,6 +4531,13 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             case 13 -> {
                 if (BaritoneHelper.pathTo(x, z)) {
                     minecraft.gui.hud.getChat().addClientSystemMessage(AppChatMessages.prefixed("Baritone", "Pathing to " + x + ", " + z));
+                }
+            }
+            case 14 -> {
+                if (selectedSeedMapperMarker != null) {
+                    int oreType = selectedSeedMapperMarker.feature() == SeedMapperFeature.IRON_ORE_VEIN ? -1
+                            : selectedSeedMapperMarker.feature() == SeedMapperFeature.COPPER_ORE_VEIN ? 1 : 0;
+                    SeedMapperCommandHandler.mineOreVeinsAround(selectedSeedMapperMarker.blockX(), selectedSeedMapperMarker.blockZ(), 2, oreType);
                 }
             }
             default -> VoxelConstants.getLogger().warn("unimplemented command");
