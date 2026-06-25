@@ -15,6 +15,7 @@ import com.mamiyaotaru.voxelmap.gui.GuiSeedMapperOptions;
 import com.mamiyaotaru.voxelmap.gui.GuiSubworldsSelect;
 import com.mamiyaotaru.voxelmap.gui.GuiWaypoints;
 import com.mamiyaotaru.voxelmap.gui.IGuiWaypoints;
+import com.mamiyaotaru.voxelmap.integration.BaritoneHelper;
 import com.mamiyaotaru.voxelmap.gui.overridden.Popup;
 import com.mamiyaotaru.voxelmap.gui.overridden.PopupGuiButton;
 import com.mamiyaotaru.voxelmap.gui.overridden.PopupGuiScreen;
@@ -4313,6 +4314,9 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         entries.add(entry);
         entry = new Popup.PopupEntry("Recenter Map", 12, true, true);
         entries.add(entry);
+        if (BaritoneHelper.isPresent()) {
+            entries.add(new Popup.PopupEntry("Pathfind Here", 13, true, true));
+        }
 
         this.createPopup(x, y, directX, directY, 60, entries);
         if (VoxelConstants.DEBUG) {
@@ -4340,6 +4344,11 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         entries.add(new Popup.PopupEntry(completed ? "Mark Incomplete" : "Mark Complete", 8, true, true));
         if (selectedSeedMapperMarker.feature().lootable()) {
             entries.add(new Popup.PopupEntry("Open Loot", 9, true, true));
+        }
+        if (BaritoneHelper.isPresent()
+                && (selectedSeedMapperMarker.feature() == SeedMapperFeature.IRON_ORE_VEIN
+                    || selectedSeedMapperMarker.feature() == SeedMapperFeature.COPPER_ORE_VEIN)) {
+            entries.add(new Popup.PopupEntry("Mine with Baritone", 14, true, true));
         }
         this.createPopup(x, y, directX, directY, 110, entries);
     }
@@ -4518,6 +4527,18 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             case 11 -> pendingDeleteWaypoint = null;
             case 12 -> {
                 recenterForViewedDimension();
+            }
+            case 13 -> {
+                if (BaritoneHelper.pathTo(x, z)) {
+                    minecraft.gui.hud.getChat().addClientSystemMessage(AppChatMessages.prefixed("Baritone", "Pathing to " + x + ", " + z));
+                }
+            }
+            case 14 -> {
+                if (selectedSeedMapperMarker != null) {
+                    int oreType = selectedSeedMapperMarker.feature() == SeedMapperFeature.IRON_ORE_VEIN ? -1
+                            : selectedSeedMapperMarker.feature() == SeedMapperFeature.COPPER_ORE_VEIN ? 1 : 0;
+                    SeedMapperCommandHandler.mineOreVeinsAround(selectedSeedMapperMarker.blockX(), selectedSeedMapperMarker.blockZ(), 2, oreType);
+                }
             }
             default -> VoxelConstants.getLogger().warn("unimplemented command");
         }

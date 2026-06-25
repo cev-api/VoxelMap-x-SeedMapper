@@ -2543,7 +2543,7 @@ public class Map implements Runnable, IChangeObserver {
         int left = scWidth / 2 - mapSize / 2;
         int top = scHeight / 2 - mapSize / 2;
         RenderType mapRenderType = VoxelMapRenderTypes.GUI_TEXTURED_LEQUAL_DEPTH_TEST.apply(mapResources[zoom]);
-        RenderUtils.submitTexturedModalRect(context.order(SUBMIT_MAP_IMAGE), matrixStack, mapRenderType, left, top, MAP_IMAGE_DEPTH, 256.0f, 256.0F, 0xFFFFFFFF);
+        RenderUtils.submitTexturedModalRect(context.order(SUBMIT_MAP_IMAGE), matrixStack, mapRenderType, left, top, MAP_IMAGE_DEPTH, mapSize, mapSize, 0xFFFFFFFF);
         matrixStack.popMatrix();
 
         if (this.options.biomeOverlay != 0) {

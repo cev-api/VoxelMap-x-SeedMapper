@@ -5,7 +5,6 @@ import com.github.cubiomes.CanyonCarverConfig;
 import com.github.cubiomes.CaveCarverConfig;
 import com.github.cubiomes.Generator;
 import com.github.cubiomes.OreConfig;
-import com.github.cubiomes.OreVeinParameters;
 import com.github.cubiomes.Pos3;
 import com.github.cubiomes.Pos3List;
 import com.github.cubiomes.SurfaceNoise;
@@ -15,6 +14,9 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.mamiyaotaru.voxelmap.chunksync.ChunkSyncCommandHandler;
 import com.mamiyaotaru.voxelmap.VoxelConstants;
+import com.mamiyaotaru.voxelmap.integration.BaritoneHelper;
+import com.mamiyaotaru.voxelmap.integration.BaritoneOreMiner;
+import com.mamiyaotaru.voxelmap.integration.VeinProvider;
 import com.mamiyaotaru.voxelmap.util.DimensionContainer;
 import com.mamiyaotaru.voxelmap.util.GameVariableAccessShim;
 import com.mamiyaotaru.voxelmap.util.AppChatMessages;
@@ -127,6 +129,7 @@ public final class SeedMapperCommandHandler {
             }
             case "locate" -> { handleLocate(args); yield true; }
             case "highlight", "esp" -> { handleHighlight(args); yield true; }
+            case "mine" -> { handleMine(args); yield true; }
             case "export" -> { handleExport(args); yield true; }
             case "source" -> { handleSource(args); yield true; }
             case "updatechecker", "updatecheck", "updates", "update" -> { handleUpdateChecker(args); yield true; }
@@ -231,7 +234,11 @@ public final class SeedMapperCommandHandler {
             send("Usage: /seedmap highlight <ore|orevein|terrain|canyon|cave|clear> ...");
             return;
         }
-        switch (args[2].toLowerCase(Locale.ROOT)) {
+        String highlightType = args[2].toLowerCase(Locale.ROOT);
+        if (!highlightType.equals("clear") && !highlightType.equals("off")) {
+            VoxelConstants.getVoxelMapInstance().getSeedMapperOptions().espEnabled = true;
+        }
+        switch (highlightType) {
             case "clear", "off" -> {
                 SeedMapperEspManager.clear();
                 send("Cleared ESP highlights.");
@@ -717,27 +724,24 @@ public final class SeedMapperCommandHandler {
         int px = GameVariableAccessShim.xCoord();
         int pz = GameVariableAccessShim.zCoord();
         int sampleY = copper ? 48 : -8;
-        try (Arena arena = Arena.ofConfined()) {
-            SeedMapperNative.ensureLoaded();
-            MemorySegment params = OreVeinParameters.allocate(arena);
-            if (Cubiomes.initOreVeinNoise(params, seed, SeedMapperCompat.getMcVersion()) == 0) {
-                send("Ore vein noise is unavailable for this MC version.");
-                return;
-            }
+        OreVeinPredictor.State predictor = OreVeinPredictor.prepare(seed);
+        if (predictor == null) {
+            send("Ore vein noise is unavailable for this MC version.");
+            return;
+        }
 
-            for (int radius = 0; radius <= 4096; radius += 16) {
-                for (int dx = -radius; dx <= radius; dx += 16) {
-                    int dz = radius - Math.abs(dx);
-                    int[] candidates = dz == 0 ? new int[]{0} : new int[]{dz, -dz};
-                    for (int zOff : candidates) {
-                        int x = px + dx;
-                        int z = pz + zOff;
-                        int block = Cubiomes.getOreVeinBlockAt(x, sampleY, z, params);
-                        if (matchesOreVeinType(block, copper, iron)) {
-                            highlightLocation((copper ? "copper" : "iron") + "_ore_vein", x, z);
-                            send("Nearest " + (copper ? "copper" : "iron") + " ore vein sample at X=" + x + " Z=" + z);
-                            return;
-                        }
+        for (int radius = 0; radius <= 4096; radius += 16) {
+            for (int dx = -radius; dx <= radius; dx += 16) {
+                int dz = radius - Math.abs(dx);
+                int[] candidates = dz == 0 ? new int[]{0} : new int[]{dz, -dz};
+                for (int zOff : candidates) {
+                    int x = px + dx;
+                    int z = pz + zOff;
+                    int block = OreVeinPredictor.blockAt(predictor, x, sampleY, z);
+                    if (matchesOreVeinType(block, copper, iron)) {
+                        highlightLocation((copper ? "copper" : "iron") + "_ore_vein", x, z);
+                        send("Nearest " + (copper ? "copper" : "iron") + " ore vein sample at X=" + x + " Z=" + z);
+                        return;
                     }
                 }
             }
@@ -917,62 +921,129 @@ public final class SeedMapperCommandHandler {
         SeedMapperEspManager.drawBoxes(SeedMapperEspTarget.BLOCK_HIGHLIGHT, matches, colorForBlock(targetBlock));
         send("Highlighted " + matches.size() + " ore blocks.");
     }
-    private static void highlightOreVeinEsp(String[] args) {
-        int chunkRange = 0;
-        if (args.length >= 4) {
-            try {
-                chunkRange = Integer.parseInt(args[3]);
-            } catch (NumberFormatException ignored) {
-                send("Invalid chunks value: " + args[3]);
-                return;
-            }
-        }
+    private static Map<BlockPos, Integer> computeOreVeinBlocks(int chunkRange) {
+        return computeOreVeinBlocks(floorDiv(GameVariableAccessShim.xCoord(), 16), floorDiv(GameVariableAccessShim.zCoord(), 16), chunkRange);
+    }
+
+    private static Map<BlockPos, Integer> computeOreVeinBlocks(int centerChunkX, int centerChunkZ, int chunkRange) {
         if (chunkRange < 0 || chunkRange > MAX_HIGHLIGHT_CHUNK_RANGE) {
             send("Chunk range must be 0-" + MAX_HIGHLIGHT_CHUNK_RANGE + " for stability.");
-            return;
+            return null;
         }
 
         long seed = resolveSeed();
-        if (seed == Long.MIN_VALUE) return;
+        if (seed == Long.MIN_VALUE) return null;
 
         Level level = GameVariableAccessShim.getWorld();
         if (level == null) {
             send("No world loaded.");
-            return;
+            return null;
         }
 
-        int playerChunkX = floorDiv(GameVariableAccessShim.xCoord(), 16);
-        int playerChunkZ = floorDiv(GameVariableAccessShim.zCoord(), 16);
+        OreVeinPredictor.State predictor = OreVeinPredictor.prepare(seed);
+        if (predictor == null) {
+            send("Ore vein ESP is unavailable for this MC version.");
+            return null;
+        }
 
         Map<BlockPos, Integer> blocks = new HashMap<>();
-        try (Arena arena = Arena.ofConfined()) {
-            SeedMapperNative.ensureLoaded();
-            MemorySegment params = OreVeinParameters.allocate(arena);
-            if (Cubiomes.initOreVeinNoise(params, seed, SeedMapperCompat.getMcVersion()) == 0) {
-                send("Ore vein ESP is unavailable for this MC version.");
-                return;
-            }
+        forEachChunkInSpiral(centerChunkX, centerChunkZ, chunkRange, (chunkX, chunkZ) -> {
+            var chunkAccess = level.getChunkSource().getChunk(chunkX, chunkZ, ChunkStatus.FULL, false);
+            LevelChunk chunk = chunkAccess instanceof LevelChunk lc ? lc : null;
+            boolean doAirCheck = chunk != null;
+            int minX = chunkX << 4;
+            int minZ = chunkZ << 4;
 
-            forEachChunkInSpiral(playerChunkX, playerChunkZ, chunkRange, (chunkX, chunkZ) -> {
-                var chunkAccess = level.getChunkSource().getChunk(chunkX, chunkZ, ChunkStatus.FULL, false);
-                LevelChunk chunk = chunkAccess instanceof LevelChunk lc ? lc : null;
-                boolean doAirCheck = chunk != null;
-                int minX = chunkX << 4;
-                int minZ = chunkZ << 4;
-
-                for (int x = 0; x < 16; x++) {
-                    for (int z = 0; z < 16; z++) {
-                        for (int y = -60; y <= 50; y++) {
-                            int block = Cubiomes.getOreVeinBlockAt(minX + x, y, minZ + z, params);
-                            if (block == -1 || block == Cubiomes.GRANITE() || block == Cubiomes.TUFF()) continue;
-                            BlockPos pos = new BlockPos(minX + x, y, minZ + z);
-                            if (doAirCheck && isAirOrLava(chunk, pos)) continue;
-                            blocks.put(pos, block);
-                        }
+            for (int x = 0; x < 16; x++) {
+                for (int z = 0; z < 16; z++) {
+                    for (int y = -60; y <= 50; y++) {
+                        int block = OreVeinPredictor.blockAt(predictor, minX + x, y, minZ + z);
+                        if (block == -1 || block == Cubiomes.GRANITE() || block == Cubiomes.TUFF()) continue;
+                        BlockPos pos = new BlockPos(minX + x, y, minZ + z);
+                        if (doAirCheck && isAirOrLava(chunk, pos)) continue;
+                        blocks.put(pos, block);
                     }
                 }
-            });
+            }
+        });
+
+        return blocks;
+    }
+
+    private static Set<BlockPos> scanChunkVeins(OreVeinPredictor.State predictor, int chunkX, int chunkZ, int oreType) {
+        Set<BlockPos> out = new HashSet<>();
+        Level level = GameVariableAccessShim.getWorld();
+        LevelChunk chunk = null;
+        if (level != null) {
+            var chunkAccess = level.getChunkSource().getChunk(chunkX, chunkZ, ChunkStatus.FULL, false);
+            chunk = chunkAccess instanceof LevelChunk lc ? lc : null;
         }
+        boolean doAirCheck = chunk != null;
+        int minX = chunkX << 4;
+        int minZ = chunkZ << 4;
+        for (int x = 0; x < 16; x++) {
+            for (int z = 0; z < 16; z++) {
+                for (int y = -60; y <= 50; y++) {
+                    int block = OreVeinPredictor.blockAt(predictor, minX + x, y, minZ + z);
+                    boolean keep;
+                    if (oreType > 0) {
+                        keep = block == Cubiomes.COPPER_ORE() || block == Cubiomes.RAW_COPPER_BLOCK();
+                    } else if (oreType < 0) {
+                        keep = block == Cubiomes.IRON_ORE() || block == Cubiomes.RAW_IRON_BLOCK();
+                    } else {
+                        keep = block != -1 && block != Cubiomes.GRANITE() && block != Cubiomes.TUFF();
+                    }
+                    if (!keep) continue;
+                    BlockPos pos = new BlockPos(minX + x, y, minZ + z);
+                    if (doAirCheck && isAirOrLava(chunk, pos)) continue;
+                    out.add(pos);
+                }
+            }
+        }
+        return out;
+    }
+
+    private static VeinProvider oreVeinProvider(int oreType) {
+        long seed = resolveSeed();
+        if (seed == Long.MIN_VALUE) return null;
+        OreVeinPredictor.State predictor = OreVeinPredictor.prepare(seed);
+        if (predictor == null) return null;
+        return (cx, cz) -> scanChunkVeins(predictor, cx, cz, oreType);
+    }
+
+    public static void mineOreVeinsAround(int centerWorldX, int centerWorldZ, int chunkRange, int oreType) {
+        if (!BaritoneHelper.isPresent()) {
+            send("Baritone is not installed.");
+            return;
+        }
+        VeinProvider provider = oreVeinProvider(oreType);
+        if (provider == null) {
+            send("Ore vein mining is unavailable for this MC version.");
+            return;
+        }
+        String label = oreType > 0 ? "copper" : oreType < 0 ? "iron" : "ore";
+        int count = BaritoneOreMiner.getInstance().start(centerWorldX, centerWorldZ, Math.max(chunkRange, 1), provider);
+        send("Baritone is mining seed " + label + " veins (" + count + " in range; follows the vein region as you go). Use /seedmap mine stop to cancel.");
+    }
+
+    private static int parseOreVeinChunkRange(String[] args) {
+        if (args.length >= 4) {
+            try {
+                return Integer.parseInt(args[3]);
+            } catch (NumberFormatException ignored) {
+                send("Invalid chunks value: " + args[3]);
+                return Integer.MIN_VALUE;
+            }
+        }
+        return 0;
+    }
+
+    private static void highlightOreVeinEsp(String[] args) {
+        int chunkRange = parseOreVeinChunkRange(args);
+        if (chunkRange == Integer.MIN_VALUE) return;
+
+        Map<BlockPos, Integer> blocks = computeOreVeinBlocks(chunkRange);
+        if (blocks == null) return;
 
         if (blocks.isEmpty()) {
             send("No ore vein blocks found in " + (chunkRange * 2 + 1) + "x" + (chunkRange * 2 + 1) + " chunk area.");
@@ -983,6 +1054,41 @@ public final class SeedMapperCommandHandler {
                 .collect(Collectors.groupingBy(Map.Entry::getValue, Collectors.mapping(Map.Entry::getKey, Collectors.toList())))
                 .forEach((block, positions) -> SeedMapperEspManager.drawBoxes(SeedMapperEspTarget.ORE_VEIN, positions, colorForBlock(block)));
         send("Highlighted " + blocks.size() + " ore vein blocks.");
+    }
+
+    private static void handleMine(String[] args) {
+        if (args.length < 3) {
+            send("Usage: /seedmap mine <orevein|stop> [chunks]");
+            return;
+        }
+        switch (args[2].toLowerCase(Locale.ROOT)) {
+            case "orevein", "ore_vein" -> mineOreVeins(args);
+            case "stop", "cancel", "off" -> {
+                BaritoneOreMiner.getInstance().stop();
+                send("Stopped Baritone ore vein mining.");
+            }
+            default -> send("Unknown mine type. Use orevein or stop.");
+        }
+    }
+
+    private static void mineOreVeins(String[] args) {
+        if (!BaritoneHelper.isPresent()) {
+            send("Baritone is not installed.");
+            return;
+        }
+        int chunkRange = parseOreVeinChunkRange(args);
+        if (chunkRange == Integer.MIN_VALUE) return;
+
+        VeinProvider provider = oreVeinProvider(0);
+        if (provider == null) {
+            send("Ore vein mining is unavailable for this MC version.");
+            return;
+        }
+
+        int px = GameVariableAccessShim.xCoord();
+        int pz = GameVariableAccessShim.zCoord();
+        int count = BaritoneOreMiner.getInstance().start(px, pz, Math.max(chunkRange, 1), provider);
+        send("Baritone is mining seed ore veins (" + count + " in range; follows the vein region as you go). Use /seedmap mine stop to cancel.");
     }
 
     private static void highlightTerrainEsp(String[] args) {
@@ -1835,6 +1941,8 @@ public final class SeedMapperCommandHandler {
         lines.add("/seedmap highlight canyon [chunks]");
         lines.add("/seedmap highlight cave [chunks]");
         lines.add("/seedmap highlight clear");
+        lines.add("/seedmap mine orevein [chunks]");
+        lines.add("/seedmap mine stop");
         lines.add("/seedmap export [visible|radius <blocks>|area <x> <z> <radius>]");
         lines.add("/seedmap source <run|seeded|positioned|in|versioned|flagged|as|rotated> ...");
         lines.add("/voxelmap chunksync <share|get|key|host|export|import|players|remove> ...");
