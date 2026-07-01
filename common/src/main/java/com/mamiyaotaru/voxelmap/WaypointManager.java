@@ -1017,7 +1017,11 @@ public class WaypointManager {
 
     private TreeSet<DimensionContainer> singleDimension(Identifier identifier) {
         TreeSet<DimensionContainer> dimensions = new TreeSet<>();
-        dimensions.add(VoxelConstants.getVoxelMapInstance().getDimensionManager().getDimensionContainerByIdentifier(identifier));
+        DimensionContainer dimension = VoxelConstants.getVoxelMapInstance().getDimensionManager()
+            .getDimensionContainerByIdentifier(identifier.toString());
+        if (dimension != null) {
+            dimensions.add(dimension);
+        }
         return dimensions;
     }
 

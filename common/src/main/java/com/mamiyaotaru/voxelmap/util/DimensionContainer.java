@@ -1,6 +1,6 @@
 package com.mamiyaotaru.voxelmap.util;
 
-import java.util.Objects;
+import java.util.Locale;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.dimension.DimensionType;
 
@@ -25,11 +25,26 @@ public class DimensionContainer implements Comparable<DimensionContainer> {
     public String getDisplayName() { return TextUtils.prettify(this.name); }
 
     @Override
-    public int compareTo(DimensionContainer o) { return String.CASE_INSENSITIVE_ORDER.compare(this.name, o.name); }
+    public int compareTo(DimensionContainer o) {
+        if (this.Identifier != null && o.Identifier != null) {
+            return this.Identifier.toString().compareToIgnoreCase(o.Identifier.toString());
+        }
+        if (this.Identifier != null) {
+            return 1;
+        }
+        if (o.Identifier != null) {
+            return -1;
+        }
+        return String.CASE_INSENSITIVE_ORDER.compare(this.name, o.name);
+    }
 
     @Override
     public boolean equals(Object obj) { return obj instanceof DimensionContainer container && compareTo(container) == 0; }
 
     @Override
-    public int hashCode() { return Objects.hash(name, Identifier); }
+    public int hashCode() {
+        return this.Identifier != null
+            ? this.Identifier.toString().toLowerCase(Locale.ROOT).hashCode()
+            : (this.name == null ? 0 : this.name.toLowerCase(Locale.ROOT).hashCode());
+    }
 }
