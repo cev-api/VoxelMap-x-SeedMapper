@@ -2,7 +2,7 @@
 
 ![LOGO](https://i.imgur.com/D4uG0Fd.png)
 
-VoxelMap x SeedMapper is a heavily modified fork of [VoxelMap Updated](https://github.com/fantahund/VoxelMap) that integrates SeedMapper directly into the client and extends VoxelMap with advanced chunk overlays, data sharing, and world-map tooling.
+VoxelMap x SeedMapper is a heavily modified fork of [VoxelMap Updated](https://github.com/fantahund/VoxelMap) that integrates SeedMapper directly into the client and extends VoxelMap with advanced chunk overlays, data sharing, and world-map tooling. Perfect for base and structure loot hunting!
 
 ## What This Fork Adds
 
@@ -12,7 +12,10 @@ VoxelMap x SeedMapper is a heavily modified fork of [VoxelMap Updated](https://g
 - Added world-map and minimap marker rendering for SeedMapper results.
 - Added completion tracking for located targets.
 - Added saved seeds, manual seed input, and per-world/per-server SeedMapper state.
-- Added bundled cubiomes support (native `cubiomes.dll`).
+- Added bundled cubiomes support ([SeedMapper's Fork](https://github.com/xpple/cubiomes)).
+
+### SeedMap
+![SeedMap](https://i.imgur.com/XikKPVK.png)
 
 #### SeedMapper Menu
 ![SeedMapMenu](https://i.imgur.com/iBHVqbI.png)
@@ -67,6 +70,17 @@ Common commands:
 - Added per-world datapack structure enable/disable persistence.
 - Added datapack-located marker persistence.
 - Improved world map loading state behavior so SeedMapper loading text clears reliably when hidden/disabled and after exact results resolve.
+
+### Baritone Integration
+- Added custom Baritone integration via `BaritoneHelper`.
+- Added automatic vein miner for ores — detects exposed ore veins and leverages Baritone to strip-mine them.
+- Requires [Baritone](https://github.com/cabaletta/baritone) to be installed separately.
+
+### CPU Renderer
+- Added a full CPU-based radar renderer as an alternative to the GPU pipeline.
+- Toggleable via a new option in settings (`Enable CPU Rendering`).
+- Includes block helmet rendering support on the CPU path.
+- Enables full VoxelMap compatibility with Vulkan and other renderer-modifying mods.
 
 ### World Map Improvements
 - Added SeedMapper marker icons and loot markers on the fullscreen map.
