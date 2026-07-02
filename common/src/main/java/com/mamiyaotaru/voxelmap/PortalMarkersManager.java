@@ -23,11 +23,13 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 public class PortalMarkersManager {
     private static final int MAX_CHUNK_SCANS_PER_TICK = 2;
@@ -41,14 +43,14 @@ public class PortalMarkersManager {
 
     public record PortalMarker(PortalType type, BlockPos pos) {}
 
-    private final Map<Long, Set<BlockPos>> netherMarkersByChunk = new HashMap<>();
-    private final Map<Long, Set<BlockPos>> endMarkersByChunk = new HashMap<>();
-    private final Map<Long, Set<BlockPos>> endBeaconMarkersByChunk = new HashMap<>();
-    private final Set<BlockPos> netherMarkers = new HashSet<>();
-    private final Set<BlockPos> endMarkers = new HashSet<>();
-    private final Set<BlockPos> endBeaconMarkers = new HashSet<>();
-    private final ArrayDeque<Long> pendingChunkScanQueue = new ArrayDeque<>();
-    private final Set<Long> pendingChunkScanSet = new HashSet<>();
+    private final Map<Long, Set<BlockPos>> netherMarkersByChunk = new ConcurrentHashMap<>();
+    private final Map<Long, Set<BlockPos>> endMarkersByChunk = new ConcurrentHashMap<>();
+    private final Map<Long, Set<BlockPos>> endBeaconMarkersByChunk = new ConcurrentHashMap<>();
+    private final Set<BlockPos> netherMarkers = ConcurrentHashMap.newKeySet();
+    private final Set<BlockPos> endMarkers = ConcurrentHashMap.newKeySet();
+    private final Set<BlockPos> endBeaconMarkers = ConcurrentHashMap.newKeySet();
+    private final Deque<Long> pendingChunkScanQueue = new ConcurrentLinkedDeque<>();
+    private final Set<Long> pendingChunkScanSet = ConcurrentHashMap.newKeySet();
     private String loadedWorldKey = "";
     private boolean dirty;
     private int ticksSinceDirty;
@@ -278,7 +280,7 @@ public class PortalMarkersManager {
         }
     }
 
-    private boolean replaceChunkMarkers(Map<Long, Set<BlockPos>> byChunk, Set<BlockPos> global, long chunkKey, Set<BlockPos> latest) {
+    private synchronized boolean replaceChunkMarkers(Map<Long, Set<BlockPos>> byChunk, Set<BlockPos> global, long chunkKey, Set<BlockPos> latest) {
         Set<BlockPos> previous = byChunk.get(chunkKey);
         Set<BlockPos> normalizedLatest = latest.isEmpty() ? Set.of() : new HashSet<>(latest);
         if (previous != null && previous.equals(normalizedLatest)) {
@@ -308,7 +310,7 @@ public class PortalMarkersManager {
         return (int) key;
     }
 
-    private void clear() {
+    private synchronized void clear() {
         netherMarkersByChunk.clear();
         endMarkersByChunk.clear();
         endBeaconMarkersByChunk.clear();
@@ -321,8 +323,12 @@ public class PortalMarkersManager {
 
     private void processPendingChunkScans(Level level) {
         int scans = 0;
-        while (scans < MAX_CHUNK_SCANS_PER_TICK && !pendingChunkScanQueue.isEmpty()) {
-            long key = pendingChunkScanQueue.removeFirst();
+        while (scans < MAX_CHUNK_SCANS_PER_TICK) {
+            Long polled = pendingChunkScanQueue.pollFirst();
+            if (polled == null) {
+                break;
+            }
+            long key = polled;
             pendingChunkScanSet.remove(key);
 
             int chunkX = unpackChunkX(key);
@@ -389,7 +395,7 @@ public class PortalMarkersManager {
         }
     }
 
-    private void loadArray(JsonArray array, Set<BlockPos> global, Map<Long, Set<BlockPos>> byChunk) {
+    private synchronized void loadArray(JsonArray array, Set<BlockPos> global, Map<Long, Set<BlockPos>> byChunk) {
         if (array == null) {
             return;
         }
