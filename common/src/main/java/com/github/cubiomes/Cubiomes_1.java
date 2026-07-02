@@ -52,7 +52,7 @@ class Cubiomes_1 {
 
 
     static {
-        System.loadLibrary("cubiomes");
+        com.mamiyaotaru.voxelmap.seedmapper.SeedMapperNative.ensureLoaded();
     }
 
     static final SymbolLookup SYMBOL_LOOKUP = SymbolLookup.loaderLookup()
