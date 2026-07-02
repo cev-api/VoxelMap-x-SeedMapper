@@ -28,6 +28,7 @@ public enum SeedMapperFeature {
     IRON_ORE_VEIN("iron_ore_vein", "seedmapper.feature.iron_ore_vein", -1, com.github.cubiomes.Cubiomes.DIM_OVERWORLD(), "images/seedmapper/feature_icons/iron_ore_vein.png", false),
     COPPER_ORE_VEIN("copper_ore_vein", "seedmapper.feature.copper_ore_vein", -1, com.github.cubiomes.Cubiomes.DIM_OVERWORLD(), "images/seedmapper/feature_icons/copper_ore_vein.png", false),
     SLIME_CHUNK("slime_chunk", "seedmapper.feature.slime_chunk", -1, com.github.cubiomes.Cubiomes.DIM_OVERWORLD(), "images/seedmapper/feature_icons/slime_chunk.png", false),
+    SULFUR_CAVES("sulfur_caves", "seedmapper.feature.sulfur_caves", -1, com.github.cubiomes.Cubiomes.DIM_OVERWORLD(), "images/seedmapper/feature_icons/sulfur_caves.png", false),
     DATAPACK_STRUCTURE("datapack_structure", "seedmapper.feature.datapack_structure", -1, Integer.MIN_VALUE, "images/seedmapper/feature_icons/waypoint.png", false),
     WORLD_SPAWN("world_spawn", "seedmapper.feature.world_spawn", -1, com.github.cubiomes.Cubiomes.DIM_OVERWORLD(), "images/seedmapper/cubiomes_viewer_icons/world_spawn.png", false),
     NETHER_PORTAL("nether_portal", "seedmapper.feature.nether_portal", -1, Integer.MIN_VALUE, "minecraft:textures/block/nether_portal.png", false),

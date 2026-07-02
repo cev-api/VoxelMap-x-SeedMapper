@@ -458,16 +458,17 @@ public class WaypointContainer {
             });
 
             // Render labels
-            int textColor = (int) (255.0F * alpha) << 24 | 0x00FFFFFF;
+            float labelLuminance = 0.299F * waypoint.red + 0.587F * waypoint.green + 0.114F * waypoint.blue;
+            int textColor = (int) (255.0F * alpha) << 24 | (labelLuminance > 0.5F ? 0x00000000 : 0x00FFFFFF);
 
             if (renderMainLabel) {
-                submitNodeCollector.submitText(poseStack, -halfWidthMainLabel, yPosMainLabel, Component.literal(mainLabel).getVisualOrderText(), false, net.minecraft.client.gui.Font.DisplayMode.SEE_THROUGH, LIGHT, textColor, 0x00000000, 0);
+                submitNodeCollector.order(1).submitText(poseStack, -halfWidthMainLabel, yPosMainLabel, Component.literal(mainLabel).getVisualOrderText(), false, net.minecraft.client.gui.Font.DisplayMode.SEE_THROUGH, LIGHT, textColor, 0x00000000, 0);
             }
 
             if (renderSubLabel) {
                 poseStack.pushPose();
                 poseStack.scale(subLabelScale, subLabelScale, 1.0F);
-                submitNodeCollector.submitText(poseStack, -halfWidthSubLabel, yPosSubLabel, Component.literal(subLabel).getVisualOrderText(), false, net.minecraft.client.gui.Font.DisplayMode.SEE_THROUGH, LIGHT, textColor, 0x00000000, 0);
+                submitNodeCollector.order(1).submitText(poseStack, -halfWidthSubLabel, yPosSubLabel, Component.literal(subLabel).getVisualOrderText(), false, net.minecraft.client.gui.Font.DisplayMode.SEE_THROUGH, LIGHT, textColor, 0x00000000, 0);
                 poseStack.popPose();
             }
         }

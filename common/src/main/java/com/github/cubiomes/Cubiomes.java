@@ -18,6 +18,433 @@ public class Cubiomes extends Cubiomes_1 {
         // Should not be called directly
     }
 
+    private static class init_end_city_treasure {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_end_city_treasure");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int init_end_city_treasure(LootTableContext **context, int version)
+     * }
+     */
+    public static FunctionDescriptor init_end_city_treasure$descriptor() {
+        return init_end_city_treasure.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int init_end_city_treasure(LootTableContext **context, int version)
+     * }
+     */
+    public static MethodHandle init_end_city_treasure$handle() {
+        return init_end_city_treasure.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int init_end_city_treasure(LootTableContext **context, int version)
+     * }
+     */
+    public static MemorySegment init_end_city_treasure$address() {
+        return init_end_city_treasure.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int init_end_city_treasure(LootTableContext **context, int version)
+     * }
+     */
+    public static int init_end_city_treasure(MemorySegment context, int version) {
+        var mh$ = init_end_city_treasure.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("init_end_city_treasure", context, version);
+            }
+            return (int)mh$.invokeExact(context, version);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class init_igloo_chest {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_igloo_chest");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int init_igloo_chest(LootTableContext **context, int version)
+     * }
+     */
+    public static FunctionDescriptor init_igloo_chest$descriptor() {
+        return init_igloo_chest.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int init_igloo_chest(LootTableContext **context, int version)
+     * }
+     */
+    public static MethodHandle init_igloo_chest$handle() {
+        return init_igloo_chest.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int init_igloo_chest(LootTableContext **context, int version)
+     * }
+     */
+    public static MemorySegment init_igloo_chest$address() {
+        return init_igloo_chest.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int init_igloo_chest(LootTableContext **context, int version)
+     * }
+     */
+    public static int init_igloo_chest(MemorySegment context, int version) {
+        var mh$ = init_igloo_chest.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("init_igloo_chest", context, version);
+            }
+            return (int)mh$.invokeExact(context, version);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class init_jungle_temple {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_jungle_temple");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int init_jungle_temple(LootTableContext **context, int version)
+     * }
+     */
+    public static FunctionDescriptor init_jungle_temple$descriptor() {
+        return init_jungle_temple.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int init_jungle_temple(LootTableContext **context, int version)
+     * }
+     */
+    public static MethodHandle init_jungle_temple$handle() {
+        return init_jungle_temple.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int init_jungle_temple(LootTableContext **context, int version)
+     * }
+     */
+    public static MemorySegment init_jungle_temple$address() {
+        return init_jungle_temple.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int init_jungle_temple(LootTableContext **context, int version)
+     * }
+     */
+    public static int init_jungle_temple(MemorySegment context, int version) {
+        var mh$ = init_jungle_temple.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("init_jungle_temple", context, version);
+            }
+            return (int)mh$.invokeExact(context, version);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class init_jungle_temple_dispenser {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_jungle_temple_dispenser");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int init_jungle_temple_dispenser(LootTableContext **context, int version)
+     * }
+     */
+    public static FunctionDescriptor init_jungle_temple_dispenser$descriptor() {
+        return init_jungle_temple_dispenser.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int init_jungle_temple_dispenser(LootTableContext **context, int version)
+     * }
+     */
+    public static MethodHandle init_jungle_temple_dispenser$handle() {
+        return init_jungle_temple_dispenser.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int init_jungle_temple_dispenser(LootTableContext **context, int version)
+     * }
+     */
+    public static MemorySegment init_jungle_temple_dispenser$address() {
+        return init_jungle_temple_dispenser.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int init_jungle_temple_dispenser(LootTableContext **context, int version)
+     * }
+     */
+    public static int init_jungle_temple_dispenser(MemorySegment context, int version) {
+        var mh$ = init_jungle_temple_dispenser.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("init_jungle_temple_dispenser", context, version);
+            }
+            return (int)mh$.invokeExact(context, version);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class init_nether_bridge {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_nether_bridge");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int init_nether_bridge(LootTableContext **context, int version)
+     * }
+     */
+    public static FunctionDescriptor init_nether_bridge$descriptor() {
+        return init_nether_bridge.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int init_nether_bridge(LootTableContext **context, int version)
+     * }
+     */
+    public static MethodHandle init_nether_bridge$handle() {
+        return init_nether_bridge.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int init_nether_bridge(LootTableContext **context, int version)
+     * }
+     */
+    public static MemorySegment init_nether_bridge$address() {
+        return init_nether_bridge.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int init_nether_bridge(LootTableContext **context, int version)
+     * }
+     */
+    public static int init_nether_bridge(MemorySegment context, int version) {
+        var mh$ = init_nether_bridge.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("init_nether_bridge", context, version);
+            }
+            return (int)mh$.invokeExact(context, version);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class init_pillager_outpost {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_pillager_outpost");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int init_pillager_outpost(LootTableContext **context, int version)
+     * }
+     */
+    public static FunctionDescriptor init_pillager_outpost$descriptor() {
+        return init_pillager_outpost.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int init_pillager_outpost(LootTableContext **context, int version)
+     * }
+     */
+    public static MethodHandle init_pillager_outpost$handle() {
+        return init_pillager_outpost.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int init_pillager_outpost(LootTableContext **context, int version)
+     * }
+     */
+    public static MemorySegment init_pillager_outpost$address() {
+        return init_pillager_outpost.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int init_pillager_outpost(LootTableContext **context, int version)
+     * }
+     */
+    public static int init_pillager_outpost(MemorySegment context, int version) {
+        var mh$ = init_pillager_outpost.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("init_pillager_outpost", context, version);
+            }
+            return (int)mh$.invokeExact(context, version);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class init_ruined_portal {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_ruined_portal");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int init_ruined_portal(LootTableContext **context, int version)
+     * }
+     */
+    public static FunctionDescriptor init_ruined_portal$descriptor() {
+        return init_ruined_portal.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int init_ruined_portal(LootTableContext **context, int version)
+     * }
+     */
+    public static MethodHandle init_ruined_portal$handle() {
+        return init_ruined_portal.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int init_ruined_portal(LootTableContext **context, int version)
+     * }
+     */
+    public static MemorySegment init_ruined_portal$address() {
+        return init_ruined_portal.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int init_ruined_portal(LootTableContext **context, int version)
+     * }
+     */
+    public static int init_ruined_portal(MemorySegment context, int version) {
+        var mh$ = init_ruined_portal.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("init_ruined_portal", context, version);
+            }
+            return (int)mh$.invokeExact(context, version);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
     private static class init_shipwreck_map {
         public static final FunctionDescriptor DESC = FunctionDescriptor.of(
             Cubiomes.C_INT,
@@ -72,6 +499,8 @@ public class Cubiomes extends Cubiomes_1 {
                 traceDowncall("init_shipwreck_map", context, version);
             }
             return (int)mh$.invokeExact(context, version);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -131,6 +560,8 @@ public class Cubiomes extends Cubiomes_1 {
                 traceDowncall("init_shipwreck_supply", context, version);
             }
             return (int)mh$.invokeExact(context, version);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -190,6 +621,8 @@ public class Cubiomes extends Cubiomes_1 {
                 traceDowncall("init_shipwreck_treasure", context, version);
             }
             return (int)mh$.invokeExact(context, version);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -250,6 +683,8 @@ public class Cubiomes extends Cubiomes_1 {
                 traceDowncall("init_loot_table", loot_table_string, context, version);
             }
             return (int)mh$.invokeExact(loot_table_string, context, version);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -310,6 +745,8 @@ public class Cubiomes extends Cubiomes_1 {
                 traceDowncall("init_loot_table_file", file, context, version);
             }
             return (int)mh$.invokeExact(file, context, version);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -370,6 +807,8 @@ public class Cubiomes extends Cubiomes_1 {
                 traceDowncall("resolve_subtable", context, subtable_name, subtable_string);
             }
             return (int)mh$.invokeExact(context, subtable_name, subtable_string);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -430,6 +869,8 @@ public class Cubiomes extends Cubiomes_1 {
                 traceDowncall("resolve_subtable_file", context, subtable_name, subtable_file);
             }
             return (int)mh$.invokeExact(context, subtable_name, subtable_file);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -487,6 +928,8 @@ public class Cubiomes extends Cubiomes_1 {
                 traceDowncall("free_loot_table", context);
             }
             mh$.invokeExact(context);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }

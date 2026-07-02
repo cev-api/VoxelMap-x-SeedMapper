@@ -15,6 +15,8 @@ public final class SeedMapperCompat {
         if (version.startsWith("1.19")) return Cubiomes.MC_1_19();
         if (version.startsWith("1.20")) return Cubiomes.MC_1_20();
         if (version.startsWith("1.21")) return Cubiomes.MC_1_21();
+        if (version.startsWith("26.1")) return Cubiomes.MC_26_1();
+        if (version.startsWith("26.2")) return Cubiomes.MC_26_2();
         return Cubiomes.MC_NEWEST();
     }
 }

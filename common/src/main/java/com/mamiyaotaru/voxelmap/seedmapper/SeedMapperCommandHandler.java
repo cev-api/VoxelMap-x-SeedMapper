@@ -50,6 +50,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -598,6 +599,7 @@ public final class SeedMapperCommandHandler {
             Cubiomes.applySeed(generator, dimension, seed);
 
             int step = 64;
+            int[] quartYs = biomeSearchQuartYs(SeedMapperCompat.getMcVersion());
             for (int radius = 0; radius <= maxRadius; radius += step) {
                 for (int dx = -radius; dx <= radius; dx += step) {
                     int dz = radius - Math.abs(dx);
@@ -605,15 +607,39 @@ public final class SeedMapperCommandHandler {
                     for (int zOff : candidates) {
                         int x = px + dx;
                         int z = pz + zOff;
-                        int biome = Cubiomes.getBiomeAt(generator, 4, x >> 2, 80, z >> 2);
-                        if (biome == wantedBiomeId) {
-                            return new LocateResult(biomeQuery, x, z);
+                        for (int quartY : quartYs) {
+                            int biome = Cubiomes.getBiomeAt(generator, 4, x >> 2, quartY, z >> 2);
+                            if (biome == wantedBiomeId) {
+                                return new LocateResult(biomeQuery, x, z);
+                            }
                         }
                     }
                 }
             }
         }
         return null;
+    }
+
+    private static int[] biomeSearchQuartYs(int mcVersion) {
+        boolean legacyRange = mcVersion <= Cubiomes.MC_1_17_1();
+        int minY = legacyRange ? 0 : -64;
+        int maxY = legacyRange ? 256 : 320;
+        int startY = Math.min(Math.max(GameVariableAccessShim.yCoord(), minY), maxY);
+        LinkedHashSet<Integer> quartYs = new LinkedHashSet<>();
+        for (int offset = 0; offset <= maxY - minY; offset += 64) {
+            if (startY + offset <= maxY) {
+                quartYs.add((startY + offset) >> 2);
+            }
+            if (startY - offset >= minY) {
+                quartYs.add((startY - offset) >> 2);
+            }
+        }
+        int[] out = new int[quartYs.size()];
+        int i = 0;
+        for (int quartY : quartYs) {
+            out[i++] = quartY;
+        }
+        return out;
     }
 
     public static LocateResult locateBiomeByQuery(String query, int maxRadius, Integer fromX, Integer fromZ) {
@@ -781,6 +807,7 @@ public final class SeedMapperCommandHandler {
             Cubiomes.applySeed(generator, dimension, seed);
 
             int step = 64;
+            int[] quartYs = biomeSearchQuartYs(SeedMapperCompat.getMcVersion());
             for (int radius = 0; radius <= 8192; radius += step) {
                 for (int dx = -radius; dx <= radius; dx += step) {
                     int dz = radius - Math.abs(dx);
@@ -788,11 +815,13 @@ public final class SeedMapperCommandHandler {
                     for (int zOff : candidates) {
                         int x = px + dx;
                         int z = pz + zOff;
-                        int biome = Cubiomes.getBiomeAt(generator, 4, x >> 2, 80, z >> 2);
-                        if (biome == wantedBiomeId) {
-                            highlightLocation("biome:" + biomeQuery, x, z);
-                            send("Nearest biome match at X=" + x + " Z=" + z);
-                            return;
+                        for (int quartY : quartYs) {
+                            int biome = Cubiomes.getBiomeAt(generator, 4, x >> 2, quartY, z >> 2);
+                            if (biome == wantedBiomeId) {
+                                highlightLocation("biome:" + biomeQuery, x, z);
+                                send("Nearest biome match at X=" + x + " Z=" + z);
+                                return;
+                            }
                         }
                     }
                 }

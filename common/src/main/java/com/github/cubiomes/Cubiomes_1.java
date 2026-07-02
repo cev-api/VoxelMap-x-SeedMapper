@@ -12,63 +12,22 @@ import java.util.stream.*;
 import static java.lang.foreign.ValueLayout.*;
 import static java.lang.foreign.MemoryLayout.PathElement.*;
 
-class Cubiomes_1 {
+class Cubiomes_1 extends Cubiomes$shared {
 
     Cubiomes_1() {
         // Should not be called directly
     }
 
     static final Arena LIBRARY_ARENA = Arena.ofAuto();
-    static final boolean TRACE_DOWNCALLS = Boolean.getBoolean("jextract.trace.downcalls");
-
-    static void traceDowncall(String name, Object... args) {
-         String traceArgs = Arrays.stream(args)
-                       .map(Object::toString)
-                       .collect(Collectors.joining(", "));
-         System.out.printf("%s(%s)\n", name, traceArgs);
-    }
-
-    static MethodHandle upcallHandle(Class<?> fi, String name, FunctionDescriptor fdesc) {
-        try {
-            return MethodHandles.lookup().findVirtual(fi, name, fdesc.toMethodType());
-        } catch (ReflectiveOperationException ex) {
-            throw new AssertionError(ex);
-        }
-    }
-
-    static MemoryLayout align(MemoryLayout layout, long align) {
-        return switch (layout) {
-            case PaddingLayout p -> p;
-            case ValueLayout v -> v.withByteAlignment(align);
-            case GroupLayout g -> {
-                MemoryLayout[] alignedMembers = g.memberLayouts().stream()
-                        .map(m -> align(m, align)).toArray(MemoryLayout[]::new);
-                yield g instanceof StructLayout ?
-                        MemoryLayout.structLayout(alignedMembers) : MemoryLayout.unionLayout(alignedMembers);
-            }
-            case SequenceLayout s -> MemoryLayout.sequenceLayout(s.elementCount(), align(s.elementLayout(), align));
-        };
-    }
 
 
     static {
-        System.loadLibrary("cubiomes");
+        com.mamiyaotaru.voxelmap.seedmapper.SeedMapperNative.ensureLoaded();
     }
 
     static final SymbolLookup SYMBOL_LOOKUP = SymbolLookup.loaderLookup()
             .or(Linker.nativeLinker().defaultLookup());
 
-    public static final ValueLayout.OfBoolean C_BOOL = (ValueLayout.OfBoolean) Linker.nativeLinker().canonicalLayouts().get("bool");
-    public static final ValueLayout.OfByte C_CHAR =(ValueLayout.OfByte)Linker.nativeLinker().canonicalLayouts().get("char");
-    public static final ValueLayout.OfShort C_SHORT = (ValueLayout.OfShort) Linker.nativeLinker().canonicalLayouts().get("short");
-    public static final ValueLayout.OfInt C_INT = (ValueLayout.OfInt) Linker.nativeLinker().canonicalLayouts().get("int");
-    public static final ValueLayout.OfLong C_LONG_LONG = (ValueLayout.OfLong) Linker.nativeLinker().canonicalLayouts().get("long long");
-    public static final ValueLayout.OfFloat C_FLOAT = (ValueLayout.OfFloat) Linker.nativeLinker().canonicalLayouts().get("float");
-    public static final ValueLayout.OfDouble C_DOUBLE = (ValueLayout.OfDouble) Linker.nativeLinker().canonicalLayouts().get("double");
-    public static final AddressLayout C_POINTER = ((AddressLayout) Linker.nativeLinker().canonicalLayouts().get("void*"))
-            .withTargetLayout(MemoryLayout.sequenceLayout(java.lang.Long.MAX_VALUE, C_CHAR));
-    public static final ValueLayout.OfInt C_LONG = ValueLayout.JAVA_INT;
-    public static final ValueLayout.OfDouble C_LONG_DOUBLE = ValueLayout.JAVA_DOUBLE;
     private static final int __STDC_FORMAT_MACROS = (int)1L;
     /**
      * {@snippet lang=c :
@@ -192,6 +151,8 @@ class Cubiomes_1 {
                 traceDowncall("perlinInit", noise, seed);
             }
             mh$.invokeExact(noise, seed);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -250,6 +211,8 @@ class Cubiomes_1 {
                 traceDowncall("xPerlinInit", noise, xr);
             }
             mh$.invokeExact(noise, xr);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -313,6 +276,8 @@ class Cubiomes_1 {
                 traceDowncall("samplePerlin", noise, x, y, z, yamp, ymax);
             }
             return (double)mh$.invokeExact(noise, x, y, z, yamp, ymax);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -373,6 +338,8 @@ class Cubiomes_1 {
                 traceDowncall("sampleSimplex2D", noise, x, y);
             }
             return (double)mh$.invokeExact(noise, x, y);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -434,6 +401,8 @@ class Cubiomes_1 {
                 traceDowncall("octaveInit", noise, seed, octaves, omin, len);
             }
             mh$.invokeExact(noise, seed, octaves, omin, len);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -495,6 +464,8 @@ class Cubiomes_1 {
                 traceDowncall("xOctaveLegacyInit", noise, xr, octaves, omin, len);
             }
             mh$.invokeExact(noise, xr, octaves, omin, len);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -559,6 +530,8 @@ class Cubiomes_1 {
                 traceDowncall("octaveInitBeta", noise, seed, octaves, octcnt, lac, lacMul, persist, persistMul);
             }
             mh$.invokeExact(noise, seed, octaves, octcnt, lac, lacMul, persist, persistMul);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -623,6 +596,8 @@ class Cubiomes_1 {
                 traceDowncall("xOctaveInit", noise, xr, octaves, amplitudes, omin, len, nmax);
             }
             return (int)mh$.invokeExact(noise, xr, octaves, amplitudes, omin, len, nmax);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -684,6 +659,8 @@ class Cubiomes_1 {
                 traceDowncall("sampleOctave", noise, x, y, z);
             }
             return (double)mh$.invokeExact(noise, x, y, z);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -748,6 +725,8 @@ class Cubiomes_1 {
                 traceDowncall("sampleOctaveAmp", noise, x, y, z, yamp, ymin, ydefault);
             }
             return (double)mh$.invokeExact(noise, x, y, z, yamp, ymin, ydefault);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -808,6 +787,8 @@ class Cubiomes_1 {
                 traceDowncall("sampleOctave2D", noise, x, z);
             }
             return (double)mh$.invokeExact(noise, x, z);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -868,6 +849,8 @@ class Cubiomes_1 {
                 traceDowncall("sampleOctaveBeta17Biome", noise, x, z);
             }
             return (double)mh$.invokeExact(noise, x, z);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -930,6 +913,8 @@ class Cubiomes_1 {
                 traceDowncall("sampleOctaveBeta17Terrain", noise, v, x, z, yLacFlag, lacmin);
             }
             mh$.invokeExact(noise, v, x, z, yLacFlag, lacmin);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -992,6 +977,8 @@ class Cubiomes_1 {
                 traceDowncall("doublePerlinInit", noise, seed, octavesA, octavesB, omin, len);
             }
             mh$.invokeExact(noise, seed, octavesA, octavesB, omin, len);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -1056,6 +1043,8 @@ class Cubiomes_1 {
                 traceDowncall("xDoublePerlinInit", noise, xr, octaves, amplitudes, omin, len, nmax);
             }
             return (int)mh$.invokeExact(noise, xr, octaves, amplitudes, omin, len, nmax);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -1117,6 +1106,8 @@ class Cubiomes_1 {
                 traceDowncall("sampleDoublePerlin", noise, x, y, z);
             }
             return (double)mh$.invokeExact(noise, x, y, z);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -1625,10 +1616,28 @@ class Cubiomes_1 {
     public static int MC_1_21() {
         return MC_1_21;
     }
-    private static final int MC_NEWEST = (int)32L;
+    private static final int MC_26_1 = (int)33L;
     /**
      * {@snippet lang=c :
-     * enum MCVersion.MC_NEWEST = 32
+     * enum MCVersion.MC_26_1 = 33
+     * }
+     */
+    public static int MC_26_1() {
+        return MC_26_1;
+    }
+    private static final int MC_26_2 = (int)34L;
+    /**
+     * {@snippet lang=c :
+     * enum MCVersion.MC_26_2 = 34
+     * }
+     */
+    public static int MC_26_2() {
+        return MC_26_2;
+    }
+    private static final int MC_NEWEST = (int)34L;
+    /**
+     * {@snippet lang=c :
+     * enum MCVersion.MC_NEWEST = 34
      * }
      */
     public static int MC_NEWEST() {
@@ -2966,6 +2975,15 @@ class Cubiomes_1 {
     public static int pale_garden() {
         return pale_garden;
     }
+    private static final int sulfur_caves = (int)187L;
+    /**
+     * {@snippet lang=c :
+     * enum BiomeID.sulfur_caves = 187
+     * }
+     */
+    public static int sulfur_caves() {
+        return sulfur_caves;
+    }
 
     private static class biomeExists {
         public static final FunctionDescriptor DESC = FunctionDescriptor.of(
@@ -3021,6 +3039,8 @@ class Cubiomes_1 {
                 traceDowncall("biomeExists", mc, id);
             }
             return (int)mh$.invokeExact(mc, id);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -3080,6 +3100,8 @@ class Cubiomes_1 {
                 traceDowncall("isOverworld", mc, id);
             }
             return (int)mh$.invokeExact(mc, id);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -3138,6 +3160,8 @@ class Cubiomes_1 {
                 traceDowncall("getDimension", id);
             }
             return (int)mh$.invokeExact(id);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -3197,6 +3221,8 @@ class Cubiomes_1 {
                 traceDowncall("getMutated", mc, id);
             }
             return (int)mh$.invokeExact(mc, id);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -3256,6 +3282,8 @@ class Cubiomes_1 {
                 traceDowncall("getCategory", mc, id);
             }
             return (int)mh$.invokeExact(mc, id);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -3316,6 +3344,8 @@ class Cubiomes_1 {
                 traceDowncall("areSimilar", mc, id1, id2);
             }
             return (int)mh$.invokeExact(mc, id1, id2);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -3374,6 +3404,8 @@ class Cubiomes_1 {
                 traceDowncall("isMesa", id);
             }
             return (int)mh$.invokeExact(id);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -3432,6 +3464,8 @@ class Cubiomes_1 {
                 traceDowncall("isShallowOcean", id);
             }
             return (int)mh$.invokeExact(id);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -3490,6 +3524,8 @@ class Cubiomes_1 {
                 traceDowncall("isDeepOcean", id);
             }
             return (int)mh$.invokeExact(id);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -3548,6 +3584,8 @@ class Cubiomes_1 {
                 traceDowncall("isOceanic", id);
             }
             return (int)mh$.invokeExact(id);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -3606,6 +3644,8 @@ class Cubiomes_1 {
                 traceDowncall("isSnowy", id);
             }
             return (int)mh$.invokeExact(id);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -4501,6 +4541,8 @@ class Cubiomes_1 {
                 traceDowncall("setLayerSeed", layer, worldSeed);
             }
             mh$.invokeExact(layer, worldSeed);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -4564,6 +4606,8 @@ class Cubiomes_1 {
                 traceDowncall("mapContinent", x0, x1, x2, x3, x4, x5);
             }
             return (int)mh$.invokeExact(x0, x1, x2, x3, x4, x5);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -4627,6 +4671,8 @@ class Cubiomes_1 {
                 traceDowncall("mapZoomFuzzy", x0, x1, x2, x3, x4, x5);
             }
             return (int)mh$.invokeExact(x0, x1, x2, x3, x4, x5);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -4690,6 +4736,8 @@ class Cubiomes_1 {
                 traceDowncall("mapZoom", x0, x1, x2, x3, x4, x5);
             }
             return (int)mh$.invokeExact(x0, x1, x2, x3, x4, x5);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -4753,6 +4801,8 @@ class Cubiomes_1 {
                 traceDowncall("mapLand", x0, x1, x2, x3, x4, x5);
             }
             return (int)mh$.invokeExact(x0, x1, x2, x3, x4, x5);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -4816,6 +4866,8 @@ class Cubiomes_1 {
                 traceDowncall("mapLand16", x0, x1, x2, x3, x4, x5);
             }
             return (int)mh$.invokeExact(x0, x1, x2, x3, x4, x5);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -4879,6 +4931,8 @@ class Cubiomes_1 {
                 traceDowncall("mapLandB18", x0, x1, x2, x3, x4, x5);
             }
             return (int)mh$.invokeExact(x0, x1, x2, x3, x4, x5);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -4942,6 +4996,8 @@ class Cubiomes_1 {
                 traceDowncall("mapIsland", x0, x1, x2, x3, x4, x5);
             }
             return (int)mh$.invokeExact(x0, x1, x2, x3, x4, x5);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -5005,6 +5061,8 @@ class Cubiomes_1 {
                 traceDowncall("mapSnow", x0, x1, x2, x3, x4, x5);
             }
             return (int)mh$.invokeExact(x0, x1, x2, x3, x4, x5);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -5068,6 +5126,8 @@ class Cubiomes_1 {
                 traceDowncall("mapSnow16", x0, x1, x2, x3, x4, x5);
             }
             return (int)mh$.invokeExact(x0, x1, x2, x3, x4, x5);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -5131,6 +5191,8 @@ class Cubiomes_1 {
                 traceDowncall("mapCool", x0, x1, x2, x3, x4, x5);
             }
             return (int)mh$.invokeExact(x0, x1, x2, x3, x4, x5);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -5194,6 +5256,8 @@ class Cubiomes_1 {
                 traceDowncall("mapHeat", x0, x1, x2, x3, x4, x5);
             }
             return (int)mh$.invokeExact(x0, x1, x2, x3, x4, x5);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -5257,6 +5321,8 @@ class Cubiomes_1 {
                 traceDowncall("mapSpecial", x0, x1, x2, x3, x4, x5);
             }
             return (int)mh$.invokeExact(x0, x1, x2, x3, x4, x5);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -5320,6 +5386,8 @@ class Cubiomes_1 {
                 traceDowncall("mapMushroom", x0, x1, x2, x3, x4, x5);
             }
             return (int)mh$.invokeExact(x0, x1, x2, x3, x4, x5);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -5383,6 +5451,8 @@ class Cubiomes_1 {
                 traceDowncall("mapDeepOcean", x0, x1, x2, x3, x4, x5);
             }
             return (int)mh$.invokeExact(x0, x1, x2, x3, x4, x5);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -5446,6 +5516,8 @@ class Cubiomes_1 {
                 traceDowncall("mapBiome", x0, x1, x2, x3, x4, x5);
             }
             return (int)mh$.invokeExact(x0, x1, x2, x3, x4, x5);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -5509,6 +5581,8 @@ class Cubiomes_1 {
                 traceDowncall("mapBamboo", x0, x1, x2, x3, x4, x5);
             }
             return (int)mh$.invokeExact(x0, x1, x2, x3, x4, x5);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -5572,6 +5646,8 @@ class Cubiomes_1 {
                 traceDowncall("mapNoise", x0, x1, x2, x3, x4, x5);
             }
             return (int)mh$.invokeExact(x0, x1, x2, x3, x4, x5);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -5635,6 +5711,8 @@ class Cubiomes_1 {
                 traceDowncall("mapBiomeEdge", x0, x1, x2, x3, x4, x5);
             }
             return (int)mh$.invokeExact(x0, x1, x2, x3, x4, x5);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -5698,6 +5776,8 @@ class Cubiomes_1 {
                 traceDowncall("mapHills", x0, x1, x2, x3, x4, x5);
             }
             return (int)mh$.invokeExact(x0, x1, x2, x3, x4, x5);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -5761,6 +5841,8 @@ class Cubiomes_1 {
                 traceDowncall("mapRiver", x0, x1, x2, x3, x4, x5);
             }
             return (int)mh$.invokeExact(x0, x1, x2, x3, x4, x5);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -5824,6 +5906,8 @@ class Cubiomes_1 {
                 traceDowncall("mapSmooth", x0, x1, x2, x3, x4, x5);
             }
             return (int)mh$.invokeExact(x0, x1, x2, x3, x4, x5);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -5887,6 +5971,8 @@ class Cubiomes_1 {
                 traceDowncall("mapSunflower", x0, x1, x2, x3, x4, x5);
             }
             return (int)mh$.invokeExact(x0, x1, x2, x3, x4, x5);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -5950,6 +6036,8 @@ class Cubiomes_1 {
                 traceDowncall("mapShore", x0, x1, x2, x3, x4, x5);
             }
             return (int)mh$.invokeExact(x0, x1, x2, x3, x4, x5);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -6013,6 +6101,8 @@ class Cubiomes_1 {
                 traceDowncall("mapSwampRiver", x0, x1, x2, x3, x4, x5);
             }
             return (int)mh$.invokeExact(x0, x1, x2, x3, x4, x5);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -6076,6 +6166,8 @@ class Cubiomes_1 {
                 traceDowncall("mapRiverMix", x0, x1, x2, x3, x4, x5);
             }
             return (int)mh$.invokeExact(x0, x1, x2, x3, x4, x5);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -6139,6 +6231,8 @@ class Cubiomes_1 {
                 traceDowncall("mapOceanTemp", x0, x1, x2, x3, x4, x5);
             }
             return (int)mh$.invokeExact(x0, x1, x2, x3, x4, x5);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -6202,6 +6296,8 @@ class Cubiomes_1 {
                 traceDowncall("mapOceanMix", x0, x1, x2, x3, x4, x5);
             }
             return (int)mh$.invokeExact(x0, x1, x2, x3, x4, x5);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -6265,6 +6361,8 @@ class Cubiomes_1 {
                 traceDowncall("mapVoronoi", x0, x1, x2, x3, x4, x5);
             }
             return (int)mh$.invokeExact(x0, x1, x2, x3, x4, x5);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -6328,6 +6426,8 @@ class Cubiomes_1 {
                 traceDowncall("mapVoronoi114", x0, x1, x2, x3, x4, x5);
             }
             return (int)mh$.invokeExact(x0, x1, x2, x3, x4, x5);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -6386,6 +6486,8 @@ class Cubiomes_1 {
                 traceDowncall("getVoronoiSHA", worldSeed);
             }
             return (long)mh$.invokeExact(worldSeed);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -6449,6 +6551,8 @@ class Cubiomes_1 {
                 traceDowncall("voronoiAccess3D", sha, x, y, z, x4, y4, z4);
             }
             mh$.invokeExact(sha, x, y, z, x4, y4, z4);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -6517,6 +6621,8 @@ class Cubiomes_1 {
                 traceDowncall("mapVoronoiPlane", sha, out, src, x, z, w, h, y, px, pz, pw, ph);
             }
             mh$.invokeExact(sha, out, src, x, z, w, h, y, px, pz, pw, ph);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -6648,6 +6754,8 @@ class Cubiomes_1 {
                 traceDowncall("initSurfaceNoise", sn, dim, seed);
             }
             mh$.invokeExact(sn, dim, seed);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -6706,6 +6814,8 @@ class Cubiomes_1 {
                 traceDowncall("initSurfaceNoiseBeta", snb, seed);
             }
             mh$.invokeExact(snb, seed);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -6767,6 +6877,8 @@ class Cubiomes_1 {
                 traceDowncall("sampleSurfaceNoise", sn, x, y, z);
             }
             return (double)mh$.invokeExact(sn, x, y, z);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -6830,6 +6942,8 @@ class Cubiomes_1 {
                 traceDowncall("sampleSurfaceNoiseBetween", sn, x, y, z, noiseMin, noiseMax);
             }
             return (double)mh$.invokeExact(sn, x, y, z, noiseMin, noiseMax);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -6888,6 +7002,8 @@ class Cubiomes_1 {
                 traceDowncall("setNetherSeed", nn, seed);
             }
             mh$.invokeExact(nn, seed);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -6950,6 +7066,8 @@ class Cubiomes_1 {
                 traceDowncall("getNetherBiome", nn, x, y, z, ndel);
             }
             return (int)mh$.invokeExact(nn, x, y, z, ndel);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -7013,6 +7131,8 @@ class Cubiomes_1 {
                 traceDowncall("mapNether2D", nn, out, x, z, w, h);
             }
             return (int)mh$.invokeExact(nn, out, x, z, w, h);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -7074,6 +7194,8 @@ class Cubiomes_1 {
                 traceDowncall("mapNether3D", nn, out, r, confidence);
             }
             return (int)mh$.invokeExact(nn, out, r, confidence);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -7136,6 +7258,8 @@ class Cubiomes_1 {
                 traceDowncall("genNetherScaled", nn, out, r, mc, sha);
             }
             return (int)mh$.invokeExact(nn, out, r, mc, sha);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -7195,6 +7319,8 @@ class Cubiomes_1 {
                 traceDowncall("setEndSeed", en, mc, seed);
             }
             mh$.invokeExact(en, mc, seed);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -7258,6 +7384,8 @@ class Cubiomes_1 {
                 traceDowncall("mapEndBiome", en, out, x, z, w, h);
             }
             return (int)mh$.invokeExact(en, out, x, z, w, h);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -7321,6 +7449,8 @@ class Cubiomes_1 {
                 traceDowncall("mapEnd", en, out, x, z, w, h);
             }
             return (int)mh$.invokeExact(en, out, x, z, w, h);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -7382,6 +7512,8 @@ class Cubiomes_1 {
                 traceDowncall("getEndSurfaceHeight", mc, seed, x, z);
             }
             return (int)mh$.invokeExact(mc, seed, x, z);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -7448,6 +7580,8 @@ class Cubiomes_1 {
                 traceDowncall("mapEndSurfaceHeight", y, en, sn, x, z, w, h, scale, ymin);
             }
             return (int)mh$.invokeExact(y, en, sn, x, z, w, h, scale, ymin);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -7510,6 +7644,8 @@ class Cubiomes_1 {
                 traceDowncall("genEndScaled", en, out, r, mc, sha);
             }
             return (int)mh$.invokeExact(en, out, r, mc, sha);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -7633,6 +7769,8 @@ class Cubiomes_1 {
                 traceDowncall("addSplineVal", rsp, loc, val, der);
             }
             mh$.invokeExact(rsp, loc, val, der);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -7692,6 +7830,8 @@ class Cubiomes_1 {
                 traceDowncall("createFixSpline", ss, val);
             }
             return (MemorySegment)mh$.invokeExact(ss, val);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -7751,6 +7891,8 @@ class Cubiomes_1 {
                 traceDowncall("getSpline", sp, vals);
             }
             return (float)mh$.invokeExact(sp, vals);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -7809,6 +7951,8 @@ class Cubiomes_1 {
                 traceDowncall("initBiomeNoise", bn, mc);
             }
             mh$.invokeExact(bn, mc);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -7868,6 +8012,8 @@ class Cubiomes_1 {
                 traceDowncall("setBiomeSeed", bn, seed, large);
             }
             mh$.invokeExact(bn, seed, large);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -7926,6 +8072,8 @@ class Cubiomes_1 {
                 traceDowncall("setBetaBiomeSeed", bnb, seed);
             }
             mh$.invokeExact(bnb, seed);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -7990,6 +8138,8 @@ class Cubiomes_1 {
                 traceDowncall("sampleBiomeNoise", bn, np, x, y, z, dat, sample_flags);
             }
             return (int)mh$.invokeExact(bn, np, x, y, z, dat, sample_flags);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -8050,6 +8200,8 @@ class Cubiomes_1 {
                 traceDowncall("sampleNoiseParameters", bn, x, z, np_param);
             }
             mh$.invokeExact(bn, x, z, np_param);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -8112,6 +8264,8 @@ class Cubiomes_1 {
                 traceDowncall("sampleBiomeNoiseBeta", bnb, np, nv, x, z);
             }
             return (int)mh$.invokeExact(bnb, np, nv, x, z);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -8173,6 +8327,8 @@ class Cubiomes_1 {
                 traceDowncall("approxSurfaceBeta", bnb, snb, x, z);
             }
             return (double)mh$.invokeExact(bnb, snb, x, z);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -8232,6 +8388,8 @@ class Cubiomes_1 {
                 traceDowncall("getOldBetaBiome", t, h);
             }
             return (int)mh$.invokeExact(t, h);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -8292,6 +8450,8 @@ class Cubiomes_1 {
                 traceDowncall("climateToBiome", mc, np, dat);
             }
             return (int)mh$.invokeExact(mc, np, dat);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -8353,6 +8513,8 @@ class Cubiomes_1 {
                 traceDowncall("setClimateParaSeed", bn, seed, large, nptype, nmax);
             }
             mh$.invokeExact(bn, seed, large, nptype, nmax);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -8414,6 +8576,8 @@ class Cubiomes_1 {
                 traceDowncall("sampleClimatePara", bn, np, x, z);
             }
             return (double)mh$.invokeExact(bn, np, x, z);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -8476,6 +8640,8 @@ class Cubiomes_1 {
                 traceDowncall("genBiomeNoiseChunkSection", bn, out, cx, cy, cz, dat);
             }
             mh$.invokeExact(bn, out, cx, cy, cz, dat);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -8537,6 +8703,8 @@ class Cubiomes_1 {
                 traceDowncall("genBiomeNoiseScaled", bn, out, r, sha);
             }
             return (int)mh$.invokeExact(bn, out, r, sha);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -8598,6 +8766,8 @@ class Cubiomes_1 {
                 traceDowncall("genBiomeNoiseBetaScaled", bnb, snb, out, r);
             }
             return (int)mh$.invokeExact(bnb, snb, out, r);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -8659,6 +8829,8 @@ class Cubiomes_1 {
                 traceDowncall("getBiomeDepthAndScale", id, depth, scale, grass);
             }
             return (int)mh$.invokeExact(id, depth, scale, grass);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -8717,6 +8889,8 @@ class Cubiomes_1 {
                 traceDowncall("getVoronoiSrcRange", allocator, r);
             }
             return (MemorySegment)mh$.invokeExact(allocator, r);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -8777,6 +8951,8 @@ class Cubiomes_1 {
                 traceDowncall("initBlendedNoise", bn, ws, dim);
             }
             return (int)mh$.invokeExact(bn, ws, dim);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -8838,6 +9014,8 @@ class Cubiomes_1 {
                 traceDowncall("sampleBase3dNoise", bn, x, y, z);
             }
             return (double)mh$.invokeExact(bn, x, y, z);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -8924,6 +9102,8 @@ class Cubiomes_1 {
                 traceDowncall("setupGenerator", g, mc, flags);
             }
             mh$.invokeExact(g, mc, flags);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -8983,6 +9163,8 @@ class Cubiomes_1 {
                 traceDowncall("applySeed", g, dim, seed);
             }
             mh$.invokeExact(g, dim, seed);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -9045,6 +9227,8 @@ class Cubiomes_1 {
                 traceDowncall("getMinCacheSize", g, scale, sx, sy, sz);
             }
             return (long)mh$.invokeExact(g, scale, sx, sy, sz);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -9104,6 +9288,8 @@ class Cubiomes_1 {
                 traceDowncall("allocCache", g, r);
             }
             return (MemorySegment)mh$.invokeExact(g, r);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -9164,6 +9350,8 @@ class Cubiomes_1 {
                 traceDowncall("genBiomes", g, cache, r);
             }
             return (int)mh$.invokeExact(g, cache, r);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -9226,6 +9414,8 @@ class Cubiomes_1 {
                 traceDowncall("getBiomeAt", g, scale, x, y, z);
             }
             return (int)mh$.invokeExact(g, scale, x, y, z);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -9285,6 +9475,8 @@ class Cubiomes_1 {
                 traceDowncall("getLayerForScale", g, scale);
             }
             return (MemorySegment)mh$.invokeExact(g, scale);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -9344,6 +9536,8 @@ class Cubiomes_1 {
                 traceDowncall("setupLayerStack", g, mc, largeBiomes);
             }
             mh$.invokeExact(g, mc, largeBiomes);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -9404,6 +9598,8 @@ class Cubiomes_1 {
                 traceDowncall("getMinLayerCacheSize", layer, sizeX, sizeZ);
             }
             return (long)mh$.invokeExact(layer, sizeX, sizeZ);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -9469,6 +9665,8 @@ class Cubiomes_1 {
                 traceDowncall("setupLayer", l, map, mc, zoom, edge, saltbase, p, p2);
             }
             return (MemorySegment)mh$.invokeExact(l, map, mc, zoom, edge, saltbase, p, p2);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -9532,6 +9730,8 @@ class Cubiomes_1 {
                 traceDowncall("genArea", layer, out, areaX, areaZ, areaWidth, areaHeight);
             }
             return (int)mh$.invokeExact(layer, out, areaX, areaZ, areaWidth, areaHeight);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -9597,6 +9797,8 @@ class Cubiomes_1 {
                 traceDowncall("mapApproxHeight", y, ids, g, sn, x, z, w, h);
             }
             return (int)mh$.invokeExact(y, ids, g, sn, x, z, w, h);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -9907,6 +10109,8 @@ class Cubiomes_1 {
                 traceDowncall("createPos3List", list, initialCapacity);
             }
             mh$.invokeExact(list, initialCapacity);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -9965,6 +10169,8 @@ class Cubiomes_1 {
                 traceDowncall("appendPos3List", list, pos3);
             }
             mh$.invokeExact(list, pos3);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -10022,6 +10228,8 @@ class Cubiomes_1 {
                 traceDowncall("freePos3List", list);
             }
             mh$.invokeExact(list);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -10100,6 +10308,8 @@ class Cubiomes_1 {
                 traceDowncall("getStructureConfig", structureType, mc, sconf);
             }
             return (int)mh$.invokeExact(structureType, mc, sconf);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -10161,6 +10371,8 @@ class Cubiomes_1 {
                 traceDowncall("getStructureSaltConfig", structureType, mc, biome, ssconf);
             }
             return (int)mh$.invokeExact(structureType, mc, biome, ssconf);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -10224,6 +10436,8 @@ class Cubiomes_1 {
                 traceDowncall("getStructurePos", structureType, mc, seed, regX, regZ, pos);
             }
             return (int)mh$.invokeExact(structureType, mc, seed, regX, regZ, pos);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -10289,6 +10503,8 @@ class Cubiomes_1 {
                 traceDowncall("getMineshafts", mc, seed, chunkX, chunkZ, chunkW, chunkH, out, nout);
             }
             return (int)mh$.invokeExact(mc, seed, chunkX, chunkZ, chunkW, chunkH, out, nout);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -10350,6 +10566,8 @@ class Cubiomes_1 {
                 traceDowncall("getPopulationSeed", mc, ws, x, z);
             }
             return (long)mh$.invokeExact(mc, ws, x, z);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -10412,6 +10630,8 @@ class Cubiomes_1 {
                 traceDowncall("getEndIslands", islands, mc, seed, chunkX, chunkZ);
             }
             return (int)mh$.invokeExact(islands, mc, seed, chunkX, chunkZ);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -10477,6 +10697,8 @@ class Cubiomes_1 {
                 traceDowncall("mapEndIslandHeight", y, en, seed, x, z, w, h, scale);
             }
             return (int)mh$.invokeExact(y, en, seed, x, z, w, h, scale);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -10539,6 +10761,8 @@ class Cubiomes_1 {
                 traceDowncall("isEndChunkEmpty", en, sn, seed, chunkX, chunkZ);
             }
             return (int)mh$.invokeExact(en, sn, seed, chunkX, chunkZ);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -10599,6 +10823,8 @@ class Cubiomes_1 {
                 traceDowncall("initFirstStronghold", allocator, sh, mc, s48);
             }
             return (MemorySegment)mh$.invokeExact(allocator, sh, mc, s48);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -10658,6 +10884,8 @@ class Cubiomes_1 {
                 traceDowncall("nextStronghold", sh, g);
             }
             return (int)mh$.invokeExact(sh, g);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -10717,6 +10945,8 @@ class Cubiomes_1 {
                 traceDowncall("estimateSpawn", allocator, g, rng);
             }
             return (MemorySegment)mh$.invokeExact(allocator, g, rng);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -10775,6 +11005,8 @@ class Cubiomes_1 {
                 traceDowncall("getSpawn", allocator, g);
             }
             return (MemorySegment)mh$.invokeExact(allocator, g);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -11021,6 +11253,15 @@ class Cubiomes_1 {
      */
     public static int TUFF() {
         return TUFF;
+    }
+    private static final int BLOCK_NUM = (int)27L;
+    /**
+     * {@snippet lang=c :
+     * enum Blocks.BLOCK_NUM = 27
+     * }
+     */
+    public static int BLOCK_NUM() {
+        return BLOCK_NUM;
     }
     private static final int AndesiteOre = (int)0L;
     /**
@@ -11427,6 +11668,15 @@ class Cubiomes_1 {
     public static int UpperIronOre() {
         return UpperIronOre;
     }
+    private static final int ORE_NUM = (int)45L;
+    /**
+     * {@snippet lang=c :
+     * enum Ores.ORE_NUM = 45
+     * }
+     */
+    public static int ORE_NUM() {
+        return ORE_NUM;
+    }
 
     private static class getOreConfig {
         public static final FunctionDescriptor DESC = FunctionDescriptor.of(
@@ -11484,6 +11734,8 @@ class Cubiomes_1 {
                 traceDowncall("getOreConfig", oreType, mc, biomeID, oconf);
             }
             return (int)mh$.invokeExact(oreType, mc, biomeID, oconf);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -11545,6 +11797,8 @@ class Cubiomes_1 {
                 traceDowncall("getBiomeForOreGen", g, chunkX, chunkZ, y);
             }
             return (int)mh$.invokeExact(g, chunkX, chunkZ, y);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -11605,6 +11859,8 @@ class Cubiomes_1 {
                 traceDowncall("isViableOreBiome", mc, oreType, biomeID);
             }
             return (int)mh$.invokeExact(mc, oreType, biomeID);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -11667,6 +11923,8 @@ class Cubiomes_1 {
                 traceDowncall("generateOres", allocator, g, sn, config, chunkX, chunkZ);
             }
             return (MemorySegment)mh$.invokeExact(allocator, g, sn, config, chunkX, chunkZ);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -11729,6 +11987,8 @@ class Cubiomes_1 {
                 traceDowncall("generateBaseOrePosition", allocator, mc, config, chunkX, chunkZ, rnd);
             }
             return (MemorySegment)mh$.invokeExact(allocator, mc, config, chunkX, chunkZ, rnd);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -11791,6 +12051,8 @@ class Cubiomes_1 {
                 traceDowncall("generateOrePositions", g, sn, config, pos, rnd, pos3s);
             }
             mh$.invokeExact(g, sn, config, pos, rnd, pos3s);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -11862,6 +12124,8 @@ class Cubiomes_1 {
                 traceDowncall("generateVeinPart", mc, config, rnd, offsetXPos, offsetXNeg, offsetZPos, offsetZNeg, offsetYPos, offsetYNeg, startX, startY, startZ, oreSize, radius, pos3s);
             }
             mh$.invokeExact(mc, config, rnd, offsetXPos, offsetXNeg, offsetZPos, offsetZNeg, offsetYPos, offsetYNeg, startX, startY, startZ, oreSize, radius, pos3s);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -11940,6 +12204,8 @@ class Cubiomes_1 {
                 traceDowncall("initOreVeinNoise", params, ws, mc);
             }
             return (int)mh$.invokeExact(params, ws, mc);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -12001,6 +12267,8 @@ class Cubiomes_1 {
                 traceDowncall("getOreVeinBlockAt", x, y, z, params);
             }
             return (int)mh$.invokeExact(x, y, z, params);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -12142,6 +12410,8 @@ class Cubiomes_1 {
                 traceDowncall("getCanyonCarverConfig", canyonCarverType, mc, cconf);
             }
             return (int)mh$.invokeExact(canyonCarverType, mc, cconf);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -12201,6 +12471,8 @@ class Cubiomes_1 {
                 traceDowncall("isViableCanyonBiome", canyonCarverType, biome);
             }
             return (int)mh$.invokeExact(canyonCarverType, biome);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -12262,6 +12534,8 @@ class Cubiomes_1 {
                 traceDowncall("getCaveCarverConfig", caveCarverType, mc, biome, cconf);
             }
             return (int)mh$.invokeExact(caveCarverType, mc, biome, cconf);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -12321,6 +12595,8 @@ class Cubiomes_1 {
                 traceDowncall("isViableCaveBiome", caveCarverType, biome);
             }
             return (int)mh$.invokeExact(caveCarverType, biome);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -12383,6 +12659,8 @@ class Cubiomes_1 {
                 traceDowncall("checkCanyonStart", seed, chunkX, chunkZ, ccc, rnd);
             }
             return (int)mh$.invokeExact(seed, chunkX, chunkZ, ccc, rnd);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -12445,6 +12723,8 @@ class Cubiomes_1 {
                 traceDowncall("checkCaveStart", seed, chunkX, chunkZ, ccc, rnd);
             }
             return (int)mh$.invokeExact(seed, chunkX, chunkZ, ccc, rnd);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -12509,6 +12789,8 @@ class Cubiomes_1 {
                 traceDowncall("carveCanyon", seed, mc, chunkX, chunkZ, ccc, canyonCarverType, biomes, poses);
             }
             mh$.invokeExact(seed, mc, chunkX, chunkZ, ccc, canyonCarverType, biomes, poses);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -12573,6 +12855,8 @@ class Cubiomes_1 {
                 traceDowncall("carveCave", seed, mc, chunkX, chunkZ, ccc, caveCarverType, biomes, poses);
             }
             mh$.invokeExact(seed, mc, chunkX, chunkZ, ccc, caveCarverType, biomes, poses);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -12639,6 +12923,8 @@ class Cubiomes_1 {
                 traceDowncall("locateBiome", allocator, g, x, y, z, radius, validB, validM, rng, passes);
             }
             return (MemorySegment)mh$.invokeExact(allocator, g, x, y, z, radius, validB, validM, rng, passes);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -12701,6 +12987,8 @@ class Cubiomes_1 {
                 traceDowncall("isViableStructurePos", structType, g, blockX, blockZ, flags);
             }
             return (int)mh$.invokeExact(structType, g, blockX, blockZ, flags);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -12761,6 +13049,8 @@ class Cubiomes_1 {
                 traceDowncall("isViableFeatureBiome", mc, structureType, biomeID);
             }
             return (int)mh$.invokeExact(mc, structureType, biomeID);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -12822,6 +13112,8 @@ class Cubiomes_1 {
                 traceDowncall("isViableStructureTerrain", structType, g, blockX, blockZ);
             }
             return (int)mh$.invokeExact(structType, g, blockX, blockZ);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -12883,6 +13175,8 @@ class Cubiomes_1 {
                 traceDowncall("isViableEndCityTerrain", g, sn, blockX, blockZ);
             }
             return (int)mh$.invokeExact(g, sn, blockX, blockZ);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -12947,6 +13241,8 @@ class Cubiomes_1 {
                 traceDowncall("getVariant", sv, structType, mc, seed, blockX, blockZ, biomeID);
             }
             return (int)mh$.invokeExact(sv, structType, mc, seed, blockX, blockZ, biomeID);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -13006,6 +13302,8 @@ class Cubiomes_1 {
                 traceDowncall("getLootTableCountForStructure", structure, mc);
             }
             return (int)mh$.invokeExact(structure, mc);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -13072,6 +13370,8 @@ class Cubiomes_1 {
                 traceDowncall("getStructurePieces", list, n, stype, ssconf, sv, mc, seed, posX, posZ);
             }
             return (int)mh$.invokeExact(list, n, stype, ssconf, sv, mc, seed, posX, posZ);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -13133,6 +13433,8 @@ class Cubiomes_1 {
                 traceDowncall("getEndCityPieces", pieces, seed, chunkX, chunkZ);
             }
             return (int)mh$.invokeExact(pieces, seed, chunkX, chunkZ);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -13385,6 +13687,8 @@ class Cubiomes_1 {
                 traceDowncall("getFortressPieces", list, n, mc, seed, chunkX, chunkZ);
             }
             return (int)mh$.invokeExact(list, n, mc, seed, chunkX, chunkZ);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -13588,6 +13892,8 @@ class Cubiomes_1 {
                 traceDowncall("getFixedEndGateways", mc, seed, src);
             }
             mh$.invokeExact(mc, seed, src);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -13650,6 +13956,8 @@ class Cubiomes_1 {
                 traceDowncall("getLinkedGatewayChunk", allocator, en, sn, seed, src, dst);
             }
             return (MemorySegment)mh$.invokeExact(allocator, en, sn, seed, src, dst);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -13711,6 +14019,8 @@ class Cubiomes_1 {
                 traceDowncall("getLinkedGatewayPos", allocator, en, sn, seed, src);
             }
             return (MemorySegment)mh$.invokeExact(allocator, en, sn, seed, src);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -13862,6 +14172,8 @@ class Cubiomes_1 {
                 traceDowncall("getHouseList", houses, seed, chunkX, chunkZ);
             }
             return (long)mh$.invokeExact(houses, seed, chunkX, chunkZ);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -13926,6 +14238,8 @@ class Cubiomes_1 {
                 traceDowncall("monteCarloBiomes", g, r, rng, coverage, confidence, eval, data);
             }
             return (int)mh$.invokeExact(g, r, rng, coverage, confidence, eval, data);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -13991,6 +14305,8 @@ class Cubiomes_1 {
                 traceDowncall("setupBiomeFilter", bf, mc, flags, required, requiredLen, excluded, excludedLen, matchany, matchanyLen);
             }
             mh$.invokeExact(bf, mc, flags, required, requiredLen, excluded, excludedLen, matchany, matchanyLen);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -14055,6 +14371,8 @@ class Cubiomes_1 {
                 traceDowncall("checkForBiomes", g, cache, r, dim, seed, filter, stop);
             }
             return (int)mh$.invokeExact(g, cache, r, dim, seed, filter, stop);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -14121,6 +14439,8 @@ class Cubiomes_1 {
                 traceDowncall("checkForBiomesAtLayer", ls, entry, cache, seed, x, z, w, h, filter);
             }
             return (int)mh$.invokeExact(ls, entry, cache, seed, x, z, w, h, filter);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -14185,6 +14505,8 @@ class Cubiomes_1 {
                 traceDowncall("checkForTemps", g, seed, x, z, w, h, tc);
             }
             return (int)mh$.invokeExact(g, seed, x, z, w, h, tc);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -14251,6 +14573,8 @@ class Cubiomes_1 {
                 traceDowncall("getBiomeCenters", pos, siz, nmax, g, r, match, minsiz, tol, stop);
             }
             return (int)mh$.invokeExact(pos, siz, nmax, g, r, match, minsiz, tol, stop);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -14312,6 +14636,8 @@ class Cubiomes_1 {
                 traceDowncall("canBiomeGenerate", layerId, mc, flags, biomeID);
             }
             return (int)mh$.invokeExact(layerId, mc, flags, biomeID);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -14374,6 +14700,8 @@ class Cubiomes_1 {
                 traceDowncall("genPotential", mL, mM, layerId, mc, flags, biomeID);
             }
             mh$.invokeExact(mL, mM, layerId, mc, flags, biomeID);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -14435,6 +14763,8 @@ class Cubiomes_1 {
                 traceDowncall("getAvailableBiomes", mL, mM, layerId, mc, flags);
             }
             mh$.invokeExact(mL, mM, layerId, mc, flags);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -14505,6 +14835,8 @@ class Cubiomes_1 {
                 traceDowncall("getParaDescent", para, factor, x, z, w, h, i0, j0, maxrad, maxiter, alpha, data, func);
             }
             return (double)mh$.invokeExact(para, factor, x, z, w, h, i0, j0, maxrad, maxiter, alpha, data, func);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -14571,6 +14903,8 @@ class Cubiomes_1 {
                 traceDowncall("getParaRange", para, pmin, pmax, x, z, w, h, data, func);
             }
             return (int)mh$.invokeExact(para, pmin, pmax, x, z, w, h, data, func);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -14629,6 +14963,8 @@ class Cubiomes_1 {
                 traceDowncall("getBiomeParaExtremes", mc);
             }
             return (MemorySegment)mh$.invokeExact(mc);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -14688,6 +15024,8 @@ class Cubiomes_1 {
                 traceDowncall("getBiomeParaLimits", mc, id);
             }
             return (MemorySegment)mh$.invokeExact(mc, id);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -14747,6 +15085,8 @@ class Cubiomes_1 {
                 traceDowncall("getPossibleBiomesForLimits", ids, mc, limits);
             }
             mh$.invokeExact(ids, mc, limits);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -14810,6 +15150,8 @@ class Cubiomes_1 {
                 traceDowncall("getLargestRec", match, ids, sx, sz, p0, p1);
             }
             return (int)mh$.invokeExact(match, ids, sx, sz, p0, p1);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -15068,6 +15410,8 @@ class Cubiomes_1 {
                 traceDowncall("setupTerrainNoise", params, mc, flags);
             }
             return (int)mh$.invokeExact(params, mc, flags);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -15128,6 +15472,8 @@ class Cubiomes_1 {
                 traceDowncall("initTerrainNoise", params, ws, dim);
             }
             return (int)mh$.invokeExact(params, ws, dim);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -15189,6 +15535,8 @@ class Cubiomes_1 {
                 traceDowncall("sampleSpaghettiRoughness", params, x, y, z);
             }
             return (double)mh$.invokeExact(params, x, y, z);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -15250,6 +15598,8 @@ class Cubiomes_1 {
                 traceDowncall("sampleSpaghetti2dThicknessModulator", params, x, y, z);
             }
             return (double)mh$.invokeExact(params, x, y, z);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -15311,6 +15661,8 @@ class Cubiomes_1 {
                 traceDowncall("sampleSpaghetti2d", params, x, y, z);
             }
             return (double)mh$.invokeExact(params, x, y, z);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -15372,6 +15724,8 @@ class Cubiomes_1 {
                 traceDowncall("sampleSpaghetti3d", params, x, y, z);
             }
             return (double)mh$.invokeExact(params, x, y, z);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -15433,6 +15787,8 @@ class Cubiomes_1 {
                 traceDowncall("sampleCaveEntrance", params, x, y, z);
             }
             return (double)mh$.invokeExact(params, x, y, z);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -15495,6 +15851,8 @@ class Cubiomes_1 {
                 traceDowncall("sampleEntrances", params, x, y, z, spaghettiRoughness);
             }
             return (double)mh$.invokeExact(params, x, y, z, spaghettiRoughness);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -15556,6 +15914,8 @@ class Cubiomes_1 {
                 traceDowncall("sampleCaveLayer", params, x, y, z);
             }
             return (double)mh$.invokeExact(params, x, y, z);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -15620,6 +15980,8 @@ class Cubiomes_1 {
                 traceDowncall("sampleSlopedCheese", params, x, y, z, depth, factor, jagged);
             }
             return (double)mh$.invokeExact(params, x, y, z, depth, factor, jagged);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -15682,6 +16044,8 @@ class Cubiomes_1 {
                 traceDowncall("sampleCaveCheese", params, x, y, z, slopedCheese);
             }
             return (double)mh$.invokeExact(params, x, y, z, slopedCheese);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -15743,6 +16107,8 @@ class Cubiomes_1 {
                 traceDowncall("samplePillars", params, x, y, z);
             }
             return (double)mh$.invokeExact(params, x, y, z);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -15804,6 +16170,8 @@ class Cubiomes_1 {
                 traceDowncall("sampleNoodle", params, x, y, z);
             }
             return (double)mh$.invokeExact(params, x, y, z);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -15868,6 +16236,8 @@ class Cubiomes_1 {
                 traceDowncall("sampleUnderground", params, x, y, z, spaghettiRoughness, entrances, slopedCheese);
             }
             return (double)mh$.invokeExact(params, x, y, z, spaghettiRoughness, entrances, slopedCheese);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -15932,6 +16302,8 @@ class Cubiomes_1 {
                 traceDowncall("sampleFinalDensity", params, x, y, z, spaghettiRoughness, entrances, slopedCheese);
             }
             return (double)mh$.invokeExact(params, x, y, z, spaghettiRoughness, entrances, slopedCheese);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -15992,6 +16364,8 @@ class Cubiomes_1 {
                 traceDowncall("samplePreliminarySurfaceLevel", params, x, z);
             }
             return (int)mh$.invokeExact(params, x, z);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -16052,6 +16426,8 @@ class Cubiomes_1 {
                 traceDowncall("sampleNoiseColumn", params, cellX, cellZ, buffer);
             }
             mh$.invokeExact(params, cellX, cellZ, buffer);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -16117,6 +16493,8 @@ class Cubiomes_1 {
                 traceDowncall("generateColumn", x, z, blocks, ds00, ds01, ds10, ds11, flag);
             }
             return (int)mh$.invokeExact(x, z, blocks, ds00, ds01, ds10, ds11, flag);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -16181,6 +16559,8 @@ class Cubiomes_1 {
                 traceDowncall("generateRegion", params, chunkX, chunkZ, chunkW, chunkH, blocks, ys, flag);
             }
             mh$.invokeExact(params, chunkX, chunkZ, chunkW, chunkH, blocks, ys, flag);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -16240,6 +16620,8 @@ class Cubiomes_1 {
                 traceDowncall("loadSavedSeeds", fnam, scnt);
             }
             return (MemorySegment)mh$.invokeExact(fnam, scnt);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -16298,6 +16680,8 @@ class Cubiomes_1 {
                 traceDowncall("mc2str", mc);
             }
             return (MemorySegment)mh$.invokeExact(mc);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -16356,6 +16740,8 @@ class Cubiomes_1 {
                 traceDowncall("str2mc", s);
             }
             return (int)mh$.invokeExact(s);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -16415,6 +16801,8 @@ class Cubiomes_1 {
                 traceDowncall("biome2str", mc, id);
             }
             return (MemorySegment)mh$.invokeExact(mc, id);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -16473,6 +16861,68 @@ class Cubiomes_1 {
                 traceDowncall("struct2str", stype);
             }
             return (MemorySegment)mh$.invokeExact(stype);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class block2str {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("block2str");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * const char *block2str(int btype)
+     * }
+     */
+    public static FunctionDescriptor block2str$descriptor() {
+        return block2str.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * const char *block2str(int btype)
+     * }
+     */
+    public static MethodHandle block2str$handle() {
+        return block2str.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * const char *block2str(int btype)
+     * }
+     */
+    public static MemorySegment block2str$address() {
+        return block2str.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * const char *block2str(int btype)
+     * }
+     */
+    public static MemorySegment block2str(int btype) {
+        var mh$ = block2str.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("block2str", btype);
+            }
+            return (MemorySegment)mh$.invokeExact(btype);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -16531,6 +16981,8 @@ class Cubiomes_1 {
                 traceDowncall("ore2str", otype);
             }
             return (MemorySegment)mh$.invokeExact(otype);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -16588,6 +17040,8 @@ class Cubiomes_1 {
                 traceDowncall("initBiomeColors", biomeColors);
             }
             mh$.invokeExact(biomeColors);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -16645,6 +17099,8 @@ class Cubiomes_1 {
                 traceDowncall("initBiomeTypeColors", biomeColors);
             }
             mh$.invokeExact(biomeColors);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -16704,6 +17160,8 @@ class Cubiomes_1 {
                 traceDowncall("parseBiomeColors", biomeColors, buf);
             }
             return (int)mh$.invokeExact(biomeColors, buf);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -16768,6 +17226,8 @@ class Cubiomes_1 {
                 traceDowncall("biomesToImage", pixels, biomeColors, biomes, sx, sy, pixscale, flip);
             }
             return (int)mh$.invokeExact(pixels, biomeColors, biomes, sx, sy, pixscale, flip);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -16829,6 +17289,8 @@ class Cubiomes_1 {
                 traceDowncall("savePPM", path, pixels, sx, sy);
             }
             return (int)mh$.invokeExact(path, pixels, sx, sy);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -16932,6 +17394,8 @@ class Cubiomes_1 {
                 traceDowncall("getQuadHutCst", low20);
             }
             return (int)mh$.invokeExact(low20);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -16998,6 +17462,8 @@ class Cubiomes_1 {
                 traceDowncall("searchAll48", seedbuf, buflen, path, threads, lowBits, lowBitN, check, data, stop);
             }
             return (int)mh$.invokeExact(seedbuf, buflen, path, threads, lowBits, lowBitN, check, data, stop);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -17060,6 +17526,8 @@ class Cubiomes_1 {
                 traceDowncall("getOptimalAfk", allocator, p, ax, ay, az, spcnt);
             }
             return (MemorySegment)mh$.invokeExact(allocator, p, ax, ay, az, spcnt);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -17129,6 +17597,8 @@ class Cubiomes_1 {
                 traceDowncall("scanForQuads", sconf, radius, s48, lowBits, lowBitN, salt, x, z, w, h, qplist, n);
             }
             return (int)mh$.invokeExact(sconf, radius, s48, lowBits, lowBitN, salt, x, z, w, h, qplist, n);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -17192,6 +17662,8 @@ class Cubiomes_1 {
                 traceDowncall("getStrongholdPieces", list, n, mc, seed, chunkX, chunkZ);
             }
             return (int)mh$.invokeExact(list, n, mc, seed, chunkX, chunkZ);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -17312,6 +17784,72 @@ class Cubiomes_1 {
      */
     public static int SH_PIECE_COUNT() {
         return SH_PIECE_COUNT;
+    }
+
+    private static class getStrongholdLoot {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT,
+            StructureSaltConfig.layout(),
+            Cubiomes.C_INT,
+            Cubiomes.C_LONG_LONG,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getStrongholdLoot");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int getStrongholdLoot(Piece *list, int n, StructureSaltConfig ssconf, int mc, uint64_t seed, int chunkX, int chunkZ)
+     * }
+     */
+    public static FunctionDescriptor getStrongholdLoot$descriptor() {
+        return getStrongholdLoot.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int getStrongholdLoot(Piece *list, int n, StructureSaltConfig ssconf, int mc, uint64_t seed, int chunkX, int chunkZ)
+     * }
+     */
+    public static MethodHandle getStrongholdLoot$handle() {
+        return getStrongholdLoot.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int getStrongholdLoot(Piece *list, int n, StructureSaltConfig ssconf, int mc, uint64_t seed, int chunkX, int chunkZ)
+     * }
+     */
+    public static MemorySegment getStrongholdLoot$address() {
+        return getStrongholdLoot.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int getStrongholdLoot(Piece *list, int n, StructureSaltConfig ssconf, int mc, uint64_t seed, int chunkX, int chunkZ)
+     * }
+     */
+    public static int getStrongholdLoot(MemorySegment list, int n, MemorySegment ssconf, int mc, long seed, int chunkX, int chunkZ) {
+        var mh$ = getStrongholdLoot.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("getStrongholdLoot", list, n, ssconf, mc, seed, chunkX, chunkZ);
+            }
+            return (int)mh$.invokeExact(list, n, ssconf, mc, seed, chunkX, chunkZ);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
     }
     private static final int ITEM_UNKNOWN = (int)-1L;
     /**
@@ -18474,6 +19012,8 @@ class Cubiomes_1 {
                 traceDowncall("item_name2global_id", name);
             }
             return (int)mh$.invokeExact(name);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -18533,6 +19073,8 @@ class Cubiomes_1 {
                 traceDowncall("global_id2item_name", global_id, mc);
             }
             return (MemorySegment)mh$.invokeExact(global_id, mc);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -19512,6 +20054,8 @@ class Cubiomes_1 {
     public static MemorySegment MOB_EFFECTS(long index0) {
         try {
             return (MemorySegment)MOB_EFFECTS$constants.HANDLE.invokeExact(MOB_EFFECTS$constants.SEGMENT, 0L, index0);
+        } catch (Error | RuntimeException ex) {
+            throw ex;
         } catch (Throwable ex$) {
             throw new AssertionError("should not reach here", ex$);
         }
@@ -19581,6 +20125,8 @@ class Cubiomes_1 {
                 traceDowncall("create_set_count", lf, min, max);
             }
             mh$.invokeExact(lf, min, max);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -19640,6 +20186,8 @@ class Cubiomes_1 {
                 traceDowncall("create_set_effect", lf, count, mobEffects);
             }
             mh$.invokeExact(lf, count, mobEffects);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -19697,6 +20245,8 @@ class Cubiomes_1 {
                 traceDowncall("create_set_damage", lf);
             }
             mh$.invokeExact(lf);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -19755,6 +20305,8 @@ class Cubiomes_1 {
                 traceDowncall("create_skip_calls", lf, skip_count);
             }
             mh$.invokeExact(lf, skip_count);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -19812,6 +20364,8 @@ class Cubiomes_1 {
                 traceDowncall("create_no_op", lf);
             }
             mh$.invokeExact(lf);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -19870,6 +20424,8 @@ class Cubiomes_1 {
                 traceDowncall("create_enchant_randomly_one_enchant", lf, enchantment);
             }
             mh$.invokeExact(lf, enchantment);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -19929,6 +20485,8 @@ class Cubiomes_1 {
                 traceDowncall("create_enchant_randomly_list", lf, list, list_length);
             }
             mh$.invokeExact(lf, list, list_length);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -19989,6 +20547,8 @@ class Cubiomes_1 {
                 traceDowncall("create_enchant_randomly", lf, version, item, isTreasure);
             }
             mh$.invokeExact(lf, version, item, isTreasure);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -20050,6 +20610,8 @@ class Cubiomes_1 {
                 traceDowncall("create_enchant_randomly_tag", lf, version, item, tag, allowTreasure);
             }
             mh$.invokeExact(lf, version, item, tag, allowTreasure);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -20113,6 +20675,8 @@ class Cubiomes_1 {
                 traceDowncall("create_enchant_with_levels", lf, version, item_name, item_type, min_level, max_level, isTreasure);
             }
             mh$.invokeExact(lf, version, item_name, item_type, min_level, max_level, isTreasure);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -20177,6 +20741,8 @@ class Cubiomes_1 {
                 traceDowncall("create_enchant_with_levels_tag", lf, version, item_name, item_type, min_level, max_level, tag, allowTreasure);
             }
             mh$.invokeExact(lf, version, item_name, item_type, min_level, max_level, tag, allowTreasure);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -20235,6 +20801,8 @@ class Cubiomes_1 {
                 traceDowncall("get_enchantment_name", enchantment);
             }
             return (MemorySegment)mh$.invokeExact(enchantment);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -20407,6 +20975,8 @@ class Cubiomes_1 {
                 traceDowncall("set_loot_seed", context, seed);
             }
             mh$.invokeExact(context, seed);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -20465,6 +21035,8 @@ class Cubiomes_1 {
                 traceDowncall("set_internal_loot_seed", context, internal_seed);
             }
             mh$.invokeExact(context, internal_seed);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -20524,6 +21096,8 @@ class Cubiomes_1 {
                 traceDowncall("get_item_id", context, item_name);
             }
             return (int)mh$.invokeExact(context, item_name);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -20583,6 +21157,8 @@ class Cubiomes_1 {
                 traceDowncall("get_global_item_id", context, item_id);
             }
             return (int)mh$.invokeExact(context, item_id);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -20642,6 +21218,8 @@ class Cubiomes_1 {
                 traceDowncall("get_item_name", context, item_id);
             }
             return (MemorySegment)mh$.invokeExact(context, item_id);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -20701,6 +21279,8 @@ class Cubiomes_1 {
                 traceDowncall("has_item", context, global_item_id);
             }
             return (int)mh$.invokeExact(context, global_item_id);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -20758,6 +21338,8 @@ class Cubiomes_1 {
                 traceDowncall("generate_loot", context);
             }
             mh$.invokeExact(context);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -20816,6 +21398,8 @@ class Cubiomes_1 {
                 traceDowncall("get_item_type", item_name);
             }
             return (int)mh$.invokeExact(item_name);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -20874,6 +21458,8 @@ class Cubiomes_1 {
                 traceDowncall("get_mob_effect_from_name", mob_effect);
             }
             return (MemorySegment)mh$.invokeExact(mob_effect);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -20932,6 +21518,8 @@ class Cubiomes_1 {
                 traceDowncall("get_enchantment_from_name", ench);
             }
             return (int)mh$.invokeExact(ench);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -20989,6 +21577,8 @@ class Cubiomes_1 {
                 traceDowncall("free_loot_function", lf);
             }
             mh$.invokeExact(lf);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -21049,6 +21639,8 @@ class Cubiomes_1 {
                 traceDowncall("init_loot_table_name", context, loot_table, version);
             }
             return (int)mh$.invokeExact(context, loot_table, version);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -21108,6 +21700,8 @@ class Cubiomes_1 {
                 traceDowncall("init_bastion_bridge", context, version);
             }
             return (int)mh$.invokeExact(context, version);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -21167,6 +21761,8 @@ class Cubiomes_1 {
                 traceDowncall("init_bastion_other", context, version);
             }
             return (int)mh$.invokeExact(context, version);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -21226,6 +21822,8 @@ class Cubiomes_1 {
                 traceDowncall("init_buried_treasure", context, version);
             }
             return (int)mh$.invokeExact(context, version);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -21285,419 +21883,8 @@ class Cubiomes_1 {
                 traceDowncall("init_desert_pyramid", context, version);
             }
             return (int)mh$.invokeExact(context, version);
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class init_end_city_treasure {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_end_city_treasure");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int init_end_city_treasure(LootTableContext **context, int version)
-     * }
-     */
-    public static FunctionDescriptor init_end_city_treasure$descriptor() {
-        return init_end_city_treasure.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int init_end_city_treasure(LootTableContext **context, int version)
-     * }
-     */
-    public static MethodHandle init_end_city_treasure$handle() {
-        return init_end_city_treasure.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int init_end_city_treasure(LootTableContext **context, int version)
-     * }
-     */
-    public static MemorySegment init_end_city_treasure$address() {
-        return init_end_city_treasure.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int init_end_city_treasure(LootTableContext **context, int version)
-     * }
-     */
-    public static int init_end_city_treasure(MemorySegment context, int version) {
-        var mh$ = init_end_city_treasure.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("init_end_city_treasure", context, version);
-            }
-            return (int)mh$.invokeExact(context, version);
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class init_igloo_chest {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_igloo_chest");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int init_igloo_chest(LootTableContext **context, int version)
-     * }
-     */
-    public static FunctionDescriptor init_igloo_chest$descriptor() {
-        return init_igloo_chest.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int init_igloo_chest(LootTableContext **context, int version)
-     * }
-     */
-    public static MethodHandle init_igloo_chest$handle() {
-        return init_igloo_chest.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int init_igloo_chest(LootTableContext **context, int version)
-     * }
-     */
-    public static MemorySegment init_igloo_chest$address() {
-        return init_igloo_chest.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int init_igloo_chest(LootTableContext **context, int version)
-     * }
-     */
-    public static int init_igloo_chest(MemorySegment context, int version) {
-        var mh$ = init_igloo_chest.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("init_igloo_chest", context, version);
-            }
-            return (int)mh$.invokeExact(context, version);
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class init_jungle_temple {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_jungle_temple");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int init_jungle_temple(LootTableContext **context, int version)
-     * }
-     */
-    public static FunctionDescriptor init_jungle_temple$descriptor() {
-        return init_jungle_temple.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int init_jungle_temple(LootTableContext **context, int version)
-     * }
-     */
-    public static MethodHandle init_jungle_temple$handle() {
-        return init_jungle_temple.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int init_jungle_temple(LootTableContext **context, int version)
-     * }
-     */
-    public static MemorySegment init_jungle_temple$address() {
-        return init_jungle_temple.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int init_jungle_temple(LootTableContext **context, int version)
-     * }
-     */
-    public static int init_jungle_temple(MemorySegment context, int version) {
-        var mh$ = init_jungle_temple.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("init_jungle_temple", context, version);
-            }
-            return (int)mh$.invokeExact(context, version);
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class init_jungle_temple_dispenser {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_jungle_temple_dispenser");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int init_jungle_temple_dispenser(LootTableContext **context, int version)
-     * }
-     */
-    public static FunctionDescriptor init_jungle_temple_dispenser$descriptor() {
-        return init_jungle_temple_dispenser.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int init_jungle_temple_dispenser(LootTableContext **context, int version)
-     * }
-     */
-    public static MethodHandle init_jungle_temple_dispenser$handle() {
-        return init_jungle_temple_dispenser.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int init_jungle_temple_dispenser(LootTableContext **context, int version)
-     * }
-     */
-    public static MemorySegment init_jungle_temple_dispenser$address() {
-        return init_jungle_temple_dispenser.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int init_jungle_temple_dispenser(LootTableContext **context, int version)
-     * }
-     */
-    public static int init_jungle_temple_dispenser(MemorySegment context, int version) {
-        var mh$ = init_jungle_temple_dispenser.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("init_jungle_temple_dispenser", context, version);
-            }
-            return (int)mh$.invokeExact(context, version);
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class init_nether_bridge {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_nether_bridge");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int init_nether_bridge(LootTableContext **context, int version)
-     * }
-     */
-    public static FunctionDescriptor init_nether_bridge$descriptor() {
-        return init_nether_bridge.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int init_nether_bridge(LootTableContext **context, int version)
-     * }
-     */
-    public static MethodHandle init_nether_bridge$handle() {
-        return init_nether_bridge.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int init_nether_bridge(LootTableContext **context, int version)
-     * }
-     */
-    public static MemorySegment init_nether_bridge$address() {
-        return init_nether_bridge.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int init_nether_bridge(LootTableContext **context, int version)
-     * }
-     */
-    public static int init_nether_bridge(MemorySegment context, int version) {
-        var mh$ = init_nether_bridge.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("init_nether_bridge", context, version);
-            }
-            return (int)mh$.invokeExact(context, version);
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class init_pillager_outpost {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_pillager_outpost");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int init_pillager_outpost(LootTableContext **context, int version)
-     * }
-     */
-    public static FunctionDescriptor init_pillager_outpost$descriptor() {
-        return init_pillager_outpost.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int init_pillager_outpost(LootTableContext **context, int version)
-     * }
-     */
-    public static MethodHandle init_pillager_outpost$handle() {
-        return init_pillager_outpost.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int init_pillager_outpost(LootTableContext **context, int version)
-     * }
-     */
-    public static MemorySegment init_pillager_outpost$address() {
-        return init_pillager_outpost.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int init_pillager_outpost(LootTableContext **context, int version)
-     * }
-     */
-    public static int init_pillager_outpost(MemorySegment context, int version) {
-        var mh$ = init_pillager_outpost.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("init_pillager_outpost", context, version);
-            }
-            return (int)mh$.invokeExact(context, version);
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class init_ruined_portal {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_ruined_portal");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int init_ruined_portal(LootTableContext **context, int version)
-     * }
-     */
-    public static FunctionDescriptor init_ruined_portal$descriptor() {
-        return init_ruined_portal.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int init_ruined_portal(LootTableContext **context, int version)
-     * }
-     */
-    public static MethodHandle init_ruined_portal$handle() {
-        return init_ruined_portal.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int init_ruined_portal(LootTableContext **context, int version)
-     * }
-     */
-    public static MemorySegment init_ruined_portal$address() {
-        return init_ruined_portal.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int init_ruined_portal(LootTableContext **context, int version)
-     * }
-     */
-    public static int init_ruined_portal(MemorySegment context, int version) {
-        var mh$ = init_ruined_portal.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("init_ruined_portal", context, version);
-            }
-            return (int)mh$.invokeExact(context, version);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }

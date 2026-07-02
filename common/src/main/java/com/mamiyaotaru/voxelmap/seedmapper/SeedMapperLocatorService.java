@@ -270,6 +270,9 @@ public final class SeedMapperLocatorService {
             if ((key.featureMask & (1L << SeedMapperFeature.SLIME_CHUNK.ordinal())) != 0L) {
                 addSlimeChunkSamples(key, markers, fastMode);
             }
+            if ((key.featureMask & (1L << SeedMapperFeature.SULFUR_CAVES.ordinal())) != 0L) {
+                addSulfurCavesSamples(generator, key, markers, fastMode);
+            }
             if ((key.featureMask & (1L << SeedMapperFeature.DATAPACK_STRUCTURE.ordinal())) != 0L) {
                 if (key.settings.datapackEnabled) {
                     java.util.Set<String> disabledDatapackStructures = key.datapackWorldKey() == null || key.datapackWorldKey().isBlank()
@@ -513,6 +516,102 @@ public final class SeedMapperLocatorService {
                 }
             }
         }
+    }
+
+    private static void addSulfurCavesSamples(MemorySegment generator, QueryKey key, List<SeedMapperMarker> out, boolean fastMode) {
+        if (key.dimension != Cubiomes.DIM_OVERWORLD() || key.showLootableOnly) {
+            return;
+        }
+        int sulfurCaves = Cubiomes.sulfur_caves();
+        if (Cubiomes.biomeExists(key.mcVersion, sulfurCaves) == 0) {
+            return;
+        }
+        int span = Math.max(Math.abs(key.maxX - key.minX), Math.abs(key.maxZ - key.minZ));
+        int blockStep = span > 8192 ? 128 : (span > 4096 ? 64 : (span > 2048 ? 32 : 16));
+        if (fastMode) {
+            blockStep = Math.max(blockStep, span > 4096 ? 128 : 64);
+        }
+        int quartY = -20 >> 2;
+        int samples = 0;
+        int maxSamples = fastMode ? 12000 : 50000;
+        java.util.HashSet<Long> hitSet = new java.util.HashSet<>();
+        ArrayList<Long> hitOrder = new ArrayList<>();
+        sampling:
+        for (int x = key.minX; x <= key.maxX; x += blockStep) {
+            for (int z = key.minZ; z <= key.maxZ; z += blockStep) {
+                if (++samples > maxSamples) {
+                    break sampling;
+                }
+                if (Cubiomes.getBiomeAt(generator, 4, x >> 2, quartY, z >> 2) == sulfurCaves) {
+                    long cell = packCell((x - key.minX) / blockStep, (z - key.minZ) / blockStep);
+                    hitSet.add(cell);
+                    hitOrder.add(cell);
+                }
+            }
+        }
+
+        int maxMarkers = fastMode ? 1400 : Integer.MAX_VALUE;
+        int found = 0;
+        java.util.HashSet<Long> visited = new java.util.HashSet<>();
+        java.util.ArrayDeque<Long> queue = new java.util.ArrayDeque<>();
+        ArrayList<Long> component = new ArrayList<>();
+        for (Long start : hitOrder) {
+            if (!visited.add(start)) {
+                continue;
+            }
+            component.clear();
+            queue.add(start);
+            long sumX = 0;
+            long sumZ = 0;
+            while (!queue.isEmpty()) {
+                long cell = queue.poll();
+                component.add(cell);
+                int gx = cellX(cell);
+                int gz = cellZ(cell);
+                sumX += gx;
+                sumZ += gz;
+                for (int dx = -1; dx <= 1; dx++) {
+                    for (int dz = -1; dz <= 1; dz++) {
+                        if (dx == 0 && dz == 0) {
+                            continue;
+                        }
+                        long neighbor = packCell(gx + dx, gz + dz);
+                        if (hitSet.contains(neighbor) && visited.add(neighbor)) {
+                            queue.add(neighbor);
+                        }
+                    }
+                }
+            }
+            double centroidX = sumX / (double) component.size();
+            double centroidZ = sumZ / (double) component.size();
+            long best = component.getFirst();
+            double bestDist = Double.MAX_VALUE;
+            for (long cell : component) {
+                double dx = cellX(cell) - centroidX;
+                double dz = cellZ(cell) - centroidZ;
+                double dist = dx * dx + dz * dz;
+                if (dist < bestDist) {
+                    bestDist = dist;
+                    best = cell;
+                }
+            }
+            out.add(new SeedMapperMarker(SeedMapperFeature.SULFUR_CAVES, key.minX + cellX(best) * blockStep, key.minZ + cellZ(best) * blockStep));
+            if (++found >= maxMarkers) {
+                return;
+            }
+        }
+    }
+
+    private static long packCell(int gx, int gz) {
+        return ((long) gx << 32) | (gz & 0xFFFFFFFFL);
+    }
+
+    private static int cellX(long cell) {
+        return (int) (cell >> 32);
+    }
+
+    private static int cellZ(long cell) {
+        return (int) cell;
     }
 
     private static int floorDiv(int a, int b) {
