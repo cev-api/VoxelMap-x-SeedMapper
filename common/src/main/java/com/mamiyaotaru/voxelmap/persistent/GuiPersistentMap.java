@@ -4476,7 +4476,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 if (selectedWaypoint != null) {
                     pendingDeleteWaypoint = selectedWaypoint;
                     if (mapOptions.confirmWaypointDelete) {
-                        createDeleteConfirmationPopup();
+                        createDeleteConfirmationPopup(popup);
                     } else {
                         deleteSelectedWaypoint();
                     }
@@ -4583,14 +4583,18 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         minecraft.gui.setScreen(this);
     }
 
-    private void createDeleteConfirmationPopup() {
+    private void createDeleteConfirmationPopup(Popup source) {
+        int popupX = source != null ? source.getX() + 1 : this.width / 2 - 45;
+        int popupY = source != null ? source.getY() + 1 : this.height / 2 - 20;
+        int directX = source != null ? source.getClickedDirectX() : (int) this.mouseX;
+        int directY = source != null ? source.getClickedDirectY() : (int) this.mouseY;
         // Remove the previous context popup so the confirmation dialog receives all clicks.
         clearPopups();
         ArrayList<Popup.PopupEntry> entries = new ArrayList<>();
         entries.add(new Popup.PopupEntry("Confirm Delete?", -1, false, false));
         entries.add(new Popup.PopupEntry(I18n.get("selectServer.deleteButton"), 10, true, true));
         entries.add(new Popup.PopupEntry(I18n.get("gui.cancel"), 11, true, true));
-        createPopup(this.width / 2 - 45, this.height / 2 - 20, this.mouseX, this.mouseY, 90, entries);
+        createPopup(popupX, popupY, directX, directY, 90, entries);
     }
 
     private void deleteSelectedWaypoint() {
