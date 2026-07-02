@@ -5,7 +5,9 @@ import com.github.cubiomes.CanyonCarverConfig;
 import com.github.cubiomes.CaveCarverConfig;
 import com.github.cubiomes.Generator;
 import com.github.cubiomes.OreConfig;
+import com.github.cubiomes.Pos;
 import com.github.cubiomes.Pos3;
+import com.github.cubiomes.StrongholdIter;
 import com.github.cubiomes.Pos3List;
 import com.github.cubiomes.SurfaceNoise;
 import com.github.cubiomes.TerrainNoise;
@@ -565,9 +567,55 @@ public final class SeedMapperCommandHandler {
         if (query == null || query.isBlank()) return null;
         SeedMapperFeature feature = resolveFeature(query.toLowerCase(Locale.ROOT));
         if (feature == null) return null;
+        if (feature == SeedMapperFeature.STRONGHOLD) {
+            return locateNearestStronghold();
+        }
         SeedMapperMarker marker = findNearestMarker(m -> m.feature() == feature, maxRadius, true);
         if (marker == null) return null;
         return new LocateResult(feature.id(), marker.blockX(), marker.blockZ());
+    }
+
+    private static LocateResult locateNearestStronghold() {
+        long seed = resolveSeed();
+        if (seed == Long.MIN_VALUE) return null;
+
+        int px = commandX();
+        int pz = commandZ();
+        int mcVersion = SeedMapperCompat.getMcVersion();
+        try (Arena arena = Arena.ofConfined()) {
+            SeedMapperNative.ensureLoaded();
+            MemorySegment generator = Generator.allocate(arena);
+            Cubiomes.setupGenerator(generator, mcVersion, 0);
+            Cubiomes.applySeed(generator, Cubiomes.DIM_OVERWORLD(), seed);
+
+            MemorySegment strongholdIter = StrongholdIter.allocate(arena);
+            Cubiomes.initFirstStronghold(arena, strongholdIter, mcVersion, seed);
+
+            int count = mcVersion <= Cubiomes.MC_1_8() ? 3 : 128;
+            long bestDist = Long.MAX_VALUE;
+            int bestX = 0;
+            int bestZ = 0;
+            boolean found = false;
+            for (int i = 0; i < count; i++) {
+                if (Cubiomes.nextStronghold(strongholdIter, generator) == 0) {
+                    break;
+                }
+                MemorySegment pos = StrongholdIter.pos(strongholdIter);
+                int x = Pos.x(pos);
+                int z = Pos.z(pos);
+                long dx = x - (long) px;
+                long dz = z - (long) pz;
+                long dist = dx * dx + dz * dz;
+                if (dist < bestDist) {
+                    bestDist = dist;
+                    bestX = x;
+                    bestZ = z;
+                    found = true;
+                }
+            }
+            if (!found) return null;
+            return new LocateResult(SeedMapperFeature.STRONGHOLD.id(), bestX, bestZ);
+        }
     }
 
     public static LocateResult locateStructureByQuery(String query, int maxRadius, Integer fromX, Integer fromZ) {
