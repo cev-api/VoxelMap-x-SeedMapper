@@ -1,5 +1,6 @@
 package com.mamiyaotaru.voxelmap.gui.overridden;
 
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractSliderButton;
 import net.minecraft.network.chat.Component;
 
@@ -19,6 +20,15 @@ public class GuiValueSliderMinimap extends AbstractSliderButton {
         this.onApply = onApply;
         this.labelFactory = labelFactory;
         updateMessage();
+    }
+
+    @Override
+    public void extractWidgetRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
+        if (this.getY() >= graphics.guiHeight() || this.getY() + this.getHeight() <= 0
+                || this.getX() >= graphics.guiWidth() || this.getX() + this.getWidth() <= 0) {
+            return;
+        }
+        super.extractWidgetRenderState(graphics, mouseX, mouseY, delta);
     }
 
     @Override

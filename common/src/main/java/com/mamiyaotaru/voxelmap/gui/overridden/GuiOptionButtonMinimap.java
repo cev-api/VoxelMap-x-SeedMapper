@@ -21,6 +21,10 @@ public class GuiOptionButtonMinimap extends Button.Plain {
 
     @Override
     public void extractContents(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
+        if (this.getY() >= graphics.guiHeight() || this.getY() + this.getHeight() <= 0
+                || this.getX() >= graphics.guiWidth() || this.getX() + this.getWidth() <= 0) {
+            return;
+        }
         boolean hovered = this.active && this.isHovered();
         int x = this.getX();
         int y = this.getY();
