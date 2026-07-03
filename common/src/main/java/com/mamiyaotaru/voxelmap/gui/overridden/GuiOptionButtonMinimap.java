@@ -19,10 +19,16 @@ public class GuiOptionButtonMinimap extends Button.Plain {
 
     public EnumOptionsMinimap returnEnumOptions() { return this.enumOptions; }
 
+    public static boolean isOutsideGui(GuiGraphicsExtractor graphics, int x, int y, int width, int height) {
+        org.joml.Vector2f topLeft = graphics.pose().transformPosition(x, y, new org.joml.Vector2f());
+        org.joml.Vector2f bottomRight = graphics.pose().transformPosition(x + width, y + height, new org.joml.Vector2f());
+        return topLeft.y >= graphics.guiHeight() || bottomRight.y <= 0
+                || topLeft.x >= graphics.guiWidth() || bottomRight.x <= 0;
+    }
+
     @Override
     public void extractContents(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
-        if (this.getY() >= graphics.guiHeight() || this.getY() + this.getHeight() <= 0
-                || this.getX() >= graphics.guiWidth() || this.getX() + this.getWidth() <= 0) {
+        if (isOutsideGui(graphics, this.getX(), this.getY(), this.getWidth(), this.getHeight())) {
             return;
         }
         boolean hovered = this.active && this.isHovered();

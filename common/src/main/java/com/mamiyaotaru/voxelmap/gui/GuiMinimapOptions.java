@@ -62,6 +62,7 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
     private int tabIndex = 0;
     private int lastTabIndex = 0;
     private int pageNavY = 0;
+    private int scrollOffset;
     private Button nextPageButton;
     private Button prevPageButton;
     private GuiScreenMinimap embeddedTabScreen;
@@ -168,6 +169,7 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
     }
 
     public void replaceButtons() {
+        scrollOffset = 0;
         if (embeddedTabScreen != null) {
             embeddedTabScreen.removed();
         }
@@ -412,7 +414,64 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
         layoutPageNavigation(0);
         setButtonsActive();
         updateMinimapZoomSlider();
+        updateOptionViewportVisibility();
 
+    }
+
+    private int contentViewportTop() {
+        return layout.getHeaderHeight();
+    }
+
+    private int contentViewportBottom() {
+        return height - layout.getFooterHeight();
+    }
+
+    private int maxScrollOffset() {
+        int contentBottom = 0;
+        if (embeddedTabScreen != null) {
+            for (GuiEventListener child : embeddedTabScreen.children()) {
+                if (child instanceof AbstractWidget widget && widget.visible) {
+                    contentBottom = Math.max(contentBottom, widget.getY() + widget.getHeight());
+                }
+            }
+        } else {
+            for (AbstractWidget widget : optionButtons) {
+                contentBottom = Math.max(contentBottom, widget.getY() + widget.getHeight() - scrollOffset);
+            }
+            for (OptionSection section : optionSections) {
+                contentBottom = Math.max(contentBottom, section.y() + section.height());
+            }
+        }
+        if (contentBottom == 0) {
+            return 0;
+        }
+        return Math.max(0, contentBottom + 4 - contentViewportBottom());
+    }
+
+    private void setScrollOffset(int newOffset) {
+        int clamped = Math.min(0, Math.max(-maxScrollOffset(), newOffset));
+        int delta = clamped - scrollOffset;
+        if (delta == 0) {
+            return;
+        }
+        scrollOffset = clamped;
+        if (embeddedTabScreen == null) {
+            for (AbstractWidget widget : optionButtons) {
+                widget.setY(widget.getY() + delta);
+            }
+        }
+        updateOptionViewportVisibility();
+    }
+
+    private void updateOptionViewportVisibility() {
+        if (embeddedTabScreen != null) {
+            return;
+        }
+        int top = contentViewportTop();
+        int bottom = contentViewportBottom();
+        for (AbstractWidget widget : optionButtons) {
+            widget.visible = widget.getY() >= top - 2 && widget.getY() + widget.getHeight() <= bottom + 2;
+        }
     }
 
     private void prepareEmbeddedTab(int index) {
@@ -643,9 +702,25 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
         super.extractRenderState(graphics, mouseX, mouseY, delta);
         if (embeddedTabScreen != null) {
-            embeddedTabScreen.extractRenderState(graphics, mouseX, mouseY, delta);
+            graphics.enableScissor(0, contentViewportTop(), width, contentViewportBottom());
+            graphics.pose().pushMatrix();
+            graphics.pose().translate(0.0F, (float) scrollOffset);
+            embeddedTabScreen.extractRenderState(graphics, mouseX, mouseY - scrollOffset, delta);
+            graphics.pose().popMatrix();
+            graphics.disableScissor();
         }
         graphics.blit(RenderPipelines.GUI_TEXTURED, Screen.FOOTER_SEPARATOR, 0, height - layout.getFooterHeight() - 2, 0.0F, 0.0F, width, 2, 32, 2);
+        int maxScroll = maxScrollOffset();
+        if (maxScroll > 0) {
+            int viewportTop = contentViewportTop();
+            int viewportBottom = contentViewportBottom();
+            int trackHeight = viewportBottom - viewportTop;
+            int thumbHeight = Math.max(16, trackHeight * trackHeight / (trackHeight + maxScroll));
+            int thumbY = viewportTop + Math.round((trackHeight - thumbHeight) * (-scrollOffset / (float) maxScroll));
+            int barX = width - 6;
+            graphics.fill(barX, viewportTop, barX + 3, viewportBottom, 0x40000000);
+            graphics.fill(barX, thumbY, barX + 3, thumbY + thumbHeight, 0xFF8FA7C8);
+        }
         if (!pageInfo.isEmpty()) {
             int barTop = pageNavY + 2;
             int barBottom = pageNavY + 18;
@@ -796,11 +871,14 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
     }
 
     private void renderOptionSections(GuiGraphicsExtractor graphics) {
+        int viewportTop = contentViewportTop();
+        int viewportBottom = contentViewportBottom();
         for (OptionSection section : optionSections) {
             int x = section.x();
-            int y = section.y();
-            int right = x + section.width();
-            int bottom = y + section.height();
+            int y = section.y() + scrollOffset;
+            if (y + 10 < viewportTop || y + 5 > viewportBottom) {
+                continue;
+            }
             graphics.fill(x + 12, y + 9, x + 30, y + 10, 0xFFA9B4C3);
             graphics.text(this.font, section.title(), x + 36, y + 5, 0xFFE6EAF0, false);
         }
@@ -885,7 +963,17 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
         if (super.mouseClicked(mouseButtonEvent, doubleClick)) {
             return true;
         }
-        return embeddedTabScreen != null && embeddedTabScreen.mouseClicked(mouseButtonEvent, doubleClick);
+        if (embeddedTabScreen == null || mouseButtonEvent.y() < contentViewportTop() || mouseButtonEvent.y() > contentViewportBottom()) {
+            return false;
+        }
+        return embeddedTabScreen.mouseClicked(offsetForEmbedded(mouseButtonEvent), doubleClick);
+    }
+
+    private net.minecraft.client.input.MouseButtonEvent offsetForEmbedded(net.minecraft.client.input.MouseButtonEvent event) {
+        if (scrollOffset == 0) {
+            return event;
+        }
+        return new net.minecraft.client.input.MouseButtonEvent(event.x(), event.y() - scrollOffset, event.buttonInfo());
     }
 
     @Override
@@ -902,7 +990,7 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
         if (super.mouseReleased(mouseButtonEvent)) {
             return true;
         }
-        return embeddedTabScreen != null && embeddedTabScreen.mouseReleased(mouseButtonEvent);
+        return embeddedTabScreen != null && embeddedTabScreen.mouseReleased(offsetForEmbedded(mouseButtonEvent));
     }
 
     @Override
@@ -914,7 +1002,7 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
         if (super.mouseDragged(mouseButtonEvent, deltaX, deltaY)) {
             return true;
         }
-        return embeddedTabScreen != null && embeddedTabScreen.mouseDragged(mouseButtonEvent, deltaX, deltaY);
+        return embeddedTabScreen != null && embeddedTabScreen.mouseDragged(offsetForEmbedded(mouseButtonEvent), deltaX, deltaY);
     }
 
     @Override
@@ -923,10 +1011,14 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
             tracerColorPicker.mouseScrolled(mouseX, mouseY, horizontalAmount, amount);
             return true;
         }
-        if (super.mouseScrolled(mouseX, mouseY, horizontalAmount, amount)) {
+        if (embeddedTabScreen != null && embeddedTabScreen.mouseScrolled(mouseX, mouseY - scrollOffset, horizontalAmount, amount)) {
             return true;
         }
-        return embeddedTabScreen != null && embeddedTabScreen.mouseScrolled(mouseX, mouseY, horizontalAmount, amount);
+        if (maxScrollOffset() > 0) {
+            setScrollOffset(scrollOffset + (int) Math.round(amount * 22.0));
+            return true;
+        }
+        return super.mouseScrolled(mouseX, mouseY, horizontalAmount, amount);
     }
 
     private record OptionsTab(Component title, int index) implements Tab {
