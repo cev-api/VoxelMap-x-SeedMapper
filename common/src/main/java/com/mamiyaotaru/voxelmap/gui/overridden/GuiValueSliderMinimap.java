@@ -24,8 +24,7 @@ public class GuiValueSliderMinimap extends AbstractSliderButton {
 
     @Override
     public void extractWidgetRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
-        if (this.getY() >= graphics.guiHeight() || this.getY() + this.getHeight() <= 0
-                || this.getX() >= graphics.guiWidth() || this.getX() + this.getWidth() <= 0) {
+        if (GuiOptionButtonMinimap.isOutsideGui(graphics, this.getX(), this.getY(), this.getWidth(), this.getHeight())) {
             return;
         }
         super.extractWidgetRenderState(graphics, mouseX, mouseY, delta);
