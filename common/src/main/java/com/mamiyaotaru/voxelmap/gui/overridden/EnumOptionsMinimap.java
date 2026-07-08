@@ -80,6 +80,7 @@ public enum EnumOptionsMinimap {
     SHOW_WAYPOINTS("options.worldmap.showWaypoints", Type.BOOLEAN),
     SHOW_WAYPOINT_NAMES("options.worldmap.showWaypointNames", Type.BOOLEAN),
     SHOW_DISTANT_WAYPOINTS("options.worldmap.showDistantWaypoints", Type.BOOLEAN),
+    WORLDMAP_CLUSTER_WAYPOINTS("options.worldmap.clusterWaypoints", Type.BOOLEAN),
     WORLDMAP_SHOW_WAYPOINTS_IN_PERFORMANCE_MODE("options.worldmap.showWaypointsInPerformanceMode", Type.BOOLEAN),
     WORLDMAP_LITERAL_LINE_MODE("options.worldmap.literalLineMode", Type.BOOLEAN),
     WORLDMAP_SHOW_NEW_OLD_CHUNKS("options.worldmap.showNewOldChunks", Type.BOOLEAN),

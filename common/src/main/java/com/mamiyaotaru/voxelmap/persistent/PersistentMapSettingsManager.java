@@ -226,6 +226,7 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
     public boolean showWaypoints = true;
     public boolean showWaypointNames = true;
     public boolean showDistantWaypoints = true;
+    public boolean clusterWaypointNames = true;
     public boolean showNewOldChunks = false;
     public SeedMapStyle seedMapStyle = SeedMapStyle.FLAT;
     private float seedMapContourStrength = 0.55F;
@@ -279,6 +280,7 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
                     case "Show Worldmap Waypoints" -> showWaypoints = Boolean.parseBoolean(curLine[1]);
                     case "Show Worldmap Waypoint Names" -> showWaypointNames = Boolean.parseBoolean(curLine[1]);
                     case "Show Worldmap Distant Waypoints" -> showDistantWaypoints = Boolean.parseBoolean(curLine[1]);
+                    case "Show Worldmap Cluster Waypoints" -> clusterWaypointNames = Boolean.parseBoolean(curLine[1]);
                     case "Worldmap Dimension View" -> worldMapDimensionView = WorldMapDimensionView.fromString(curLine[1]);
                     case "Output Images" -> outputImages = Boolean.parseBoolean(curLine[1]);
                 }
@@ -350,6 +352,7 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
         out.println("Show Worldmap Waypoints:" + showWaypoints);
         out.println("Show Worldmap Waypoint Names:" + showWaypointNames);
         out.println("Show Worldmap Distant Waypoints:" + showDistantWaypoints);
+        out.println("Show Worldmap Cluster Waypoints:" + clusterWaypointNames);
         out.println("Worldmap Dimension View:" + worldMapDimensionView.name());
     }
 
@@ -396,6 +399,7 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
             case SHOW_WAYPOINTS -> showWaypoints && VoxelConstants.getVoxelMapInstance().getMapOptions().waypointsAllowed;
             case SHOW_WAYPOINT_NAMES -> showWaypointNames && VoxelConstants.getVoxelMapInstance().getMapOptions().waypointsAllowed;
             case SHOW_DISTANT_WAYPOINTS -> showDistantWaypoints && VoxelConstants.getVoxelMapInstance().getMapOptions().waypointsAllowed;
+            case WORLDMAP_CLUSTER_WAYPOINTS -> clusterWaypointNames && VoxelConstants.getVoxelMapInstance().getMapOptions().waypointsAllowed;
             case WORLDMAP_SHOW_WAYPOINTS_IN_PERFORMANCE_MODE -> showWaypointsInPerformanceMode;
             case WORLDMAP_LITERAL_LINE_MODE -> literalLineMode;
             case WORLDMAP_SHOW_NEW_OLD_CHUNKS -> showNewOldChunks;
@@ -414,6 +418,7 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
             case SHOW_WAYPOINTS -> showWaypoints = !showWaypoints;
             case SHOW_WAYPOINT_NAMES -> showWaypointNames = !showWaypointNames;
             case SHOW_DISTANT_WAYPOINTS -> showDistantWaypoints = !showDistantWaypoints;
+            case WORLDMAP_CLUSTER_WAYPOINTS -> clusterWaypointNames = !clusterWaypointNames;
             case WORLDMAP_SHOW_WAYPOINTS_IN_PERFORMANCE_MODE -> showWaypointsInPerformanceMode = !showWaypointsInPerformanceMode;
             case WORLDMAP_LITERAL_LINE_MODE -> literalLineMode = !literalLineMode;
             case WORLDMAP_SHOW_NEW_OLD_CHUNKS -> showNewOldChunks = !showNewOldChunks;

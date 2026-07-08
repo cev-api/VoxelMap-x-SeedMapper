@@ -46,6 +46,7 @@ import com.mamiyaotaru.voxelmap.util.EasingUtils;
 import com.mamiyaotaru.voxelmap.util.GameVariableAccessShim;
 import com.mamiyaotaru.voxelmap.util.ImageUtils;
 import com.mamiyaotaru.voxelmap.util.VoxelMapGuiGraphics;
+import com.mamiyaotaru.voxelmap.util.TextUtils;
 import com.mamiyaotaru.voxelmap.util.Waypoint;
 import com.mojang.blaze3d.platform.cursor.CursorTypes;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -103,9 +104,14 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.Locale;
 public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     private static final int COORD_TEXT_COLOR_OK = 0xFFFFFFFF;
     private static final int COORD_TEXT_COLOR_ERROR = 0xFFFF0000;
+    private static final int WAYPOINT_LABEL_LINE_LIMIT = 4;
+    private static final int WAYPOINT_LABEL_PADDING = 2;
+    private static final int WAYPOINT_CLUSTER_BUCKET_SIZE = 56;
+    private static final int WAYPOINT_SEARCH_BOX_WIDTH = 140;
     private static final int FAR_ZOOM_MAX_REGION_RADIUS_MOVING = 320;
     private static final int FAR_ZOOM_MAX_REGION_RADIUS_STILL = 768;
     private static double pendingCenterX = Double.NaN;
@@ -131,6 +137,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     private boolean lastEditingCoordinates;
     private EditBox coordinateXInput;
     private EditBox coordinateZInput;
+    private EditBox waypointSearchInput;
     private int coordinateLabelLeft;
     private int coordinateLabelRight;
     private int coordinateLabelTop;
@@ -286,6 +293,9 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     private int[] exploredQuadColors = new int[1024];
     private int exploredQuadCount = 0;
     private final List<PlayerLayerStatusHitbox> playerLayerStatusHitboxes = new ArrayList<>();
+    private final List<WaypointLabelBounds> waypointLabelBounds = new ArrayList<>();
+    private final List<PendingWaypointLabel> pendingWaypointLabels = new ArrayList<>();
+    private final Map<Long, WaypointClusterData> waypointClusters = new HashMap<>();
     private NewOldChunkOverlayRenderCacheKey newOldChunkOverlayRenderCacheKey;
     private List<NewOldChunkRenderRect> newOldChunkOldRects = List.of();
     private List<NewOldChunkRenderRect> newOldChunkNewRects = List.of();
@@ -414,6 +424,13 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         this.addRenderableWidget(this.coordinateZInput);
         this.top = 32;
         this.bottom = this.getHeight() - 32;
+        this.waypointSearchInput = new EditBox(this.getFont(), this.getWidth() - this.sideMargin - WAYPOINT_SEARCH_BOX_WIDTH, this.getHeight() - 50, WAYPOINT_SEARCH_BOX_WIDTH, 20, Component.translatable("worldmap.waypointSearch"));
+        this.waypointSearchInput.setMaxLength(48);
+        this.waypointSearchInput.setHint(Component.translatable("worldmap.waypointSearch"));
+        this.waypointSearchInput.setVisible(true);
+        this.waypointSearchInput.active = true;
+        this.waypointSearchInput.setFocused(false);
+        this.addRenderableWidget(this.waypointSearchInput);
         this.centerX = this.getWidth() / 2;
         this.centerY = (this.bottom - this.top) / 2;
         this.scScale = (float) minecraft.getWindow().getGuiScale();
@@ -717,6 +734,14 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             return true;
         }
 
+        if (this.waypointSearchInput != null && isInWaypointSearchInput(mouseX, mouseY)) {
+            if (mouseButtonEvent.button() == 0) {
+                this.waypointSearchInput.setFocused(true);
+                this.setFocused(this.waypointSearchInput);
+            }
+            return super.mouseClicked(mouseButtonEvent, doubleClick);
+        }
+
         // Popup must consume clicks before map/marker handlers to prevent click-through.
         if (!this.popupOpen()) {
             return super.mouseClicked(mouseButtonEvent, doubleClick);
@@ -750,6 +775,17 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
     @Override
     public boolean keyPressed(KeyEvent keyEvent) {
+        if (this.waypointSearchInput != null && this.waypointSearchInput.isFocused()) {
+            if (keyEvent.key() == GLFW.GLFW_KEY_ESCAPE) {
+                this.waypointSearchInput.setFocused(false);
+                return true;
+            }
+            boolean handled = this.waypointSearchInput.keyPressed(keyEvent);
+            if (!handled) {
+                handled = super.keyPressed(keyEvent);
+            }
+            return handled;
+        }
         if (!this.editingCoordinates && minecraft.options.keyJump.matches(keyEvent)) {
             if (minecraft.options.keyJump.matches(keyEvent)) {
                 this.zoomGoal /= 1.26F;
@@ -840,6 +876,13 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     @Override
     public boolean charTyped(CharacterEvent characterEvent) {
         this.clearPopups();
+        if (this.waypointSearchInput != null && this.waypointSearchInput.isFocused()) {
+            boolean handled = this.waypointSearchInput.charTyped(characterEvent);
+            if (!handled) {
+                handled = super.charTyped(characterEvent);
+            }
+            return handled;
+        }
         if (this.editingCoordinates) {
             if (!this.coordinateXInput.isFocused() && !this.coordinateZInput.isFocused()) {
                 this.coordinateXInput.setFocused(true);
@@ -889,6 +932,9 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
         graphics.pose().pushMatrix();
+        this.waypointLabelBounds.clear();
+        this.pendingWaypointLabels.clear();
+        this.waypointClusters.clear();
         this.buttonWaypoints.active = mapOptions.waypointsAllowed;
         refreshWorldMapControlLabels();
         this.zoomGoal = this.bindZoom(this.zoomGoal);
@@ -1206,7 +1252,6 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         boolean showWaypointsInThisMode = !farZoomPerformanceMode || this.options.isShowWaypointsInPerformanceModeEnabled();
         if (showWaypointsInThisMode && mapOptions.waypointsAllowed && options.showWaypoints) {
             TextureAtlas textureAtlas = VoxelConstants.getVoxelMapInstance().getWaypointManager().getTextureAtlas();
-
             for (Waypoint waypoint : waypointManager.getWaypoints()) {
                 if (!isWaypointVisibleInViewedDimension(waypoint)) continue;
                 if (hasVisibleSeedMapperMarkerAt(getWaypointXInViewedDimension(waypoint), getWaypointZInViewedDimension(waypoint))) continue;
@@ -1246,6 +1291,8 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         } else {
             this.switchToMouseInput();
         }
+
+        drawQueuedWaypointLabels(graphics);
 
         if (mapOptions.worldmapAllowed) {
             graphics.centeredText(this.getFont(), this.screenTitle, this.getWidth() / 2, 16, 0xFFFFFFFF);
@@ -2225,7 +2272,6 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         }
 
         boolean uprightIcon = icon != null;
-
         String name = waypoint.name;
         if (waypointManager.isCoordinateHighlight(waypoint)) {
             name = "X:" + viewedX + ", Y:" + waypoint.getY() + ", Z:" + viewedZ;
@@ -2273,18 +2319,39 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             }
         }
 
-        int iconColor = color == -1 ? waypoint.getUnifiedColor(!waypoint.enabled && !isHighlighted && !isHovered ? 0.3F : 1.0F) : color;
-        int textColor = !waypoint.enabled && !isHighlighted && !isHovered ? 0x55FFFFFF : 0xFFFFFFFF;
+        String searchQuery = getWaypointSearchQuery();
+        boolean searchActive = !searchQuery.isEmpty();
+        boolean searchMatch = !searchActive || waypointMatchesSearch(waypoint, searchQuery);
+
+        int iconColor = color == -1
+                ? waypoint.getUnifiedColor(!waypoint.enabled && !isHighlighted && !isHovered ? 0.3F : 1.0F)
+                : color;
+        if (searchActive && !searchMatch) {
+            iconColor = (iconColor & 0x00FFFFFF) | (0x40 << 24);
+        }
+        int textColor = searchMatch && searchActive
+                ? 0xFFFFFF66
+                : (!waypoint.enabled && !isHighlighted && !isHovered ? 0x55FFFFFF : 0xFFFFFFFF);
 
         icon.blit(graphics, RenderPipelines.GUI_TEXTURED, x - ICON_WIDTH / 2.0F, y - ICON_HEIGHT / 2.0F, ICON_WIDTH, ICON_HEIGHT, iconColor);
 
-        boolean textOverFrame = screenY + ICON_HEIGHT > this.bottom;
-        if (options.showWaypointNames && !far && !textOverFrame) {
-            graphics.pose().pushMatrix();
-            float fontScale = 1.0F;
-            graphics.pose().scale(fontScale, fontScale);
-            writeCentered(graphics, name, x / fontScale, (y + ICON_HEIGHT / 2.0F) / fontScale, textColor, true);
-            graphics.pose().popMatrix();
+        boolean showLabel = options.showWaypointNames && searchMatch;
+        if (showLabel) {
+            int labelWidth = textWidth(name);
+            float labelBaseY = screenY + ICON_HEIGHT / 2.0F + WAYPOINT_LABEL_PADDING;
+            this.pendingWaypointLabels.add(new PendingWaypointLabel(
+                    screenX,
+                    screenY,
+                    labelBaseY,
+                    labelWidth,
+                    this.getFont().lineHeight,
+                    textColor,
+                    name,
+                    searchActive,
+                    searchMatch,
+                    isHighlighted,
+                    packXZ(Math.round(screenX / WAYPOINT_CLUSTER_BUCKET_SIZE), Math.round(screenY / WAYPOINT_CLUSTER_BUCKET_SIZE))
+            ));
         }
 
         graphics.pose().popMatrix();
@@ -3803,6 +3870,14 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 && mouseY <= seedMapperTitleBottom;
     }
 
+    private boolean isInWaypointSearchInput(int mouseX, int mouseY) {
+        return this.waypointSearchInput != null
+                && mouseX >= this.waypointSearchInput.getX()
+                && mouseX <= this.waypointSearchInput.getX() + this.waypointSearchInput.getWidth()
+                && mouseY >= this.waypointSearchInput.getY()
+                && mouseY <= this.waypointSearchInput.getY() + this.waypointSearchInput.getHeight();
+    }
+
     private int getSeedMapperStripBottomY() {
         if (!seedMapperOptions.enabled || !mapOptions.worldmapAllowed) {
             return Integer.MIN_VALUE;
@@ -4127,6 +4202,121 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         return ((long) x << 32) ^ (z & 0xFFFFFFFFL);
     }
 
+    private String getWaypointSearchQuery() {
+        if (this.waypointSearchInput == null) {
+            return "";
+        }
+        return TextUtils.scrubCodes(this.waypointSearchInput.getValue()).trim().toLowerCase(Locale.ROOT);
+    }
+
+    private boolean waypointMatchesSearch(Waypoint waypoint, String query) {
+        if (query == null || query.isEmpty()) {
+            return true;
+        }
+        String name = waypoint.name == null ? "" : TextUtils.scrubCodes(waypoint.name);
+        return name.toLowerCase(Locale.ROOT).contains(query);
+    }
+
+    private void drawQueuedWaypointLabels(GuiGraphicsExtractor graphics) {
+        if (this.pendingWaypointLabels.isEmpty()) {
+            return;
+        }
+
+        float mapCenterX = this.getWidth() / 2.0F;
+        float mapCenterY = this.top + (this.bottom - this.top) / 2.0F;
+        Comparator<PendingWaypointLabel> comparator = Comparator
+                .comparing(PendingWaypointLabel::searchActive).reversed()
+                .thenComparing(Comparator.comparing(PendingWaypointLabel::searchMatch).reversed())
+                .thenComparing(Comparator.comparing(PendingWaypointLabel::highlighted).reversed())
+                .thenComparingInt(PendingWaypointLabel::labelWidth)
+                .thenComparingDouble(label -> label.distanceToCenter(mapCenterX, mapCenterY));
+        this.pendingWaypointLabels.sort(comparator);
+
+        for (PendingWaypointLabel label : this.pendingWaypointLabels) {
+            int rows = options.clusterWaypointNames ? WAYPOINT_LABEL_LINE_LIMIT : 1;
+            int row = reserveWaypointLabel(label.centerX, label.iconCenterY, label.baseY, label.labelWidth, label.labelHeight, rows);
+            if (row >= 0) {
+                int drawX = Math.round(label.centerX) - label.labelWidth / 2;
+                int lineStep = label.labelHeight + 1;
+                int drawY;
+                if ((row & 1) == 0) {
+                    drawY = Math.round(label.baseY + (row / 2) * lineStep);
+                } else {
+                    drawY = Math.round(label.iconCenterY - ICON_HEIGHT / 2.0F - label.labelHeight - WAYPOINT_LABEL_PADDING - (row / 2) * lineStep);
+                }
+                graphics.text(this.getFont(), label.text, drawX, drawY, label.color, true);
+            } else if (options.clusterWaypointNames) {
+                registerWaypointCluster(label.clusterKey, label.centerX, label.iconCenterY);
+            }
+        }
+
+        for (WaypointClusterData cluster : this.waypointClusters.values()) {
+            if (cluster.count > 1) {
+                drawWaypointClusterBadge(graphics, cluster.anchorX, cluster.anchorY, cluster.count);
+            }
+        }
+
+        this.pendingWaypointLabels.clear();
+        this.waypointLabelBounds.clear();
+        this.waypointClusters.clear();
+    }
+
+    private int reserveWaypointLabel(float centerX, float iconCenterY, float topY, int labelWidth, int labelHeight, int maxRows) {
+        int rows = Math.max(1, maxRows);
+        for (int row = 0; row < rows; row++) {
+            int left = Math.round(centerX - labelWidth / 2.0F) - WAYPOINT_LABEL_PADDING;
+            int top;
+            if ((row & 1) == 0) {
+                top = Math.round(topY + (row / 2) * (labelHeight + 1.0F)) - WAYPOINT_LABEL_PADDING;
+            } else {
+                top = Math.round(iconCenterY - ICON_HEIGHT / 2.0F - labelHeight - WAYPOINT_LABEL_PADDING - (row / 2) * (labelHeight + 1.0F)) - WAYPOINT_LABEL_PADDING;
+            }
+            int right = left + labelWidth + WAYPOINT_LABEL_PADDING * 2;
+            int bottom = top + labelHeight + WAYPOINT_LABEL_PADDING * 2;
+            if (bottom > this.bottom) {
+                continue;
+            }
+            WaypointLabelBounds candidate = new WaypointLabelBounds(left, top, right, bottom);
+            if (!intersectsAnyWaypointLabel(candidate)) {
+                this.waypointLabelBounds.add(candidate);
+                return row;
+            }
+        }
+        return -1;
+    }
+
+    private boolean intersectsAnyWaypointLabel(WaypointLabelBounds candidate) {
+        for (WaypointLabelBounds bounds : this.waypointLabelBounds) {
+            if (bounds.intersects(candidate)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void registerWaypointCluster(long clusterKey, float screenX, float screenY) {
+        WaypointClusterData cluster = this.waypointClusters.get(clusterKey);
+        if (cluster == null) {
+            cluster = new WaypointClusterData(Math.round(screenX), Math.round(screenY));
+            this.waypointClusters.put(clusterKey, cluster);
+        }
+        cluster.count++;
+    }
+
+    private void drawWaypointClusterBadge(GuiGraphicsExtractor graphics, float x, float y, int count) {
+        String badgeText = String.valueOf(count);
+        int badgeWidth = Math.max(12, this.getFont().width(badgeText) + 8);
+        int badgeHeight = this.getFont().lineHeight + 4;
+        int badgeX = Math.round(x + ICON_WIDTH / 2.0F - 2.0F);
+        int badgeY = Math.round(y - ICON_HEIGHT / 2.0F - badgeHeight + 2.0F);
+        graphics.fill(badgeX, badgeY, badgeX + badgeWidth, badgeY + badgeHeight, 0xCC000000);
+        graphics.fill(badgeX, badgeY, badgeX + badgeWidth, badgeY + 1, 0xFFFFFFFF);
+        graphics.fill(badgeX, badgeY + badgeHeight - 1, badgeX + badgeWidth, badgeY + badgeHeight, 0xFFFFFFFF);
+        graphics.fill(badgeX, badgeY, badgeX + 1, badgeY + badgeHeight, 0xFFFFFFFF);
+        graphics.fill(badgeX + badgeWidth - 1, badgeY, badgeX + badgeWidth, badgeY + badgeHeight, 0xFFFFFFFF);
+        graphics.text(this.getFont(), badgeText, badgeX + 4, badgeY + 2, 0xFFFFFFFF);
+    }
+
     private void drawIconStroke(GuiGraphicsExtractor graphics, int x, int y, int width, int height, int color) {
         graphics.fill(x - 1, y - 1, x + width + 1, y, color);
         graphics.fill(x - 1, y + height, x + width + 1, y + height + 1, color);
@@ -4200,6 +4390,46 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     }
 
     private record ExportPlayerCoords(int x, int z) {
+    }
+
+    private static final class WaypointLabelBounds {
+        private final int left;
+        private final int top;
+        private final int right;
+        private final int bottom;
+
+        private WaypointLabelBounds(int left, int top, int right, int bottom) {
+            this.left = left;
+            this.top = top;
+            this.right = right;
+            this.bottom = bottom;
+        }
+
+        private boolean intersects(WaypointLabelBounds other) {
+            return this.left < other.right
+                    && this.right > other.left
+                    && this.top < other.bottom
+                    && this.bottom > other.top;
+        }
+    }
+
+    private record PendingWaypointLabel(float centerX, float iconCenterY, float baseY, int labelWidth, int labelHeight, int color, String text, boolean searchActive, boolean searchMatch, boolean highlighted, long clusterKey) {
+        private double distanceToCenter(float mapCenterX, float mapCenterY) {
+            float dx = this.centerX - mapCenterX;
+            float dy = this.iconCenterY - mapCenterY;
+            return dx * dx + dy * dy;
+        }
+    }
+
+    private static final class WaypointClusterData {
+        private final int anchorX;
+        private final int anchorY;
+        private int count;
+
+        private WaypointClusterData(int anchorX, int anchorY) {
+            this.anchorX = anchorX;
+            this.anchorY = anchorY;
+        }
     }
 
     private record SeedPreviewQueryCacheKey(long seed, Identifier dimensionIdentifier, int dimension, int minX, int maxX, int minZ, int maxZ, int generatorFlags, int textureWidth, int textureHeight, int mcVersion, boolean terrainEnabled, int settingsHash) {
