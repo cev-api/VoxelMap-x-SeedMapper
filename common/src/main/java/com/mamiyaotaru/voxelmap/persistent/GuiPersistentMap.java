@@ -212,7 +212,6 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     private final Identifier seedPreviewTextureLocation = Identifier.fromNamespaceAndPath(VoxelConstants.MOD_ID, "persistentmap/seedpreview");
     private final List<FeatureIconHitbox> seedMapperIconHitboxes = new ArrayList<>();
     private final List<SeedMapperMarkerHitbox> seedMapperMarkerHitboxes = new ArrayList<>();
-    private final Set<Long> visibleSeedMapperMarkerCoords = new HashSet<>();
     private Set<SeedMapperFeature> seedMapperSavedToggles;
     private SeedMapperFeature seedMapperIsolatedFeature;
     private int seedMapperIsolationBaseHash;
@@ -1248,13 +1247,14 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         }
         drawPlayerLayerStatuses(graphics);
 
+        graphics.nextStratum();
+
         Waypoint currentlyHovered = null;
         boolean showWaypointsInThisMode = !farZoomPerformanceMode || this.options.isShowWaypointsInPerformanceModeEnabled();
         if (showWaypointsInThisMode && mapOptions.waypointsAllowed && options.showWaypoints) {
             TextureAtlas textureAtlas = VoxelConstants.getVoxelMapInstance().getWaypointManager().getTextureAtlas();
             for (Waypoint waypoint : waypointManager.getWaypoints()) {
                 if (!isWaypointVisibleInViewedDimension(waypoint)) continue;
-                if (hasVisibleSeedMapperMarkerAt(getWaypointXInViewedDimension(waypoint), getWaypointZInViewedDimension(waypoint))) continue;
 
                 boolean isHighlighted = waypointManager.isHighlightedWaypoint(waypoint);
                 boolean isHovered = drawWaypoint(graphics, waypoint, textureAtlas, null, isHighlighted, -1, mouseX, mouseY);
@@ -2790,7 +2790,6 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
     private void drawSeedMapperMarkers(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
         seedMapperMarkerHitboxes.clear();
-        visibleSeedMapperMarkerCoords.clear();
         boolean showNetherPortals = mapOptions.showNetherPortalMarkers;
         boolean showEndPortals = mapOptions.showEndPortalMarkers;
         boolean showEndBeacons = mapOptions.showEndGatewayMarkers;
@@ -3430,6 +3429,10 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         String worldKey = currentSeedMapperWorldKey();
         boolean completed = seedMapperOptions.isCompleted(worldKey, marker.feature(), marker.blockX(), marker.blockZ());
         Waypoint linkedWaypoint = findWaypointForMarker(marker);
+        if (linkedWaypoint != null && mapOptions.waypointsAllowed && options.showWaypoints) {
+            graphics.pose().popMatrix();
+            return;
+        }
         seedMapperMarkerHitboxes.add(new SeedMapperMarkerHitbox(marker, worldKey, screenX, screenY, iconWidth, iconHeight));
 
         boolean isHovered = mouseX >= screenX - iconWidth / 2.0F && mouseX <= screenX + iconWidth / 2.0F
@@ -3458,7 +3461,6 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         if (completed) {
             drawCompletedTick(graphics, Math.round(x - iconWidth / 2.0F), Math.round(y - iconHeight / 2.0F), iconWidth, iconHeight);
         }
-        visibleSeedMapperMarkerCoords.add(packXZ(marker.blockX(), marker.blockZ()));
         graphics.pose().popMatrix();
     }
 
@@ -4192,10 +4194,6 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             }
         }
         return null;
-    }
-
-    private boolean hasVisibleSeedMapperMarkerAt(int x, int z) {
-        return visibleSeedMapperMarkerCoords.contains(packXZ(x, z));
     }
 
     private long packXZ(int x, int z) {
