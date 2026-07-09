@@ -423,7 +423,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         this.addRenderableWidget(this.coordinateZInput);
         this.top = 32;
         this.bottom = this.getHeight() - 32;
-        this.waypointSearchInput = new EditBox(this.getFont(), this.getWidth() - this.sideMargin - WAYPOINT_SEARCH_BOX_WIDTH, this.getHeight() - 50, WAYPOINT_SEARCH_BOX_WIDTH, 20, Component.translatable("worldmap.waypointSearch"));
+        this.waypointSearchInput = new EditBox(this.getFont(), this.getWidth() - this.sideMargin - WAYPOINT_SEARCH_BOX_WIDTH, this.bottom - 22, WAYPOINT_SEARCH_BOX_WIDTH, 20, Component.translatable("worldmap.waypointSearch"));
         this.waypointSearchInput.setMaxLength(48);
         this.waypointSearchInput.setHint(Component.translatable("worldmap.waypointSearch"));
         this.waypointSearchInput.setVisible(true);
@@ -1237,17 +1237,8 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             this.overlayBackground(graphics, this.bottom, this.getHeight(), 255, 255);
         }
 
-        if (!farZoomPerformanceMode && mapOptions.worldmapAllowed) {
-            drawSeedMapperFeatureStrip(graphics, mouseX, mouseY);
-        }
-        if (!farZoomPerformanceMode) {
-            drawSeedMapperMarkers(graphics, mouseX, mouseY);
-            drawSeedMapperLoadingStatus(graphics);
-            drawSeedPreviewLoadingStatus(graphics);
-        }
-        drawPlayerLayerStatuses(graphics);
-
         graphics.nextStratum();
+        graphics.enableScissor(0, this.top, this.width, this.bottom);
 
         Waypoint currentlyHovered = null;
         boolean showWaypointsInThisMode = !farZoomPerformanceMode || this.options.isShowWaypointsInPerformanceModeEnabled();
@@ -1273,6 +1264,18 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         }
         hoverdWaypoint = currentlyHovered;
 
+        drawQueuedWaypointLabels(graphics);
+
+        if (!farZoomPerformanceMode && mapOptions.worldmapAllowed) {
+            drawSeedMapperFeatureStrip(graphics, mouseX, mouseY);
+        }
+        if (!farZoomPerformanceMode) {
+            drawSeedMapperMarkers(graphics, mouseX, mouseY);
+        }
+        drawPlayerLayerStatuses(graphics);
+
+        graphics.disableScissor();
+
         if (!farZoomPerformanceMode && !options.showDistantWaypoints) {
             this.overlayBackground(graphics, 0, this.top, 255, 255);
             this.overlayBackground(graphics, this.bottom, this.getHeight(), 255, 255);
@@ -1291,8 +1294,6 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         } else {
             this.switchToMouseInput();
         }
-
-        drawQueuedWaypointLabels(graphics);
 
         if (mapOptions.worldmapAllowed) {
             graphics.centeredText(this.getFont(), this.screenTitle, this.getWidth() / 2, 16, 0xFFFFFFFF);
@@ -1340,10 +1341,6 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 seedHeaderTop = seedY - 1;
                 seedHeaderBottom = seedY + this.getFont().lineHeight + 1;
             }
-            if (this.zoom != this.zoomGoal) {
-                String zoomText = String.format(java.util.Locale.ROOT, "Zoom: %.3fx", this.zoom);
-                graphics.text(this.getFont(), zoomText, this.sideMargin, this.getHeight() - 38, 0xFFFFFFFF);
-            }
             if (farZoomPerformanceMode) {
                 String perfText = "Performance Mode: Explored chunk lines only";
                 int perfWidth = this.getFont().width(perfText);
@@ -1385,6 +1382,10 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             }
         }
         super.extractRenderState(graphics, mouseX, mouseY, delta);
+        if (mapOptions.worldmapAllowed) {
+            graphics.nextStratum();
+            drawBottomStatusTexts(graphics);
+        }
     }
 
     private void drawExploredChunkLinesWorldMap(GuiGraphicsExtractor graphics, int leftRegion, int rightRegion, int topRegion, int bottomRegion) {
@@ -2068,9 +2069,35 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             String text = enabled ? "Chunk Share Active: " + layerDisplayName(slug) : "Chunk Share: " + layerDisplayName(slug);
             int color = enabled ? playerLayerColor(slug, 0xFF000000) : 0xFFFFFFFF;
             int x = this.width - this.sideMargin - this.getFont().width(text);
+            drawTextBackground(graphics, x - 3, y - 2, this.getFont().width(text) + 6, this.getFont().lineHeight + 4, 0x80000000);
             graphics.text(this.getFont(), text, x, y, color, true);
             this.playerLayerStatusHitboxes.add(new PlayerLayerStatusHitbox(slug, x, y - 1, this.width - this.sideMargin, y + 10));
             y += 11;
+        }
+    }
+
+    private void drawTextBackground(GuiGraphicsExtractor graphics, int x, int y, int width, int height, int color) {
+        graphics.fill(x, y, x + width, y + height, color);
+    }
+
+    private void drawStatusText(GuiGraphicsExtractor graphics, String text, int x, int y, int textColor, int backgroundColor) {
+        int width = this.getFont().width(text);
+        drawTextBackground(graphics, x - 2, y - 1, width + 4, this.getFont().lineHeight + 2, backgroundColor);
+        graphics.text(this.getFont(), text, x, y, textColor);
+    }
+
+    private void drawBottomStatusTexts(GuiGraphicsExtractor graphics) {
+        int y = this.bottom - 14;
+        if (seedMapperQueryLoading) {
+            drawStatusText(graphics, "Loading SeedMapper: " + (seedMapperLoadingSummary == null || seedMapperLoadingSummary.isBlank() ? "structures" : seedMapperLoadingSummary), this.sideMargin + 2, y, 0xFFE0E0E0, 0xFF000000);
+            y -= 12;
+        }
+        if (this.seedPreviewLoading) {
+            drawStatusText(graphics, "Loading SeedMap terrain...", this.sideMargin + 2, y, 0xFFE0E0E0, 0xFF000000);
+            y -= 12;
+        }
+        if (this.zoom != this.zoomGoal) {
+            drawStatusText(graphics, String.format(java.util.Locale.ROOT, "Zoom: %.3fx", this.zoom), this.sideMargin + 2, y, 0xFFFFFFFF, 0xFF000000);
         }
     }
 
@@ -2335,7 +2362,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
         icon.blit(graphics, RenderPipelines.GUI_TEXTURED, x - ICON_WIDTH / 2.0F, y - ICON_HEIGHT / 2.0F, ICON_WIDTH, ICON_HEIGHT, iconColor);
 
-        boolean showLabel = options.showWaypointNames && searchMatch;
+        boolean showLabel = options.showWaypointNames && searchMatch && !far;
         if (showLabel) {
             int labelWidth = textWidth(name);
             float labelBaseY = screenY + ICON_HEIGHT / 2.0F + WAYPOINT_LABEL_PADDING;
@@ -3031,10 +3058,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         if (!seedMapperQueryLoading) {
             return;
         }
-        String summary = seedMapperLoadingSummary == null || seedMapperLoadingSummary.isBlank()
-                ? "structures"
-                : seedMapperLoadingSummary;
-        graphics.text(this.getFont(), "Loading SeedMapper: " + summary, this.sideMargin + 2, this.bottom - 14, 0xFFE0E0E0);
+        drawStatusText(graphics, "Loading SeedMapper: " + (seedMapperLoadingSummary == null || seedMapperLoadingSummary.isBlank() ? "structures" : seedMapperLoadingSummary), this.sideMargin + 2, this.bottom - 14, 0xFFE0E0E0, 0xFF000000);
     }
 
     private void drawSeedPreviewLoadingStatus(GuiGraphicsExtractor graphics) {
@@ -3049,7 +3073,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         }
 
         int y = seedMapperQueryLoading ? this.bottom - 26 : this.bottom - 14;
-        graphics.text(this.getFont(), "Loading SeedMap terrain...", this.sideMargin + 2, y, 0xFFE0E0E0);
+        drawStatusText(graphics, "Loading SeedMap terrain...", this.sideMargin + 2, y, 0xFFE0E0E0, 0xFF000000);
     }
 
     private String buildSeedMapperLoadingSummary() {
@@ -3170,7 +3194,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         seedMapperStripTop = y;
         seedMapperStripRight = Math.max(seedMapperStripLeft + 40, contentRight + stripPad + 8);
         seedMapperStripBottom = y + barHeight;
-        graphics.fill(seedMapperStripLeft, seedMapperStripTop, seedMapperStripRight, seedMapperStripBottom, 0xA0000000);
+        graphics.fill(seedMapperStripLeft, seedMapperStripTop, seedMapperStripRight, seedMapperStripBottom, 0xFF000000);
         boolean allLocationsEnabled = !seedMapperOptions.getEnabledFeaturesSnapshot().isEmpty();
         int titleColor = allLocationsEnabled ? 0xFFFFFFFF : 0xFF8A8A8A;
         graphics.text(this.getFont(), legendTitle, titleX, titleY, titleColor);
