@@ -15,6 +15,7 @@ import com.mamiyaotaru.voxelmap.gui.GuiSeedMapperOptions;
 import com.mamiyaotaru.voxelmap.gui.GuiSubworldsSelect;
 import com.mamiyaotaru.voxelmap.gui.GuiWaypoints;
 import com.mamiyaotaru.voxelmap.gui.IGuiWaypoints;
+import com.mamiyaotaru.voxelmap.integration.AutoFlyHelper;
 import com.mamiyaotaru.voxelmap.integration.BaritoneHelper;
 import com.mamiyaotaru.voxelmap.gui.overridden.Popup;
 import com.mamiyaotaru.voxelmap.gui.overridden.PopupGuiButton;
@@ -4569,6 +4570,9 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         if (BaritoneHelper.isPresent()) {
             entries.add(new Popup.PopupEntry("Pathfind Here", 13, true, true));
         }
+        if (AutoFlyHelper.isPresent()) {
+            entries.add(new Popup.PopupEntry("Fly Here", 15, true, true));
+        }
 
         this.createPopup(x, y, directX, directY, 60, entries);
         if (VoxelConstants.DEBUG) {
@@ -4783,6 +4787,11 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             case 13 -> {
                 if (BaritoneHelper.pathTo(x, z)) {
                     minecraft.gui.hud.getChat().addClientSystemMessage(AppChatMessages.prefixed("Baritone", "Pathing to " + x + ", " + z));
+                }
+            }
+            case 15 -> {
+                if (AutoFlyHelper.flyTo(x, z)) {
+                    minecraft.gui.hud.getChat().addClientSystemMessage(AppChatMessages.prefixed("AutoFly", "Flying to " + x + ", " + z));
                 }
             }
             case 14 -> {
