@@ -15,7 +15,8 @@
     "Algamja11"
   ],
   "contact": {
-    "homepage": "https://github.com/cev-api/VoxelMap-x-SeedMapper"
+    "homepage": "https://github.com/cev-api/VoxelMap-x-SeedMapper",
+    "sources": "https://github.com/cev-api/VoxelMap"
   },
   "icon": "assets/voxelmap/icon.png",
   "environment": "*",
@@ -23,9 +24,12 @@
     "client": [
       "com.mamiyaotaru.voxelmap.fabric.VoxelmapFabricMod"
     ],
-	"server": [
-	  "com.mamiyaotaru.voxelmap.fabric.VoxelmapFabricModServer"
-	]
+    "server": [
+      "com.mamiyaotaru.voxelmap.fabric.VoxelmapFabricModServer"
+    ],
+    "modmenu": [
+      "com.mamiyaotaru.voxelmap.fabric.VoxelmapModMenuApi"
+    ]
   },
   "accessWidener" : "voxelmap.accesswidener",
   "mixins": [
@@ -36,5 +40,12 @@
     "fabricloader": ">=0.18.4",
     "fabric-api": ">=0.144.1",
     "minecraft": ">=26.2 <26.3"
+  },
+  "custom": {
+    "modmenu": {
+      "links": {
+        "modmenu.discord": "https://discord.gg/4nGrfZxb2a"
+      }
+    }
   }
 }
