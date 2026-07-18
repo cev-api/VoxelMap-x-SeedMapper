@@ -156,8 +156,8 @@ public class Map implements Runnable, IChangeObserver {
     private final Object coordinateLock = new Object();
     private ClientLevel world;
     private int updateTimer;
-    private boolean doFullRender = true;
-    private boolean imageChanged = true;
+    private volatile boolean doFullRender = true;
+    private volatile boolean imageChanged = true;
 
     // Map Terrain Calculation
     private final int heightMapResetHeight = this.multicore ? 2 : 5;
@@ -168,7 +168,7 @@ public class Map implements Runnable, IChangeObserver {
     private BlockState surfaceBlockState;
 
     // Map Player Calculation
-    private boolean zoomChanged;
+    private volatile boolean zoomChanged;
     private int zoom;
     private double zoomScale = 1.0;
     private double zoomScaleAdjusted = 1.0;
