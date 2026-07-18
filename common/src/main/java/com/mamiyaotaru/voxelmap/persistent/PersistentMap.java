@@ -63,6 +63,7 @@ public class PersistentMap implements IChangeObserver {
     int lastBottom;
     String lastDimensionCacheKey = "";
     CachedRegion[] lastRegionsArray = new CachedRegion[0];
+    private final Object lastRegionsLock = new Object();
     final Comparator<CachedRegion> ageThenDistanceSorter = (region1, region2) -> {
         long mostRecentAccess1 = region1.getMostRecentView();
         long mostRecentAccess2 = region2.getMostRecentView();
@@ -796,7 +797,7 @@ public class PersistentMap implements IChangeObserver {
             }
 
             this.prunePool();
-            synchronized (this.lastRegionsArray) {
+            synchronized (this.lastRegionsLock) {
                 this.lastLeft = left;
                 this.lastRight = right;
                 this.lastTop = top;
@@ -905,7 +906,7 @@ public class PersistentMap implements IChangeObserver {
                         this.cachedRegionsPool.add(cachedRegion);
                     }
 
-                    synchronized (this.lastRegionsArray) {
+                    synchronized (this.lastRegionsLock) {
                         if (dimensionCacheKey(currentDimension).equals(this.lastDimensionCacheKey)
                                 && regionX >= this.lastLeft && regionX <= this.lastRight && regionZ >= this.lastTop && regionZ <= this.lastBottom) {
                             this.lastRegionsArray[(regionZ - this.lastTop) * (this.lastRight - this.lastLeft + 1) + (regionX - this.lastLeft)] = cachedRegion;
