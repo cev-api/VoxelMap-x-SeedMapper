@@ -7,6 +7,7 @@ import com.mamiyaotaru.voxelmap.gui.overridden.GuiScreenMinimap;
 import com.mamiyaotaru.voxelmap.gui.overridden.GuiValueSliderMinimap;
 import com.mamiyaotaru.voxelmap.persistent.GuiPersistentMap;
 import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperCommandHandler;
+import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperCommandTree;
 import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperDatapackManager;
 import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperEspStyle;
 import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperEspTarget;
@@ -131,6 +132,7 @@ public class GuiSeedMapperOptions extends GuiScreenMinimap {
                 button -> setActiveEditor(espTargetInput));
         espTargetInput.setMaxLength(128);
         espTargetInput.setText(settings.espTarget);
+        espTargetInput.setAutocompleteOptions(SeedMapperCommandTree.getCommonOreBlocks());
         addRenderableWidget(espTargetInput);
 
         y += rowGap;
@@ -426,6 +428,9 @@ public class GuiSeedMapperOptions extends GuiScreenMinimap {
         drawSection(graphics, "Datapacks", left, 328);
         drawSection(graphics, "Tools", left, 412);
         super.extractRenderState(graphics, mouseX, mouseY, delta);
+        if (espTargetInput != null) {
+            espTargetInput.extractAutocompleteSuggestions(graphics);
+        }
 
         int statusY = this.height - 56;
         for (int i = 0; i < statusMessages.size(); i++) {

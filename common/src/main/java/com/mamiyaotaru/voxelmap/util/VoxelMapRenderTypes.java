@@ -57,4 +57,5 @@ public class VoxelMapRenderTypes {
                     .setOutputTarget(OutputTarget.ITEM_ENTITY_TARGET)
                     .createRenderSetup()
     );
+
 }

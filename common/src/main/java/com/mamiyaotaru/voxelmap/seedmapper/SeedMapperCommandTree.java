@@ -52,6 +52,10 @@ public final class SeedMapperCommandTree {
     private SeedMapperCommandTree() {
     }
 
+    public static List<String> getCommonOreBlocks() {
+        return COMMON_ORE_BLOCKS;
+    }
+
     public static <S> LiteralArgumentBuilder<S> buildRoot(String name, Function<String, Integer> runner) {
         return LiteralArgumentBuilder.<S>literal(name)
                 .executes(context -> runRaw(context, runner, "help"))

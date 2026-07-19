@@ -10,12 +10,18 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 
+import java.util.List;
+import java.util.Locale;
+
 public class GuiButtonText extends Button.Plain {
     private boolean editing;
     private final EditBox textField;
+    private List<String> autocompleteOptions = List.of();
+    private final Font fontRenderer;
 
     public GuiButtonText(Font fontRenderer, int x, int y, int width, int height, Component message, OnPress onPress) {
         super (x, y, width, height, message, onPress, DEFAULT_NARRATION);
+        this.fontRenderer = fontRenderer;
         this.textField = new EditBox(fontRenderer, x + 1, y + 1, width - 2, height - 2, Component.empty());
     }
 
@@ -107,7 +113,16 @@ public class GuiButtonText extends Button.Plain {
         if (!(editing)) {
             return super.keyPressed(keyEvent);
         }
-        if (keyCode != GLFW.GLFW_KEY_ENTER && keyCode != GLFW.GLFW_KEY_KP_ENTER && keyCode != GLFW.GLFW_KEY_TAB) {
+        if (keyCode == GLFW.GLFW_KEY_TAB) {
+            String completion = getAutocompleteCompletion();
+            if (completion != null) {
+                setText(completion);
+                return true;
+            }
+            setEditing(false);
+            return false;
+        }
+        if (keyCode != GLFW.GLFW_KEY_ENTER && keyCode != GLFW.GLFW_KEY_KP_ENTER) {
             return textField.keyPressed(keyEvent);
         }
 
@@ -136,4 +151,43 @@ public class GuiButtonText extends Button.Plain {
     public String getText() { return textField.getValue(); }
 
     public void setMaxLength(int maxLength) { textField.setMaxLength(maxLength); }
+
+    public void setAutocompleteOptions(List<String> options) {
+        autocompleteOptions = options == null ? List.of() : List.copyOf(options);
+    }
+
+    public void extractAutocompleteSuggestions(GuiGraphicsExtractor graphics) {
+        if (!editing) return;
+        List<String> matches = getAutocompleteMatches();
+        if (matches.isEmpty()) return;
+
+        int x = getX();
+        int y = getY() + getHeight();
+        int rowHeight = 12;
+        int rows = Math.min(6, matches.size());
+        graphics.fill(x, y, x + getWidth(), y + rows * rowHeight + 2, 0xF010141A);
+        graphics.fill(x, y, x + getWidth(), y + 1, 0xFF9CC7FF);
+        for (int i = 0; i < rows; i++) {
+            int rowY = y + 2 + i * rowHeight;
+            if (i == 0) {
+                graphics.fill(x + 1, rowY - 1, x + getWidth() - 1, rowY + rowHeight - 1, 0x664A83B8);
+            }
+            graphics.text(fontRenderer, Component.literal(matches.get(i)), x + 5, rowY + 1, 0xFFE6EAF0, false);
+        }
+    }
+
+    private String getAutocompleteCompletion() {
+        return getAutocompleteMatches().stream()
+                .filter(option -> !option.equalsIgnoreCase(getText().trim()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private List<String> getAutocompleteMatches() {
+        String current = getText().trim().toLowerCase(Locale.ROOT);
+        if (current.isEmpty()) return List.of();
+        return autocompleteOptions.stream()
+                .filter(option -> option.toLowerCase(Locale.ROOT).startsWith(current))
+                .toList();
+    }
 }
