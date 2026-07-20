@@ -297,12 +297,15 @@ public class CachedRegion {
     public boolean isSurroundedByLoaded(LevelChunk chunk) {
         int chunkX = chunk.getPos().x();
         int chunkZ = chunk.getPos().z();
-        boolean neighborsLoaded = !chunk.isEmpty() && VoxelConstants.getPlayer().level().hasChunk(chunkX, chunkZ);
+        boolean neighborsLoaded = !this.isChunkEmpty(chunk)
+                && VoxelConstants.getPlayer().level().hasChunk(chunkX, chunkZ);
 
         for (int t = chunkX - 1; t <= chunkX + 1 && neighborsLoaded; ++t) {
             for (int s = chunkZ - 1; s <= chunkZ + 1 && neighborsLoaded; ++s) {
                 LevelChunk neighborChunk = VoxelConstants.getPlayer().level().getChunk(t, s);
-                neighborsLoaded = neighborChunk != null && !neighborChunk.isEmpty() && VoxelConstants.getPlayer().level().hasChunk(t, s);
+                neighborsLoaded = neighborChunk != null
+                        && !this.isChunkEmpty(neighborChunk)
+                        && VoxelConstants.getPlayer().level().hasChunk(t, s);
             }
         }
 
