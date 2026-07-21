@@ -8,6 +8,7 @@ import com.mamiyaotaru.voxelmap.gui.overridden.GuiValueSliderMinimap;
 import com.mamiyaotaru.voxelmap.persistent.GuiPersistentMap;
 import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperCommandHandler;
 import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperCommandTree;
+import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperCompat;
 import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperDatapackManager;
 import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperEspStyle;
 import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperEspTarget;
@@ -38,6 +39,7 @@ public class GuiSeedMapperOptions extends GuiScreenMinimap {
 
     private Button structureOverlayButton;
     private Button lootOnlyButton;
+    private Button minecraftVersionButton;
     private Button locateStructureButton;
     private Button locateBiomeButton;
     private Button locateLootButton;
@@ -78,6 +80,11 @@ public class GuiSeedMapperOptions extends GuiScreenMinimap {
         seedInput.setMaxLength(256);
         seedInput.setText(settings.manualSeed);
         addRenderableWidget(seedInput);
+
+        y += rowGap;
+
+        minecraftVersionButton = addRenderableWidget(new Button.Builder(Component.literal("Minecraft Version: " + SeedMapperCompat.getSelectedVersionLabel()), button -> cycleMinecraftVersion())
+                .bounds(left, y, fullWidth, 20).build());
 
         y += rowGap;
 
@@ -125,7 +132,7 @@ public class GuiSeedMapperOptions extends GuiScreenMinimap {
             minecraft.gui.setScreen(new GuiSeedMapperLootViewer(this));
         }).bounds(right, y, 150, 20).build());
 
-        y = 192;
+        y = 214;
 
         espTargetInput = new GuiButtonText(font, left, y, fullWidth, 20,
                 Component.literal("ESP Target: " + settings.espTarget),
@@ -190,7 +197,7 @@ public class GuiSeedMapperOptions extends GuiScreenMinimap {
                 minecraft.gui.setScreen(new GuiSeedMapperEspProfiles(this)))
                 .bounds(left, y, fullWidth, 20).build());
 
-        y = 342;
+        y = 364;
 
         datapackUrlInput = new GuiButtonText(font, left, y, fullWidth, 20,
                 Component.literal("Datapack URL: " + settings.datapackUrl),
@@ -232,7 +239,7 @@ public class GuiSeedMapperOptions extends GuiScreenMinimap {
             refreshLabels();
         }).bounds(left, y, fullWidth, 20).build());
 
-        y = 426;
+        y = 448;
 
         exportVisibleButton = addRenderableWidget(new Button.Builder(Component.literal("Export JSON"), button -> {
             applyTextValues();
@@ -250,7 +257,7 @@ public class GuiSeedMapperOptions extends GuiScreenMinimap {
         addRenderableWidget(new Button.Builder(Component.literal("Seed Cracking"), button -> {
             applyTextValues();
             minecraft.gui.setScreen(new GuiSeedMapperCrackingMods(this));
-        }).bounds(this.width / 2 - 75, 448, 150, 20).build());
+        }).bounds(this.width / 2 - 75, 470, 150, 20).build());
 
         addRenderableWidget(new Button.Builder(Component.translatable("gui.done"), button -> onClose())
                 .bounds(this.width / 2 - 100, this.height - 26, 200, 20).build());
@@ -274,6 +281,9 @@ public class GuiSeedMapperOptions extends GuiScreenMinimap {
     private void refreshLabels() {
         structureOverlayButton.setMessage(toggleLabel("Structure Overlay", settings.enabled));
         lootOnlyButton.setMessage(toggleLabel("Lootable Structures Only", settings.showLootableOnly));
+        if (minecraftVersionButton != null) {
+            minecraftVersionButton.setMessage(Component.literal("Minecraft Version: " + SeedMapperCompat.getSelectedVersionLabel()));
+        }
         if (seedInput != null) {
             seedInput.setMessage(Component.literal("Seed Input: " + seedInput.getText()));
         }
@@ -303,6 +313,23 @@ public class GuiSeedMapperOptions extends GuiScreenMinimap {
 
     private String toggleText(boolean enabled) {
         return enabled ? "ON" : "OFF";
+    }
+
+    private void cycleMinecraftVersion() {
+        List<SeedMapperCompat.MinecraftVersion> versions = SeedMapperCompat.getSupportedVersions();
+        int current = -1;
+        for (int i = 0; i < versions.size(); i++) {
+            if (versions.get(i).id().equalsIgnoreCase(settings.minecraftVersion)) {
+                current = i;
+                break;
+            }
+        }
+        int next = current < 0 ? 0 : current + 1;
+        settings.minecraftVersion = next < versions.size()
+                ? versions.get(next).id()
+                : SeedMapperCompat.AUTO_VERSION;
+        MapSettingsManager.instance.saveAll();
+        refreshLabels();
     }
 
     private String currentWorldKey() {
@@ -424,9 +451,9 @@ public class GuiSeedMapperOptions extends GuiScreenMinimap {
         }
         int left = this.width / 2 - 155;
         drawSection(graphics, "World & Structures", left, 50);
-        drawSection(graphics, "ESP Highlights", left, 178);
-        drawSection(graphics, "Datapacks", left, 328);
-        drawSection(graphics, "Tools", left, 412);
+        drawSection(graphics, "ESP Highlights", left, 200);
+        drawSection(graphics, "Datapacks", left, 350);
+        drawSection(graphics, "Tools", left, 434);
         super.extractRenderState(graphics, mouseX, mouseY, delta);
         if (espTargetInput != null) {
             espTargetInput.extractAutocompleteSuggestions(graphics);

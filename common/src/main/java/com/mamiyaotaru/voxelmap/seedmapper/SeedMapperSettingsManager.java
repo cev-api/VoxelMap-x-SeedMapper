@@ -27,6 +27,8 @@ public class SeedMapperSettingsManager implements ISubSettingsManager {
     public boolean showDistant = true;
     public boolean showLootableOnly = false;
     public boolean largeBiomes = false;
+    /** The cubiomes Minecraft version to use, or "auto" to follow the client version. */
+    public String minecraftVersion = "auto";
 
     public String manualSeed = "";
     public String lootSearch = "";
@@ -76,6 +78,7 @@ public class SeedMapperSettingsManager implements ISubSettingsManager {
                     case "SeedMapper Show Distant" -> showDistant = Boolean.parseBoolean(curLine[1]);
                     case "SeedMapper Show Lootable Only" -> showLootableOnly = Boolean.parseBoolean(curLine[1]);
                     case "SeedMapper Large Biomes" -> largeBiomes = Boolean.parseBoolean(curLine[1]);
+                    case "SeedMapper Minecraft Version" -> minecraftVersion = SeedMapperCompat.normalizeVersionId(curLine[1]);
                     case "SeedMapper Show Player Direction Arrow" -> {
                     }
                     case "SeedMapper Manual Seed" -> manualSeed = curLine[1];
@@ -163,6 +166,7 @@ public class SeedMapperSettingsManager implements ISubSettingsManager {
         out.println("SeedMapper Show Distant:" + showDistant);
         out.println("SeedMapper Show Lootable Only:" + showLootableOnly);
         out.println("SeedMapper Large Biomes:" + largeBiomes);
+        out.println("SeedMapper Minecraft Version:" + minecraftVersion);
         out.println("SeedMapper Manual Seed:" + manualSeed);
         out.println("SeedMapper Loot Search:" + lootSearch);
         out.println("SeedMapper ESP Target:" + espTarget);

@@ -125,6 +125,7 @@ public final class SeedMapperCommandHandler {
 
         return switch (args[1].toLowerCase(Locale.ROOT)) {
             case "help" -> { sendHelp(); yield true; }
+            case "version" -> { handleVersion(args); yield true; }
             case "seed" -> {
                 if (args.length < 3) send("Usage: /seedmap seed <seed>");
                 else applySeed(args[2]);
@@ -196,6 +197,24 @@ public final class SeedMapperCommandHandler {
         }
         com.mamiyaotaru.voxelmap.MapSettingsManager.instance.saveAll();
         send("Update checker is now " + (options.updateNotifier ? "ON" : "OFF") + ".");
+    }
+
+    private static void handleVersion(String[] args) {
+        SeedMapperSettingsManager settings = VoxelConstants.getVoxelMapInstance().getSeedMapperOptions();
+        if (args.length < 3) {
+            send("SeedMapper version: " + SeedMapperCompat.getSelectedVersionLabel()
+                    + " (use /seedmap version auto to follow the client)");
+            return;
+        }
+
+        String selected = SeedMapperCompat.normalizeVersionId(args[2]);
+        if (!selected.equalsIgnoreCase(args[2]) && !"auto".equalsIgnoreCase(args[2])) {
+            send("Unknown Minecraft version: " + args[2] + ". Use /seedmap version <auto|supported version>.");
+            return;
+        }
+        settings.minecraftVersion = selected;
+        com.mamiyaotaru.voxelmap.MapSettingsManager.instance.saveAll();
+        send("SeedMapper Minecraft version set to " + SeedMapperCompat.getSelectedVersionLabel() + ".");
     }
 
     public static void handlePotentialLocateResult(String chatMessage) {
@@ -2007,6 +2026,7 @@ public final class SeedMapperCommandHandler {
     private static void sendHelp() {
         List<String> lines = new ArrayList<>();
         lines.add("/seedmap seed <seed>");
+        lines.add("/seedmap version [auto|supported version]");
         lines.add("/seedmap locate structure <feature_id>");
         lines.add("/seedmap locate biome <biome_name>");
         lines.add("/seedmap locate orevein <iron|copper>");

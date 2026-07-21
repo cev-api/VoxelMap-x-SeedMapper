@@ -30,6 +30,7 @@ VoxelMap x SeedMapper is a heavily modified fork of [VoxelMap Updated](https://g
 Common commands:
 - `/seedmap help`
 - `/seedmap seed <seed>`
+- `/seedmap version [auto|supported version]` (choose the cubiomes Minecraft version; `auto` follows the client)
 - `/seedmap locate structure <feature_id>`
 - `/seedmap locate biome <biome_name>`
 - `/seedmap locate orevein <iron|copper>`

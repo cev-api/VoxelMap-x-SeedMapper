@@ -20,7 +20,7 @@ public final class SeedMapperCommandTree {
     private static final List<String> ORE_VEIN_TYPES = List.of("iron", "copper");
     private static final List<String> ESP_TYPES = List.of("terrain", "canyon", "cave");
     private static final List<String> SOURCE_WRAPPERS = List.of("run", "seeded", "positioned", "in", "versioned", "flagged", "as", "rotated");
-    private static final List<String> ROOT_COMMANDS = List.of("help", "seed", "locate", "highlight", "mine", "export", "chunksync", "updatechecker");
+    private static final List<String> ROOT_COMMANDS = List.of("help", "seed", "version", "locate", "highlight", "mine", "export", "chunksync", "updatechecker");
     private static final List<String> LOCATE_TYPES = List.of("structure", "feature", "biome", "orevein", "slime", "slimechunk", "slime_chunk", "loot");
     private static final List<String> LOOT_QUERY_TERMS = List.of(
             "sentry_armor_trim_smithing_template", "vex_armor_trim_smithing_template",
@@ -56,10 +56,24 @@ public final class SeedMapperCommandTree {
         return COMMON_ORE_BLOCKS;
     }
 
+    private static List<String> getVersionSuggestions() {
+        ArrayList<String> versions = new ArrayList<>();
+        versions.add("auto");
+        versions.addAll(SeedMapperCompat.getSupportedVersions().stream()
+                .map(SeedMapperCompat.MinecraftVersion::id)
+                .toList());
+        return versions;
+    }
+
     public static <S> LiteralArgumentBuilder<S> buildRoot(String name, Function<String, Integer> runner) {
         return LiteralArgumentBuilder.<S>literal(name)
                 .executes(context -> runRaw(context, runner, "help"))
                 .then(LiteralArgumentBuilder.<S>literal("help").executes(context -> runRaw(context, runner, "help")))
+                .then(LiteralArgumentBuilder.<S>literal("version")
+                        .executes(context -> runRaw(context, runner, "version"))
+                        .then(RequiredArgumentBuilder.<S, String>argument("version", StringArgumentType.word())
+                                .suggests((context, builder) -> SharedSuggestionProvider.suggest(getVersionSuggestions(), builder))
+                                .executes(context -> run(context, runner, "version " + StringArgumentType.getString(context, "version")))))
                 .then(LiteralArgumentBuilder.<S>literal("seed")
                         .then(RequiredArgumentBuilder.<S, String>argument("seed", StringArgumentType.greedyString())
                                 .executes(context -> run(context, runner, "seed " + StringArgumentType.getString(context, "seed")))))
