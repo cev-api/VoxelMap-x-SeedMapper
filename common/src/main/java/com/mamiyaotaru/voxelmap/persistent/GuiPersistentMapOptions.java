@@ -92,6 +92,10 @@ public class GuiPersistentMapOptions extends GuiScreenMinimap {
         addMappedOption(EnumOptionsMinimap.WORLDMAP_SEEDMAP_PREVIEW_CACHE, 14, 1);
         addMappedOption(EnumOptionsMinimap.WORLDMAP_SEEDMAP_BIOME_UNDER_CURSOR, 15, -1);
 
+        addSection("Transport", 17, 17);
+        this.addRenderableWidget(new Button.Builder(Component.literal("Transport Shortcut"), button ->
+                this.minecraft.gui.setScreen(new GuiTransportShortcutsOptions(this))).bounds(this.getWidth() / 2 - 100, fromSlot(17, 0)[1], 200, 20).build());
+
         this.addRenderableWidget(new Button.Builder(Component.translatable("gui.done"), buttonx -> this.onClose()).bounds(this.getWidth() / 2 - 100, this.getHeight() - 26, 200, 20).build());
 
         setButtonsActive();

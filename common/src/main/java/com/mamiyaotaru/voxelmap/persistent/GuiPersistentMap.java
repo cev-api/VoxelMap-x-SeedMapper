@@ -4558,8 +4558,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             entry = new Popup.PopupEntry(I18n.get(selectedWaypoint == null ? "minimap.waypoints.highlight" : "minimap.waypoints.removeHighlight"), 1, true, mapOptions.waypointsAllowed);
         }
         entries.add(entry);
-        entry = new Popup.PopupEntry(I18n.get("minimap.waypoints.teleportTo"), 3, true, true);
-        entries.add(entry);
+        addTransportMenuEntry(entries);
         entry = new Popup.PopupEntry(I18n.get("minimap.waypoints.share"), 2, true, true);
         entries.add(entry);
         entry = new Popup.PopupEntry("Export Visible SeedMap", 6, true, seedMapperOptions.enabled);
@@ -4591,7 +4590,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             entries.add(new Popup.PopupEntry("Create Waypoint", 7, true, true));
         }
         entries.add(new Popup.PopupEntry(I18n.get(highlightActive ? "minimap.waypoints.removeHighlight" : "minimap.waypoints.highlight"), 1, true, true));
-        entries.add(new Popup.PopupEntry(I18n.get("minimap.waypoints.teleportTo"), 3, true, true));
+        addTransportMenuEntry(entries);
         entries.add(new Popup.PopupEntry(I18n.get("minimap.waypoints.share"), 2, true, true));
         entries.add(new Popup.PopupEntry(completed ? "Mark Incomplete" : "Mark Complete", 8, true, true));
         if (selectedSeedMapperMarker.feature().lootable()) {
@@ -4792,7 +4791,26 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                     SeedMapperCommandHandler.mineOreVeinsAround(selectedSeedMapperMarker.blockX(), selectedSeedMapperMarker.blockZ(), 2, oreType);
                 }
             }
-            default -> VoxelConstants.getLogger().warn("unimplemented command");
+            case 15 -> openTransportPopup(popup);
+            default -> {
+                if (action >= 1000) {
+                    int shortcutIndex = action - 1000;
+                    if (shortcutIndex < mapOptions.transportShortcuts.size()) {
+                        if (selectedWaypoint != null) {
+                            x = getWaypointXInViewedDimension(selectedWaypoint);
+                            z = getWaypointZInViewedDimension(selectedWaypoint);
+                            y = selectedWaypoint.getY() > VoxelConstants.getPlayer().level().getMinY()
+                                    ? selectedWaypoint.getY() : terrainHighlightY(x, z);
+                        } else if (y < VoxelConstants.getPlayer().level().getMinY()) {
+                            y = terrainHighlightY(x, z);
+                        }
+                        VoxelConstants.playerRunTransportCommand(shortcutIndex, x, y, z);
+                        clearPopups();
+                    }
+                } else {
+                    VoxelConstants.getLogger().warn("unimplemented command");
+                }
+            }
         }
 
         if (action >= 7 && action <= 9) {
@@ -4802,6 +4820,48 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             selectedSeedMapperAssociatedWaypoint = null;
         }
 
+    }
+
+    private void openTransportPopup(Popup source) {
+        ArrayList<Popup.PopupEntry> entries = new ArrayList<>();
+        for (int i = 0; i < mapOptions.transportShortcuts.size(); i++) {
+            MapSettingsManager.TransportShortcut shortcut = mapOptions.transportShortcuts.get(i);
+            if (shortcut.visible && shortcut.name != null && !shortcut.name.isBlank()) {
+                entries.add(new Popup.PopupEntry(shortcut.name, 1000 + i, true, true));
+            }
+        }
+        if (entries.isEmpty()) entries.add(new Popup.PopupEntry("No visible shortcuts", -1, false, false));
+        // Anchor the submenu to the parent popup's right edge so its hover area
+        // cannot overlap and steal highlighting from the parent menu.
+        createPopup(source.getX() + source.getWidth() + 2, source.getY(), source.getClickedDirectX(), source.getClickedDirectY(), 150, entries);
+    }
+
+    private void addTransportMenuEntry(ArrayList<Popup.PopupEntry> entries) {
+        if (mapOptions.transportShowAllInMainMenu) {
+            for (int i = 0; i < mapOptions.transportShortcuts.size(); i++) {
+                MapSettingsManager.TransportShortcut shortcut = mapOptions.transportShortcuts.get(i);
+                if (shortcut.visible && shortcut.name != null && !shortcut.name.isBlank()) {
+                    entries.add(new Popup.PopupEntry(shortcut.name, 1000 + i, true, true));
+                }
+            }
+            return;
+        }
+
+        int visibleCount = 0;
+        int visibleIndex = -1;
+        for (int i = 0; i < mapOptions.transportShortcuts.size(); i++) {
+            MapSettingsManager.TransportShortcut shortcut = mapOptions.transportShortcuts.get(i);
+            if (shortcut.visible && shortcut.name != null && !shortcut.name.isBlank()) {
+                visibleCount++;
+                visibleIndex = i;
+            }
+        }
+
+        if (visibleCount == 1) {
+            entries.add(new Popup.PopupEntry(mapOptions.transportShortcuts.get(visibleIndex).name, 1000 + visibleIndex, true, true));
+        } else {
+            entries.add(new Popup.PopupEntry("Transport", 15, false, visibleCount > 0));
+        }
     }
 
     @Override

@@ -70,7 +70,7 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
     private final ArrayList<OptionSection> optionSections = new ArrayList<>();
 
     private static final EnumOptionsMinimap[] GENERAL_OPTIONS = { EnumOptionsMinimap.HIDE_MINIMAP, EnumOptionsMinimap.UPDATE_NOTIFIER, EnumOptionsMinimap.SHOW_BIOME, EnumOptionsMinimap.SHOW_COORDS, EnumOptionsMinimap.SHOW_FACING_DEGREES, EnumOptionsMinimap.LOCATION, EnumOptionsMinimap.SIZE, EnumOptionsMinimap.SQUARE_MAP, EnumOptionsMinimap.ROTATES, EnumOptionsMinimap.IN_GAME_WAYPOINTS, EnumOptionsMinimap.CAVE_MODE, EnumOptionsMinimap.MOVE_MAP_BELOW_STATUS_EFFECT_ICONS, EnumOptionsMinimap.MOVE_SCOREBOARD_BELOW_MAP};
-    private static final EnumOptionsMinimap[] PERFORMANCE_OPTIONS = { EnumOptionsMinimap.DYNAMIC_LIGHTING, EnumOptionsMinimap.TERRAIN_DEPTH, EnumOptionsMinimap.WATER_TRANSPARENCY, EnumOptionsMinimap.BLOCK_TRANSPARENCY, EnumOptionsMinimap.BIOMES, EnumOptionsMinimap.BIOME_OVERLAY, EnumOptionsMinimap.CHUNK_GRID, EnumOptionsMinimap.SLIME_CHUNKS, EnumOptionsMinimap.WORLD_BORDER, EnumOptionsMinimap.FILTERING, EnumOptionsMinimap.TELEPORT_COMMAND };
+    private static final EnumOptionsMinimap[] PERFORMANCE_OPTIONS = { EnumOptionsMinimap.DYNAMIC_LIGHTING, EnumOptionsMinimap.TERRAIN_DEPTH, EnumOptionsMinimap.WATER_TRANSPARENCY, EnumOptionsMinimap.BLOCK_TRANSPARENCY, EnumOptionsMinimap.BIOMES, EnumOptionsMinimap.BIOME_OVERLAY, EnumOptionsMinimap.CHUNK_GRID, EnumOptionsMinimap.SLIME_CHUNKS, EnumOptionsMinimap.WORLD_BORDER, EnumOptionsMinimap.FILTERING };
     private static final EnumOptionsMinimap[] RADAR_FULL_OPTIONS = { EnumOptionsMinimap.SHOW_RADAR, EnumOptionsMinimap.RADAR_MODE, EnumOptionsMinimap.SHOW_MOBS, EnumOptionsMinimap.SHOW_PLAYERS, EnumOptionsMinimap.SHOW_MOB_NAMES, EnumOptionsMinimap.SHOW_PLAYER_NAMES, EnumOptionsMinimap.SHOW_MOB_HELMETS, EnumOptionsMinimap.SHOW_PLAYER_HELMETS, EnumOptionsMinimap.RADAR_FILTERING, EnumOptionsMinimap.RADAR_OUTLINES, EnumOptionsMinimap.RADAR_CPU_RENDERING, EnumOptionsMinimap.SHOW_FULL_ENTITY_NAMES, EnumOptionsMinimap.SHOW_ENTITY_ELEVATION, EnumOptionsMinimap.HIDE_SNEAKING_PLAYERS, EnumOptionsMinimap.HIDE_INVISIBLE_ENTITIES };
     private static final EnumOptionsMinimap[] RADAR_SIMPLE_OPTIONS = { EnumOptionsMinimap.SHOW_RADAR, EnumOptionsMinimap.RADAR_MODE, EnumOptionsMinimap.SHOW_MOBS, EnumOptionsMinimap.SHOW_PLAYERS, EnumOptionsMinimap.SHOW_FACING, EnumOptionsMinimap.SHOW_ENTITY_ELEVATION, EnumOptionsMinimap.HIDE_SNEAKING_PLAYERS, EnumOptionsMinimap.HIDE_INVISIBLE_ENTITIES };
 
@@ -330,9 +330,6 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
             addSection("World Overlays", 4, 4);
             addMappedOption(EnumOptionsMinimap.WORLD_BORDER, 4, 0);
             addMappedOption(EnumOptionsMinimap.FILTERING, 4, 1);
-
-            addSection("Utility", 6, 6);
-            addMappedOption(EnumOptionsMinimap.TELEPORT_COMMAND, 6, -1);
 
             addSection("HUD Scale", 8, 8);
             radarTextScaleSlider = new GuiValueSliderMinimap(width / 2 - FULL_ROW_WIDTH / 2, fromSlot(8, 0)[1], FULL_ROW_WIDTH, 20, mapOptions.radarTextScale, 0.5D, 2.0D, value -> {
@@ -923,8 +920,6 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
         if ((keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER)) {
             if (worldSeedButton != null && worldSeedButton.isEditing()) {
                 newSeed();
-            } else if (teleportCommandButton != null && teleportCommandButton.isEditing()) {
-                newTeleportCommand();
             }
 
         }
@@ -941,8 +936,6 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
         if (characterEvent.codepoint() == '\r') {
             if (worldSeedButton != null && worldSeedButton.isEditing()) {
                 newSeed();
-            } else if (teleportCommandButton != null && teleportCommandButton.isEditing()) {
-                newTeleportCommand();
             }
 
         }

@@ -22,6 +22,7 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.server.IntegratedServer;
 import net.minecraft.network.chat.Component;
+import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
@@ -195,10 +196,45 @@ public final class VoxelConstants {
     }
 
     public static void playerRunTeleportCommand(double x, double y, double z) {
+        playerRunTransportCommand(0, x, y, z);
+    }
+
+    public static void playerRunTransportCommand(int shortcutIndex, double x, double y, double z) {
         MapSettingsManager mapSettingsManager = VoxelConstants.getVoxelMapInstance().getMapOptions();
-        String cmd = mapSettingsManager.serverTeleportCommand == null ? mapSettingsManager.teleportCommand : mapSettingsManager.serverTeleportCommand;
-        cmd = cmd.replace("%p", VoxelConstants.getPlayer().getName().getString()).replace("%x", String.valueOf(x + 0.5)).replace("%y", String.valueOf(y)).replace("%z", String.valueOf(z + 0.5));
-        VoxelConstants.getPlayer().connection.sendCommand(cmd);
+        if (shortcutIndex < 0 || shortcutIndex >= mapSettingsManager.transportShortcuts.size()) return;
+        MapSettingsManager.TransportShortcut shortcut = mapSettingsManager.transportShortcuts.get(shortcutIndex);
+        String cmd = shortcut.command == null ? "" : shortcut.command.trim();
+        if (shortcutIndex == 0 && mapSettingsManager.serverTeleportCommand != null) {
+            cmd = mapSettingsManager.serverTeleportCommand.trim();
+        }
+        cmd = cmd.replace("%p", VoxelConstants.getPlayer().getName().getString())
+                .replace("%x", formatTransportCoordinate(x))
+                .replace("%z", formatTransportCoordinate(z));
+        if (mapSettingsManager.transportExcludeY) {
+            cmd = cmd.replace("%y", "");
+        } else {
+            cmd = cmd.replace("%y", formatTransportCoordinate(y));
+        }
+        if (!cmd.isBlank()) {
+            // Dot-prefixed commands are handled by the client command/chat
+            // integration (the same path used when the player types them).
+            // Sending them with sendCommand makes the server interpret the
+            // leading dot as part of an unknown server command.
+            if (shortcut.clientCommand || cmd.startsWith(".") || cmd.startsWith("!")) {
+                // Run through ChatScreen's input handler so client mods (for
+                // example Wurst) receive the exact same interception path as
+                // manually typed commands. The temporary screen is never
+                // installed, so the current map screen remains open.
+                new ChatScreen("", false).handleChatInput(cmd, false);
+            } else {
+                if (cmd.startsWith("/")) cmd = cmd.substring(1).trim();
+                VoxelConstants.getPlayer().connection.sendCommand(cmd);
+            }
+        }
+    }
+
+    private static String formatTransportCoordinate(double coordinate) {
+        return String.valueOf((int) Math.floor(coordinate));
     }
 
     public static int moveScoreboard(int bottomX, int entriesHeight) {

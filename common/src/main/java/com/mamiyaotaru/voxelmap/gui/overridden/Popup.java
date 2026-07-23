@@ -59,6 +59,10 @@ public class Popup {
         return y;
     }
 
+    public int getWidth() {
+        return w;
+    }
+
     public int getClickedDirectX() {
         return clickedDirectX;
     }

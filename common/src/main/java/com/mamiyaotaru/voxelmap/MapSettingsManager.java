@@ -16,6 +16,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.client.KeyMapping;
@@ -81,6 +82,14 @@ public class MapSettingsManager implements ISettingsManager {
     public boolean slimeChunks = false;
     public boolean worldBorder = true;
     public boolean filtering = false;
+    public boolean transportExcludeY = false;
+    public boolean transportShowAllInMainMenu = false;
+    public final List<TransportShortcut> transportShortcuts = new ArrayList<>(List.of(
+            new TransportShortcut("Teleport", "tp %p %x %y %z", true, false),
+            new TransportShortcut("Flight", ".autofly %x %y %z", true, true),
+            new TransportShortcut("Path", ".autofly path %x %y %z", true, true)));
+    private boolean loadedTransportShortcuts;
+    /** Kept as a compatibility alias for older integrations/configurations. */
     public String teleportCommand = "tp %p %x %y %z";
     public String serverTeleportCommand;
 
@@ -171,7 +180,9 @@ public class MapSettingsManager implements ISettingsManager {
                 BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(settingsFile), StandardCharsets.UTF_8.newDecoder()));
                 String sCurrentLine;
                 while ((sCurrentLine = in.readLine()) != null) {
-                    String[] curLine = sCurrentLine.split(":");
+                    // Commands and shortcut records contain encoded ':'-separated
+                    // payloads; only split the setting name from its value here.
+                    String[] curLine = sCurrentLine.split(":", 2);
                     switch (curLine[0]) {
                         case "Welcome Message" -> welcome = Boolean.parseBoolean(curLine[1]);
                         case "Zoom Level" -> zoom = Mth.clamp(Integer.parseInt(curLine[1]), 0, 4);
@@ -217,7 +228,28 @@ public class MapSettingsManager implements ISettingsManager {
                         case "Slime Chunks" -> slimeChunks = Boolean.parseBoolean(curLine[1]);
                         case "World Border" -> worldBorder = Boolean.parseBoolean(curLine[1]);
                         case "Filtering" -> filtering = Boolean.parseBoolean(curLine[1]);
-                        case "Teleport Command" -> teleportCommand = curLine[1];
+                        case "Teleport Command" -> {
+                            teleportCommand = curLine[1];
+                            if (!loadedTransportShortcuts) transportShortcuts.get(0).command = teleportCommand;
+                        }
+                        case "Transport Exclude Y" -> transportExcludeY = Boolean.parseBoolean(curLine[1]);
+                        case "Transport Show All In Main Menu" -> transportShowAllInMainMenu = Boolean.parseBoolean(curLine[1]);
+                        case "Transport Shortcut" -> {
+                            if (!loadedTransportShortcuts) {
+                                transportShortcuts.clear();
+                                loadedTransportShortcuts = true;
+                            }
+                            String[] values = curLine[1].split(":", 4);
+                            if (values.length == 3) {
+                                try {
+                                    transportShortcuts.add(new TransportShortcut(
+                                            new String(Base64.getDecoder().decode(values[0]), StandardCharsets.UTF_8),
+                                            new String(Base64.getDecoder().decode(values[1]), StandardCharsets.UTF_8),
+                                            Boolean.parseBoolean(values[2]),
+                                            values.length < 4 ? TransportShortcut.isClientTransportCommand(new String(Base64.getDecoder().decode(values[1]), StandardCharsets.UTF_8)) : Boolean.parseBoolean(values[3])));
+                                } catch (IllegalArgumentException ignored) { }
+                            }
+                        }
 
                         case "Waypoint Sort By" -> waypointSort = Mth.clamp(Integer.parseInt(curLine[1]), 1, 4);
                         case "Waypoint Max Distance" -> maxWaypointDisplayDistance = Mth.clamp(Integer.parseInt(curLine[1]), -1, 1000000);
@@ -330,7 +362,13 @@ public class MapSettingsManager implements ISettingsManager {
             out.println("Slime Chunks:" + slimeChunks);
             out.println("World Border:" + worldBorder);
             out.println("Filtering:" + filtering);
-            out.println("Teleport Command:" + teleportCommand);
+            out.println("Transport Exclude Y:" + transportExcludeY);
+            out.println("Transport Show All In Main Menu:" + transportShowAllInMainMenu);
+            for (TransportShortcut shortcut : transportShortcuts) {
+                String name = Base64.getEncoder().encodeToString(shortcut.name.getBytes(StandardCharsets.UTF_8));
+                String command = Base64.getEncoder().encodeToString(shortcut.command.getBytes(StandardCharsets.UTF_8));
+                out.println("Transport Shortcut:" + name + ":" + command + ":" + shortcut.visible + ":" + shortcut.clientCommand);
+            }
 
             out.println("Waypoint Sort By:" + waypointSort);
             out.println("Waypoint Max Distance:" + maxWaypointDisplayDistance);
@@ -379,6 +417,29 @@ public class MapSettingsManager implements ISettingsManager {
         } catch (FileNotFoundException exception) {
             VoxelConstants.getLogger().error(exception);
             MessageUtils.chatInfo("§EError Saving Settings " + exception.getLocalizedMessage());
+        }
+    }
+
+    public static class TransportShortcut {
+        public String name;
+        public String command;
+        public boolean visible;
+        public boolean clientCommand;
+
+        public TransportShortcut(String name, String command, boolean visible) {
+            this(name, command, visible, isClientTransportCommand(command));
+        }
+
+        public TransportShortcut(String name, String command, boolean visible, boolean clientCommand) {
+            this.name = name;
+            this.command = command;
+            this.visible = visible;
+            this.clientCommand = clientCommand;
+        }
+
+        private static boolean isClientTransportCommand(String command) {
+            String value = command == null ? "" : command.trim();
+            return value.startsWith(".") || value.startsWith("!");
         }
     }
 
