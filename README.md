@@ -86,12 +86,18 @@ Common commands:
 ### World Map Improvements
 - Added SeedMapper marker icons and loot markers on the fullscreen map.
 - Added marker context actions (completion toggles, loot actions, waypoint interactions).
+- Added configurable transport shortcuts for teleport, flight, pathing, and other client/server commands.
+- Added transport shortcut controls for excluding Y coordinates and showing all shortcuts in the main menu.
+- Transport shortcut names, commands, visibility, and client-command flags persist across launches.
 - Added visible-area export support.
 - Added coordinate recentering/editing and player recenter action.
 - Added deep zoom-out and performance-mode behavior improvements.
 - Added option to keep waypoints visible in world-map performance mode.
 - Added optional zoom level display while zooming.
 - Improved extreme-zoom texture processing and rendering.
+- Improved waypoint layering, depth handling, label ordering, icon rendering, and highlighted-waypoint alpha.
+- Improved world-map cache location handling and chunk readiness checks.
+- Added cache write/decompression safeguards; stale cache data may need to be cleared after upgrading.
 
 #### SeedMapper Integration
 ![LargeMap](https://i.imgur.com/qDZdMvs.png)
@@ -204,18 +210,21 @@ Quick disable:
 - Added SeedMapper/ChunkSync client command registration for Fabric, Forge, and NeoForge.
 - Updated metadata and fork versioning for this project.
 - Changed output artifact naming to `voxelmap-x-seedmapper_<loader>_v<version>.jar`.
+- Added Fabric Mod Menu configuration-screen integration.
+- Added Cubiomes Minecraft-version selection with an automatic client-version mode.
 
 Example outputs:
-- `build/libs/voxelmap-x-seedmapper_fabric_v0.x.jar`
-- `build/libs/voxelmap-x-seedmapper_forge_v0.x.jar`
-- `build/libs/voxelmap-x-seedmapper_neoforge_v0.0x.jar`
+- `build/libs/voxelmap-x-seedmapper_fabric_v0.10.jar`
+- `build/libs/voxelmap-x-seedmapper_forge_v0.10.jar`
+- `build/libs/voxelmap-x-seedmapper_neoforge_v0.10.jar`
 
 ## Platform Support
 - Fabric
-- Forge (Needs Testing)
-- NeoForge (Needs Testing)
+- Forge (build available; runtime testing recommended)
+- NeoForge (build available; runtime testing recommended)
 
 ## Notes
 - This fork is feature-focused and not intended as strict upstream parity.
 - Some legacy localization keys may still exist after UI refactors.
+- Existing world-map cache files can contain stale or damaged region data; remove `.minecraft/voxelmap/cache` once when upgrading if visual artifacts persist.
 - Active development is ongoing; occasional regressions are still possible.
