@@ -21,6 +21,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Scanner;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -661,11 +664,20 @@ public class CachedRegion {
                 NativeImage toSave = new NativeImage(REGION_WIDTH, REGION_WIDTH, false);
                 toSave.copyFrom(this.image.getData());
                 ThreadManager.executorService.execute(() -> {
+                    File temporaryImageFile = new File(imageFile.getPath() + ".tmp-" + Thread.currentThread().threadId() + "-" + System.nanoTime());
                     try {
-                        toSave.writeToFile(imageFile);
+                        toSave.writeToFile(temporaryImageFile);
+                        try {
+                            Files.move(temporaryImageFile.toPath(), imageFile.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+                        } catch (AtomicMoveNotSupportedException ignored) {
+                            Files.move(temporaryImageFile.toPath(), imageFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                        }
                     } catch (IOException e) {
                         VoxelConstants.getLogger().error(e);
                     } finally {
+                        if (temporaryImageFile.exists()) {
+                            temporaryImageFile.delete();
+                        }
                         toSave.close();
                     }
                 });

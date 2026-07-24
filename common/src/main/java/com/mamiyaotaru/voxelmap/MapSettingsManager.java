@@ -240,7 +240,7 @@ public class MapSettingsManager implements ISettingsManager {
                                 loadedTransportShortcuts = true;
                             }
                             String[] values = curLine[1].split(":", 4);
-                            if (values.length == 3) {
+                            if (values.length >= 3) {
                                 try {
                                     transportShortcuts.add(new TransportShortcut(
                                             new String(Base64.getDecoder().decode(values[0]), StandardCharsets.UTF_8),

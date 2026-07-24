@@ -39,6 +39,9 @@ public final class CompressionUtils {
 
             while (!(inflater.finished())) {
                 int count = inflater.inflate(buffer);
+                if (count == 0 && (inflater.needsDictionary() || inflater.needsInput())) {
+                    throw new DataFormatException("Incomplete compressed data");
+                }
                 outputStream.write(buffer, 0, count);
             }
 

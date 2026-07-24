@@ -181,7 +181,10 @@ public class CompressibleMapRegionTexture extends AbstractTexture {
                     }
                     this.bytes = null;
                     MemoryUtil.memByteBuffer(this.pixels.getPointer(), is.length).put(is);
-                } catch (DataFormatException ignored) {
+                } catch (DataFormatException | RuntimeException ignored) {
+                    // Do not keep retrying corrupted compressed pixels. The image was
+                    // cleared above, so the region remains safely blank until refreshed.
+                    this.bytes = null;
                 }
             }
         }
