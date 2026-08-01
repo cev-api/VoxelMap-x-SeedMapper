@@ -518,7 +518,7 @@ public class Map implements Runnable, IChangeObserver, IReloadListener {
         }
 
         if (minecraft.gui.screen() == null && this.options.keyBindSeedMapperOptionsPage.consumeClick()) {
-            minecraft.gui.setScreen(new GuiSeedMapperOptions(null));
+            minecraft.gui.setScreen(new GuiMinimapOptions(null, "seedmapper"));
         }
 
         if (minecraft.gui.screen() == null && this.options.keyBindOptionsMenu.consumeClick()) {

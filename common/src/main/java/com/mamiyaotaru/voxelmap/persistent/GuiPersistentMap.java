@@ -872,7 +872,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
         if (mapOptions.worldmapAllowed && isInSeedHeader(mouseX, mouseY)) {
             if (mouseButtonEvent.button() == 0) {
-                minecraft.gui.setScreen(new GuiSeedMapperOptions(this));
+                minecraft.gui.setScreen(new GuiMinimapOptions(this, "seedmapper"));
             }
             return true;
         }

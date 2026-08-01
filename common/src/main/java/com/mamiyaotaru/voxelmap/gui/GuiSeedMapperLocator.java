@@ -596,6 +596,11 @@ public class GuiSeedMapperLocator extends GuiScreenMinimap {
         }
 
         @Override
+        protected int scrollBarX() {
+            return getX() + getWidth() - 6;
+        }
+
+        @Override
         public void setSelected(QueryItem entry) {
             super.setSelected(entry);
             if (entry != null) {
@@ -675,6 +680,11 @@ public class GuiSeedMapperLocator extends GuiScreenMinimap {
         @Override
         public int getRowWidth() {
             return Math.max(0, parent.variantWidth() - 4);
+        }
+
+        @Override
+        protected int scrollBarX() {
+            return getX() + getWidth() - 6;
         }
 
         @Override

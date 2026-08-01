@@ -111,7 +111,7 @@ public class GuiWaypoints extends PopupGuiScreen implements IGuiWaypoints {
         addRenderableWidget(buttonShare = new Button.Builder(Component.translatable("minimap.waypoints.share"), button -> CommandUtils.sendWaypoint(selectedWaypoint)).bounds(bottomLeft + (bottomButtonWidth + bottomGap), getHeight() - 26, bottomButtonWidth, 20).build());
         addRenderableWidget(new Button.Builder(Component.literal("Import Xaero"), button -> importWaypoints(true)).bounds(bottomLeft + (bottomButtonWidth + bottomGap) * 2, getHeight() - 26, bottomButtonWidth, 20).build());
         addRenderableWidget(new Button.Builder(Component.literal("Import Wurst"), button -> importWaypoints(false)).bounds(bottomLeft + (bottomButtonWidth + bottomGap) * 3, getHeight() - 26, bottomButtonWidth, 20).build());
-        addRenderableWidget(new Button.Builder(Component.translatable("menu.options"), button -> VoxelConstants.getMinecraft().gui.setScreen(new GuiWaypointsOptions(this, options))).bounds(bottomLeft + (bottomButtonWidth + bottomGap) * 4, getHeight() - 26, bottomButtonWidth, 20).build());
+        addRenderableWidget(new Button.Builder(Component.translatable("menu.options"), button -> VoxelConstants.getMinecraft().gui.setScreen(new GuiMinimapOptions(this, "waypoints"))).bounds(bottomLeft + (bottomButtonWidth + bottomGap) * 4, getHeight() - 26, bottomButtonWidth, 20).build());
         addRenderableWidget(new Button.Builder(Component.translatable("gui.done"), button -> onClose()).bounds(bottomLeft + (bottomButtonWidth + bottomGap) * 5, getHeight() - 26, bottomButtonWidth, 20).build());
 
         updateSelectionButtons();

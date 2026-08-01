@@ -874,6 +874,10 @@ public class MapSettingsManager implements ISettingsManager {
         }
     }
 
+    public void markChanged() {
+        somethingChanged = true;
+    }
+
     public int getHighlightTracerColorRgb() {
         return parseColor(highlightTracerColor, 0xFF0000);
     }

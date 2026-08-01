@@ -291,6 +291,10 @@ public class RadarSettingsManager implements ISubSettingsManager {
         throw new IllegalArgumentException("Invalid float value! Add code to handle EnumOptionMinimap: " + option.getName());
     }
 
+    public void markChanged() {
+        somethingChanged = true;
+    }
+
     public boolean isChanged() {
         if (somethingChanged) {
             somethingChanged = false;

@@ -50,6 +50,11 @@ class GuiListDimensions extends AbstractSelectionList<GuiListDimensions.Dimensio
     }
 
     @Override
+    protected int scrollBarX() {
+        return getX() + getWidth() - 6;
+    }
+
+    @Override
     public void setSelected(DimensionItem entry) {
         super.setSelected(entry);
         if (getSelected() != null) {

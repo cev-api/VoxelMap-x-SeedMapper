@@ -92,7 +92,12 @@ public class GuiRadarChunkOverlays extends GuiScreenMinimap {
     private final List<Component> syncStatusMessages = new java.util.ArrayList<>();
 
     public GuiRadarChunkOverlays(Screen parent) {
+        this(parent, false);
+    }
+
+    public GuiRadarChunkOverlays(Screen parent, boolean syncPage) {
         this.lastScreen = parent;
+        this.syncPage = syncPage;
         this.settings = VoxelConstants.getVoxelMapInstance().getRadarOptions();
         this.mapSettings = VoxelConstants.getVoxelMapInstance().getMapOptions();
         this.worldMapSettings = VoxelConstants.getVoxelMapInstance().getPersistentMapOptions();
