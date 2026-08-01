@@ -189,8 +189,8 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
         }
     }
 
-    private static final int MIN_WORLDMAP_ZOOM_POWER = -9;
-    private static final int MAX_WORLDMAP_ZOOM_POWER = 8;
+    public static final int MIN_WORLDMAP_ZOOM_POWER = -9;
+    public static final int MAX_WORLDMAP_ZOOM_POWER = 8;
     private static final int MAX_WORLDMAP_CACHE_SIZE = 20000;
     public static final float MIN_PERFORMANCE_MODE_THRESHOLD = 0.0025F;
     public static final float MAX_PERFORMANCE_MODE_THRESHOLD = 0.30F;
