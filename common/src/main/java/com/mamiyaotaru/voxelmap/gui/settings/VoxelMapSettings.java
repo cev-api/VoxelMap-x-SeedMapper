@@ -4,8 +4,11 @@ import com.mamiyaotaru.voxelmap.MapSettingsManager;
 import com.mamiyaotaru.voxelmap.RadarSettingsManager;
 import com.mamiyaotaru.voxelmap.VoxelConstants;
 import com.mamiyaotaru.voxelmap.VoxelMap;
+import com.mamiyaotaru.voxelmap.chunksync.ChunkShareConfig;
+import com.mamiyaotaru.voxelmap.chunksync.ChunkShareTransport;
+import com.mamiyaotaru.voxelmap.chunksync.ChunkSyncCommandHandler;
+import com.mamiyaotaru.voxelmap.gui.GuiChunkSyncLayers;
 import com.mamiyaotaru.voxelmap.gui.GuiColorEditScreen;
-import com.mamiyaotaru.voxelmap.gui.GuiRadarChunkOverlays;
 import com.mamiyaotaru.voxelmap.gui.GuiSeedMapperCrackingMods;
 import com.mamiyaotaru.voxelmap.gui.GuiSeedMapperDatapackOptions;
 import com.mamiyaotaru.voxelmap.gui.GuiSeedMapperEspProfiles;
@@ -55,6 +58,7 @@ public final class VoxelMapSettings {
                 waypoints(map),
                 radar(radar, map, seed, openEntityTypeDialog, host),
                 chunks(map, radar, world, host),
+                sharing(host),
                 seedmapper(seed, host),
                 new SettingsCategory("controls", "options.voxelmap.category.controls", List.of(), SettingsCategory.SpecialView.KEY_BINDINGS),
                 advanced(voxelMap, map, radar));
@@ -406,11 +410,15 @@ public final class VoxelMapSettings {
                         persistentToggle("worldmap.perfWaypoints", "options.worldmap.showWaypointsInPerformanceMode", world, EnumOptionsMinimap.WORLDMAP_SHOW_WAYPOINTS_IN_PERFORMANCE_MODE, () -> map.waypointsAllowed && world.showWaypoints, requires("options.voxelmap.requires.worldmapWaypoints"), 1)),
                 group("options.voxelmap.group.zoomCache",
                         SettingsOption.slider("worldmap.farthestZoom", "options.voxelmap.worldmap.farthestZoom", tooltip("worldmap.farthestZoom"),
-                                () -> (double) world.getFloatValue(EnumOptionsMinimap.MIN_ZOOM), value -> world.setFloatValue(EnumOptionsMinimap.MIN_ZOOM, (float) ((value + 3.0) / 8.0)),
-                                -3, 5, 1, VoxelMapSettings::zoomLabel, () -> true, Component::empty, 0),
+                                () -> (double) world.getFloatValue(EnumOptionsMinimap.MIN_ZOOM),
+                                value -> world.setFloatValue(EnumOptionsMinimap.MIN_ZOOM, zoomPowerToNormalized(value)),
+                                PersistentMapSettingsManager.MIN_WORLDMAP_ZOOM_POWER, PersistentMapSettingsManager.MAX_WORLDMAP_ZOOM_POWER, 1,
+                                VoxelMapSettings::zoomLabel, () -> true, Component::empty, 0),
                         SettingsOption.slider("worldmap.nearestZoom", "options.voxelmap.worldmap.nearestZoom", tooltip("worldmap.nearestZoom"),
-                                () -> (double) world.getFloatValue(EnumOptionsMinimap.MAX_ZOOM), value -> world.setFloatValue(EnumOptionsMinimap.MAX_ZOOM, (float) ((value + 3.0) / 8.0)),
-                                -3, 5, 1, VoxelMapSettings::zoomLabel, () -> true, Component::empty, 0),
+                                () -> (double) world.getFloatValue(EnumOptionsMinimap.MAX_ZOOM),
+                                value -> world.setFloatValue(EnumOptionsMinimap.MAX_ZOOM, zoomPowerToNormalized(value)),
+                                PersistentMapSettingsManager.MIN_WORLDMAP_ZOOM_POWER, PersistentMapSettingsManager.MAX_WORLDMAP_ZOOM_POWER, 1,
+                                VoxelMapSettings::zoomLabel, () -> true, Component::empty, 0),
                         SettingsOption.slider("worldmap.cache", "options.worldmap.cacheSize", tooltip("worldmap.cache"),
                                 () -> (double) world.getFloatValue(EnumOptionsMinimap.CACHE_SIZE), value -> world.setFloatValue(EnumOptionsMinimap.CACHE_SIZE, (float) (value / 5000.0)),
                                 30, 5000, 10, value -> Component.translatable("options.voxelmap.value.regions", value.intValue()), () -> true, Component::empty, 0),
@@ -576,10 +584,82 @@ public final class VoxelMapSettings {
                         SettingsOption.action("chunks.clearNew", "options.voxelmap.chunks.clearNew", null,
                                 Component.translatable("options.voxelmap.action.clear"),
                                 () -> confirmAction(host, "options.voxelmap.chunks.clearNew.confirm",
-                                        () -> VoxelConstants.getVoxelMapInstance().getNewerNewChunksManager().clearCurrentWorldData())),
-                        SettingsOption.action("chunks.sync", "options.voxelmap.chunks.sync", null,
-                                Component.translatable("options.voxelmap.action.open"),
-                                () -> VoxelConstants.getMinecraft().gui.setScreen(new GuiRadarChunkOverlays(host.get(), true))))));
+                                        () -> VoxelConstants.getVoxelMapInstance().getNewerNewChunksManager().clearCurrentWorldData())))));
+    }
+
+    private static SettingsCategory sharing(Supplier<Screen> host) {
+        String[] shareTo = {""};
+        String[] shareCode = {""};
+        String[] layerName = {""};
+        String[] transferName = {""};
+        String[] importAs = {""};
+
+        return new SettingsCategory("sharing", "options.voxelmap.category.sharing", List.of(
+                group("options.voxelmap.group.sharingSetup",
+                        SettingsOption.text("sharing.passphrase", "options.voxelmap.sharing.passphrase", null,
+                                () -> ChunkShareConfig.getPassphrase() == null ? "" : ChunkShareConfig.getPassphrase(),
+                                value -> ChunkSyncCommandHandler.runFromGui("key " + value.trim()),
+                                () -> true, Component::empty),
+                        SettingsOption.choice("sharing.host", "options.voxelmap.sharing.host", null,
+                                ChunkShareConfig::getHost,
+                                value -> ChunkSyncCommandHandler.runFromGui("host " + value.id),
+                                List.of(new SettingsOption.Choice<>(ChunkShareTransport.Host.LITTERBOX, Component.literal(ChunkShareTransport.Host.LITTERBOX.id)),
+                                        new SettingsOption.Choice<>(ChunkShareTransport.Host.FILE_IO, Component.literal(ChunkShareTransport.Host.FILE_IO.id)))),
+                        SettingsOption.toggle("sharing.hideWarning", "options.voxelmap.sharing.hideWarning", null,
+                                ChunkShareConfig::isPublicShareWarningHidden, ChunkShareConfig::setPublicShareWarningHidden)),
+                group("options.voxelmap.group.sharingShare",
+                        SettingsOption.text("sharing.shareTo", "options.voxelmap.sharing.shareTo", null,
+                                () -> shareTo[0], value -> shareTo[0] = value.trim(), () -> true, Component::empty),
+                        espAction("sharing.shareToRun", "options.voxelmap.sharing.shareToRun", host,
+                                () -> ChunkSyncCommandHandler.runFromGui("share to " + shareTo[0])),
+                        SettingsOption.action("sharing.sharePublic", "options.voxelmap.sharing.sharePublic", null,
+                                Component.translatable("options.voxelmap.action.run"),
+                                () -> {
+                                    commitText(host);
+                                    if (ChunkShareConfig.isPublicShareWarningHidden()) {
+                                        ChunkSyncCommandHandler.runFromGui("share");
+                                    } else {
+                                        Screen previous = host.get();
+                                        VoxelConstants.getMinecraft().gui.setScreen(new ConfirmScreen(confirmed -> {
+                                            if (confirmed) {
+                                                ChunkSyncCommandHandler.runFromGui("share");
+                                            }
+                                            VoxelConstants.getMinecraft().gui.setScreen(previous);
+                                        }, Component.translatable("chunksync.publicShareWarning.title"),
+                                                Component.translatable("chunksync.publicShareWarning.line1")
+                                                        .append("\n")
+                                                        .append(Component.translatable("chunksync.publicShareWarning.line2"))));
+                                    }
+                                })),
+                group("options.voxelmap.group.sharingGet",
+                        SettingsOption.text("sharing.code", "options.voxelmap.sharing.code", null,
+                                () -> shareCode[0], value -> shareCode[0] = value.trim(), () -> true, Component::empty),
+                        espAction("sharing.getMerge", "options.voxelmap.sharing.getMerge", host,
+                                () -> ChunkSyncCommandHandler.runFromGui("get " + shareCode[0])),
+                        SettingsOption.text("sharing.layerName", "options.voxelmap.sharing.layerName", null,
+                                () -> layerName[0], value -> layerName[0] = value.trim(), () -> true, Component::empty),
+                        espAction("sharing.getAsLayer", "options.voxelmap.sharing.getAsLayer", host,
+                                () -> ChunkSyncCommandHandler.runFromGui("get " + shareCode[0] + " as " + layerName[0])),
+                        openScreen("sharing.layers", "options.voxelmap.sharing.layers", host, GuiChunkSyncLayers::new)),
+                group("options.voxelmap.group.sharingTransfer",
+                        SettingsOption.text("sharing.transferName", "options.voxelmap.sharing.transferName", null,
+                                () -> transferName[0], value -> transferName[0] = value.trim(), () -> true, Component::empty),
+                        SettingsOption.text("sharing.importAs", "options.voxelmap.sharing.importAs", null,
+                                () -> importAs[0], value -> importAs[0] = value.trim(), () -> true, Component::empty),
+                        espAction("sharing.export", "options.voxelmap.sharing.export", host,
+                                () -> ChunkSyncCommandHandler.runFromGui("export" + optionalArg(transferName[0]))),
+                        espAction("sharing.import", "options.voxelmap.sharing.import", host,
+                                () -> {
+                                    String suffix = optionalArg(transferName[0]);
+                                    if (!importAs[0].isBlank()) {
+                                        suffix += " as " + importAs[0];
+                                    }
+                                    ChunkSyncCommandHandler.runFromGui("import" + suffix);
+                                }))));
+    }
+
+    private static String optionalArg(String argument) {
+        return argument == null || argument.isBlank() ? "" : " " + argument.trim();
     }
 
     private static SettingsCategory seedmapper(SeedMapperSettingsManager seed, Supplier<Screen> host) {
@@ -722,6 +802,11 @@ public final class VoxelMapSettings {
 
     private static Component zoomLabel(Double power) {
         return Component.literal(String.format(Locale.ROOT, "%.3gx", Math.pow(2.0, power)));
+    }
+
+    private static float zoomPowerToNormalized(double power) {
+        int range = PersistentMapSettingsManager.MAX_WORLDMAP_ZOOM_POWER - PersistentMapSettingsManager.MIN_WORLDMAP_ZOOM_POWER;
+        return (float) ((power - PersistentMapSettingsManager.MIN_WORLDMAP_ZOOM_POWER + 0.5) / range);
     }
 
     private static SettingsOption<Boolean> radarToggle(String id, String key, RadarSettingsManager radar, Supplier<Boolean> getter, Consumer<Boolean> setter) {

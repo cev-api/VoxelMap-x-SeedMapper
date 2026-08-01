@@ -17,13 +17,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 class GuiChunkSyncPlayerList extends AbstractSelectionList<GuiChunkSyncPlayerList.PlayerLayerRow> {
-    private final GuiRadarChunkOverlays parent;
+    private final GuiChunkSyncLayers parent;
     private final int rowLeft;
     private final int rowWidth;
     private List<ChunkSharePlayerSettings.PlayerLayer> layers = List.of();
     private String activeColorSlug;
 
-    GuiChunkSyncPlayerList(GuiRadarChunkOverlays parent, int left, int top, int width, int height) {
+    GuiChunkSyncPlayerList(GuiChunkSyncLayers parent, int left, int top, int width, int height) {
         super(VoxelConstants.getMinecraft(), width, height, top, 22);
         this.parent = parent;
         this.rowLeft = left;
