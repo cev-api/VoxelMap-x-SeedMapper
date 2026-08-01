@@ -253,6 +253,16 @@ public final class SettingsListWidget extends AbstractSelectionList<SettingsList
         }
 
         @Override
+        public void setFocused(boolean focused) {
+            control.setFocused(focused);
+        }
+
+        @Override
+        public boolean isFocused() {
+            return control.isFocused();
+        }
+
+        @Override
         public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
             return control.mouseClicked(event, doubleClick);
         }

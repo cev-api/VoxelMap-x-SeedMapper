@@ -61,7 +61,7 @@ public final class VoxelMapSettings {
                 sharing(host),
                 seedmapper(seed, host),
                 new SettingsCategory("controls", "options.voxelmap.category.controls", List.of(), SettingsCategory.SpecialView.KEY_BINDINGS),
-                advanced(voxelMap, map, radar));
+                advanced(voxelMap, map, radar, host));
     }
 
     private static SettingsGroup minimapExtras(VoxelMap voxelMap, MapSettingsManager map, SeedMapperSettingsManager seed) {
@@ -478,7 +478,7 @@ public final class VoxelMapSettings {
                 min, max, step, formatter, () -> true, Component::empty, 0);
     }
 
-    private static SettingsCategory advanced(VoxelMap voxelMap, MapSettingsManager map, RadarSettingsManager radar) {
+    private static SettingsCategory advanced(VoxelMap voxelMap, MapSettingsManager map, RadarSettingsManager radar, Supplier<Screen> host) {
         return new SettingsCategory("advanced", "options.voxelmap.category.advanced", List.of(
                 group("options.voxelmap.group.worldServer",
                         SettingsOption.text("advanced.seed", "options.minimap.worldSeed", tooltip("advanced.seed"), voxelMap::getWorldSeed,
@@ -487,12 +487,9 @@ public final class VoxelMapSettings {
                                     voxelMap.getMap().forceFullRender(true);
                                 },
                                 () -> !VoxelConstants.getMinecraft().hasSingleplayerServer(), requires("options.voxelmap.managed.singleplayerSeed")),
-                        SettingsOption.text("advanced.teleport", "options.minimap.teleportCommand", tooltip("advanced.teleport"), () -> map.teleportCommand,
-                                value -> {
-                                    map.teleportCommand = value.isBlank() ? "tp %p %x %y %z" : value;
-                                    map.markChanged();
-                                },
-                                () -> map.serverTeleportCommand == null, requires("options.voxelmap.managed.server"))),
+                        SettingsOption.action("advanced.transport", "options.voxelmap.worldmap.transportShortcuts", null,
+                                Component.translatable("options.voxelmap.action.open"),
+                                () -> VoxelConstants.getMinecraft().gui.setScreen(new GuiTransportShortcutsOptions(host.get())))),
                 group("options.voxelmap.group.troubleshooting",
                         toggle("advanced.compatibilityRenderer", "options.minimap.radar.cpuRendering", radar,
                                 () -> radar.cpuRendering || radar.forceCpuRendering, value -> radar.cpuRendering = value || radar.forceCpuRendering,
