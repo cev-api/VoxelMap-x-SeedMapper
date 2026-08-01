@@ -1497,8 +1497,6 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 this.buildWorldName();
             }
 
-            int worldNameY = showSeedHeader ? 28 : 16;
-            graphics.text(this.getFont(), this.worldNameDisplay, this.getWidth() - this.sideMargin - this.worldNameDisplayLength, worldNameY, 0xFFFFFFFF);
             if (isInSeedHeader(mouseX, mouseY)) {
                 renderTooltip(graphics, Component.literal("Open SeedMapper Options"), mouseX, mouseY);
             }
