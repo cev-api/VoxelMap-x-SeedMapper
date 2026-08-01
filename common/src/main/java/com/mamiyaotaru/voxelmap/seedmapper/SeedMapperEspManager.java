@@ -1,9 +1,9 @@
 package com.mamiyaotaru.voxelmap.seedmapper;
 
-import com.mamiyaotaru.voxelmap.util.VoxelMapRenderTypes;
+import com.mamiyaotaru.voxelmap.rendering.VoxelMapRenderTypes;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.mamiyaotaru.voxelmap.util.AlwaysOnTopSubmitter;
+import com.mamiyaotaru.voxelmap.rendering.AlwaysOnTopSubmitter;
 import net.minecraft.client.Camera;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.core.BlockPos;
