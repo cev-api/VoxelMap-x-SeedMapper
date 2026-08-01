@@ -130,6 +130,34 @@ public final class SettingsListWidget extends AbstractSelectionList<SettingsList
         }
     }
 
+    @Override
+    public void extractWidgetRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
+        super.extractWidgetRenderState(graphics, mouseX, mouseY, delta);
+        for (Entry entry : children()) {
+            if (!(entry instanceof OptionEntry optionEntry) || !(optionEntry.control instanceof CommitEditBox editBox) || !editBox.isFocused()) {
+                continue;
+            }
+            List<String> matches = editBox.autocompleteMatches();
+            if (matches.isEmpty()) {
+                continue;
+            }
+            graphics.nextStratum();
+            int x = editBox.getX();
+            int y = editBox.getY() + editBox.getHeight();
+            int rowHeight = 12;
+            int rows = Math.min(6, matches.size());
+            graphics.fill(x, y, x + editBox.getWidth(), y + rows * rowHeight + 2, 0xF010141A);
+            graphics.fill(x, y, x + editBox.getWidth(), y + 1, 0xFF9CC7FF);
+            for (int i = 0; i < rows; i++) {
+                int rowY = y + 2 + i * rowHeight;
+                if (i == 0) {
+                    graphics.fill(x + 1, rowY - 1, x + editBox.getWidth() - 1, rowY + rowHeight - 1, 0x664A83B8);
+                }
+                graphics.text(screen.getFont(), Component.literal(matches.get(i)), x + 5, rowY + 1, 0xFFE6EAF0, false);
+            }
+        }
+    }
+
     public abstract static class Entry extends AbstractSelectionList.Entry<Entry> {
     }
 
@@ -225,26 +253,6 @@ public final class SettingsListWidget extends AbstractSelectionList<SettingsList
             String label = screen.getFont().plainSubstrByWidth(option.name().getString(), Math.max(20, labelMaxWidth));
             graphics.text(screen.getFont(), label, getX() + 10 + indent, getY() + 10, labelColor);
             control.extractRenderState(graphics, mouseX, mouseY, delta);
-
-            if (control instanceof CommitEditBox editBox && editBox.isFocused()) {
-                List<String> matches = editBox.autocompleteMatches();
-                if (!matches.isEmpty()) {
-                    graphics.nextStratum();
-                    int x = editBox.getX();
-                    int y = editBox.getY() + editBox.getHeight();
-                    int rowHeight = 12;
-                    int rows = Math.min(6, matches.size());
-                    graphics.fill(x, y, x + editBox.getWidth(), y + rows * rowHeight + 2, 0xF010141A);
-                    graphics.fill(x, y, x + editBox.getWidth(), y + 1, 0xFF9CC7FF);
-                    for (int i = 0; i < rows; i++) {
-                        int rowY = y + 2 + i * rowHeight;
-                        if (i == 0) {
-                            graphics.fill(x + 1, rowY - 1, x + editBox.getWidth() - 1, rowY + rowHeight - 1, 0x664A83B8);
-                        }
-                        graphics.text(screen.getFont(), Component.literal(matches.get(i)), x + 5, rowY + 1, 0xFFE6EAF0, false);
-                    }
-                }
-            }
         }
 
         @Override
