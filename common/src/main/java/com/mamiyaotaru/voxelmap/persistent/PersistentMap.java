@@ -757,9 +757,12 @@ public class PersistentMap implements IChangeObserver {
 
     public CachedRegion[] getRegions(int left, int right, int top, int bottom, Identifier viewedDimension) {
         String dimensionCacheKey = dimensionCacheKey(viewedDimension);
-        if (left == this.lastLeft && right == this.lastRight && top == this.lastTop && bottom == this.lastBottom && dimensionCacheKey.equals(this.lastDimensionCacheKey)) {
-            return this.lastRegionsArray;
-        } else {
+        synchronized (this.lastRegionsLock) {
+            if (left == this.lastLeft && right == this.lastRight && top == this.lastTop && bottom == this.lastBottom && dimensionCacheKey.equals(this.lastDimensionCacheKey)) {
+                return this.lastRegionsArray.clone();
+            }
+        }
+        {
             ThreadManager.emptyQueue();
             CachedRegion[] visibleCachedRegionsArray = new CachedRegion[(right - left + 1) * (bottom - top + 1)];
             String worldName = VoxelConstants.getVoxelMapInstance().getWaypointManager().getCurrentWorldName();
@@ -804,7 +807,7 @@ public class PersistentMap implements IChangeObserver {
                 this.lastBottom = bottom;
                 this.lastDimensionCacheKey = dimensionCacheKey;
                 this.lastRegionsArray = visibleCachedRegionsArray;
-                return visibleCachedRegionsArray;
+                return visibleCachedRegionsArray.clone();
             }
         }
     }

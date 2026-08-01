@@ -1243,6 +1243,9 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             if (!farZoomPerformanceMode) {
                 drawSeedPreview(graphics, visibleBounds);
                 for (CachedRegion region : this.regions) {
+                    if (region == null) {
+                        continue;
+                    }
                     Identifier resource = region.getTextureLocation(this.zoom);
                     if (resource != null) {
                         graphics.blit(RenderPipelines.GUI_TEXTURED, resource, region.getX() * 256, region.getZ() * 256, 0, 0, region.getWidth(), region.getWidth(), region.getWidth(), region.getWidth());
@@ -1332,7 +1335,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                             column = !this.oldNorth ? regionX : regionZ;
                             CachedRegion region = this.regions[regionZ * (right + 1 - (left - 1) + 1) + regionX];
                             Biome biome = null;
-                            if (region.getMapData() != null && region.isLoaded() && !region.isEmpty()) {
+                            if (region != null && region.getMapData() != null && region.isLoaded() && !region.isEmpty()) {
                                 int inRegionX = mapX - region.getX() * region.getWidth();
                                 int inRegionZ = mapZ - region.getZ() * region.getWidth();
                                 int height = region.getMapData().getHeight(inRegionX, inRegionZ);
