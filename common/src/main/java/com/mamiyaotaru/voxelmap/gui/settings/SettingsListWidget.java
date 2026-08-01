@@ -28,27 +28,35 @@ import org.lwjgl.glfw.GLFW;
 public final class SettingsListWidget extends AbstractSelectionList<SettingsListWidget.Entry> {
     private static final int OPTION_HEIGHT = 28;
     private static final int HEADER_HEIGHT = 24;
+    private static final java.util.Set<String> collapsedGroups = new java.util.HashSet<>();
     private final GuiMinimapOptions screen;
+    private final SettingsCategory category;
     private KeyMapping editingKey;
 
     public SettingsListWidget(GuiMinimapOptions screen, int x, int y, int width, int height, SettingsCategory category) {
         super(VoxelConstants.getMinecraft(), width, height, y, OPTION_HEIGHT);
         this.screen = screen;
+        this.category = category;
         this.centerListVertically = false;
         updateSizeAndPosition(width, height, x, y);
-        populate(category);
+        populate();
     }
 
-    private void populate(SettingsCategory category) {
+    private void populate() {
         for (SettingsGroup group : category.groups()) {
-            addEntry(new GroupEntry(group.title()), HEADER_HEIGHT);
+            String collapseKey = category.id() + "|" + group.title().getString();
+            boolean collapsed = collapsedGroups.contains(collapseKey);
+            addEntry(new GroupEntry(group.title(), collapseKey, collapsed), HEADER_HEIGHT);
+            if (collapsed) {
+                continue;
+            }
             for (SettingsOption<?> option : group.options()) {
                 addEntry(new OptionEntry(option), OPTION_HEIGHT);
             }
         }
 
         if (category.specialView() == SettingsCategory.SpecialView.KEY_BINDINGS) {
-            addEntry(new GroupEntry(Component.translatable("options.voxelmap.group.keyBindings")), HEADER_HEIGHT);
+            addEntry(new GroupEntry(Component.translatable("options.voxelmap.group.keyBindings"), null, false), HEADER_HEIGHT);
             KeyMapping[] mappings = VoxelConstants.getVoxelMapInstance().getMapOptions().keyBindings.clone();
             Arrays.sort(mappings);
             for (KeyMapping mapping : mappings) {
@@ -56,6 +64,17 @@ public final class SettingsListWidget extends AbstractSelectionList<SettingsList
             }
             addEntry(new HelpEntry(Component.translatable("options.voxelmap.controls.unbindHelp")), HEADER_HEIGHT);
         }
+    }
+
+    private void toggleGroup(String collapseKey) {
+        commitPendingText();
+        if (!collapsedGroups.remove(collapseKey)) {
+            collapsedGroups.add(collapseKey);
+        }
+        double scroll = scrollAmount();
+        clearEntries();
+        populate();
+        setScrollAmount(scroll);
     }
 
     @Override
@@ -116,15 +135,32 @@ public final class SettingsListWidget extends AbstractSelectionList<SettingsList
 
     private final class GroupEntry extends Entry {
         private final Component title;
+        private final String collapseKey;
+        private final boolean collapsed;
 
-        private GroupEntry(Component title) {
+        private GroupEntry(Component title, String collapseKey, boolean collapsed) {
             this.title = title;
+            this.collapseKey = collapseKey;
+            this.collapsed = collapsed;
         }
 
         @Override
         public void extractContent(GuiGraphicsExtractor graphics, int mouseX, int mouseY, boolean hovered, float delta) {
-            graphics.fill(getX(), getY(), getX() + getWidth(), getY() + getHeight() - 2, 0xAA202020);
-            graphics.text(screen.getFont(), title.copy().withStyle(ChatFormatting.BOLD), getX() + 8, getY() + 7, 0xFFFFFFFF);
+            boolean highlight = collapseKey != null && hovered;
+            graphics.fill(getX(), getY(), getX() + getWidth(), getY() + getHeight() - 2, highlight ? 0xAA303030 : 0xAA202020);
+            MutableComponent label = collapseKey == null
+                    ? title.copy().withStyle(ChatFormatting.BOLD)
+                    : Component.literal(collapsed ? "▶ " : "▼ ").append(title).withStyle(ChatFormatting.BOLD);
+            graphics.text(screen.getFont(), label, getX() + 8, getY() + 7, 0xFFFFFFFF);
+        }
+
+        @Override
+        public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+            if (collapseKey == null) {
+                return false;
+            }
+            toggleGroup(collapseKey);
+            return true;
         }
     }
 
@@ -431,7 +467,7 @@ public final class SettingsListWidget extends AbstractSelectionList<SettingsList
     }
 
     private static double normalize(SettingsOption<Double> option, double value) {
-        return (value - option.minimum()) / (option.maximum() - option.minimum());
+        return Math.clamp((value - option.minimum()) / (option.maximum() - option.minimum()), 0.0, 1.0);
     }
 
     private static double denormalize(SettingsOption<Double> option, double normalized) {
