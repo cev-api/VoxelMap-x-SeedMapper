@@ -475,7 +475,7 @@ public class CachedRegion {
 
     private void loadCachedData() {
         try {
-            File cachedRegionFileDir = new File(VoxelConstants.getMinecraft().gameDirectory, "/voxelmap/cache/" + this.worldNamePathPart + "/" + this.subworldNamePathPart + this.dimensionNamePathPart);
+            File cachedRegionFileDir = new File(VoxelConstants.getVoxelMapInstance().getDataStore().getWorldCacheDir(), this.subworldNamePathPart + this.dimensionNamePathPart);
             cachedRegionFileDir.mkdirs();
             File cachedRegionFile = new File(cachedRegionFileDir, "/" + this.fileKey + ".zip");
             if (cachedRegionFile.exists()) {
@@ -585,7 +585,7 @@ public class CachedRegion {
         BiMap<Biome, Integer> biomeToInt = this.data.getBiomeToInt();
         byte[] byteArray = this.data.getData();
         if (byteArray.length == this.data.getExpectedDataLength(CompressibleMapData.DATA_VERSION)) {
-            File cachedRegionFileDir = new File(VoxelConstants.getMinecraft().gameDirectory, "/voxelmap/cache/" + this.worldNamePathPart + "/" + this.subworldNamePathPart + this.dimensionNamePathPart);
+            File cachedRegionFileDir = new File(VoxelConstants.getVoxelMapInstance().getDataStore().getWorldCacheDir(), this.subworldNamePathPart + this.dimensionNamePathPart);
             cachedRegionFileDir.mkdirs();
             File cachedRegionFile = new File(cachedRegionFileDir, "/" + this.fileKey + ".zip");
             try (FileOutputStream fos = new FileOutputStream(cachedRegionFile); ZipOutputStream zos = new ZipOutputStream(fos)) {
@@ -656,7 +656,7 @@ public class CachedRegion {
     private void saveImage() {
         if (!this.empty && this.image != null) {
 
-            File imageFileDir = new File(VoxelConstants.getMinecraft().gameDirectory, "/voxelmap/cache/" + this.worldNamePathPart + "/" + this.subworldNamePathPart + this.dimensionNamePathPart + "/images/z1");
+            File imageFileDir = new File(VoxelConstants.getVoxelMapInstance().getDataStore().getWorldCacheDir(), this.subworldNamePathPart + this.dimensionNamePathPart + "/images/z1");
             imageFileDir.mkdirs();
             final File imageFile = new File(imageFileDir, this.fileKey + ".png");
                        

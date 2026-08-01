@@ -4,6 +4,7 @@ import com.mamiyaotaru.voxelmap.persistent.explored.ExploredAsyncLoader;
 import com.mamiyaotaru.voxelmap.persistent.explored.ExploredDiskStore;
 import com.mamiyaotaru.voxelmap.persistent.explored.ExploredV3Migrator;
 import com.mamiyaotaru.voxelmap.persistent.ThreadManager;
+import com.mamiyaotaru.voxelmap.persistent.VoxelMapDataConfig;
 import com.mamiyaotaru.voxelmap.util.CellGrid;
 import com.mamiyaotaru.voxelmap.util.GameVariableAccessShim;
 import net.minecraft.client.Minecraft;
@@ -538,7 +539,7 @@ public class ExploredChunksManager {
         Minecraft minecraft = Minecraft.getInstance();
         ServerData serverData = minecraft.getCurrentServer();
         return serverData != null && serverData.ip != null && !serverData.ip.isBlank()
-                ? serverData.ip.replace(':', '_')
+                ? VoxelMapDataConfig.getInstance().resolveCanonical(serverData.ip).replace(':', '_')
                 : minecraft.hasSingleplayerServer() ? "singleplayer" : "unknown";
     }
 

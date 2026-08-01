@@ -19,6 +19,7 @@ import com.mamiyaotaru.voxelmap.VoxelConstants;
 import com.mamiyaotaru.voxelmap.integration.BaritoneHelper;
 import com.mamiyaotaru.voxelmap.integration.BaritoneOreMiner;
 import com.mamiyaotaru.voxelmap.integration.VeinProvider;
+import com.mamiyaotaru.voxelmap.multiloader.MultiLoaderManager;
 import com.mamiyaotaru.voxelmap.util.DimensionContainer;
 import com.mamiyaotaru.voxelmap.util.GameVariableAccessShim;
 import com.mamiyaotaru.voxelmap.util.AppChatMessages;
@@ -171,7 +172,7 @@ public final class SeedMapperCommandHandler {
                 }
                 String mcVersion = net.minecraft.SharedConstants.getCurrentVersion().name();
                 send("Checking Modrinth for updates...");
-                new ModrinthUpdateChecker(projectId, VoxelConstants.getModApiBridge().getModLoader(), mcVersion)
+                new ModrinthUpdateChecker(projectId, MultiLoaderManager.getModApiBridge().getModLoader(), mcVersion)
                         .checkUpdates(version, result -> {
                             if (result == null || result.latestVersion() == null) {
                                 send("Update check failed: no compatible versions found.");

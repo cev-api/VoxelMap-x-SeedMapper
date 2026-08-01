@@ -14,7 +14,7 @@ val fabricVersion by extra { "0.19.3" }
 val fabricApiVersion by extra { "0.152.1+26.2" }
 val modMenuVersion by extra { "20.0.1" }
 val paperApiVersion by extra { "[26.2.build,)" }
-val voxelMapVersion by extra { "1.16.8" }
+val voxelMapVersion by extra { "1.16.9" }
 val forkVersion by extra { providers.gradleProperty("forkVersion").orElse(providers.gradleProperty("forkversion")).orNull ?: "0.01" }
 val modrinthId by extra { providers.gradleProperty("modrinth_id").orNull ?: "cVrDroCh" }
 

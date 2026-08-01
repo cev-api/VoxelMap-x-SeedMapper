@@ -1,5 +1,7 @@
 package com.mamiyaotaru.voxelmap;
 
+import com.mamiyaotaru.voxelmap.multiloader.ModApiBridge;
+import com.mamiyaotaru.voxelmap.multiloader.MultiLoaderManager;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
@@ -9,7 +11,7 @@ public final class WurstCompat {
 
     public static void syncWaypointsToggle(boolean enabled) {
         try {
-            ModApiBridge bridge = VoxelConstants.getModApiBridge();
+            ModApiBridge bridge = MultiLoaderManager.getModApiBridge();
             if (bridge == null || !bridge.isModEnabled("wurst")) {
                 return;
             }

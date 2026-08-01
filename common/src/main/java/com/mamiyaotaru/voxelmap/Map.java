@@ -10,6 +10,7 @@ import com.mamiyaotaru.voxelmap.gui.overridden.EnumOptionsMinimap;
 import com.mamiyaotaru.voxelmap.chunksync.ChunkSharePlayerSettings;
 import com.mamiyaotaru.voxelmap.interfaces.AbstractMapData;
 import com.mamiyaotaru.voxelmap.interfaces.IChangeObserver;
+import com.mamiyaotaru.voxelmap.interfaces.IReloadListener;
 import com.mamiyaotaru.voxelmap.persistent.GuiPersistentMap;
 import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperLocatorService;
 import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperMarker;
@@ -98,7 +99,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.TreeSet;
 
-public class Map implements Runnable, IChangeObserver {
+public class Map implements Runnable, IChangeObserver, IReloadListener {
 
     private final Minecraft minecraft = Minecraft.getInstance();
     private final MapSettingsManager options;
@@ -266,8 +267,6 @@ public class Map implements Runnable, IChangeObserver {
 
         this.finalMapRenderTarget = new VoxelMapRenderTarget(Identifier.fromNamespaceAndPath(VoxelConstants.MOD_ID, "render_target/voxelmap_final_map"));
         this.finalMapRenderTarget.createBuffers(fboTextureSize, fboTextureSize);
-
-        this.loadMapTextures();
     }
 
     private Thread createZCalcThread() {
@@ -276,6 +275,7 @@ public class Map implements Runnable, IChangeObserver {
         return thread;
     }
 
+    @Override
     public void onResourceManagerReload(ResourceManager resourceManager) {
         this.loadMapTextures();
     }

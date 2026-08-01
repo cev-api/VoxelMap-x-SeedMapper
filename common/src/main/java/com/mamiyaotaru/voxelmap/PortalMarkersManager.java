@@ -5,6 +5,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.mamiyaotaru.voxelmap.persistent.VoxelMapDataConfig;
 import com.mamiyaotaru.voxelmap.util.GameVariableAccessShim;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ServerData;
@@ -351,7 +352,7 @@ public class PortalMarkersManager {
         Minecraft minecraft = Minecraft.getInstance();
         ServerData serverData = minecraft.getCurrentServer();
         String server = serverData != null && serverData.ip != null && !serverData.ip.isBlank()
-                ? serverData.ip.replace(':', '_')
+                ? VoxelMapDataConfig.getInstance().resolveCanonical(serverData.ip).replace(':', '_')
                 : minecraft.hasSingleplayerServer() ? "singleplayer" : "unknown";
         return server + "_" + dimension;
     }

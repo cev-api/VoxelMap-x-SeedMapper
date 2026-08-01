@@ -3,6 +3,7 @@ package com.mamiyaotaru.voxelmap;
 import com.mamiyaotaru.voxelmap.util.CellGrid;
 import com.mamiyaotaru.voxelmap.util.GameVariableAccessShim;
 import com.mamiyaotaru.voxelmap.persistent.ThreadManager;
+import com.mamiyaotaru.voxelmap.persistent.VoxelMapDataConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.core.BlockPos;
@@ -347,7 +348,7 @@ public class NewerNewChunksManager {
         Minecraft minecraft = Minecraft.getInstance();
         ServerData serverData = minecraft.getCurrentServer();
         return serverData != null && serverData.ip != null && !serverData.ip.isBlank()
-                ? serverData.ip.replace(':', '_')
+                ? VoxelMapDataConfig.getInstance().resolveCanonical(serverData.ip).replace(':', '_')
                 : minecraft.hasSingleplayerServer() ? "singleplayer" : "unknown";
     }
 
@@ -1390,12 +1391,7 @@ public class NewerNewChunksManager {
 
     private String getWorldKeyForDimension(Identifier dimensionId) {
         String dimension = dimensionId.toString().replace(':', '_');
-        Minecraft minecraft = Minecraft.getInstance();
-        ServerData serverData = minecraft.getCurrentServer();
-        String server = serverData != null && serverData.ip != null && !serverData.ip.isBlank()
-                ? serverData.ip.replace(':', '_')
-                : minecraft.hasSingleplayerServer() ? "singleplayer" : "unknown";
-        return server + "_" + dimension;
+        return serverName() + "_" + dimension;
     }
 
     private EnumMap<OverlayType, CategoryStore> resolveStores(Identifier viewedDimension) {
@@ -1442,13 +1438,7 @@ public class NewerNewChunksManager {
     private String getWorldKey() {
         Level level = GameVariableAccessShim.getWorld();
         String dimension = level == null ? "unknown" : level.dimension().identifier().toString().replace(':', '_');
-
-        Minecraft minecraft = Minecraft.getInstance();
-        ServerData serverData = minecraft.getCurrentServer();
-        String server = serverData != null && serverData.ip != null && !serverData.ip.isBlank()
-                ? serverData.ip.replace(':', '_')
-                : minecraft.hasSingleplayerServer() ? "singleplayer" : "unknown";
-        return server + "_" + dimension;
+        return serverName() + "_" + dimension;
     }
 
     // -------------------------------------------------------------------------

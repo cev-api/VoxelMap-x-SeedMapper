@@ -18,7 +18,9 @@
     "MixinClientLevel",
     "MixinChatHud",
     "MixinInGameHud",
+    "MixinManageServerScreen",
+    "MixinWorldOpenFlows",
     "MixinWorldRenderer",
-	"MixinSectionUpdateTracker"
+    "MixinSectionUpdateTracker"
   ]
 }

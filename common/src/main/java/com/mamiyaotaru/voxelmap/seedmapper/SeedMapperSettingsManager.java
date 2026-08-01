@@ -3,6 +3,7 @@ package com.mamiyaotaru.voxelmap.seedmapper;
 import com.mamiyaotaru.voxelmap.MapSettingsManager;
 import com.mamiyaotaru.voxelmap.gui.overridden.EnumOptionsMinimap;
 import com.mamiyaotaru.voxelmap.interfaces.ISubSettingsManager;
+import com.mamiyaotaru.voxelmap.persistent.VoxelMapDataConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.util.Mth;
@@ -284,7 +285,7 @@ public class SeedMapperSettingsManager implements ISubSettingsManager {
         Minecraft minecraft = Minecraft.getInstance();
         ServerData server = minecraft.getCurrentServer();
         if (server != null && server.ip != null && !server.ip.isBlank()) {
-            return server.ip;
+            return VoxelMapDataConfig.getInstance().resolveCanonical(server.ip);
         }
         if (minecraft.hasSingleplayerServer()) {
             return "singleplayer";

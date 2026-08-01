@@ -25,6 +25,7 @@ import net.minecraft.client.gui.components.tabs.TabManager;
 import net.minecraft.client.gui.layouts.GridLayout;
 import net.minecraft.client.gui.layouts.HeaderAndFooterLayout;
 import net.minecraft.client.gui.layouts.Layout;
+import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.tooltip.TooltipRenderUtil;
@@ -150,7 +151,15 @@ public class GuiMinimapOptions extends GuiScreenMinimap {
         ScreenRectangle screenRect = new ScreenRectangle(0, tabBottom, width, height - layout.getFooterHeight() - tabBottom);
         tabManager.setTabArea(screenRect);
         layout.setHeaderHeight(tabBottom);
-        layout.addToFooter(new Button.Builder(Component.translatable("gui.done"), button -> onClose()).width(200).build());
+        if (VoxelConstants.isSinglePlayer()) {
+            layout.addToFooter(new Button.Builder(Component.translatable("gui.done"), button -> onClose()).width(200).build());
+        } else {
+            LinearLayout footerLayout = layout.addToFooter(LinearLayout.horizontal().spacing(10));
+            footerLayout.addChild(new Button.Builder(Component.translatable("voxelmap.alias.editButton"),
+                    button -> VoxelConstants.getMinecraft().gui.setScreen(new GuiServerAliases(this, VoxelConstants.getVoxelMapInstance().getWaypointManager().getServerName())))
+                    .width(150).build());
+            footerLayout.addChild(new Button.Builder(Component.translatable("gui.done"), button -> onClose()).width(150).build());
+        }
         layout.visitWidgets(this::addRenderableWidget);
         layout.arrangeElements();
 
