@@ -1927,6 +1927,12 @@ public class Map implements Runnable, IChangeObserver, IReloadListener {
             drawSeedMapperMinimapMarkers(context, matrixStack, x, y, lastXDouble, lastZDouble);
             drawContainerMinimapMarkers(context, matrixStack, x, y, lastXDouble, lastZDouble);
         }
+
+        if (VoxelConstants.getVoxelMapInstance().getRadar() != null) {
+            // Players are drawn last (highest submit order) so they appear on top of all other minimap overlays.
+            // scaleProj is 1.0F here because the matrix stack is already scaled by the map projection.
+            VoxelConstants.getVoxelMapInstance().getRadar().renderMapMobs(matrixStack, context, Contact.DisplayState.ABOVE_FRAME, x, y, scScale, 1.0F);
+        }
         } finally {
             matrixStack.popMatrix();
         }

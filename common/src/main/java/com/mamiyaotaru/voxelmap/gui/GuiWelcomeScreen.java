@@ -62,7 +62,7 @@ public class GuiWelcomeScreen extends GuiScreenMinimap {
             ++count;
         }
 
-        Component closeThisMessage = Component.translatable("minimap.ui.welcome5").withStyle(ChatFormatting.GRAY);
+        Component closeThisMessage = Component.translatable("minimap.ui.welcome5").withStyle(ChatFormatting.WHITE);
         this.addRenderableWidget(this.closeButton = new PlainTextButton(0, 0, 100, 10, closeThisMessage, button -> {
             this.options.toggleBooleanValue(EnumOptionsMinimap.WELCOME_SCREEN);
             this.options.saveAll();
@@ -70,7 +70,7 @@ public class GuiWelcomeScreen extends GuiScreenMinimap {
             this.onClose();
         }, getFont()));
 
-        Component controls = Component.translatable("options.controls").withStyle(ChatFormatting.GRAY);
+        Component controls = Component.translatable("options.controls").withStyle(ChatFormatting.WHITE);
         this.addRenderableWidget(this.controlsButton = new PlainTextButton(0, 0, 100, 10, controls, button -> minecraft.gui.setScreen(new GuiMinimapOptions(this, "controls")), getFont()));
     }
 

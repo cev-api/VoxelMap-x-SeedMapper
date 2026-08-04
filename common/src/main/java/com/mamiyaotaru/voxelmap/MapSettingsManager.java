@@ -49,7 +49,7 @@ public class MapSettingsManager implements ISettingsManager {
     public boolean showFacingDegrees = false;
     public boolean showFacingCardinal = false;
     public float radarTextScale = 1.0F;
-    public int mapCorner = 1;
+    public int mapCorner = 0;
     public int sizeModifier = 1;
     public boolean squareMap = false;
     public boolean rotates = true;

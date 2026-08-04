@@ -123,7 +123,9 @@ public abstract class AbstractRadar implements IReloadListener {
             return;
         }
 
-        contact.displayState = Contact.DisplayState.BELOW_FRAME;
+        contact.displayState = contact.category == VoxelMapMobCategory.PLAYER
+                ? Contact.DisplayState.ABOVE_FRAME
+                : Contact.DisplayState.BELOW_FRAME;
 
         contact.angle = (float) Math.toDegrees(Math.atan2(wayX, wayZ));
         contact.angle += minimapContext.direction;

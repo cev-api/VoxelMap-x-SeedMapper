@@ -9,7 +9,8 @@ import net.minecraft.world.entity.LivingEntity;
 public class Contact {
     public enum DisplayState {
         HIDDEN,
-        BELOW_FRAME
+        BELOW_FRAME,
+        ABOVE_FRAME
     }
 
     public final LivingEntity entity;
