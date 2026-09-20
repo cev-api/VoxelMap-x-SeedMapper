@@ -24,6 +24,7 @@ import net.minecraft.client.resources.language.I18n;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
+import org.lwjgl.sdl.SDLScancode;
 
 public class MapSettingsManager implements ISettingsManager {
     public static final String ERROR_STRING = "§c???";
@@ -110,8 +111,10 @@ public class MapSettingsManager implements ISettingsManager {
     public boolean confirmWaypointDelete = true;
     public int deathpoints = 1;
     public int waypointDistanceConversion = 1;
+    public int waypointSignLayout = 1;
     public int waypointNamesLocation = 2;
     public int waypointDistancesLocation = 2;
+    public boolean highlightSignOnFocus = true;
 
     public boolean showUnderMenus;
     public Boolean cavesAllowed = true;
@@ -153,22 +156,22 @@ public class MapSettingsManager implements ISettingsManager {
                 keyBindMenu = new KeyMapping("key.minimap.voxelmapMenu", InputConstants.getKey("key.keyboard.m").getValue(), category),
                 keyBindWaypointMenu = new KeyMapping("key.minimap.waypointMenu", InputConstants.getKey("key.keyboard.u").getValue(), category),
                 keyBindWaypoint = new KeyMapping("key.minimap.waypointHotkey", InputConstants.getKey("key.keyboard.n").getValue(), category),
-                keyBindMobToggle = new KeyMapping("key.minimap.toggleMobs", -1, category),
-                keyBindWaypointToggle = new KeyMapping("key.minimap.toggleInGameWaypoints", -1, category),
+                keyBindMobToggle = new KeyMapping("key.minimap.toggleMobs", InputConstants.UNKNOWN.getValue(), category),
+                keyBindWaypointToggle = new KeyMapping("key.minimap.toggleInGameWaypoints", InputConstants.UNKNOWN.getValue(), category),
                 keyBindMinimapToggle = new KeyMapping("key.minimap.toggleMinimap", InputConstants.getKey("key.keyboard.h").getValue(), category),
-                keyBindSeedMapperToggleOverlay = new KeyMapping("key.seedmapper.toggleOverlay", -1, category),
-                keyBindSeedMapperBlockHighlightEsp = new KeyMapping("key.seedmapper.blockHighlightEsp", -1, category),
-                keyBindSeedMapperClearEsp = new KeyMapping("key.seedmapper.clearEsp", -1, category),
-                keyBindSeedMapperOreVeinEsp = new KeyMapping("key.seedmapper.oreVeinEsp", -1, category),
-                keyBindSeedMapperCanyonEsp = new KeyMapping("key.seedmapper.canyonEsp", -1, category),
-                keyBindSeedMapperCaveEsp = new KeyMapping("key.seedmapper.caveEsp", -1, category),
-                keyBindSeedMapperTerrainEsp = new KeyMapping("key.seedmapper.terrainEsp", -1, category),
-                keyBindSeedMapperLootViewer = new KeyMapping("key.seedmapper.openLootViewer", -1, category),
-                keyBindSeedMapperSettings = new KeyMapping("key.seedmapper.openSettings", -1, category),
-                keyBindSeedMapperOptionsPage = new KeyMapping("key.seedmapper.openOptionsPage", -1, category),
-                keyBindOptionsMenu = new KeyMapping("key.minimap.openOptionsMenu", -1, category),
-                keyBindChunkAnalysisScan = new KeyMapping("key.chunkanalysis.scan", -1, category),
-                keyBindChunkAnalysisVoids = new KeyMapping("key.chunkanalysis.voids", -1, category)
+                keyBindSeedMapperToggleOverlay = new KeyMapping("key.seedmapper.toggleOverlay", InputConstants.UNKNOWN.getValue(), category),
+                keyBindSeedMapperBlockHighlightEsp = new KeyMapping("key.seedmapper.blockHighlightEsp", InputConstants.UNKNOWN.getValue(), category),
+                keyBindSeedMapperClearEsp = new KeyMapping("key.seedmapper.clearEsp", InputConstants.UNKNOWN.getValue(), category),
+                keyBindSeedMapperOreVeinEsp = new KeyMapping("key.seedmapper.oreVeinEsp", InputConstants.UNKNOWN.getValue(), category),
+                keyBindSeedMapperCanyonEsp = new KeyMapping("key.seedmapper.canyonEsp", InputConstants.UNKNOWN.getValue(), category),
+                keyBindSeedMapperCaveEsp = new KeyMapping("key.seedmapper.caveEsp", InputConstants.UNKNOWN.getValue(), category),
+                keyBindSeedMapperTerrainEsp = new KeyMapping("key.seedmapper.terrainEsp", InputConstants.UNKNOWN.getValue(), category),
+                keyBindSeedMapperLootViewer = new KeyMapping("key.seedmapper.openLootViewer", InputConstants.UNKNOWN.getValue(), category),
+                keyBindSeedMapperSettings = new KeyMapping("key.seedmapper.openSettings", InputConstants.UNKNOWN.getValue(), category),
+                keyBindSeedMapperOptionsPage = new KeyMapping("key.seedmapper.openOptionsPage", InputConstants.UNKNOWN.getValue(), category),
+                keyBindOptionsMenu = new KeyMapping("key.minimap.openOptionsMenu", InputConstants.UNKNOWN.getValue(), category),
+                keyBindChunkAnalysisScan = new KeyMapping("key.chunkanalysis.scan", InputConstants.UNKNOWN.getValue(), category),
+                keyBindChunkAnalysisVoids = new KeyMapping("key.chunkanalysis.voids", InputConstants.UNKNOWN.getValue(), category)
         };
     }
 
@@ -273,8 +276,10 @@ public class MapSettingsManager implements ISettingsManager {
                         case "Confirm Waypoint Delete" -> confirmWaypointDelete = Boolean.parseBoolean(curLine[1]);
                         case "Deathpoints" -> deathpoints = Mth.clamp(Integer.parseInt(curLine[1]), 0, 2);
                         case "Waypoint Distance Unit Conversion" -> waypointDistanceConversion = Mth.clamp(Integer.parseInt(curLine[1]), 0, 2);
-                        case "Show In-game Waypoint Names" -> waypointNamesLocation = Mth.clamp(Integer.parseInt(curLine[1]), 0, 2);
-                        case "Show In-game Waypoint Distances" -> waypointDistancesLocation = Mth.clamp(Integer.parseInt(curLine[1]), 0, 2);
+                        case "Show In-game Waypoint Names" -> { waypointNamesLocation = Mth.clamp(Integer.parseInt(curLine[1]), 0, 2); waypointSignLayout = 4; }
+                        case "Show In-game Waypoint Distances" -> { waypointDistancesLocation = Mth.clamp(Integer.parseInt(curLine[1]), 0, 2); waypointSignLayout = 4; }
+                        case "Waypoint Sign Layout" -> waypointSignLayout = Mth.clamp(Integer.parseInt(curLine[1]), 0, 4);
+                        case "Highlight Sign on Focus" -> highlightSignOnFocus = Boolean.parseBoolean(curLine[1]);
 
                         case "Zoom Key" -> bindKey(keyBindZoom, curLine[1]);
                         case "Fullscreen Key" -> bindKey(keyBindFullscreen, curLine[1]);
@@ -395,6 +400,8 @@ public class MapSettingsManager implements ISettingsManager {
             out.println("Waypoint Distance Unit Conversion:" + waypointDistanceConversion);
             out.println("Show In-game Waypoint Names:" + waypointNamesLocation);
             out.println("Show In-game Waypoint Distances:" + waypointDistancesLocation);
+            out.println("Waypoint Sign Layout:" + waypointSignLayout);
+            out.println("Highlight Sign on Focus:" + highlightSignOnFocus);
 
             out.println("Zoom Key:" + keyBindZoom.saveString());
             out.println("Fullscreen Key:" + keyBindFullscreen.saveString());
@@ -522,6 +529,7 @@ public class MapSettingsManager implements ISettingsManager {
             case WAYPOINT_COMPASS -> waypointCompass;
             case WAYPOINT_COMPASS_SHOW_COORDS -> waypointCompassShowCoords;
             case WAYPOINT_COMPASS_TEXT_OUTLINE -> waypointCompassTextOutline;
+            case HIGHLIGHT_SIGN_ON_FOCUS -> highlightSignOnFocus;
 
             default -> throw new IllegalArgumentException("Invalid boolean value! Add code to handle EnumOptionMinimap: " + option.getName());
         };
@@ -566,6 +574,7 @@ public class MapSettingsManager implements ISettingsManager {
             case WAYPOINT_COMPASS -> waypointCompass = !waypointCompass;
             case WAYPOINT_COMPASS_SHOW_COORDS -> waypointCompassShowCoords = !waypointCompassShowCoords;
             case WAYPOINT_COMPASS_TEXT_OUTLINE -> waypointCompassTextOutline = !waypointCompassTextOutline;
+            case HIGHLIGHT_SIGN_ON_FOCUS -> highlightSignOnFocus = !highlightSignOnFocus;
 
             default -> throw new IllegalArgumentException("Invalid boolean value! Add code to handle EnumOptionMinimap: " + option.getName());
         }
@@ -657,16 +666,13 @@ public class MapSettingsManager implements ISettingsManager {
                         I18n.get("options.minimap.waypoints.distanceUnitConversion.from1000m"),
                         I18n.get("options.minimap.waypoints.distanceUnitConversion.from10000m"));
             }
-            case SHOW_IN_GAME_WAYPOINT_NAMES -> {
-                return parseListValue(0, waypointNamesLocation,
+            case WAYPOINT_SIGN_LAYOUT -> {
+                return parseListValue(0, waypointSignLayout,
                         I18n.get("options.off"),
-                        I18n.get("options.minimap.waypoints.showWaypointNames.aboveIcon"),
-                        I18n.get("options.minimap.waypoints.showWaypointNames.belowIcon"));
-            }
-            case SHOW_IN_GAME_WAYPOINT_DISTANCES -> {
-                String str = waypointNamesLocation == 0 ? I18n.get("options.minimap.waypoints.showWaypointDistances.aboveIcon") : I18n.get("options.minimap.waypoints.showWaypointDistances.besideName");
-                String str2 = waypointNamesLocation == 0 ? I18n.get("options.minimap.waypoints.showWaypointDistances.belowIcon") : I18n.get("options.minimap.waypoints.showWaypointDistances.belowName");
-                return parseListValue(0, waypointDistancesLocation, I18n.get("options.off"), str, str2);
+                        I18n.get("options.minimap.waypoints.signLayout.default"),
+                        I18n.get("options.minimap.waypoints.signLayout.classicTop"),
+                        I18n.get("options.minimap.waypoints.signLayout.classicBottom"),
+                        I18n.get("options.minimap.waypoints.signLayout.custom"));
             }
 
             default -> throw new IllegalArgumentException("Invalid list value! Add code to handle EnumOptionMinimap: " + option.getName());
@@ -712,8 +718,7 @@ public class MapSettingsManager implements ISettingsManager {
 
             case DEATHPOINTS -> deathpoints = cycleInRange(deathpoints, 0, 2);
             case WAYPOINT_DISTANCE_UNIT_CONVERSION -> waypointDistanceConversion = cycleInRange(waypointDistanceConversion, 0, 2);
-            case SHOW_IN_GAME_WAYPOINT_NAMES -> waypointNamesLocation = cycleInRange(waypointNamesLocation, 0, 2);
-            case SHOW_IN_GAME_WAYPOINT_DISTANCES -> waypointDistancesLocation = cycleInRange(waypointDistancesLocation, 0, 2);
+            case WAYPOINT_SIGN_LAYOUT -> waypointSignLayout = cycleInRange(waypointSignLayout, 0, 4);
 
             default -> throw new IllegalArgumentException("Invalid list value! Add code to handle EnumOptionMinimap: " + option.getName());
         }
@@ -833,7 +838,12 @@ public class MapSettingsManager implements ISettingsManager {
 
     private void bindKey(KeyMapping keyBinding, String id) {
         try {
-            keyBinding.setKey(InputConstants.getKey(id));
+            InputConstants.Key input = InputConstants.getKey(id);
+            InputConstants.Key sanitizedInput = sanitizeKey(input);
+            if (input != sanitizedInput) {
+                VoxelConstants.getLogger().warn("{} is not a valid keybinding; resetting it to unbound", id);
+            }
+            keyBinding.setKey(sanitizedInput);
         } catch (RuntimeException var4) {
             VoxelConstants.getLogger().warn(id + " is not a valid keybinding");
         }
@@ -841,8 +851,17 @@ public class MapSettingsManager implements ISettingsManager {
     }
 
     public void setKeyBinding(KeyMapping keyBinding, InputConstants.Key input) {
-        keyBinding.setKey(input);
+        keyBinding.setKey(sanitizeKey(input));
         saveAll();
+    }
+
+    static InputConstants.Key sanitizeKey(InputConstants.Key input) {
+        if (input.getType() == InputConstants.Type.KEYBOARD
+                && (input.getValue() < SDLScancode.SDL_SCANCODE_UNKNOWN || input.getValue() >= SDLScancode.SDL_SCANCODE_COUNT)) {
+            return InputConstants.UNKNOWN;
+        }
+
+        return input;
     }
 
     public String getKeyBindingDescription(int keybindIndex) {

@@ -2,6 +2,7 @@ plugins {
     id("java")
     id("idea")
     id("net.fabricmc.fabric-loom")
+    id("com.gradleup.shadow") version "8.3.0"
 }
 
 val minecraftVersion: String by rootProject.extra
@@ -9,6 +10,8 @@ val fabricVersion: String by rootProject.extra
 val fabricApiVersion: String by rootProject.extra
 val forkVersion: String by rootProject.extra
 val modrinthId: String by rootProject.extra
+val voxelConfigVersion: String by rootProject.extra
+val geckolibVersion: String by rootProject.extra
 
 repositories {
 
@@ -20,7 +23,19 @@ dependencies {
     compileOnly("net.fabricmc:fabric-loader:${fabricVersion}")
     implementation("net.fabricmc.fabric-api:fabric-api:${fabricApiVersion}")
 
-    compileOnly("net.fabricmc:sponge-mixin:0.16.4+mixin.0.8.7")
+    implementation("de.voxelmap:voxelconfig:${voxelConfigVersion}")
+
+    // Soft dependency: used only to build radar icons for GeckoLib-rendered mobs.
+    // Never present at runtime unless the user has GeckoLib installed, so every
+    // access goes through GeckolibCompat.
+    compileOnly("com.geckolib:geckolib-common-${minecraftVersion}:${geckolibVersion}")
+
+    compileOnly("net.fabricmc:sponge-mixin:0.17.3+mixin.0.8.7")
+    testImplementation("com.google.code.gson:gson:2.11.0")
+    testImplementation(platform("org.junit:junit-bom:5.10.3"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation("net.fabricmc:fabric-loader:${fabricVersion}")
 //    compileOnly("io.github.llamalad7:mixinextras-common:0.5.0")
 //    annotationProcessor("io.github.llamalad7:mixinextras-common:0.5.0")
 }
@@ -40,6 +55,10 @@ loom {
 }
 
 tasks {
+    test {
+        useJUnitPlatform()
+        jvmArgs("--enable-native-access=ALL-UNNAMED")
+    }
     processResources {
         filesMatching("voxelmap-build.properties") {
             expand(
@@ -51,8 +70,16 @@ tasks {
         }
     }
 
+    shadowJar {
+        dependencies {
+            include(dependency("de.voxelmap:voxelconfig:.*"))
+        }
+    }
+
     jar {
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
         from(rootDir.resolve("LICENSE.md"))
+        // we no longer need manual zipTree because shadowJar handles it!
     }
 }
 

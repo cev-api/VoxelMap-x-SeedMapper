@@ -4,19 +4,21 @@ plugins {
     id("java")
     id("net.fabricmc.fabric-loom") version ("1.17-SNAPSHOT") apply (false)
     id("net.minecraftforge.gradle") version ("7.0.17") apply (false)
-    id("net.neoforged.moddev") version ("2.0.141") apply (false)
+    id("net.neoforged.moddev") version ("2.0.147") apply (false)
 }
 
-val minecraftVersion by extra { "26.2" }
+val minecraftVersion by extra { "26.3" }
 val forgeVersion by extra { "65.0.0" }
-val neoForgeVersion by extra { "26.2.0.0-beta" }
-val fabricVersion by extra { "0.19.3" }
-val fabricApiVersion by extra { "0.152.1+26.2" }
+val neoForgeVersion by extra { "26.3.0.0-beta" }
+val fabricVersion by extra { "0.19.5" }
+val fabricApiVersion by extra { "0.160.5+26.3" }
 val modMenuVersion by extra { "20.0.1" }
 val paperApiVersion by extra { "[26.2.build,)" }
-val voxelMapVersion by extra { "1.16.9" }
 val forkVersion by extra { providers.gradleProperty("forkVersion").orElse(providers.gradleProperty("forkversion")).orNull ?: "0.01" }
 val modrinthId by extra { providers.gradleProperty("modrinth_id").orNull ?: "cVrDroCh" }
+val voxelMapVersion by extra { "1.16.12" }
+val voxelConfigVersion by extra { "1.0.2" }
+val geckolibVersion by extra { "5.5.6" }
 
 val fullVersion by extra { "${minecraftVersion}-${voxelMapVersion}" }
 
@@ -37,10 +39,20 @@ subprojects {
     apply(plugin = "maven-publish")
 
     repositories {
+        mavenLocal()
         mavenCentral()
+        maven {
+            name = "VoxelConfig"
+            url = uri("https://www.iani.de/nexus/content/repositories/releases/")
+            content { includeGroup("de.voxelmap") }
+        }
         maven {
             name = "papermc"
             url = uri("https://repo.papermc.io/repository/maven-public/")
+        }
+        maven {
+            name = "Geckolib Maven"
+            url = uri("https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/")
         }
         maven { url = uri("https://api.modrinth.com/maven") }
     }

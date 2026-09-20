@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class GuiWaypointsOptions extends GuiScreenMinimap {
-    private static final EnumOptionsMinimap[] WAYPOINT_OPTIONS = { EnumOptionsMinimap.WAYPOINT_DISTANCE, EnumOptionsMinimap.WAYPOINT_SIGN_SCALE, EnumOptionsMinimap.WAYPOINT_BEACONS, EnumOptionsMinimap.AUTO_PORTAL_WAYPOINTS, EnumOptionsMinimap.CONFIRM_WAYPOINT_DELETE, EnumOptionsMinimap.DEATHPOINTS, EnumOptionsMinimap.WAYPOINT_DISTANCE_UNIT_CONVERSION, EnumOptionsMinimap.SHOW_IN_GAME_WAYPOINT_NAMES, EnumOptionsMinimap.SHOW_IN_GAME_WAYPOINT_DISTANCES };
+    private static final EnumOptionsMinimap[] WAYPOINT_OPTIONS = { EnumOptionsMinimap.WAYPOINT_DISTANCE, EnumOptionsMinimap.WAYPOINT_SIGN_SCALE, EnumOptionsMinimap.WAYPOINT_BEACONS, EnumOptionsMinimap.AUTO_PORTAL_WAYPOINTS, EnumOptionsMinimap.CONFIRM_WAYPOINT_DELETE, EnumOptionsMinimap.DEATHPOINTS, EnumOptionsMinimap.WAYPOINT_DISTANCE_UNIT_CONVERSION, EnumOptionsMinimap.WAYPOINT_SIGN_LAYOUT, EnumOptionsMinimap.HIGHLIGHT_SIGN_ON_FOCUS };
     private static final EnumOptionsMinimap[] COMPASS_OPTIONS = { EnumOptionsMinimap.WAYPOINT_COMPASS, EnumOptionsMinimap.WAYPOINT_COMPASS_SHOW_COORDS, EnumOptionsMinimap.WAYPOINT_COMPASS_TEXT_OUTLINE, EnumOptionsMinimap.WAYPOINT_COMPASS_ICON_RANGE, EnumOptionsMinimap.WAYPOINT_COMPASS_MAX_WAYPOINTS, EnumOptionsMinimap.WAYPOINT_COMPASS_X, EnumOptionsMinimap.WAYPOINT_COMPASS_Y, EnumOptionsMinimap.WAYPOINT_COMPASS_TEXT_OPACITY, EnumOptionsMinimap.WAYPOINT_COMPASS_OUTLINE_OPACITY, EnumOptionsMinimap.WAYPOINT_COMPASS_BACKGROUND_OPACITY };
     private final MapSettingsManager options;
     private final List<SectionHeader> sectionHeaders = new ArrayList<>();
@@ -94,9 +94,8 @@ public class GuiWaypointsOptions extends GuiScreenMinimap {
             }
 
             switch (button.returnEnumOptions()) {
-                case SHOW_IN_GAME_WAYPOINT_NAMES -> button.active = this.options.showWaypointSigns;
-                case SHOW_IN_GAME_WAYPOINT_DISTANCES -> {
-                    button.setMessage(Component.literal(this.options.getKeyText(EnumOptionsMinimap.SHOW_IN_GAME_WAYPOINT_DISTANCES)));
+                case WAYPOINT_SIGN_LAYOUT, HIGHLIGHT_SIGN_ON_FOCUS -> {
+                    button.setMessage(Component.literal(this.options.getKeyText(button.returnEnumOptions())));
                     button.active = this.options.showWaypointSigns;
                 }
                 case WAYPOINT_BEACONS, AUTO_PORTAL_WAYPOINTS -> button.active = this.options.waypointsAllowed;

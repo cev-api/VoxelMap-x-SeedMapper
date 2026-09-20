@@ -9,8 +9,18 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: write
+
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout VoxelMap
+        uses: actions/checkout@v4
+
+      - name: Checkout VoxelConfig
+        uses: actions/checkout@v4
+        with:
+          repository: Updated-VoxelMap/VoxelConfig
+          path: VoxelConfig
 
       - name: Set up Temurin JDK 25
         uses: actions/setup-java@v4
@@ -33,7 +43,12 @@ jobs:
           echo "VOXELMAP_VERSION: $VOXELMAP_VERSION"
           echo "FULL_VERSION: $FULL_VERSION"
 
-      - name: Build with Gradle
+      - name: Build & Publish VoxelConfig locally
+        run: |
+          cd VoxelConfig
+          ./gradlew publishToMavenLocal
+
+      - name: Build VoxelMap with Gradle
         run: ./gradlew build
 
       - name: Upload Build Artifact

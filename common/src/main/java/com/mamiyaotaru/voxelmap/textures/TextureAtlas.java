@@ -3,12 +3,11 @@ package com.mamiyaotaru.voxelmap.textures;
 import com.google.common.collect.Maps;
 import com.mamiyaotaru.voxelmap.VoxelConstants;
 import com.mamiyaotaru.voxelmap.util.ImageUtils;
-import com.mojang.blaze3d.GpuFormat;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.textures.AddressMode;
-import com.mojang.blaze3d.textures.FilterMode;
-import com.mojang.blaze3d.textures.GpuTexture;
+import com.mojang.renderpearl.api.GpuFormat;
+import com.mojang.renderpearl.api.textures.GpuSampler;
+import com.mojang.renderpearl.api.textures.GpuTexture;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -27,7 +26,7 @@ import net.minecraft.client.renderer.texture.TextureContents;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
 
-public class TextureAtlas extends AbstractTexture {
+public class TextureAtlas extends AbstractTexture implements VoxelMapTexture {
     private final HashMap<Object, Sprite> mapRegisteredSprites;
     private final HashMap<Object, Sprite> mapUploadedSprites;
     private final String basePath;
@@ -52,10 +51,9 @@ public class TextureAtlas extends AbstractTexture {
         Minecraft.getInstance().getTextureManager().register(Identifier, this);
     }
 
-    public void setFilter(boolean linearFilter, boolean mipmap) {
-        if (texture != null) {
-            sampler = RenderSystem.getSamplerCache().getSampler(AddressMode.CLAMP_TO_EDGE, AddressMode.CLAMP_TO_EDGE,  linearFilter ? FilterMode.LINEAR : FilterMode.NEAREST, linearFilter ? FilterMode.LINEAR : FilterMode.NEAREST, false);
-        }
+    @Override
+    public void setSampler(GpuSampler sampler) {
+        this.sampler = sampler;
     }
 
     private void initMissingImage() {

@@ -1,5 +1,8 @@
 package com.mamiyaotaru.voxelmap.gui.settings;
 
+import de.voxelmap.voxelconfig.SettingsCategory;
+import de.voxelmap.voxelconfig.SettingsGroup;
+import de.voxelmap.voxelconfig.SettingsOption;
 import com.mamiyaotaru.voxelmap.MapSettingsManager;
 import com.mamiyaotaru.voxelmap.RadarSettingsManager;
 import com.mamiyaotaru.voxelmap.VoxelConstants;
@@ -28,7 +31,6 @@ import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperCommandHandler;
 import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperCommandTree;
 import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperCompat;
 import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperDatapackManager;
-import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperEspTarget;
 import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperFeature;
 import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperMarkerOption;
 import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperSettingsManager;
@@ -64,7 +66,7 @@ public final class VoxelMapSettings {
                 sharing(host),
                 seedmapper(seed, host),
                 chunkAnalysis(analysis),
-                new SettingsCategory("controls", "options.voxelmap.category.controls", List.of(), SettingsCategory.SpecialView.KEY_BINDINGS),
+                new SettingsCategory("controls", "options.voxelmap.category.controls", List.of()),
                 advanced(voxelMap, map, radar, host));
     }
 
@@ -331,18 +333,26 @@ public final class VoxelMapSettings {
                                 value -> map.waypointSignScale = value.floatValue(), 0.5, 1.5, 0.01,
                                 value -> Component.literal(String.format(Locale.ROOT, "%.2fx", value)),
                                 () -> map.waypointsAllowed && map.showWaypointSigns, requires("options.voxelmap.requires.waypointSigns"), 1),
+                        choice("waypoints.layout", "options.minimap.waypoints.signLayout", map, () -> map.waypointSignLayout,
+                                value -> map.waypointSignLayout = value, value(0, "options.off"),
+                                value(1, "options.minimap.waypoints.signLayout.default"), value(2, "options.minimap.waypoints.signLayout.classicTop"), value(3, "options.minimap.waypoints.signLayout.classicBottom"), value(4, "options.minimap.waypoints.signLayout.custom")),
                         toggle("waypoints.names", "options.voxelmap.waypoints.names", map, () -> map.waypointNamesLocation != 0,
-                                value -> map.waypointNamesLocation = value ? 2 : 0, () -> map.waypointsAllowed && map.showWaypointSigns, requires("options.voxelmap.requires.waypointSigns"), 1),
+                                value -> { map.waypointNamesLocation = value ? 2 : 0; map.waypointSignLayout = 4; },
+                                () -> map.waypointsAllowed && map.showWaypointSigns, requires("options.voxelmap.requires.waypointSigns"), 1),
                         SettingsOption.choice("waypoints.namePosition", "options.voxelmap.waypoints.namePosition", tooltip("waypoints.namePosition"),
-                                () -> map.waypointNamesLocation == 1 ? 1 : 2, value -> changed(map, ignored -> map.waypointNamesLocation = value, value),
+                                () -> map.waypointNamesLocation == 1 ? 1 : 2,
+                                value -> { map.waypointNamesLocation = value; map.waypointSignLayout = 4; },
                                 List.of(value(1, "options.minimap.waypoints.showWaypointNames.aboveIcon"), value(2, "options.minimap.waypoints.showWaypointNames.belowIcon")),
                                 () -> map.waypointsAllowed && map.showWaypointSigns && map.waypointNamesLocation != 0, requires("options.voxelmap.requires.waypointNames"), 2),
                         toggle("waypoints.distances", "options.voxelmap.waypoints.distances", map, () -> map.waypointDistancesLocation != 0,
-                                value -> map.waypointDistancesLocation = value ? 2 : 0, () -> map.waypointsAllowed && map.showWaypointSigns, requires("options.voxelmap.requires.waypointSigns"), 1),
+                                value -> { map.waypointDistancesLocation = value ? 2 : 0; map.waypointSignLayout = 4; },
+                                () -> map.waypointsAllowed && map.showWaypointSigns, requires("options.voxelmap.requires.waypointSigns"), 1),
                         SettingsOption.choice("waypoints.distancePosition", "options.voxelmap.waypoints.distancePosition", tooltip("waypoints.distancePosition"),
-                                () -> map.waypointDistancesLocation == 1 ? 1 : 2, value -> changed(map, ignored -> map.waypointDistancesLocation = value, value),
+                                () -> map.waypointDistancesLocation == 1 ? 1 : 2,
+                                value -> { map.waypointDistancesLocation = value; map.waypointSignLayout = 4; },
                                 List.of(value(1, "options.voxelmap.waypoints.distancePosition.primary"), value(2, "options.voxelmap.waypoints.distancePosition.secondary")),
                                 () -> map.waypointsAllowed && map.showWaypointSigns && map.waypointDistancesLocation != 0, requires("options.voxelmap.requires.waypointDistances"), 2),
+                        toggle("waypoints.highlight", "options.minimap.waypoints.highlightSignOnFocus", map, () -> map.highlightSignOnFocus, value -> map.highlightSignOnFocus = value),
                         choice("waypoints.units", "options.minimap.waypoints.distanceUnitConversion", map, () -> map.waypointDistanceConversion,
                                 value -> map.waypointDistanceConversion = value, value(0, "options.off"),
                                 value(1, "options.minimap.waypoints.distanceUnitConversion.from1000m"), value(2, "options.minimap.waypoints.distanceUnitConversion.from10000m"))),
@@ -487,19 +497,31 @@ public final class VoxelMapSettings {
     private static SettingsCategory advanced(VoxelMap voxelMap, MapSettingsManager map, RadarSettingsManager radar, Supplier<Screen> host) {
         return new SettingsCategory("advanced", "options.voxelmap.category.advanced", List.of(
                 group("options.voxelmap.group.worldServer",
+                        SettingsOption.text("advanced.dataName", "options.voxelmap.advanced.dataName", tooltip("advanced.dataName"),
+                                () -> voxelMap.getWaypointManager().getCurrentWorldName(), value -> { },
+                                () -> false,
+                                () -> Component.translatable(voxelMap.getWaypointManager().getServerWorldIdentity().isEmpty()
+                                        ? "options.voxelmap.managed.dataNameLocal"
+                                        : "options.voxelmap.managed.dataNameServer")),
                         SettingsOption.text("advanced.seed", "options.minimap.worldSeed", tooltip("advanced.seed"), voxelMap::getWorldSeed,
                                 value -> {
                                     voxelMap.setWorldSeed(value.trim());
                                     voxelMap.getMap().forceFullRender(true);
                                 },
-                                () -> !VoxelConstants.getMinecraft().hasSingleplayerServer(), requires("options.voxelmap.managed.singleplayerSeed")),
+                                VoxelMapSettings::isRemoteServerConnected,
+                                () -> Component.translatable(VoxelConstants.getMinecraft().hasSingleplayerServer()
+                                        ? "options.voxelmap.managed.singleplayerSeed"
+                                        : "options.voxelmap.managed.multiplayerOnly")),
                         SettingsOption.action("advanced.transport", "options.voxelmap.worldmap.transportShortcuts", null,
                                 Component.translatable("options.voxelmap.action.open"),
-                                () -> VoxelConstants.getMinecraft().gui.setScreen(new GuiTransportShortcutsOptions(host.get())))),
-                group("options.voxelmap.group.troubleshooting",
-                        toggle("advanced.compatibilityRenderer", "options.minimap.radar.cpuRendering", radar,
-                                () -> radar.cpuRendering || radar.forceCpuRendering, value -> radar.cpuRendering = value || radar.forceCpuRendering,
-                                () -> !radar.forceCpuRendering, requires("options.voxelmap.managed.renderer"), 0)),
+                                () -> VoxelConstants.getMinecraft().gui.setScreen(new GuiTransportShortcutsOptions(host.get()))),
+
+                        SettingsOption.action("advanced.aliases", "options.voxelmap.advanced.aliases", tooltip("advanced.aliases"),
+                                Component.translatable("options.voxelmap.action.edit"), () -> VoxelConstants.getMinecraft().gui.setScreen(new com.mamiyaotaru.voxelmap.gui.GuiServerAliases(host.get(), VoxelConstants.getVoxelMapInstance().getWaypointManager().getServerName())),
+                                () -> canEditServerValue(isRemoteServerConnected(), serverIdentityProvided(voxelMap)),
+                                () -> Component.translatable(serverIdentityProvided(voxelMap)
+                                        ? "options.voxelmap.managed.dataNameServer"
+                                        : "options.voxelmap.managed.multiplayerOnly"))),
                 group("options.voxelmap.group.interface",
                         choice("advanced.colorPicker", "options.minimap.colorPickerMode", map, () -> map.colorPickerMode, value -> map.colorPickerMode = value,
                                 value(0, "options.minimap.colorPickerMode.simple"), value(1, "options.minimap.colorPickerMode.full")),
@@ -714,14 +736,13 @@ public final class VoxelMapSettings {
                         openScreen("seedmapper.savedSeeds", "options.voxelmap.seedmapper.savedSeeds", host, GuiSeedMapperSavedSeeds::new),
                         openScreen("seedmapper.cracking", "options.voxelmap.seedmapper.cracking", host, GuiSeedMapperCrackingMods::new)),
                 group("options.voxelmap.group.seedmapperEsp",
-                        SettingsOption.text("seedmapper.espTarget", "options.voxelmap.seedmapper.espTarget", null,
+                        SettingsAutocomplete.withOptions(SettingsOption.text("seedmapper.espTarget", "options.voxelmap.seedmapper.espTarget", null,
                                 () -> seed.espTarget == null ? "" : seed.espTarget,
                                 value -> {
                                     seed.espTarget = value.trim();
                                     MapSettingsManager.instance.saveAll();
                                 },
-                                () -> true, Component::empty)
-                                .withAutocomplete(SeedMapperCommandTree.getCommonOreBlocks()),
+                                () -> true, Component::empty), SeedMapperCommandTree.getCommonOreBlocks()),
                         SettingsOption.slider("seedmapper.espChunks", "options.voxelmap.seedmapper.espChunks", null,
                                 () -> (double) seed.espDefaultChunks,
                                 value -> {
@@ -729,9 +750,6 @@ public final class VoxelMapSettings {
                                     MapSettingsManager.instance.saveAll();
                                 },
                                 0, 8, 1, value -> Component.literal(String.valueOf((int) Math.round(value))), () -> true, Component::empty, 0),
-                        seedToggleSimple("seedmapper.espFill", "options.voxelmap.seedmapper.espFill",
-                                () -> seed.getEspStyle(SeedMapperEspTarget.BLOCK_HIGHLIGHT).fillEnabled,
-                                value -> seed.getEspStyle(SeedMapperEspTarget.BLOCK_HIGHLIGHT).fillEnabled = value),
                         espAction("seedmapper.runEsp", "options.voxelmap.seedmapper.runEsp", host, () -> {
                             String target = seed.espTarget == null ? "" : seed.espTarget.trim();
                             if (target.isBlank()) {
@@ -748,8 +766,12 @@ public final class VoxelMapSettings {
                                 () -> SeedMapperCommandHandler.handleChatCommand("seedmap highlight cave " + seed.espDefaultChunks)),
                         espAction("seedmapper.runTerrain", "options.voxelmap.seedmapper.runTerrain", host,
                                 () -> SeedMapperCommandHandler.handleChatCommand("seedmap highlight terrain " + seed.espDefaultChunks)),
-                        espAction("seedmapper.clearEsp", "options.voxelmap.seedmapper.clearEsp", host,
-                                () -> SeedMapperCommandHandler.handleChatCommand("seedmap highlight clear")),
+                        SettingsOption.action("seedmapper.clearEsp", "options.voxelmap.seedmapper.clearEsp", null,
+                                Component.literal("Clear"),
+                                () -> {
+                                    commitText(host);
+                                    SeedMapperCommandHandler.handleChatCommand("seedmap highlight clear");
+                                }),
                         openScreen("seedmapper.espSettings", "options.voxelmap.seedmapper.espSettings", host, GuiSeedMapperEspProfiles::new)),
                 group("options.voxelmap.group.seedmapperDatapack",
                         SettingsOption.text("seedmapper.datapackUrl", "options.voxelmap.seedmapper.datapackUrl", null,
@@ -979,6 +1001,25 @@ public final class VoxelMapSettings {
 
     private static boolean radarAvailable(RadarSettingsManager radar) {
         return radar.radarAllowed && (radar.radarPlayersAllowed || radar.radarMobsAllowed);
+    }
+
+    private static boolean isRemoteServerConnected() {
+        return isRemoteServerConnected(
+                VoxelConstants.getMinecraft().level != null,
+                VoxelConstants.getMinecraft().getConnection() != null,
+                VoxelConstants.getMinecraft().hasSingleplayerServer());
+    }
+
+    static boolean isRemoteServerConnected(boolean hasWorld, boolean hasConnection, boolean hasSingleplayerServer) {
+        return hasWorld && hasConnection && !hasSingleplayerServer;
+    }
+
+    static boolean canEditServerValue(boolean remoteServerConnected, boolean serverProvided) {
+        return remoteServerConnected && !serverProvided;
+    }
+
+    private static boolean serverIdentityProvided(VoxelMap voxelMap) {
+        return !voxelMap.getWaypointManager().getServerWorldIdentity().isEmpty();
     }
 
     private static boolean radarEnabled(RadarSettingsManager radar) {

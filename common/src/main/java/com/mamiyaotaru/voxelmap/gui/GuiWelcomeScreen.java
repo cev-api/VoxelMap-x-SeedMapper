@@ -14,7 +14,6 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.ARGB;
-import org.lwjgl.glfw.GLFW;
 
 public class GuiWelcomeScreen extends GuiScreenMinimap {
     private MapSettingsManager options;
@@ -140,7 +139,7 @@ public class GuiWelcomeScreen extends GuiScreenMinimap {
 
     @Override
     public boolean keyPressed(KeyEvent keyEvent) {
-        if (keyEvent.key() == GLFW.GLFW_KEY_ESCAPE) {
+        if (keyEvent.key() == com.mojang.blaze3d.platform.InputConstants.KEY_ESCAPE) {
             this.options.toggleBooleanValue(EnumOptionsMinimap.WELCOME_SCREEN);
             this.options.saveAll();
         }

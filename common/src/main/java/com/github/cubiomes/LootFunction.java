@@ -15,7 +15,7 @@ import static java.lang.foreign.MemoryLayout.PathElement.*;
 /**
  * {@snippet lang=c :
  * struct LootFunction {
- *     void (*fun)(uint64_t *, ItemStack *, const void *);
+ *     void (*fun)(RandomSource *, ItemStack *, const void *);
  *     const void *params;
  *     int params_int[2];
  *     int *varparams_int;
@@ -49,7 +49,7 @@ public class LootFunction {
 
     /**
      * {@snippet lang=c :
-     * void (*fun)(uint64_t *, ItemStack *, const void *)
+     * void (*fun)(RandomSource *, ItemStack *, const void *)
      * }
      */
     public final static class fun {
@@ -109,7 +109,7 @@ public class LootFunction {
     /**
      * Layout for field:
      * {@snippet lang=c :
-     * void (*fun)(uint64_t *, ItemStack *, const void *)
+     * void (*fun)(RandomSource *, ItemStack *, const void *)
      * }
      */
     public static final AddressLayout fun$layout() {
@@ -121,7 +121,7 @@ public class LootFunction {
     /**
      * Offset for field:
      * {@snippet lang=c :
-     * void (*fun)(uint64_t *, ItemStack *, const void *)
+     * void (*fun)(RandomSource *, ItemStack *, const void *)
      * }
      */
     public static final long fun$offset() {
@@ -131,7 +131,7 @@ public class LootFunction {
     /**
      * Getter for field:
      * {@snippet lang=c :
-     * void (*fun)(uint64_t *, ItemStack *, const void *)
+     * void (*fun)(RandomSource *, ItemStack *, const void *)
      * }
      */
     public static MemorySegment fun(MemorySegment struct) {
@@ -141,7 +141,7 @@ public class LootFunction {
     /**
      * Setter for field:
      * {@snippet lang=c :
-     * void (*fun)(uint64_t *, ItemStack *, const void *)
+     * void (*fun)(RandomSource *, ItemStack *, const void *)
      * }
      */
     public static void fun(MemorySegment struct, MemorySegment fieldValue) {

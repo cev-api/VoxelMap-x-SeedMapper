@@ -9,7 +9,6 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.Component;
-import org.lwjgl.glfw.GLFW;
 
 /** Editor for the user-defined client-side transport commands used by the world map. */
 public class GuiTransportShortcutsOptions extends GuiScreenMinimap {
@@ -107,7 +106,7 @@ public class GuiTransportShortcutsOptions extends GuiScreenMinimap {
 
     @Override
     public boolean keyPressed(KeyEvent event) {
-        if (event.key() == GLFW.GLFW_KEY_ESCAPE) {
+        if (event.key() == com.mojang.blaze3d.platform.InputConstants.KEY_ESCAPE) {
             onClose();
             return true;
         }

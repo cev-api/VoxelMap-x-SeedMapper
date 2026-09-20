@@ -37,6 +37,15 @@ class Cubiomes_1 extends Cubiomes$shared {
     public static int __STDC_FORMAT_MACROS() {
         return __STDC_FORMAT_MACROS;
     }
+    private static final int POWS_OF_2 = (int)64L;
+    /**
+     * {@snippet lang=c :
+     * #define POWS_OF_2 64
+     * }
+     */
+    public static int POWS_OF_2() {
+        return POWS_OF_2;
+    }
     /**
      * {@snippet lang=c :
      * typedef int8_t i8
@@ -78,13 +87,13 @@ class Cubiomes_1 extends Cubiomes$shared {
      * typedef int64_t i64
      * }
      */
-    public static final OfLong i64 = Cubiomes.C_LONG_LONG;
+    public static final OfLong i64 = Cubiomes.C_LONG;
     /**
      * {@snippet lang=c :
      * typedef uint64_t u64
      * }
      */
-    public static final OfLong u64 = Cubiomes.C_LONG_LONG;
+    public static final OfLong u64 = Cubiomes.C_LONG;
     /**
      * {@snippet lang=c :
      * typedef float f32
@@ -97,6 +106,33 @@ class Cubiomes_1 extends Cubiomes$shared {
      * }
      */
     public static final OfDouble f64 = Cubiomes.C_DOUBLE;
+    private static final int JAVA_RANDOM = (int)0L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.JAVA_RANDOM = 0
+     * }
+     */
+    public static int JAVA_RANDOM() {
+        return JAVA_RANDOM;
+    }
+    private static final int XOROSHIRO = (int)1L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.XOROSHIRO = 1
+     * }
+     */
+    public static int XOROSHIRO() {
+        return XOROSHIRO;
+    }
+    private static final int XOROSHIRO_J = (int)2L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.XOROSHIRO_J = 2
+     * }
+     */
+    public static int XOROSHIRO_J() {
+        return XOROSHIRO_J;
+    }
 
     private static class perlinInit {
         public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
@@ -1634,10 +1670,19 @@ class Cubiomes_1 extends Cubiomes$shared {
     public static int MC_26_2() {
         return MC_26_2;
     }
-    private static final int MC_NEWEST = (int)34L;
+    private static final int MC_26_3 = (int)35L;
     /**
      * {@snippet lang=c :
-     * enum MCVersion.MC_NEWEST = 34
+     * enum MCVersion.MC_26_3 = 35
+     * }
+     */
+    public static int MC_26_3() {
+        return MC_26_3;
+    }
+    private static final int MC_NEWEST = (int)35L;
+    /**
+     * {@snippet lang=c :
+     * enum MCVersion.MC_NEWEST = 35
      * }
      */
     public static int MC_NEWEST() {
@@ -2983,6 +3028,15 @@ class Cubiomes_1 extends Cubiomes$shared {
      */
     public static int sulfur_caves() {
         return sulfur_caves;
+    }
+    private static final int dappled_forest = (int)188L;
+    /**
+     * {@snippet lang=c :
+     * enum BiomeID.dappled_forest = 188
+     * }
+     */
+    public static int dappled_forest() {
+        return dappled_forest;
     }
 
     private static class biomeExists {
@@ -4491,7 +4545,7 @@ class Cubiomes_1 extends Cubiomes$shared {
     private static class setLayerSeed {
         public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
             Cubiomes.C_POINTER,
-            Cubiomes.C_LONG_LONG
+            Cubiomes.C_LONG
         );
 
         public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("setLayerSeed");
@@ -6435,8 +6489,8 @@ class Cubiomes_1 extends Cubiomes$shared {
 
     private static class getVoronoiSHA {
         public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_LONG_LONG,
-            Cubiomes.C_LONG_LONG
+            Cubiomes.C_LONG,
+            Cubiomes.C_LONG
         );
 
         public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getVoronoiSHA");
@@ -6495,7 +6549,7 @@ class Cubiomes_1 extends Cubiomes$shared {
 
     private static class voronoiAccess3D {
         public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
-            Cubiomes.C_LONG_LONG,
+            Cubiomes.C_LONG,
             Cubiomes.C_INT,
             Cubiomes.C_INT,
             Cubiomes.C_INT,
@@ -6560,7 +6614,7 @@ class Cubiomes_1 extends Cubiomes$shared {
 
     private static class mapVoronoiPlane {
         public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
-            Cubiomes.C_LONG_LONG,
+            Cubiomes.C_LONG,
             Cubiomes.C_POINTER,
             Cubiomes.C_POINTER,
             Cubiomes.C_INT,
@@ -6704,7 +6758,7 @@ class Cubiomes_1 extends Cubiomes$shared {
         public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
             Cubiomes.C_POINTER,
             Cubiomes.C_INT,
-            Cubiomes.C_LONG_LONG
+            Cubiomes.C_LONG
         );
 
         public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("initSurfaceNoise");
@@ -6764,7 +6818,7 @@ class Cubiomes_1 extends Cubiomes$shared {
     private static class initSurfaceNoiseBeta {
         public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
             Cubiomes.C_POINTER,
-            Cubiomes.C_LONG_LONG
+            Cubiomes.C_LONG
         );
 
         public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("initSurfaceNoiseBeta");
@@ -6952,7 +7006,7 @@ class Cubiomes_1 extends Cubiomes$shared {
     private static class setNetherSeed {
         public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
             Cubiomes.C_POINTER,
-            Cubiomes.C_LONG_LONG
+            Cubiomes.C_LONG
         );
 
         public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("setNetherSeed");
@@ -7208,7 +7262,7 @@ class Cubiomes_1 extends Cubiomes$shared {
             Cubiomes.C_POINTER,
             Range.layout(),
             Cubiomes.C_INT,
-            Cubiomes.C_LONG_LONG
+            Cubiomes.C_LONG
         );
 
         public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("genNetherScaled");
@@ -7269,7 +7323,7 @@ class Cubiomes_1 extends Cubiomes$shared {
         public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
             Cubiomes.C_POINTER,
             Cubiomes.C_INT,
-            Cubiomes.C_LONG_LONG
+            Cubiomes.C_LONG
         );
 
         public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("setEndSeed");
@@ -7456,11 +7510,144 @@ class Cubiomes_1 extends Cubiomes$shared {
         }
     }
 
+    private static class getSurfaceHeight {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_DOUBLE,
+            Cubiomes.C_DOUBLE
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getSurfaceHeight");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int getSurfaceHeight(const double ncol00[], const double ncol01[], const double ncol10[], const double ncol11[], int colymin, int colymax, int blockspercell, double dx, double dz)
+     * }
+     */
+    public static FunctionDescriptor getSurfaceHeight$descriptor() {
+        return getSurfaceHeight.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int getSurfaceHeight(const double ncol00[], const double ncol01[], const double ncol10[], const double ncol11[], int colymin, int colymax, int blockspercell, double dx, double dz)
+     * }
+     */
+    public static MethodHandle getSurfaceHeight$handle() {
+        return getSurfaceHeight.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int getSurfaceHeight(const double ncol00[], const double ncol01[], const double ncol10[], const double ncol11[], int colymin, int colymax, int blockspercell, double dx, double dz)
+     * }
+     */
+    public static MemorySegment getSurfaceHeight$address() {
+        return getSurfaceHeight.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int getSurfaceHeight(const double ncol00[], const double ncol01[], const double ncol10[], const double ncol11[], int colymin, int colymax, int blockspercell, double dx, double dz)
+     * }
+     */
+    public static int getSurfaceHeight(MemorySegment ncol00, MemorySegment ncol01, MemorySegment ncol10, MemorySegment ncol11, int colymin, int colymax, int blockspercell, double dx, double dz) {
+        var mh$ = getSurfaceHeight.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("getSurfaceHeight", ncol00, ncol01, ncol10, ncol11, colymin, colymax, blockspercell, dx, dz);
+            }
+            return (int)mh$.invokeExact(ncol00, ncol01, ncol10, ncol11, colymin, colymax, blockspercell, dx, dz);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class sampleNoiseColumnEnd {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
+            Cubiomes.C_POINTER,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("sampleNoiseColumnEnd");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * void sampleNoiseColumnEnd(double column[], const SurfaceNoise *sn, const EndNoise *en, int x, int z, int colymin, int colymax)
+     * }
+     */
+    public static FunctionDescriptor sampleNoiseColumnEnd$descriptor() {
+        return sampleNoiseColumnEnd.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * void sampleNoiseColumnEnd(double column[], const SurfaceNoise *sn, const EndNoise *en, int x, int z, int colymin, int colymax)
+     * }
+     */
+    public static MethodHandle sampleNoiseColumnEnd$handle() {
+        return sampleNoiseColumnEnd.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * void sampleNoiseColumnEnd(double column[], const SurfaceNoise *sn, const EndNoise *en, int x, int z, int colymin, int colymax)
+     * }
+     */
+    public static MemorySegment sampleNoiseColumnEnd$address() {
+        return sampleNoiseColumnEnd.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * void sampleNoiseColumnEnd(double column[], const SurfaceNoise *sn, const EndNoise *en, int x, int z, int colymin, int colymax)
+     * }
+     */
+    public static void sampleNoiseColumnEnd(MemorySegment column, MemorySegment sn, MemorySegment en, int x, int z, int colymin, int colymax) {
+        var mh$ = sampleNoiseColumnEnd.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("sampleNoiseColumnEnd", column, sn, en, x, z, colymin, colymax);
+            }
+            mh$.invokeExact(column, sn, en, x, z, colymin, colymax);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
     private static class getEndSurfaceHeight {
         public static final FunctionDescriptor DESC = FunctionDescriptor.of(
             Cubiomes.C_INT,
             Cubiomes.C_INT,
-            Cubiomes.C_LONG_LONG,
+            Cubiomes.C_LONG,
             Cubiomes.C_INT,
             Cubiomes.C_INT
         );
@@ -7594,7 +7781,7 @@ class Cubiomes_1 extends Cubiomes$shared {
             Cubiomes.C_POINTER,
             Range.layout(),
             Cubiomes.C_INT,
-            Cubiomes.C_LONG_LONG
+            Cubiomes.C_LONG
         );
 
         public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("genEndScaled");
@@ -7961,7 +8148,7 @@ class Cubiomes_1 extends Cubiomes$shared {
     private static class setBiomeSeed {
         public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
             Cubiomes.C_POINTER,
-            Cubiomes.C_LONG_LONG,
+            Cubiomes.C_LONG,
             Cubiomes.C_INT
         );
 
@@ -8022,7 +8209,7 @@ class Cubiomes_1 extends Cubiomes$shared {
     private static class setBetaBiomeSeed {
         public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
             Cubiomes.C_POINTER,
-            Cubiomes.C_LONG_LONG
+            Cubiomes.C_LONG
         );
 
         public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("setBetaBiomeSeed");
@@ -8460,7 +8647,7 @@ class Cubiomes_1 extends Cubiomes$shared {
     private static class setClimateParaSeed {
         public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
             Cubiomes.C_POINTER,
-            Cubiomes.C_LONG_LONG,
+            Cubiomes.C_LONG,
             Cubiomes.C_INT,
             Cubiomes.C_INT,
             Cubiomes.C_INT
@@ -8653,7 +8840,7 @@ class Cubiomes_1 extends Cubiomes$shared {
             Cubiomes.C_POINTER,
             Cubiomes.C_POINTER,
             Range.layout(),
-            Cubiomes.C_LONG_LONG
+            Cubiomes.C_LONG
         );
 
         public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("genBiomeNoiseScaled");
@@ -8897,10 +9084,9 @@ class Cubiomes_1 extends Cubiomes$shared {
     }
 
     private static class initBlendedNoise {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
+        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
             Cubiomes.C_POINTER,
-            Cubiomes.C_LONG_LONG,
+            Cubiomes.C_LONG,
             Cubiomes.C_INT
         );
 
@@ -8912,7 +9098,7 @@ class Cubiomes_1 extends Cubiomes$shared {
     /**
      * Function descriptor for:
      * {@snippet lang=c :
-     * int initBlendedNoise(BlendedNoise *bn, uint64_t ws, int dim)
+     * void initBlendedNoise(BlendedNoise *bn, uint64_t ws, int dim)
      * }
      */
     public static FunctionDescriptor initBlendedNoise$descriptor() {
@@ -8922,7 +9108,7 @@ class Cubiomes_1 extends Cubiomes$shared {
     /**
      * Downcall method handle for:
      * {@snippet lang=c :
-     * int initBlendedNoise(BlendedNoise *bn, uint64_t ws, int dim)
+     * void initBlendedNoise(BlendedNoise *bn, uint64_t ws, int dim)
      * }
      */
     public static MethodHandle initBlendedNoise$handle() {
@@ -8932,7 +9118,7 @@ class Cubiomes_1 extends Cubiomes$shared {
     /**
      * Address for:
      * {@snippet lang=c :
-     * int initBlendedNoise(BlendedNoise *bn, uint64_t ws, int dim)
+     * void initBlendedNoise(BlendedNoise *bn, uint64_t ws, int dim)
      * }
      */
     public static MemorySegment initBlendedNoise$address() {
@@ -8941,16 +9127,16 @@ class Cubiomes_1 extends Cubiomes$shared {
 
     /**
      * {@snippet lang=c :
-     * int initBlendedNoise(BlendedNoise *bn, uint64_t ws, int dim)
+     * void initBlendedNoise(BlendedNoise *bn, uint64_t ws, int dim)
      * }
      */
-    public static int initBlendedNoise(MemorySegment bn, long ws, int dim) {
+    public static void initBlendedNoise(MemorySegment bn, long ws, int dim) {
         var mh$ = initBlendedNoise.HANDLE;
         try {
             if (TRACE_DOWNCALLS) {
                 traceDowncall("initBlendedNoise", bn, ws, dim);
             }
-            return (int)mh$.invokeExact(bn, ws, dim);
+            mh$.invokeExact(bn, ws, dim);
         } catch (Error | RuntimeException ex) {
            throw ex;
         } catch (Throwable ex$) {
@@ -9113,7 +9299,7 @@ class Cubiomes_1 extends Cubiomes$shared {
         public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
             Cubiomes.C_POINTER,
             Cubiomes.C_INT,
-            Cubiomes.C_LONG_LONG
+            Cubiomes.C_LONG
         );
 
         public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("applySeed");
@@ -9172,7 +9358,7 @@ class Cubiomes_1 extends Cubiomes$shared {
 
     private static class getMinCacheSize {
         public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_LONG_LONG,
+            Cubiomes.C_LONG,
             Cubiomes.C_POINTER,
             Cubiomes.C_INT,
             Cubiomes.C_INT,
@@ -9545,7 +9731,7 @@ class Cubiomes_1 extends Cubiomes$shared {
 
     private static class getMinLayerCacheSize {
         public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_LONG_LONG,
+            Cubiomes.C_LONG,
             Cubiomes.C_POINTER,
             Cubiomes.C_INT,
             Cubiomes.C_INT
@@ -9613,7 +9799,7 @@ class Cubiomes_1 extends Cubiomes$shared {
             Cubiomes.C_INT,
             Cubiomes.C_CHAR,
             Cubiomes.C_CHAR,
-            Cubiomes.C_LONG_LONG,
+            Cubiomes.C_LONG,
             Cubiomes.C_POINTER,
             Cubiomes.C_POINTER
         );
@@ -9797,5359 +9983,6 @@ class Cubiomes_1 extends Cubiomes$shared {
                 traceDowncall("mapApproxHeight", y, ids, g, sn, x, z, w, h);
             }
             return (int)mh$.invokeExact(y, ids, g, sn, x, z, w, h);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-    private static final int Feature = (int)0L;
-    /**
-     * {@snippet lang=c :
-     * enum StructureType.Feature = 0
-     * }
-     */
-    public static int Feature() {
-        return Feature;
-    }
-    private static final int Desert_Pyramid = (int)1L;
-    /**
-     * {@snippet lang=c :
-     * enum StructureType.Desert_Pyramid = 1
-     * }
-     */
-    public static int Desert_Pyramid() {
-        return Desert_Pyramid;
-    }
-    private static final int Jungle_Temple = (int)2L;
-    /**
-     * {@snippet lang=c :
-     * enum StructureType.Jungle_Temple = 2
-     * }
-     */
-    public static int Jungle_Temple() {
-        return Jungle_Temple;
-    }
-    private static final int Jungle_Pyramid = (int)2L;
-    /**
-     * {@snippet lang=c :
-     * enum StructureType.Jungle_Pyramid = 2
-     * }
-     */
-    public static int Jungle_Pyramid() {
-        return Jungle_Pyramid;
-    }
-    private static final int Swamp_Hut = (int)3L;
-    /**
-     * {@snippet lang=c :
-     * enum StructureType.Swamp_Hut = 3
-     * }
-     */
-    public static int Swamp_Hut() {
-        return Swamp_Hut;
-    }
-    private static final int Igloo = (int)4L;
-    /**
-     * {@snippet lang=c :
-     * enum StructureType.Igloo = 4
-     * }
-     */
-    public static int Igloo() {
-        return Igloo;
-    }
-    private static final int Village = (int)5L;
-    /**
-     * {@snippet lang=c :
-     * enum StructureType.Village = 5
-     * }
-     */
-    public static int Village() {
-        return Village;
-    }
-    private static final int Ocean_Ruin = (int)6L;
-    /**
-     * {@snippet lang=c :
-     * enum StructureType.Ocean_Ruin = 6
-     * }
-     */
-    public static int Ocean_Ruin() {
-        return Ocean_Ruin;
-    }
-    private static final int Shipwreck = (int)7L;
-    /**
-     * {@snippet lang=c :
-     * enum StructureType.Shipwreck = 7
-     * }
-     */
-    public static int Shipwreck() {
-        return Shipwreck;
-    }
-    private static final int Monument = (int)8L;
-    /**
-     * {@snippet lang=c :
-     * enum StructureType.Monument = 8
-     * }
-     */
-    public static int Monument() {
-        return Monument;
-    }
-    private static final int Mansion = (int)9L;
-    /**
-     * {@snippet lang=c :
-     * enum StructureType.Mansion = 9
-     * }
-     */
-    public static int Mansion() {
-        return Mansion;
-    }
-    private static final int Outpost = (int)10L;
-    /**
-     * {@snippet lang=c :
-     * enum StructureType.Outpost = 10
-     * }
-     */
-    public static int Outpost() {
-        return Outpost;
-    }
-    private static final int Ruined_Portal = (int)11L;
-    /**
-     * {@snippet lang=c :
-     * enum StructureType.Ruined_Portal = 11
-     * }
-     */
-    public static int Ruined_Portal() {
-        return Ruined_Portal;
-    }
-    private static final int Ruined_Portal_N = (int)12L;
-    /**
-     * {@snippet lang=c :
-     * enum StructureType.Ruined_Portal_N = 12
-     * }
-     */
-    public static int Ruined_Portal_N() {
-        return Ruined_Portal_N;
-    }
-    private static final int Ancient_City = (int)13L;
-    /**
-     * {@snippet lang=c :
-     * enum StructureType.Ancient_City = 13
-     * }
-     */
-    public static int Ancient_City() {
-        return Ancient_City;
-    }
-    private static final int Treasure = (int)14L;
-    /**
-     * {@snippet lang=c :
-     * enum StructureType.Treasure = 14
-     * }
-     */
-    public static int Treasure() {
-        return Treasure;
-    }
-    private static final int Mineshaft = (int)15L;
-    /**
-     * {@snippet lang=c :
-     * enum StructureType.Mineshaft = 15
-     * }
-     */
-    public static int Mineshaft() {
-        return Mineshaft;
-    }
-    private static final int Desert_Well = (int)16L;
-    /**
-     * {@snippet lang=c :
-     * enum StructureType.Desert_Well = 16
-     * }
-     */
-    public static int Desert_Well() {
-        return Desert_Well;
-    }
-    private static final int Geode = (int)17L;
-    /**
-     * {@snippet lang=c :
-     * enum StructureType.Geode = 17
-     * }
-     */
-    public static int Geode() {
-        return Geode;
-    }
-    private static final int Fortress = (int)18L;
-    /**
-     * {@snippet lang=c :
-     * enum StructureType.Fortress = 18
-     * }
-     */
-    public static int Fortress() {
-        return Fortress;
-    }
-    private static final int Bastion = (int)19L;
-    /**
-     * {@snippet lang=c :
-     * enum StructureType.Bastion = 19
-     * }
-     */
-    public static int Bastion() {
-        return Bastion;
-    }
-    private static final int End_City = (int)20L;
-    /**
-     * {@snippet lang=c :
-     * enum StructureType.End_City = 20
-     * }
-     */
-    public static int End_City() {
-        return End_City;
-    }
-    private static final int End_Gateway = (int)21L;
-    /**
-     * {@snippet lang=c :
-     * enum StructureType.End_Gateway = 21
-     * }
-     */
-    public static int End_Gateway() {
-        return End_Gateway;
-    }
-    private static final int End_Island = (int)22L;
-    /**
-     * {@snippet lang=c :
-     * enum StructureType.End_Island = 22
-     * }
-     */
-    public static int End_Island() {
-        return End_Island;
-    }
-    private static final int Trail_Ruins = (int)23L;
-    /**
-     * {@snippet lang=c :
-     * enum StructureType.Trail_Ruins = 23
-     * }
-     */
-    public static int Trail_Ruins() {
-        return Trail_Ruins;
-    }
-    private static final int Trial_Chambers = (int)24L;
-    /**
-     * {@snippet lang=c :
-     * enum StructureType.Trial_Chambers = 24
-     * }
-     */
-    public static int Trial_Chambers() {
-        return Trial_Chambers;
-    }
-    private static final int Stronghold = (int)25L;
-    /**
-     * {@snippet lang=c :
-     * enum StructureType.Stronghold = 25
-     * }
-     */
-    public static int Stronghold() {
-        return Stronghold;
-    }
-    private static final int FEATURE_NUM = (int)26L;
-    /**
-     * {@snippet lang=c :
-     * enum StructureType.FEATURE_NUM = 26
-     * }
-     */
-    public static int FEATURE_NUM() {
-        return FEATURE_NUM;
-    }
-
-    private static class createPos3List {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("createPos3List");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * void createPos3List(Pos3List *list, int initialCapacity)
-     * }
-     */
-    public static FunctionDescriptor createPos3List$descriptor() {
-        return createPos3List.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * void createPos3List(Pos3List *list, int initialCapacity)
-     * }
-     */
-    public static MethodHandle createPos3List$handle() {
-        return createPos3List.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * void createPos3List(Pos3List *list, int initialCapacity)
-     * }
-     */
-    public static MemorySegment createPos3List$address() {
-        return createPos3List.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * void createPos3List(Pos3List *list, int initialCapacity)
-     * }
-     */
-    public static void createPos3List(MemorySegment list, int initialCapacity) {
-        var mh$ = createPos3List.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("createPos3List", list, initialCapacity);
-            }
-            mh$.invokeExact(list, initialCapacity);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class appendPos3List {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
-            Cubiomes.C_POINTER,
-            Pos3.layout()
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("appendPos3List");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * void appendPos3List(Pos3List *list, Pos3 pos3)
-     * }
-     */
-    public static FunctionDescriptor appendPos3List$descriptor() {
-        return appendPos3List.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * void appendPos3List(Pos3List *list, Pos3 pos3)
-     * }
-     */
-    public static MethodHandle appendPos3List$handle() {
-        return appendPos3List.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * void appendPos3List(Pos3List *list, Pos3 pos3)
-     * }
-     */
-    public static MemorySegment appendPos3List$address() {
-        return appendPos3List.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * void appendPos3List(Pos3List *list, Pos3 pos3)
-     * }
-     */
-    public static void appendPos3List(MemorySegment list, MemorySegment pos3) {
-        var mh$ = appendPos3List.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("appendPos3List", list, pos3);
-            }
-            mh$.invokeExact(list, pos3);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class freePos3List {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
-            Cubiomes.C_POINTER
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("freePos3List");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * void freePos3List(Pos3List *list)
-     * }
-     */
-    public static FunctionDescriptor freePos3List$descriptor() {
-        return freePos3List.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * void freePos3List(Pos3List *list)
-     * }
-     */
-    public static MethodHandle freePos3List$handle() {
-        return freePos3List.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * void freePos3List(Pos3List *list)
-     * }
-     */
-    public static MemorySegment freePos3List$address() {
-        return freePos3List.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * void freePos3List(Pos3List *list)
-     * }
-     */
-    public static void freePos3List(MemorySegment list) {
-        var mh$ = freePos3List.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("freePos3List", list);
-            }
-            mh$.invokeExact(list);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-    private static final int BF_APPROX = (int)1L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.BF_APPROX = 1
-     * }
-     */
-    public static int BF_APPROX() {
-        return BF_APPROX;
-    }
-    private static final int BF_FORCED_OCEAN = (int)4L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.BF_FORCED_OCEAN = 4
-     * }
-     */
-    public static int BF_FORCED_OCEAN() {
-        return BF_FORCED_OCEAN;
-    }
-
-    private static class getStructureConfig {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getStructureConfig");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int getStructureConfig(int structureType, int mc, StructureConfig *sconf)
-     * }
-     */
-    public static FunctionDescriptor getStructureConfig$descriptor() {
-        return getStructureConfig.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int getStructureConfig(int structureType, int mc, StructureConfig *sconf)
-     * }
-     */
-    public static MethodHandle getStructureConfig$handle() {
-        return getStructureConfig.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int getStructureConfig(int structureType, int mc, StructureConfig *sconf)
-     * }
-     */
-    public static MemorySegment getStructureConfig$address() {
-        return getStructureConfig.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int getStructureConfig(int structureType, int mc, StructureConfig *sconf)
-     * }
-     */
-    public static int getStructureConfig(int structureType, int mc, MemorySegment sconf) {
-        var mh$ = getStructureConfig.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("getStructureConfig", structureType, mc, sconf);
-            }
-            return (int)mh$.invokeExact(structureType, mc, sconf);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class getStructureSaltConfig {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getStructureSaltConfig");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int getStructureSaltConfig(int structureType, int mc, int biome, StructureSaltConfig *ssconf)
-     * }
-     */
-    public static FunctionDescriptor getStructureSaltConfig$descriptor() {
-        return getStructureSaltConfig.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int getStructureSaltConfig(int structureType, int mc, int biome, StructureSaltConfig *ssconf)
-     * }
-     */
-    public static MethodHandle getStructureSaltConfig$handle() {
-        return getStructureSaltConfig.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int getStructureSaltConfig(int structureType, int mc, int biome, StructureSaltConfig *ssconf)
-     * }
-     */
-    public static MemorySegment getStructureSaltConfig$address() {
-        return getStructureSaltConfig.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int getStructureSaltConfig(int structureType, int mc, int biome, StructureSaltConfig *ssconf)
-     * }
-     */
-    public static int getStructureSaltConfig(int structureType, int mc, int biome, MemorySegment ssconf) {
-        var mh$ = getStructureSaltConfig.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("getStructureSaltConfig", structureType, mc, biome, ssconf);
-            }
-            return (int)mh$.invokeExact(structureType, mc, biome, ssconf);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class getStructurePos {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_LONG_LONG,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getStructurePos");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int getStructurePos(int structureType, int mc, uint64_t seed, int regX, int regZ, Pos *pos)
-     * }
-     */
-    public static FunctionDescriptor getStructurePos$descriptor() {
-        return getStructurePos.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int getStructurePos(int structureType, int mc, uint64_t seed, int regX, int regZ, Pos *pos)
-     * }
-     */
-    public static MethodHandle getStructurePos$handle() {
-        return getStructurePos.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int getStructurePos(int structureType, int mc, uint64_t seed, int regX, int regZ, Pos *pos)
-     * }
-     */
-    public static MemorySegment getStructurePos$address() {
-        return getStructurePos.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int getStructurePos(int structureType, int mc, uint64_t seed, int regX, int regZ, Pos *pos)
-     * }
-     */
-    public static int getStructurePos(int structureType, int mc, long seed, int regX, int regZ, MemorySegment pos) {
-        var mh$ = getStructurePos.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("getStructurePos", structureType, mc, seed, regX, regZ, pos);
-            }
-            return (int)mh$.invokeExact(structureType, mc, seed, regX, regZ, pos);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class getMineshafts {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_LONG_LONG,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getMineshafts");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int getMineshafts(int mc, uint64_t seed, int chunkX, int chunkZ, int chunkW, int chunkH, Pos *out, int nout)
-     * }
-     */
-    public static FunctionDescriptor getMineshafts$descriptor() {
-        return getMineshafts.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int getMineshafts(int mc, uint64_t seed, int chunkX, int chunkZ, int chunkW, int chunkH, Pos *out, int nout)
-     * }
-     */
-    public static MethodHandle getMineshafts$handle() {
-        return getMineshafts.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int getMineshafts(int mc, uint64_t seed, int chunkX, int chunkZ, int chunkW, int chunkH, Pos *out, int nout)
-     * }
-     */
-    public static MemorySegment getMineshafts$address() {
-        return getMineshafts.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int getMineshafts(int mc, uint64_t seed, int chunkX, int chunkZ, int chunkW, int chunkH, Pos *out, int nout)
-     * }
-     */
-    public static int getMineshafts(int mc, long seed, int chunkX, int chunkZ, int chunkW, int chunkH, MemorySegment out, int nout) {
-        var mh$ = getMineshafts.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("getMineshafts", mc, seed, chunkX, chunkZ, chunkW, chunkH, out, nout);
-            }
-            return (int)mh$.invokeExact(mc, seed, chunkX, chunkZ, chunkW, chunkH, out, nout);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class getPopulationSeed {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_LONG_LONG,
-            Cubiomes.C_INT,
-            Cubiomes.C_LONG_LONG,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getPopulationSeed");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * uint64_t getPopulationSeed(int mc, uint64_t ws, int x, int z)
-     * }
-     */
-    public static FunctionDescriptor getPopulationSeed$descriptor() {
-        return getPopulationSeed.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * uint64_t getPopulationSeed(int mc, uint64_t ws, int x, int z)
-     * }
-     */
-    public static MethodHandle getPopulationSeed$handle() {
-        return getPopulationSeed.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * uint64_t getPopulationSeed(int mc, uint64_t ws, int x, int z)
-     * }
-     */
-    public static MemorySegment getPopulationSeed$address() {
-        return getPopulationSeed.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * uint64_t getPopulationSeed(int mc, uint64_t ws, int x, int z)
-     * }
-     */
-    public static long getPopulationSeed(int mc, long ws, int x, int z) {
-        var mh$ = getPopulationSeed.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("getPopulationSeed", mc, ws, x, z);
-            }
-            return (long)mh$.invokeExact(mc, ws, x, z);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class getEndIslands {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT,
-            Cubiomes.C_LONG_LONG,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getEndIslands");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int getEndIslands(EndIsland islands[2], int mc, uint64_t seed, int chunkX, int chunkZ)
-     * }
-     */
-    public static FunctionDescriptor getEndIslands$descriptor() {
-        return getEndIslands.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int getEndIslands(EndIsland islands[2], int mc, uint64_t seed, int chunkX, int chunkZ)
-     * }
-     */
-    public static MethodHandle getEndIslands$handle() {
-        return getEndIslands.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int getEndIslands(EndIsland islands[2], int mc, uint64_t seed, int chunkX, int chunkZ)
-     * }
-     */
-    public static MemorySegment getEndIslands$address() {
-        return getEndIslands.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int getEndIslands(EndIsland islands[2], int mc, uint64_t seed, int chunkX, int chunkZ)
-     * }
-     */
-    public static int getEndIslands(MemorySegment islands, int mc, long seed, int chunkX, int chunkZ) {
-        var mh$ = getEndIslands.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("getEndIslands", islands, mc, seed, chunkX, chunkZ);
-            }
-            return (int)mh$.invokeExact(islands, mc, seed, chunkX, chunkZ);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class mapEndIslandHeight {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_LONG_LONG,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("mapEndIslandHeight");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int mapEndIslandHeight(float *y, const EndNoise *en, uint64_t seed, int x, int z, int w, int h, int scale)
-     * }
-     */
-    public static FunctionDescriptor mapEndIslandHeight$descriptor() {
-        return mapEndIslandHeight.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int mapEndIslandHeight(float *y, const EndNoise *en, uint64_t seed, int x, int z, int w, int h, int scale)
-     * }
-     */
-    public static MethodHandle mapEndIslandHeight$handle() {
-        return mapEndIslandHeight.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int mapEndIslandHeight(float *y, const EndNoise *en, uint64_t seed, int x, int z, int w, int h, int scale)
-     * }
-     */
-    public static MemorySegment mapEndIslandHeight$address() {
-        return mapEndIslandHeight.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int mapEndIslandHeight(float *y, const EndNoise *en, uint64_t seed, int x, int z, int w, int h, int scale)
-     * }
-     */
-    public static int mapEndIslandHeight(MemorySegment y, MemorySegment en, long seed, int x, int z, int w, int h, int scale) {
-        var mh$ = mapEndIslandHeight.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("mapEndIslandHeight", y, en, seed, x, z, w, h, scale);
-            }
-            return (int)mh$.invokeExact(y, en, seed, x, z, w, h, scale);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class isEndChunkEmpty {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_LONG_LONG,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("isEndChunkEmpty");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int isEndChunkEmpty(const EndNoise *en, const SurfaceNoise *sn, uint64_t seed, int chunkX, int chunkZ)
-     * }
-     */
-    public static FunctionDescriptor isEndChunkEmpty$descriptor() {
-        return isEndChunkEmpty.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int isEndChunkEmpty(const EndNoise *en, const SurfaceNoise *sn, uint64_t seed, int chunkX, int chunkZ)
-     * }
-     */
-    public static MethodHandle isEndChunkEmpty$handle() {
-        return isEndChunkEmpty.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int isEndChunkEmpty(const EndNoise *en, const SurfaceNoise *sn, uint64_t seed, int chunkX, int chunkZ)
-     * }
-     */
-    public static MemorySegment isEndChunkEmpty$address() {
-        return isEndChunkEmpty.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int isEndChunkEmpty(const EndNoise *en, const SurfaceNoise *sn, uint64_t seed, int chunkX, int chunkZ)
-     * }
-     */
-    public static int isEndChunkEmpty(MemorySegment en, MemorySegment sn, long seed, int chunkX, int chunkZ) {
-        var mh$ = isEndChunkEmpty.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("isEndChunkEmpty", en, sn, seed, chunkX, chunkZ);
-            }
-            return (int)mh$.invokeExact(en, sn, seed, chunkX, chunkZ);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class initFirstStronghold {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Pos.layout(),
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT,
-            Cubiomes.C_LONG_LONG
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("initFirstStronghold");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * Pos initFirstStronghold(StrongholdIter *sh, int mc, uint64_t s48)
-     * }
-     */
-    public static FunctionDescriptor initFirstStronghold$descriptor() {
-        return initFirstStronghold.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * Pos initFirstStronghold(StrongholdIter *sh, int mc, uint64_t s48)
-     * }
-     */
-    public static MethodHandle initFirstStronghold$handle() {
-        return initFirstStronghold.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * Pos initFirstStronghold(StrongholdIter *sh, int mc, uint64_t s48)
-     * }
-     */
-    public static MemorySegment initFirstStronghold$address() {
-        return initFirstStronghold.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * Pos initFirstStronghold(StrongholdIter *sh, int mc, uint64_t s48)
-     * }
-     */
-    public static MemorySegment initFirstStronghold(SegmentAllocator allocator, MemorySegment sh, int mc, long s48) {
-        var mh$ = initFirstStronghold.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("initFirstStronghold", allocator, sh, mc, s48);
-            }
-            return (MemorySegment)mh$.invokeExact(allocator, sh, mc, s48);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class nextStronghold {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_POINTER
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("nextStronghold");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int nextStronghold(StrongholdIter *sh, const Generator *g)
-     * }
-     */
-    public static FunctionDescriptor nextStronghold$descriptor() {
-        return nextStronghold.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int nextStronghold(StrongholdIter *sh, const Generator *g)
-     * }
-     */
-    public static MethodHandle nextStronghold$handle() {
-        return nextStronghold.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int nextStronghold(StrongholdIter *sh, const Generator *g)
-     * }
-     */
-    public static MemorySegment nextStronghold$address() {
-        return nextStronghold.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int nextStronghold(StrongholdIter *sh, const Generator *g)
-     * }
-     */
-    public static int nextStronghold(MemorySegment sh, MemorySegment g) {
-        var mh$ = nextStronghold.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("nextStronghold", sh, g);
-            }
-            return (int)mh$.invokeExact(sh, g);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class estimateSpawn {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Pos.layout(),
-            Cubiomes.C_POINTER,
-            Cubiomes.C_POINTER
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("estimateSpawn");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * Pos estimateSpawn(const Generator *g, uint64_t *rng)
-     * }
-     */
-    public static FunctionDescriptor estimateSpawn$descriptor() {
-        return estimateSpawn.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * Pos estimateSpawn(const Generator *g, uint64_t *rng)
-     * }
-     */
-    public static MethodHandle estimateSpawn$handle() {
-        return estimateSpawn.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * Pos estimateSpawn(const Generator *g, uint64_t *rng)
-     * }
-     */
-    public static MemorySegment estimateSpawn$address() {
-        return estimateSpawn.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * Pos estimateSpawn(const Generator *g, uint64_t *rng)
-     * }
-     */
-    public static MemorySegment estimateSpawn(SegmentAllocator allocator, MemorySegment g, MemorySegment rng) {
-        var mh$ = estimateSpawn.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("estimateSpawn", allocator, g, rng);
-            }
-            return (MemorySegment)mh$.invokeExact(allocator, g, rng);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class getSpawn {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Pos.layout(),
-            Cubiomes.C_POINTER
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getSpawn");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * Pos getSpawn(const Generator *g)
-     * }
-     */
-    public static FunctionDescriptor getSpawn$descriptor() {
-        return getSpawn.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * Pos getSpawn(const Generator *g)
-     * }
-     */
-    public static MethodHandle getSpawn$handle() {
-        return getSpawn.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * Pos getSpawn(const Generator *g)
-     * }
-     */
-    public static MemorySegment getSpawn$address() {
-        return getSpawn.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * Pos getSpawn(const Generator *g)
-     * }
-     */
-    public static MemorySegment getSpawn(SegmentAllocator allocator, MemorySegment g) {
-        var mh$ = getSpawn.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("getSpawn", allocator, g);
-            }
-            return (MemorySegment)mh$.invokeExact(allocator, g);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-    private static final int ANCIENT_DEBRIS = (int)0L;
-    /**
-     * {@snippet lang=c :
-     * enum Blocks.ANCIENT_DEBRIS = 0
-     * }
-     */
-    public static int ANCIENT_DEBRIS() {
-        return ANCIENT_DEBRIS;
-    }
-    private static final int ANDESITE = (int)1L;
-    /**
-     * {@snippet lang=c :
-     * enum Blocks.ANDESITE = 1
-     * }
-     */
-    public static int ANDESITE() {
-        return ANDESITE;
-    }
-    private static final int BASALT = (int)2L;
-    /**
-     * {@snippet lang=c :
-     * enum Blocks.BASALT = 2
-     * }
-     */
-    public static int BASALT() {
-        return BASALT;
-    }
-    private static final int BLACKSTONE = (int)3L;
-    /**
-     * {@snippet lang=c :
-     * enum Blocks.BLACKSTONE = 3
-     * }
-     */
-    public static int BLACKSTONE() {
-        return BLACKSTONE;
-    }
-    private static final int CLAY = (int)4L;
-    /**
-     * {@snippet lang=c :
-     * enum Blocks.CLAY = 4
-     * }
-     */
-    public static int CLAY() {
-        return CLAY;
-    }
-    private static final int COAL_ORE = (int)5L;
-    /**
-     * {@snippet lang=c :
-     * enum Blocks.COAL_ORE = 5
-     * }
-     */
-    public static int COAL_ORE() {
-        return COAL_ORE;
-    }
-    private static final int COPPER_ORE = (int)6L;
-    /**
-     * {@snippet lang=c :
-     * enum Blocks.COPPER_ORE = 6
-     * }
-     */
-    public static int COPPER_ORE() {
-        return COPPER_ORE;
-    }
-    private static final int DEEPSLATE = (int)7L;
-    /**
-     * {@snippet lang=c :
-     * enum Blocks.DEEPSLATE = 7
-     * }
-     */
-    public static int DEEPSLATE() {
-        return DEEPSLATE;
-    }
-    private static final int DIAMOND_ORE = (int)8L;
-    /**
-     * {@snippet lang=c :
-     * enum Blocks.DIAMOND_ORE = 8
-     * }
-     */
-    public static int DIAMOND_ORE() {
-        return DIAMOND_ORE;
-    }
-    private static final int DIORITE = (int)9L;
-    /**
-     * {@snippet lang=c :
-     * enum Blocks.DIORITE = 9
-     * }
-     */
-    public static int DIORITE() {
-        return DIORITE;
-    }
-    private static final int DIRT = (int)10L;
-    /**
-     * {@snippet lang=c :
-     * enum Blocks.DIRT = 10
-     * }
-     */
-    public static int DIRT() {
-        return DIRT;
-    }
-    private static final int EMERALD_ORE = (int)11L;
-    /**
-     * {@snippet lang=c :
-     * enum Blocks.EMERALD_ORE = 11
-     * }
-     */
-    public static int EMERALD_ORE() {
-        return EMERALD_ORE;
-    }
-    private static final int GOLD_ORE = (int)12L;
-    /**
-     * {@snippet lang=c :
-     * enum Blocks.GOLD_ORE = 12
-     * }
-     */
-    public static int GOLD_ORE() {
-        return GOLD_ORE;
-    }
-    private static final int GRANITE = (int)13L;
-    /**
-     * {@snippet lang=c :
-     * enum Blocks.GRANITE = 13
-     * }
-     */
-    public static int GRANITE() {
-        return GRANITE;
-    }
-    private static final int GRAVEL = (int)14L;
-    /**
-     * {@snippet lang=c :
-     * enum Blocks.GRAVEL = 14
-     * }
-     */
-    public static int GRAVEL() {
-        return GRAVEL;
-    }
-    private static final int IRON_ORE = (int)15L;
-    /**
-     * {@snippet lang=c :
-     * enum Blocks.IRON_ORE = 15
-     * }
-     */
-    public static int IRON_ORE() {
-        return IRON_ORE;
-    }
-    private static final int LAPIS_ORE = (int)16L;
-    /**
-     * {@snippet lang=c :
-     * enum Blocks.LAPIS_ORE = 16
-     * }
-     */
-    public static int LAPIS_ORE() {
-        return LAPIS_ORE;
-    }
-    private static final int MAGMA_BLOCK = (int)17L;
-    /**
-     * {@snippet lang=c :
-     * enum Blocks.MAGMA_BLOCK = 17
-     * }
-     */
-    public static int MAGMA_BLOCK() {
-        return MAGMA_BLOCK;
-    }
-    private static final int NETHERRACK = (int)18L;
-    /**
-     * {@snippet lang=c :
-     * enum Blocks.NETHERRACK = 18
-     * }
-     */
-    public static int NETHERRACK() {
-        return NETHERRACK;
-    }
-    private static final int NETHER_GOLD_ORE = (int)19L;
-    /**
-     * {@snippet lang=c :
-     * enum Blocks.NETHER_GOLD_ORE = 19
-     * }
-     */
-    public static int NETHER_GOLD_ORE() {
-        return NETHER_GOLD_ORE;
-    }
-    private static final int NETHER_QUARTZ_ORE = (int)20L;
-    /**
-     * {@snippet lang=c :
-     * enum Blocks.NETHER_QUARTZ_ORE = 20
-     * }
-     */
-    public static int NETHER_QUARTZ_ORE() {
-        return NETHER_QUARTZ_ORE;
-    }
-    private static final int RAW_COPPER_BLOCK = (int)21L;
-    /**
-     * {@snippet lang=c :
-     * enum Blocks.RAW_COPPER_BLOCK = 21
-     * }
-     */
-    public static int RAW_COPPER_BLOCK() {
-        return RAW_COPPER_BLOCK;
-    }
-    private static final int RAW_IRON_BLOCK = (int)22L;
-    /**
-     * {@snippet lang=c :
-     * enum Blocks.RAW_IRON_BLOCK = 22
-     * }
-     */
-    public static int RAW_IRON_BLOCK() {
-        return RAW_IRON_BLOCK;
-    }
-    private static final int REDSTONE_ORE = (int)23L;
-    /**
-     * {@snippet lang=c :
-     * enum Blocks.REDSTONE_ORE = 23
-     * }
-     */
-    public static int REDSTONE_ORE() {
-        return REDSTONE_ORE;
-    }
-    private static final int SOUL_SAND = (int)24L;
-    /**
-     * {@snippet lang=c :
-     * enum Blocks.SOUL_SAND = 24
-     * }
-     */
-    public static int SOUL_SAND() {
-        return SOUL_SAND;
-    }
-    private static final int STONE = (int)25L;
-    /**
-     * {@snippet lang=c :
-     * enum Blocks.STONE = 25
-     * }
-     */
-    public static int STONE() {
-        return STONE;
-    }
-    private static final int TUFF = (int)26L;
-    /**
-     * {@snippet lang=c :
-     * enum Blocks.TUFF = 26
-     * }
-     */
-    public static int TUFF() {
-        return TUFF;
-    }
-    private static final int BLOCK_NUM = (int)27L;
-    /**
-     * {@snippet lang=c :
-     * enum Blocks.BLOCK_NUM = 27
-     * }
-     */
-    public static int BLOCK_NUM() {
-        return BLOCK_NUM;
-    }
-    private static final int AndesiteOre = (int)0L;
-    /**
-     * {@snippet lang=c :
-     * enum Ores.AndesiteOre = 0
-     * }
-     */
-    public static int AndesiteOre() {
-        return AndesiteOre;
-    }
-    private static final int BlackstoneOre = (int)1L;
-    /**
-     * {@snippet lang=c :
-     * enum Ores.BlackstoneOre = 1
-     * }
-     */
-    public static int BlackstoneOre() {
-        return BlackstoneOre;
-    }
-    private static final int BuriedDiamondOre = (int)2L;
-    /**
-     * {@snippet lang=c :
-     * enum Ores.BuriedDiamondOre = 2
-     * }
-     */
-    public static int BuriedDiamondOre() {
-        return BuriedDiamondOre;
-    }
-    private static final int BuriedLapisOre = (int)3L;
-    /**
-     * {@snippet lang=c :
-     * enum Ores.BuriedLapisOre = 3
-     * }
-     */
-    public static int BuriedLapisOre() {
-        return BuriedLapisOre;
-    }
-    private static final int ClayOre = (int)4L;
-    /**
-     * {@snippet lang=c :
-     * enum Ores.ClayOre = 4
-     * }
-     */
-    public static int ClayOre() {
-        return ClayOre;
-    }
-    private static final int CoalOre = (int)5L;
-    /**
-     * {@snippet lang=c :
-     * enum Ores.CoalOre = 5
-     * }
-     */
-    public static int CoalOre() {
-        return CoalOre;
-    }
-    private static final int CopperOre = (int)6L;
-    /**
-     * {@snippet lang=c :
-     * enum Ores.CopperOre = 6
-     * }
-     */
-    public static int CopperOre() {
-        return CopperOre;
-    }
-    private static final int DeepslateOre = (int)7L;
-    /**
-     * {@snippet lang=c :
-     * enum Ores.DeepslateOre = 7
-     * }
-     */
-    public static int DeepslateOre() {
-        return DeepslateOre;
-    }
-    private static final int DeltasGoldOre = (int)8L;
-    /**
-     * {@snippet lang=c :
-     * enum Ores.DeltasGoldOre = 8
-     * }
-     */
-    public static int DeltasGoldOre() {
-        return DeltasGoldOre;
-    }
-    private static final int DeltasQuartzOre = (int)9L;
-    /**
-     * {@snippet lang=c :
-     * enum Ores.DeltasQuartzOre = 9
-     * }
-     */
-    public static int DeltasQuartzOre() {
-        return DeltasQuartzOre;
-    }
-    private static final int DiamondOre = (int)10L;
-    /**
-     * {@snippet lang=c :
-     * enum Ores.DiamondOre = 10
-     * }
-     */
-    public static int DiamondOre() {
-        return DiamondOre;
-    }
-    private static final int DioriteOre = (int)11L;
-    /**
-     * {@snippet lang=c :
-     * enum Ores.DioriteOre = 11
-     * }
-     */
-    public static int DioriteOre() {
-        return DioriteOre;
-    }
-    private static final int DirtOre = (int)12L;
-    /**
-     * {@snippet lang=c :
-     * enum Ores.DirtOre = 12
-     * }
-     */
-    public static int DirtOre() {
-        return DirtOre;
-    }
-    private static final int EmeraldOre = (int)13L;
-    /**
-     * {@snippet lang=c :
-     * enum Ores.EmeraldOre = 13
-     * }
-     */
-    public static int EmeraldOre() {
-        return EmeraldOre;
-    }
-    private static final int ExtraGoldOre = (int)14L;
-    /**
-     * {@snippet lang=c :
-     * enum Ores.ExtraGoldOre = 14
-     * }
-     */
-    public static int ExtraGoldOre() {
-        return ExtraGoldOre;
-    }
-    private static final int GoldOre = (int)15L;
-    /**
-     * {@snippet lang=c :
-     * enum Ores.GoldOre = 15
-     * }
-     */
-    public static int GoldOre() {
-        return GoldOre;
-    }
-    private static final int GraniteOre = (int)16L;
-    /**
-     * {@snippet lang=c :
-     * enum Ores.GraniteOre = 16
-     * }
-     */
-    public static int GraniteOre() {
-        return GraniteOre;
-    }
-    private static final int GravelOre = (int)17L;
-    /**
-     * {@snippet lang=c :
-     * enum Ores.GravelOre = 17
-     * }
-     */
-    public static int GravelOre() {
-        return GravelOre;
-    }
-    private static final int IronOre = (int)18L;
-    /**
-     * {@snippet lang=c :
-     * enum Ores.IronOre = 18
-     * }
-     */
-    public static int IronOre() {
-        return IronOre;
-    }
-    private static final int LapisOre = (int)19L;
-    /**
-     * {@snippet lang=c :
-     * enum Ores.LapisOre = 19
-     * }
-     */
-    public static int LapisOre() {
-        return LapisOre;
-    }
-    private static final int LargeCopperOre = (int)20L;
-    /**
-     * {@snippet lang=c :
-     * enum Ores.LargeCopperOre = 20
-     * }
-     */
-    public static int LargeCopperOre() {
-        return LargeCopperOre;
-    }
-    private static final int LargeDebrisOre = (int)21L;
-    /**
-     * {@snippet lang=c :
-     * enum Ores.LargeDebrisOre = 21
-     * }
-     */
-    public static int LargeDebrisOre() {
-        return LargeDebrisOre;
-    }
-    private static final int LargeDiamondOre = (int)22L;
-    /**
-     * {@snippet lang=c :
-     * enum Ores.LargeDiamondOre = 22
-     * }
-     */
-    public static int LargeDiamondOre() {
-        return LargeDiamondOre;
-    }
-    private static final int LowerAndesiteOre = (int)23L;
-    /**
-     * {@snippet lang=c :
-     * enum Ores.LowerAndesiteOre = 23
-     * }
-     */
-    public static int LowerAndesiteOre() {
-        return LowerAndesiteOre;
-    }
-    private static final int LowerCoalOre = (int)24L;
-    /**
-     * {@snippet lang=c :
-     * enum Ores.LowerCoalOre = 24
-     * }
-     */
-    public static int LowerCoalOre() {
-        return LowerCoalOre;
-    }
-    private static final int LowerDioriteOre = (int)25L;
-    /**
-     * {@snippet lang=c :
-     * enum Ores.LowerDioriteOre = 25
-     * }
-     */
-    public static int LowerDioriteOre() {
-        return LowerDioriteOre;
-    }
-    private static final int LowerGoldOre = (int)26L;
-    /**
-     * {@snippet lang=c :
-     * enum Ores.LowerGoldOre = 26
-     * }
-     */
-    public static int LowerGoldOre() {
-        return LowerGoldOre;
-    }
-    private static final int LowerGraniteOre = (int)27L;
-    /**
-     * {@snippet lang=c :
-     * enum Ores.LowerGraniteOre = 27
-     * }
-     */
-    public static int LowerGraniteOre() {
-        return LowerGraniteOre;
-    }
-    private static final int LowerRedstoneOre = (int)28L;
-    /**
-     * {@snippet lang=c :
-     * enum Ores.LowerRedstoneOre = 28
-     * }
-     */
-    public static int LowerRedstoneOre() {
-        return LowerRedstoneOre;
-    }
-    private static final int MagmaOre = (int)29L;
-    /**
-     * {@snippet lang=c :
-     * enum Ores.MagmaOre = 29
-     * }
-     */
-    public static int MagmaOre() {
-        return MagmaOre;
-    }
-    private static final int MediumDiamondOre = (int)30L;
-    /**
-     * {@snippet lang=c :
-     * enum Ores.MediumDiamondOre = 30
-     * }
-     */
-    public static int MediumDiamondOre() {
-        return MediumDiamondOre;
-    }
-    private static final int MiddleIronOre = (int)31L;
-    /**
-     * {@snippet lang=c :
-     * enum Ores.MiddleIronOre = 31
-     * }
-     */
-    public static int MiddleIronOre() {
-        return MiddleIronOre;
-    }
-    private static final int NetherGoldOre = (int)32L;
-    /**
-     * {@snippet lang=c :
-     * enum Ores.NetherGoldOre = 32
-     * }
-     */
-    public static int NetherGoldOre() {
-        return NetherGoldOre;
-    }
-    private static final int NetherGravelOre = (int)33L;
-    /**
-     * {@snippet lang=c :
-     * enum Ores.NetherGravelOre = 33
-     * }
-     */
-    public static int NetherGravelOre() {
-        return NetherGravelOre;
-    }
-    private static final int NetherQuartzOre = (int)34L;
-    /**
-     * {@snippet lang=c :
-     * enum Ores.NetherQuartzOre = 34
-     * }
-     */
-    public static int NetherQuartzOre() {
-        return NetherQuartzOre;
-    }
-    private static final int RedstoneOre = (int)35L;
-    /**
-     * {@snippet lang=c :
-     * enum Ores.RedstoneOre = 35
-     * }
-     */
-    public static int RedstoneOre() {
-        return RedstoneOre;
-    }
-    private static final int SmallDebrisOre = (int)36L;
-    /**
-     * {@snippet lang=c :
-     * enum Ores.SmallDebrisOre = 36
-     * }
-     */
-    public static int SmallDebrisOre() {
-        return SmallDebrisOre;
-    }
-    private static final int SmallIronOre = (int)37L;
-    /**
-     * {@snippet lang=c :
-     * enum Ores.SmallIronOre = 37
-     * }
-     */
-    public static int SmallIronOre() {
-        return SmallIronOre;
-    }
-    private static final int SoulSandOre = (int)38L;
-    /**
-     * {@snippet lang=c :
-     * enum Ores.SoulSandOre = 38
-     * }
-     */
-    public static int SoulSandOre() {
-        return SoulSandOre;
-    }
-    private static final int TuffOre = (int)39L;
-    /**
-     * {@snippet lang=c :
-     * enum Ores.TuffOre = 39
-     * }
-     */
-    public static int TuffOre() {
-        return TuffOre;
-    }
-    private static final int UpperAndesiteOre = (int)40L;
-    /**
-     * {@snippet lang=c :
-     * enum Ores.UpperAndesiteOre = 40
-     * }
-     */
-    public static int UpperAndesiteOre() {
-        return UpperAndesiteOre;
-    }
-    private static final int UpperCoalOre = (int)41L;
-    /**
-     * {@snippet lang=c :
-     * enum Ores.UpperCoalOre = 41
-     * }
-     */
-    public static int UpperCoalOre() {
-        return UpperCoalOre;
-    }
-    private static final int UpperDioriteOre = (int)42L;
-    /**
-     * {@snippet lang=c :
-     * enum Ores.UpperDioriteOre = 42
-     * }
-     */
-    public static int UpperDioriteOre() {
-        return UpperDioriteOre;
-    }
-    private static final int UpperGraniteOre = (int)43L;
-    /**
-     * {@snippet lang=c :
-     * enum Ores.UpperGraniteOre = 43
-     * }
-     */
-    public static int UpperGraniteOre() {
-        return UpperGraniteOre;
-    }
-    private static final int UpperIronOre = (int)44L;
-    /**
-     * {@snippet lang=c :
-     * enum Ores.UpperIronOre = 44
-     * }
-     */
-    public static int UpperIronOre() {
-        return UpperIronOre;
-    }
-    private static final int ORE_NUM = (int)45L;
-    /**
-     * {@snippet lang=c :
-     * enum Ores.ORE_NUM = 45
-     * }
-     */
-    public static int ORE_NUM() {
-        return ORE_NUM;
-    }
-
-    private static class getOreConfig {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getOreConfig");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int getOreConfig(int oreType, int mc, int biomeID, OreConfig *oconf)
-     * }
-     */
-    public static FunctionDescriptor getOreConfig$descriptor() {
-        return getOreConfig.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int getOreConfig(int oreType, int mc, int biomeID, OreConfig *oconf)
-     * }
-     */
-    public static MethodHandle getOreConfig$handle() {
-        return getOreConfig.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int getOreConfig(int oreType, int mc, int biomeID, OreConfig *oconf)
-     * }
-     */
-    public static MemorySegment getOreConfig$address() {
-        return getOreConfig.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int getOreConfig(int oreType, int mc, int biomeID, OreConfig *oconf)
-     * }
-     */
-    public static int getOreConfig(int oreType, int mc, int biomeID, MemorySegment oconf) {
-        var mh$ = getOreConfig.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("getOreConfig", oreType, mc, biomeID, oconf);
-            }
-            return (int)mh$.invokeExact(oreType, mc, biomeID, oconf);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class getBiomeForOreGen {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getBiomeForOreGen");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int getBiomeForOreGen(const Generator *g, int chunkX, int chunkZ, int y)
-     * }
-     */
-    public static FunctionDescriptor getBiomeForOreGen$descriptor() {
-        return getBiomeForOreGen.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int getBiomeForOreGen(const Generator *g, int chunkX, int chunkZ, int y)
-     * }
-     */
-    public static MethodHandle getBiomeForOreGen$handle() {
-        return getBiomeForOreGen.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int getBiomeForOreGen(const Generator *g, int chunkX, int chunkZ, int y)
-     * }
-     */
-    public static MemorySegment getBiomeForOreGen$address() {
-        return getBiomeForOreGen.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int getBiomeForOreGen(const Generator *g, int chunkX, int chunkZ, int y)
-     * }
-     */
-    public static int getBiomeForOreGen(MemorySegment g, int chunkX, int chunkZ, int y) {
-        var mh$ = getBiomeForOreGen.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("getBiomeForOreGen", g, chunkX, chunkZ, y);
-            }
-            return (int)mh$.invokeExact(g, chunkX, chunkZ, y);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class isViableOreBiome {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("isViableOreBiome");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int isViableOreBiome(int mc, int oreType, int biomeID)
-     * }
-     */
-    public static FunctionDescriptor isViableOreBiome$descriptor() {
-        return isViableOreBiome.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int isViableOreBiome(int mc, int oreType, int biomeID)
-     * }
-     */
-    public static MethodHandle isViableOreBiome$handle() {
-        return isViableOreBiome.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int isViableOreBiome(int mc, int oreType, int biomeID)
-     * }
-     */
-    public static MemorySegment isViableOreBiome$address() {
-        return isViableOreBiome.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int isViableOreBiome(int mc, int oreType, int biomeID)
-     * }
-     */
-    public static int isViableOreBiome(int mc, int oreType, int biomeID) {
-        var mh$ = isViableOreBiome.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("isViableOreBiome", mc, oreType, biomeID);
-            }
-            return (int)mh$.invokeExact(mc, oreType, biomeID);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class generateOres {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Pos3List.layout(),
-            Cubiomes.C_POINTER,
-            Cubiomes.C_POINTER,
-            OreConfig.layout(),
-            Cubiomes.C_INT,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("generateOres");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * Pos3List generateOres(const Generator *g, const SurfaceNoise *sn, OreConfig config, int chunkX, int chunkZ)
-     * }
-     */
-    public static FunctionDescriptor generateOres$descriptor() {
-        return generateOres.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * Pos3List generateOres(const Generator *g, const SurfaceNoise *sn, OreConfig config, int chunkX, int chunkZ)
-     * }
-     */
-    public static MethodHandle generateOres$handle() {
-        return generateOres.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * Pos3List generateOres(const Generator *g, const SurfaceNoise *sn, OreConfig config, int chunkX, int chunkZ)
-     * }
-     */
-    public static MemorySegment generateOres$address() {
-        return generateOres.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * Pos3List generateOres(const Generator *g, const SurfaceNoise *sn, OreConfig config, int chunkX, int chunkZ)
-     * }
-     */
-    public static MemorySegment generateOres(SegmentAllocator allocator, MemorySegment g, MemorySegment sn, MemorySegment config, int chunkX, int chunkZ) {
-        var mh$ = generateOres.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("generateOres", allocator, g, sn, config, chunkX, chunkZ);
-            }
-            return (MemorySegment)mh$.invokeExact(allocator, g, sn, config, chunkX, chunkZ);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class generateBaseOrePosition {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Pos3.layout(),
-            Cubiomes.C_INT,
-            OreConfig.layout(),
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            RandomSource.layout()
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("generateBaseOrePosition");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * Pos3 generateBaseOrePosition(int mc, OreConfig config, int chunkX, int chunkZ, RandomSource rnd)
-     * }
-     */
-    public static FunctionDescriptor generateBaseOrePosition$descriptor() {
-        return generateBaseOrePosition.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * Pos3 generateBaseOrePosition(int mc, OreConfig config, int chunkX, int chunkZ, RandomSource rnd)
-     * }
-     */
-    public static MethodHandle generateBaseOrePosition$handle() {
-        return generateBaseOrePosition.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * Pos3 generateBaseOrePosition(int mc, OreConfig config, int chunkX, int chunkZ, RandomSource rnd)
-     * }
-     */
-    public static MemorySegment generateBaseOrePosition$address() {
-        return generateBaseOrePosition.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * Pos3 generateBaseOrePosition(int mc, OreConfig config, int chunkX, int chunkZ, RandomSource rnd)
-     * }
-     */
-    public static MemorySegment generateBaseOrePosition(SegmentAllocator allocator, int mc, MemorySegment config, int chunkX, int chunkZ, MemorySegment rnd) {
-        var mh$ = generateBaseOrePosition.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("generateBaseOrePosition", allocator, mc, config, chunkX, chunkZ, rnd);
-            }
-            return (MemorySegment)mh$.invokeExact(allocator, mc, config, chunkX, chunkZ, rnd);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class generateOrePositions {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
-            Cubiomes.C_POINTER,
-            Cubiomes.C_POINTER,
-            OreConfig.layout(),
-            Pos3.layout(),
-            RandomSource.layout(),
-            Cubiomes.C_POINTER
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("generateOrePositions");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * void generateOrePositions(const Generator *g, const SurfaceNoise *sn, OreConfig config, Pos3 pos, RandomSource rnd, Pos3List *pos3s)
-     * }
-     */
-    public static FunctionDescriptor generateOrePositions$descriptor() {
-        return generateOrePositions.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * void generateOrePositions(const Generator *g, const SurfaceNoise *sn, OreConfig config, Pos3 pos, RandomSource rnd, Pos3List *pos3s)
-     * }
-     */
-    public static MethodHandle generateOrePositions$handle() {
-        return generateOrePositions.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * void generateOrePositions(const Generator *g, const SurfaceNoise *sn, OreConfig config, Pos3 pos, RandomSource rnd, Pos3List *pos3s)
-     * }
-     */
-    public static MemorySegment generateOrePositions$address() {
-        return generateOrePositions.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * void generateOrePositions(const Generator *g, const SurfaceNoise *sn, OreConfig config, Pos3 pos, RandomSource rnd, Pos3List *pos3s)
-     * }
-     */
-    public static void generateOrePositions(MemorySegment g, MemorySegment sn, MemorySegment config, MemorySegment pos, MemorySegment rnd, MemorySegment pos3s) {
-        var mh$ = generateOrePositions.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("generateOrePositions", g, sn, config, pos, rnd, pos3s);
-            }
-            mh$.invokeExact(g, sn, config, pos, rnd, pos3s);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class generateVeinPart {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
-            Cubiomes.C_INT,
-            OreConfig.layout(),
-            RandomSource.layout(),
-            Cubiomes.C_DOUBLE,
-            Cubiomes.C_DOUBLE,
-            Cubiomes.C_DOUBLE,
-            Cubiomes.C_DOUBLE,
-            Cubiomes.C_DOUBLE,
-            Cubiomes.C_DOUBLE,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("generateVeinPart");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * void generateVeinPart(int mc, OreConfig config, RandomSource rnd, double offsetXPos, double offsetXNeg, double offsetZPos, double offsetZNeg, double offsetYPos, double offsetYNeg, int startX, int startY, int startZ, int oreSize, int radius, Pos3List *pos3s)
-     * }
-     */
-    public static FunctionDescriptor generateVeinPart$descriptor() {
-        return generateVeinPart.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * void generateVeinPart(int mc, OreConfig config, RandomSource rnd, double offsetXPos, double offsetXNeg, double offsetZPos, double offsetZNeg, double offsetYPos, double offsetYNeg, int startX, int startY, int startZ, int oreSize, int radius, Pos3List *pos3s)
-     * }
-     */
-    public static MethodHandle generateVeinPart$handle() {
-        return generateVeinPart.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * void generateVeinPart(int mc, OreConfig config, RandomSource rnd, double offsetXPos, double offsetXNeg, double offsetZPos, double offsetZNeg, double offsetYPos, double offsetYNeg, int startX, int startY, int startZ, int oreSize, int radius, Pos3List *pos3s)
-     * }
-     */
-    public static MemorySegment generateVeinPart$address() {
-        return generateVeinPart.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * void generateVeinPart(int mc, OreConfig config, RandomSource rnd, double offsetXPos, double offsetXNeg, double offsetZPos, double offsetZNeg, double offsetYPos, double offsetYNeg, int startX, int startY, int startZ, int oreSize, int radius, Pos3List *pos3s)
-     * }
-     */
-    public static void generateVeinPart(int mc, MemorySegment config, MemorySegment rnd, double offsetXPos, double offsetXNeg, double offsetZPos, double offsetZNeg, double offsetYPos, double offsetYNeg, int startX, int startY, int startZ, int oreSize, int radius, MemorySegment pos3s) {
-        var mh$ = generateVeinPart.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("generateVeinPart", mc, config, rnd, offsetXPos, offsetXNeg, offsetZPos, offsetZNeg, offsetYPos, offsetYNeg, startX, startY, startZ, oreSize, radius, pos3s);
-            }
-            mh$.invokeExact(mc, config, rnd, offsetXPos, offsetXNeg, offsetZPos, offsetZNeg, offsetYPos, offsetYNeg, startX, startY, startZ, oreSize, radius, pos3s);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-    private static final int CopperVein = (int)0L;
-    /**
-     * {@snippet lang=c :
-     * enum OreVeins.CopperVein = 0
-     * }
-     */
-    public static int CopperVein() {
-        return CopperVein;
-    }
-    private static final int IronVein = (int)1L;
-    /**
-     * {@snippet lang=c :
-     * enum OreVeins.IronVein = 1
-     * }
-     */
-    public static int IronVein() {
-        return IronVein;
-    }
-
-    private static class initOreVeinNoise {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_LONG_LONG,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("initOreVeinNoise");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int initOreVeinNoise(OreVeinParameters *params, uint64_t ws, int mc)
-     * }
-     */
-    public static FunctionDescriptor initOreVeinNoise$descriptor() {
-        return initOreVeinNoise.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int initOreVeinNoise(OreVeinParameters *params, uint64_t ws, int mc)
-     * }
-     */
-    public static MethodHandle initOreVeinNoise$handle() {
-        return initOreVeinNoise.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int initOreVeinNoise(OreVeinParameters *params, uint64_t ws, int mc)
-     * }
-     */
-    public static MemorySegment initOreVeinNoise$address() {
-        return initOreVeinNoise.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int initOreVeinNoise(OreVeinParameters *params, uint64_t ws, int mc)
-     * }
-     */
-    public static int initOreVeinNoise(MemorySegment params, long ws, int mc) {
-        var mh$ = initOreVeinNoise.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("initOreVeinNoise", params, ws, mc);
-            }
-            return (int)mh$.invokeExact(params, ws, mc);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class getOreVeinBlockAt {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getOreVeinBlockAt");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int32_t getOreVeinBlockAt(int x, int y, int z, OreVeinParameters *params)
-     * }
-     */
-    public static FunctionDescriptor getOreVeinBlockAt$descriptor() {
-        return getOreVeinBlockAt.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int32_t getOreVeinBlockAt(int x, int y, int z, OreVeinParameters *params)
-     * }
-     */
-    public static MethodHandle getOreVeinBlockAt$handle() {
-        return getOreVeinBlockAt.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int32_t getOreVeinBlockAt(int x, int y, int z, OreVeinParameters *params)
-     * }
-     */
-    public static MemorySegment getOreVeinBlockAt$address() {
-        return getOreVeinBlockAt.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int32_t getOreVeinBlockAt(int x, int y, int z, OreVeinParameters *params)
-     * }
-     */
-    public static int getOreVeinBlockAt(int x, int y, int z, MemorySegment params) {
-        var mh$ = getOreVeinBlockAt.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("getOreVeinBlockAt", x, y, z, params);
-            }
-            return (int)mh$.invokeExact(x, y, z, params);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-    private static final int CANYON_CARVER = (int)0L;
-    /**
-     * {@snippet lang=c :
-     * enum CanyonCarvers.CANYON_CARVER = 0
-     * }
-     */
-    public static int CANYON_CARVER() {
-        return CANYON_CARVER;
-    }
-    private static final int UNDERWATER_CANYON_CARVER = (int)1L;
-    /**
-     * {@snippet lang=c :
-     * enum CanyonCarvers.UNDERWATER_CANYON_CARVER = 1
-     * }
-     */
-    public static int UNDERWATER_CANYON_CARVER() {
-        return UNDERWATER_CANYON_CARVER;
-    }
-    private static final int CANYON_CARVER_NUM = (int)2L;
-    /**
-     * {@snippet lang=c :
-     * enum CanyonCarvers.CANYON_CARVER_NUM = 2
-     * }
-     */
-    public static int CANYON_CARVER_NUM() {
-        return CANYON_CARVER_NUM;
-    }
-    private static final int CAVE_CARVER = (int)0L;
-    /**
-     * {@snippet lang=c :
-     * enum CaveCarvers.CAVE_CARVER = 0
-     * }
-     */
-    public static int CAVE_CARVER() {
-        return CAVE_CARVER;
-    }
-    private static final int CAVE_EXTRA_UNDERGROUND_CARVER = (int)1L;
-    /**
-     * {@snippet lang=c :
-     * enum CaveCarvers.CAVE_EXTRA_UNDERGROUND_CARVER = 1
-     * }
-     */
-    public static int CAVE_EXTRA_UNDERGROUND_CARVER() {
-        return CAVE_EXTRA_UNDERGROUND_CARVER;
-    }
-    private static final int OCEAN_CAVE_CARVER = (int)2L;
-    /**
-     * {@snippet lang=c :
-     * enum CaveCarvers.OCEAN_CAVE_CARVER = 2
-     * }
-     */
-    public static int OCEAN_CAVE_CARVER() {
-        return OCEAN_CAVE_CARVER;
-    }
-    private static final int UNDERWATER_CAVE_CARVER = (int)3L;
-    /**
-     * {@snippet lang=c :
-     * enum CaveCarvers.UNDERWATER_CAVE_CARVER = 3
-     * }
-     */
-    public static int UNDERWATER_CAVE_CARVER() {
-        return UNDERWATER_CAVE_CARVER;
-    }
-    private static final int NETHER_CAVE_CARVER = (int)4L;
-    /**
-     * {@snippet lang=c :
-     * enum CaveCarvers.NETHER_CAVE_CARVER = 4
-     * }
-     */
-    public static int NETHER_CAVE_CARVER() {
-        return NETHER_CAVE_CARVER;
-    }
-    private static final int CAVE_CARVER_NUM = (int)5L;
-    /**
-     * {@snippet lang=c :
-     * enum CaveCarvers.CAVE_CARVER_NUM = 5
-     * }
-     */
-    public static int CAVE_CARVER_NUM() {
-        return CAVE_CARVER_NUM;
-    }
-
-    private static class getCanyonCarverConfig {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getCanyonCarverConfig");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int getCanyonCarverConfig(int canyonCarverType, int mc, CanyonCarverConfig *cconf)
-     * }
-     */
-    public static FunctionDescriptor getCanyonCarverConfig$descriptor() {
-        return getCanyonCarverConfig.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int getCanyonCarverConfig(int canyonCarverType, int mc, CanyonCarverConfig *cconf)
-     * }
-     */
-    public static MethodHandle getCanyonCarverConfig$handle() {
-        return getCanyonCarverConfig.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int getCanyonCarverConfig(int canyonCarverType, int mc, CanyonCarverConfig *cconf)
-     * }
-     */
-    public static MemorySegment getCanyonCarverConfig$address() {
-        return getCanyonCarverConfig.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int getCanyonCarverConfig(int canyonCarverType, int mc, CanyonCarverConfig *cconf)
-     * }
-     */
-    public static int getCanyonCarverConfig(int canyonCarverType, int mc, MemorySegment cconf) {
-        var mh$ = getCanyonCarverConfig.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("getCanyonCarverConfig", canyonCarverType, mc, cconf);
-            }
-            return (int)mh$.invokeExact(canyonCarverType, mc, cconf);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class isViableCanyonBiome {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("isViableCanyonBiome");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int isViableCanyonBiome(int canyonCarverType, int biome)
-     * }
-     */
-    public static FunctionDescriptor isViableCanyonBiome$descriptor() {
-        return isViableCanyonBiome.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int isViableCanyonBiome(int canyonCarverType, int biome)
-     * }
-     */
-    public static MethodHandle isViableCanyonBiome$handle() {
-        return isViableCanyonBiome.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int isViableCanyonBiome(int canyonCarverType, int biome)
-     * }
-     */
-    public static MemorySegment isViableCanyonBiome$address() {
-        return isViableCanyonBiome.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int isViableCanyonBiome(int canyonCarverType, int biome)
-     * }
-     */
-    public static int isViableCanyonBiome(int canyonCarverType, int biome) {
-        var mh$ = isViableCanyonBiome.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("isViableCanyonBiome", canyonCarverType, biome);
-            }
-            return (int)mh$.invokeExact(canyonCarverType, biome);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class getCaveCarverConfig {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getCaveCarverConfig");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int getCaveCarverConfig(int caveCarverType, int mc, int biome, CaveCarverConfig *cconf)
-     * }
-     */
-    public static FunctionDescriptor getCaveCarverConfig$descriptor() {
-        return getCaveCarverConfig.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int getCaveCarverConfig(int caveCarverType, int mc, int biome, CaveCarverConfig *cconf)
-     * }
-     */
-    public static MethodHandle getCaveCarverConfig$handle() {
-        return getCaveCarverConfig.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int getCaveCarverConfig(int caveCarverType, int mc, int biome, CaveCarverConfig *cconf)
-     * }
-     */
-    public static MemorySegment getCaveCarverConfig$address() {
-        return getCaveCarverConfig.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int getCaveCarverConfig(int caveCarverType, int mc, int biome, CaveCarverConfig *cconf)
-     * }
-     */
-    public static int getCaveCarverConfig(int caveCarverType, int mc, int biome, MemorySegment cconf) {
-        var mh$ = getCaveCarverConfig.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("getCaveCarverConfig", caveCarverType, mc, biome, cconf);
-            }
-            return (int)mh$.invokeExact(caveCarverType, mc, biome, cconf);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class isViableCaveBiome {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("isViableCaveBiome");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int isViableCaveBiome(int caveCarverType, int biome)
-     * }
-     */
-    public static FunctionDescriptor isViableCaveBiome$descriptor() {
-        return isViableCaveBiome.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int isViableCaveBiome(int caveCarverType, int biome)
-     * }
-     */
-    public static MethodHandle isViableCaveBiome$handle() {
-        return isViableCaveBiome.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int isViableCaveBiome(int caveCarverType, int biome)
-     * }
-     */
-    public static MemorySegment isViableCaveBiome$address() {
-        return isViableCaveBiome.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int isViableCaveBiome(int caveCarverType, int biome)
-     * }
-     */
-    public static int isViableCaveBiome(int caveCarverType, int biome) {
-        var mh$ = isViableCaveBiome.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("isViableCaveBiome", caveCarverType, biome);
-            }
-            return (int)mh$.invokeExact(caveCarverType, biome);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class checkCanyonStart {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_LONG_LONG,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            CanyonCarverConfig.layout(),
-            Cubiomes.C_POINTER
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("checkCanyonStart");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int checkCanyonStart(uint64_t seed, int chunkX, int chunkZ, CanyonCarverConfig ccc, uint64_t *rnd)
-     * }
-     */
-    public static FunctionDescriptor checkCanyonStart$descriptor() {
-        return checkCanyonStart.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int checkCanyonStart(uint64_t seed, int chunkX, int chunkZ, CanyonCarverConfig ccc, uint64_t *rnd)
-     * }
-     */
-    public static MethodHandle checkCanyonStart$handle() {
-        return checkCanyonStart.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int checkCanyonStart(uint64_t seed, int chunkX, int chunkZ, CanyonCarverConfig ccc, uint64_t *rnd)
-     * }
-     */
-    public static MemorySegment checkCanyonStart$address() {
-        return checkCanyonStart.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int checkCanyonStart(uint64_t seed, int chunkX, int chunkZ, CanyonCarverConfig ccc, uint64_t *rnd)
-     * }
-     */
-    public static int checkCanyonStart(long seed, int chunkX, int chunkZ, MemorySegment ccc, MemorySegment rnd) {
-        var mh$ = checkCanyonStart.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("checkCanyonStart", seed, chunkX, chunkZ, ccc, rnd);
-            }
-            return (int)mh$.invokeExact(seed, chunkX, chunkZ, ccc, rnd);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class checkCaveStart {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_LONG_LONG,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            CaveCarverConfig.layout(),
-            Cubiomes.C_POINTER
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("checkCaveStart");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int checkCaveStart(uint64_t seed, int chunkX, int chunkZ, CaveCarverConfig ccc, uint64_t *rnd)
-     * }
-     */
-    public static FunctionDescriptor checkCaveStart$descriptor() {
-        return checkCaveStart.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int checkCaveStart(uint64_t seed, int chunkX, int chunkZ, CaveCarverConfig ccc, uint64_t *rnd)
-     * }
-     */
-    public static MethodHandle checkCaveStart$handle() {
-        return checkCaveStart.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int checkCaveStart(uint64_t seed, int chunkX, int chunkZ, CaveCarverConfig ccc, uint64_t *rnd)
-     * }
-     */
-    public static MemorySegment checkCaveStart$address() {
-        return checkCaveStart.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int checkCaveStart(uint64_t seed, int chunkX, int chunkZ, CaveCarverConfig ccc, uint64_t *rnd)
-     * }
-     */
-    public static int checkCaveStart(long seed, int chunkX, int chunkZ, MemorySegment ccc, MemorySegment rnd) {
-        var mh$ = checkCaveStart.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("checkCaveStart", seed, chunkX, chunkZ, ccc, rnd);
-            }
-            return (int)mh$.invokeExact(seed, chunkX, chunkZ, ccc, rnd);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class carveCanyon {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
-            Cubiomes.C_LONG_LONG,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            CanyonCarverConfig.layout(),
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_POINTER
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("carveCanyon");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * void carveCanyon(uint64_t seed, int mc, int chunkX, int chunkZ, CanyonCarverConfig ccc, int canyonCarverType, int biomes[17][17], Pos3List *poses)
-     * }
-     */
-    public static FunctionDescriptor carveCanyon$descriptor() {
-        return carveCanyon.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * void carveCanyon(uint64_t seed, int mc, int chunkX, int chunkZ, CanyonCarverConfig ccc, int canyonCarverType, int biomes[17][17], Pos3List *poses)
-     * }
-     */
-    public static MethodHandle carveCanyon$handle() {
-        return carveCanyon.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * void carveCanyon(uint64_t seed, int mc, int chunkX, int chunkZ, CanyonCarverConfig ccc, int canyonCarverType, int biomes[17][17], Pos3List *poses)
-     * }
-     */
-    public static MemorySegment carveCanyon$address() {
-        return carveCanyon.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * void carveCanyon(uint64_t seed, int mc, int chunkX, int chunkZ, CanyonCarverConfig ccc, int canyonCarverType, int biomes[17][17], Pos3List *poses)
-     * }
-     */
-    public static void carveCanyon(long seed, int mc, int chunkX, int chunkZ, MemorySegment ccc, int canyonCarverType, MemorySegment biomes, MemorySegment poses) {
-        var mh$ = carveCanyon.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("carveCanyon", seed, mc, chunkX, chunkZ, ccc, canyonCarverType, biomes, poses);
-            }
-            mh$.invokeExact(seed, mc, chunkX, chunkZ, ccc, canyonCarverType, biomes, poses);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class carveCave {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
-            Cubiomes.C_LONG_LONG,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            CaveCarverConfig.layout(),
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_POINTER
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("carveCave");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * void carveCave(uint64_t seed, int mc, int chunkX, int chunkZ, CaveCarverConfig ccc, int caveCarverType, int biomes[17][17], Pos3List *poses)
-     * }
-     */
-    public static FunctionDescriptor carveCave$descriptor() {
-        return carveCave.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * void carveCave(uint64_t seed, int mc, int chunkX, int chunkZ, CaveCarverConfig ccc, int caveCarverType, int biomes[17][17], Pos3List *poses)
-     * }
-     */
-    public static MethodHandle carveCave$handle() {
-        return carveCave.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * void carveCave(uint64_t seed, int mc, int chunkX, int chunkZ, CaveCarverConfig ccc, int caveCarverType, int biomes[17][17], Pos3List *poses)
-     * }
-     */
-    public static MemorySegment carveCave$address() {
-        return carveCave.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * void carveCave(uint64_t seed, int mc, int chunkX, int chunkZ, CaveCarverConfig ccc, int caveCarverType, int biomes[17][17], Pos3List *poses)
-     * }
-     */
-    public static void carveCave(long seed, int mc, int chunkX, int chunkZ, MemorySegment ccc, int caveCarverType, MemorySegment biomes, MemorySegment poses) {
-        var mh$ = carveCave.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("carveCave", seed, mc, chunkX, chunkZ, ccc, caveCarverType, biomes, poses);
-            }
-            mh$.invokeExact(seed, mc, chunkX, chunkZ, ccc, caveCarverType, biomes, poses);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class locateBiome {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Pos.layout(),
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_LONG_LONG,
-            Cubiomes.C_LONG_LONG,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_POINTER
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("locateBiome");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * Pos locateBiome(const Generator *g, int x, int y, int z, int radius, uint64_t validB, uint64_t validM, uint64_t *rng, int *passes)
-     * }
-     */
-    public static FunctionDescriptor locateBiome$descriptor() {
-        return locateBiome.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * Pos locateBiome(const Generator *g, int x, int y, int z, int radius, uint64_t validB, uint64_t validM, uint64_t *rng, int *passes)
-     * }
-     */
-    public static MethodHandle locateBiome$handle() {
-        return locateBiome.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * Pos locateBiome(const Generator *g, int x, int y, int z, int radius, uint64_t validB, uint64_t validM, uint64_t *rng, int *passes)
-     * }
-     */
-    public static MemorySegment locateBiome$address() {
-        return locateBiome.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * Pos locateBiome(const Generator *g, int x, int y, int z, int radius, uint64_t validB, uint64_t validM, uint64_t *rng, int *passes)
-     * }
-     */
-    public static MemorySegment locateBiome(SegmentAllocator allocator, MemorySegment g, int x, int y, int z, int radius, long validB, long validM, MemorySegment rng, MemorySegment passes) {
-        var mh$ = locateBiome.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("locateBiome", allocator, g, x, y, z, radius, validB, validM, rng, passes);
-            }
-            return (MemorySegment)mh$.invokeExact(allocator, g, x, y, z, radius, validB, validM, rng, passes);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class isViableStructurePos {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("isViableStructurePos");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int isViableStructurePos(int structType, Generator *g, int blockX, int blockZ, uint32_t flags)
-     * }
-     */
-    public static FunctionDescriptor isViableStructurePos$descriptor() {
-        return isViableStructurePos.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int isViableStructurePos(int structType, Generator *g, int blockX, int blockZ, uint32_t flags)
-     * }
-     */
-    public static MethodHandle isViableStructurePos$handle() {
-        return isViableStructurePos.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int isViableStructurePos(int structType, Generator *g, int blockX, int blockZ, uint32_t flags)
-     * }
-     */
-    public static MemorySegment isViableStructurePos$address() {
-        return isViableStructurePos.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int isViableStructurePos(int structType, Generator *g, int blockX, int blockZ, uint32_t flags)
-     * }
-     */
-    public static int isViableStructurePos(int structType, MemorySegment g, int blockX, int blockZ, int flags) {
-        var mh$ = isViableStructurePos.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("isViableStructurePos", structType, g, blockX, blockZ, flags);
-            }
-            return (int)mh$.invokeExact(structType, g, blockX, blockZ, flags);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class isViableFeatureBiome {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("isViableFeatureBiome");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int isViableFeatureBiome(int mc, int structureType, int biomeID)
-     * }
-     */
-    public static FunctionDescriptor isViableFeatureBiome$descriptor() {
-        return isViableFeatureBiome.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int isViableFeatureBiome(int mc, int structureType, int biomeID)
-     * }
-     */
-    public static MethodHandle isViableFeatureBiome$handle() {
-        return isViableFeatureBiome.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int isViableFeatureBiome(int mc, int structureType, int biomeID)
-     * }
-     */
-    public static MemorySegment isViableFeatureBiome$address() {
-        return isViableFeatureBiome.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int isViableFeatureBiome(int mc, int structureType, int biomeID)
-     * }
-     */
-    public static int isViableFeatureBiome(int mc, int structureType, int biomeID) {
-        var mh$ = isViableFeatureBiome.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("isViableFeatureBiome", mc, structureType, biomeID);
-            }
-            return (int)mh$.invokeExact(mc, structureType, biomeID);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class isViableStructureTerrain {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("isViableStructureTerrain");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int isViableStructureTerrain(int structType, Generator *g, int blockX, int blockZ)
-     * }
-     */
-    public static FunctionDescriptor isViableStructureTerrain$descriptor() {
-        return isViableStructureTerrain.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int isViableStructureTerrain(int structType, Generator *g, int blockX, int blockZ)
-     * }
-     */
-    public static MethodHandle isViableStructureTerrain$handle() {
-        return isViableStructureTerrain.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int isViableStructureTerrain(int structType, Generator *g, int blockX, int blockZ)
-     * }
-     */
-    public static MemorySegment isViableStructureTerrain$address() {
-        return isViableStructureTerrain.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int isViableStructureTerrain(int structType, Generator *g, int blockX, int blockZ)
-     * }
-     */
-    public static int isViableStructureTerrain(int structType, MemorySegment g, int blockX, int blockZ) {
-        var mh$ = isViableStructureTerrain.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("isViableStructureTerrain", structType, g, blockX, blockZ);
-            }
-            return (int)mh$.invokeExact(structType, g, blockX, blockZ);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class isViableEndCityTerrain {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("isViableEndCityTerrain");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int isViableEndCityTerrain(const Generator *g, const SurfaceNoise *sn, int blockX, int blockZ)
-     * }
-     */
-    public static FunctionDescriptor isViableEndCityTerrain$descriptor() {
-        return isViableEndCityTerrain.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int isViableEndCityTerrain(const Generator *g, const SurfaceNoise *sn, int blockX, int blockZ)
-     * }
-     */
-    public static MethodHandle isViableEndCityTerrain$handle() {
-        return isViableEndCityTerrain.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int isViableEndCityTerrain(const Generator *g, const SurfaceNoise *sn, int blockX, int blockZ)
-     * }
-     */
-    public static MemorySegment isViableEndCityTerrain$address() {
-        return isViableEndCityTerrain.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int isViableEndCityTerrain(const Generator *g, const SurfaceNoise *sn, int blockX, int blockZ)
-     * }
-     */
-    public static int isViableEndCityTerrain(MemorySegment g, MemorySegment sn, int blockX, int blockZ) {
-        var mh$ = isViableEndCityTerrain.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("isViableEndCityTerrain", g, sn, blockX, blockZ);
-            }
-            return (int)mh$.invokeExact(g, sn, blockX, blockZ);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class getVariant {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_LONG_LONG,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getVariant");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int getVariant(StructureVariant *sv, int structType, int mc, uint64_t seed, int blockX, int blockZ, int biomeID)
-     * }
-     */
-    public static FunctionDescriptor getVariant$descriptor() {
-        return getVariant.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int getVariant(StructureVariant *sv, int structType, int mc, uint64_t seed, int blockX, int blockZ, int biomeID)
-     * }
-     */
-    public static MethodHandle getVariant$handle() {
-        return getVariant.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int getVariant(StructureVariant *sv, int structType, int mc, uint64_t seed, int blockX, int blockZ, int biomeID)
-     * }
-     */
-    public static MemorySegment getVariant$address() {
-        return getVariant.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int getVariant(StructureVariant *sv, int structType, int mc, uint64_t seed, int blockX, int blockZ, int biomeID)
-     * }
-     */
-    public static int getVariant(MemorySegment sv, int structType, int mc, long seed, int blockX, int blockZ, int biomeID) {
-        var mh$ = getVariant.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("getVariant", sv, structType, mc, seed, blockX, blockZ, biomeID);
-            }
-            return (int)mh$.invokeExact(sv, structType, mc, seed, blockX, blockZ, biomeID);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class getLootTableCountForStructure {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getLootTableCountForStructure");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int getLootTableCountForStructure(int structure, int mc)
-     * }
-     */
-    public static FunctionDescriptor getLootTableCountForStructure$descriptor() {
-        return getLootTableCountForStructure.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int getLootTableCountForStructure(int structure, int mc)
-     * }
-     */
-    public static MethodHandle getLootTableCountForStructure$handle() {
-        return getLootTableCountForStructure.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int getLootTableCountForStructure(int structure, int mc)
-     * }
-     */
-    public static MemorySegment getLootTableCountForStructure$address() {
-        return getLootTableCountForStructure.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int getLootTableCountForStructure(int structure, int mc)
-     * }
-     */
-    public static int getLootTableCountForStructure(int structure, int mc) {
-        var mh$ = getLootTableCountForStructure.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("getLootTableCountForStructure", structure, mc);
-            }
-            return (int)mh$.invokeExact(structure, mc);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class getStructurePieces {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            StructureSaltConfig.layout(),
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT,
-            Cubiomes.C_LONG_LONG,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getStructurePieces");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int getStructurePieces(Piece *list, int n, int stype, StructureSaltConfig ssconf, StructureVariant *sv, int mc, uint64_t seed, int posX, int posZ)
-     * }
-     */
-    public static FunctionDescriptor getStructurePieces$descriptor() {
-        return getStructurePieces.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int getStructurePieces(Piece *list, int n, int stype, StructureSaltConfig ssconf, StructureVariant *sv, int mc, uint64_t seed, int posX, int posZ)
-     * }
-     */
-    public static MethodHandle getStructurePieces$handle() {
-        return getStructurePieces.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int getStructurePieces(Piece *list, int n, int stype, StructureSaltConfig ssconf, StructureVariant *sv, int mc, uint64_t seed, int posX, int posZ)
-     * }
-     */
-    public static MemorySegment getStructurePieces$address() {
-        return getStructurePieces.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int getStructurePieces(Piece *list, int n, int stype, StructureSaltConfig ssconf, StructureVariant *sv, int mc, uint64_t seed, int posX, int posZ)
-     * }
-     */
-    public static int getStructurePieces(MemorySegment list, int n, int stype, MemorySegment ssconf, MemorySegment sv, int mc, long seed, int posX, int posZ) {
-        var mh$ = getStructurePieces.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("getStructurePieces", list, n, stype, ssconf, sv, mc, seed, posX, posZ);
-            }
-            return (int)mh$.invokeExact(list, n, stype, ssconf, sv, mc, seed, posX, posZ);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class getEndCityPieces {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_LONG_LONG,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getEndCityPieces");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int getEndCityPieces(Piece *pieces, uint64_t seed, int chunkX, int chunkZ)
-     * }
-     */
-    public static FunctionDescriptor getEndCityPieces$descriptor() {
-        return getEndCityPieces.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int getEndCityPieces(Piece *pieces, uint64_t seed, int chunkX, int chunkZ)
-     * }
-     */
-    public static MethodHandle getEndCityPieces$handle() {
-        return getEndCityPieces.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int getEndCityPieces(Piece *pieces, uint64_t seed, int chunkX, int chunkZ)
-     * }
-     */
-    public static MemorySegment getEndCityPieces$address() {
-        return getEndCityPieces.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int getEndCityPieces(Piece *pieces, uint64_t seed, int chunkX, int chunkZ)
-     * }
-     */
-    public static int getEndCityPieces(MemorySegment pieces, long seed, int chunkX, int chunkZ) {
-        var mh$ = getEndCityPieces.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("getEndCityPieces", pieces, seed, chunkX, chunkZ);
-            }
-            return (int)mh$.invokeExact(pieces, seed, chunkX, chunkZ);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-    private static final int BASE_FLOOR = (int)0L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.BASE_FLOOR = 0
-     * }
-     */
-    public static int BASE_FLOOR() {
-        return BASE_FLOOR;
-    }
-    private static final int BASE_ROOF = (int)1L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.BASE_ROOF = 1
-     * }
-     */
-    public static int BASE_ROOF() {
-        return BASE_ROOF;
-    }
-    private static final int BRIDGE_END = (int)2L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.BRIDGE_END = 2
-     * }
-     */
-    public static int BRIDGE_END() {
-        return BRIDGE_END;
-    }
-    private static final int BRIDGE_GENTLE_STAIRS = (int)3L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.BRIDGE_GENTLE_STAIRS = 3
-     * }
-     */
-    public static int BRIDGE_GENTLE_STAIRS() {
-        return BRIDGE_GENTLE_STAIRS;
-    }
-    private static final int BRIDGE_PIECE = (int)4L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.BRIDGE_PIECE = 4
-     * }
-     */
-    public static int BRIDGE_PIECE() {
-        return BRIDGE_PIECE;
-    }
-    private static final int BRIDGE_STEEP_STAIRS = (int)5L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.BRIDGE_STEEP_STAIRS = 5
-     * }
-     */
-    public static int BRIDGE_STEEP_STAIRS() {
-        return BRIDGE_STEEP_STAIRS;
-    }
-    private static final int FAT_TOWER_BASE = (int)6L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.FAT_TOWER_BASE = 6
-     * }
-     */
-    public static int FAT_TOWER_BASE() {
-        return FAT_TOWER_BASE;
-    }
-    private static final int FAT_TOWER_MIDDLE = (int)7L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.FAT_TOWER_MIDDLE = 7
-     * }
-     */
-    public static int FAT_TOWER_MIDDLE() {
-        return FAT_TOWER_MIDDLE;
-    }
-    private static final int FAT_TOWER_TOP = (int)8L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.FAT_TOWER_TOP = 8
-     * }
-     */
-    public static int FAT_TOWER_TOP() {
-        return FAT_TOWER_TOP;
-    }
-    private static final int SECOND_FLOOR_1 = (int)9L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.SECOND_FLOOR_1 = 9
-     * }
-     */
-    public static int SECOND_FLOOR_1() {
-        return SECOND_FLOOR_1;
-    }
-    private static final int SECOND_FLOOR_2 = (int)10L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.SECOND_FLOOR_2 = 10
-     * }
-     */
-    public static int SECOND_FLOOR_2() {
-        return SECOND_FLOOR_2;
-    }
-    private static final int SECOND_ROOF = (int)11L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.SECOND_ROOF = 11
-     * }
-     */
-    public static int SECOND_ROOF() {
-        return SECOND_ROOF;
-    }
-    private static final int END_SHIP = (int)12L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.END_SHIP = 12
-     * }
-     */
-    public static int END_SHIP() {
-        return END_SHIP;
-    }
-    private static final int THIRD_FLOOR_1 = (int)13L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.THIRD_FLOOR_1 = 13
-     * }
-     */
-    public static int THIRD_FLOOR_1() {
-        return THIRD_FLOOR_1;
-    }
-    private static final int THIRD_FLOOR_2 = (int)14L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.THIRD_FLOOR_2 = 14
-     * }
-     */
-    public static int THIRD_FLOOR_2() {
-        return THIRD_FLOOR_2;
-    }
-    private static final int THIRD_ROOF = (int)15L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.THIRD_ROOF = 15
-     * }
-     */
-    public static int THIRD_ROOF() {
-        return THIRD_ROOF;
-    }
-    private static final int TOWER_BASE = (int)16L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.TOWER_BASE = 16
-     * }
-     */
-    public static int TOWER_BASE() {
-        return TOWER_BASE;
-    }
-    private static final int TOWER_FLOOR = (int)17L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.TOWER_FLOOR = 17
-     * }
-     */
-    public static int TOWER_FLOOR() {
-        return TOWER_FLOOR;
-    }
-    private static final int TOWER_PIECE = (int)18L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.TOWER_PIECE = 18
-     * }
-     */
-    public static int TOWER_PIECE() {
-        return TOWER_PIECE;
-    }
-    private static final int TOWER_TOP = (int)19L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.TOWER_TOP = 19
-     * }
-     */
-    public static int TOWER_TOP() {
-        return TOWER_TOP;
-    }
-    private static final int END_CITY_PIECES_MAX = (int)421L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.END_CITY_PIECES_MAX = 421
-     * }
-     */
-    public static int END_CITY_PIECES_MAX() {
-        return END_CITY_PIECES_MAX;
-    }
-
-    private static class getFortressPieces {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_LONG_LONG,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getFortressPieces");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int getFortressPieces(Piece *list, int n, int mc, uint64_t seed, int chunkX, int chunkZ)
-     * }
-     */
-    public static FunctionDescriptor getFortressPieces$descriptor() {
-        return getFortressPieces.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int getFortressPieces(Piece *list, int n, int mc, uint64_t seed, int chunkX, int chunkZ)
-     * }
-     */
-    public static MethodHandle getFortressPieces$handle() {
-        return getFortressPieces.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int getFortressPieces(Piece *list, int n, int mc, uint64_t seed, int chunkX, int chunkZ)
-     * }
-     */
-    public static MemorySegment getFortressPieces$address() {
-        return getFortressPieces.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int getFortressPieces(Piece *list, int n, int mc, uint64_t seed, int chunkX, int chunkZ)
-     * }
-     */
-    public static int getFortressPieces(MemorySegment list, int n, int mc, long seed, int chunkX, int chunkZ) {
-        var mh$ = getFortressPieces.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("getFortressPieces", list, n, mc, seed, chunkX, chunkZ);
-            }
-            return (int)mh$.invokeExact(list, n, mc, seed, chunkX, chunkZ);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-    private static final int FORTRESS_START = (int)0L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.FORTRESS_START = 0
-     * }
-     */
-    public static int FORTRESS_START() {
-        return FORTRESS_START;
-    }
-    private static final int BRIDGE_STRAIGHT = (int)1L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.BRIDGE_STRAIGHT = 1
-     * }
-     */
-    public static int BRIDGE_STRAIGHT() {
-        return BRIDGE_STRAIGHT;
-    }
-    private static final int BRIDGE_CROSSING = (int)2L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.BRIDGE_CROSSING = 2
-     * }
-     */
-    public static int BRIDGE_CROSSING() {
-        return BRIDGE_CROSSING;
-    }
-    private static final int BRIDGE_FORTIFIED_CROSSING = (int)3L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.BRIDGE_FORTIFIED_CROSSING = 3
-     * }
-     */
-    public static int BRIDGE_FORTIFIED_CROSSING() {
-        return BRIDGE_FORTIFIED_CROSSING;
-    }
-    private static final int BRIDGE_STAIRS = (int)4L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.BRIDGE_STAIRS = 4
-     * }
-     */
-    public static int BRIDGE_STAIRS() {
-        return BRIDGE_STAIRS;
-    }
-    private static final int BRIDGE_SPAWNER = (int)5L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.BRIDGE_SPAWNER = 5
-     * }
-     */
-    public static int BRIDGE_SPAWNER() {
-        return BRIDGE_SPAWNER;
-    }
-    private static final int BRIDGE_CORRIDOR_ENTRANCE = (int)6L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.BRIDGE_CORRIDOR_ENTRANCE = 6
-     * }
-     */
-    public static int BRIDGE_CORRIDOR_ENTRANCE() {
-        return BRIDGE_CORRIDOR_ENTRANCE;
-    }
-    private static final int CORRIDOR_STRAIGHT = (int)7L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.CORRIDOR_STRAIGHT = 7
-     * }
-     */
-    public static int CORRIDOR_STRAIGHT() {
-        return CORRIDOR_STRAIGHT;
-    }
-    private static final int CORRIDOR_CROSSING = (int)8L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.CORRIDOR_CROSSING = 8
-     * }
-     */
-    public static int CORRIDOR_CROSSING() {
-        return CORRIDOR_CROSSING;
-    }
-    private static final int CORRIDOR_TURN_RIGHT = (int)9L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.CORRIDOR_TURN_RIGHT = 9
-     * }
-     */
-    public static int CORRIDOR_TURN_RIGHT() {
-        return CORRIDOR_TURN_RIGHT;
-    }
-    private static final int CORRIDOR_TURN_LEFT = (int)10L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.CORRIDOR_TURN_LEFT = 10
-     * }
-     */
-    public static int CORRIDOR_TURN_LEFT() {
-        return CORRIDOR_TURN_LEFT;
-    }
-    private static final int CORRIDOR_STAIRS = (int)11L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.CORRIDOR_STAIRS = 11
-     * }
-     */
-    public static int CORRIDOR_STAIRS() {
-        return CORRIDOR_STAIRS;
-    }
-    private static final int CORRIDOR_T_CROSSING = (int)12L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.CORRIDOR_T_CROSSING = 12
-     * }
-     */
-    public static int CORRIDOR_T_CROSSING() {
-        return CORRIDOR_T_CROSSING;
-    }
-    private static final int CORRIDOR_NETHER_WART = (int)13L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.CORRIDOR_NETHER_WART = 13
-     * }
-     */
-    public static int CORRIDOR_NETHER_WART() {
-        return CORRIDOR_NETHER_WART;
-    }
-    private static final int FORTRESS_END = (int)14L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.FORTRESS_END = 14
-     * }
-     */
-    public static int FORTRESS_END() {
-        return FORTRESS_END;
-    }
-    private static final int PIECE_COUNT = (int)15L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.PIECE_COUNT = 15
-     * }
-     */
-    public static int PIECE_COUNT() {
-        return PIECE_COUNT;
-    }
-
-    private static class getFixedEndGateways {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
-            Cubiomes.C_INT,
-            Cubiomes.C_LONG_LONG,
-            Cubiomes.C_POINTER
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getFixedEndGateways");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * void getFixedEndGateways(int mc, uint64_t seed, Pos src[20])
-     * }
-     */
-    public static FunctionDescriptor getFixedEndGateways$descriptor() {
-        return getFixedEndGateways.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * void getFixedEndGateways(int mc, uint64_t seed, Pos src[20])
-     * }
-     */
-    public static MethodHandle getFixedEndGateways$handle() {
-        return getFixedEndGateways.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * void getFixedEndGateways(int mc, uint64_t seed, Pos src[20])
-     * }
-     */
-    public static MemorySegment getFixedEndGateways$address() {
-        return getFixedEndGateways.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * void getFixedEndGateways(int mc, uint64_t seed, Pos src[20])
-     * }
-     */
-    public static void getFixedEndGateways(int mc, long seed, MemorySegment src) {
-        var mh$ = getFixedEndGateways.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("getFixedEndGateways", mc, seed, src);
-            }
-            mh$.invokeExact(mc, seed, src);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class getLinkedGatewayChunk {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Pos.layout(),
-            Cubiomes.C_POINTER,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_LONG_LONG,
-            Pos.layout(),
-            Cubiomes.C_POINTER
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getLinkedGatewayChunk");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * Pos getLinkedGatewayChunk(const EndNoise *en, const SurfaceNoise *sn, uint64_t seed, Pos src, Pos *dst)
-     * }
-     */
-    public static FunctionDescriptor getLinkedGatewayChunk$descriptor() {
-        return getLinkedGatewayChunk.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * Pos getLinkedGatewayChunk(const EndNoise *en, const SurfaceNoise *sn, uint64_t seed, Pos src, Pos *dst)
-     * }
-     */
-    public static MethodHandle getLinkedGatewayChunk$handle() {
-        return getLinkedGatewayChunk.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * Pos getLinkedGatewayChunk(const EndNoise *en, const SurfaceNoise *sn, uint64_t seed, Pos src, Pos *dst)
-     * }
-     */
-    public static MemorySegment getLinkedGatewayChunk$address() {
-        return getLinkedGatewayChunk.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * Pos getLinkedGatewayChunk(const EndNoise *en, const SurfaceNoise *sn, uint64_t seed, Pos src, Pos *dst)
-     * }
-     */
-    public static MemorySegment getLinkedGatewayChunk(SegmentAllocator allocator, MemorySegment en, MemorySegment sn, long seed, MemorySegment src, MemorySegment dst) {
-        var mh$ = getLinkedGatewayChunk.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("getLinkedGatewayChunk", allocator, en, sn, seed, src, dst);
-            }
-            return (MemorySegment)mh$.invokeExact(allocator, en, sn, seed, src, dst);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class getLinkedGatewayPos {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Pos.layout(),
-            Cubiomes.C_POINTER,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_LONG_LONG,
-            Pos.layout()
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getLinkedGatewayPos");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * Pos getLinkedGatewayPos(const EndNoise *en, const SurfaceNoise *sn, uint64_t seed, Pos src)
-     * }
-     */
-    public static FunctionDescriptor getLinkedGatewayPos$descriptor() {
-        return getLinkedGatewayPos.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * Pos getLinkedGatewayPos(const EndNoise *en, const SurfaceNoise *sn, uint64_t seed, Pos src)
-     * }
-     */
-    public static MethodHandle getLinkedGatewayPos$handle() {
-        return getLinkedGatewayPos.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * Pos getLinkedGatewayPos(const EndNoise *en, const SurfaceNoise *sn, uint64_t seed, Pos src)
-     * }
-     */
-    public static MemorySegment getLinkedGatewayPos$address() {
-        return getLinkedGatewayPos.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * Pos getLinkedGatewayPos(const EndNoise *en, const SurfaceNoise *sn, uint64_t seed, Pos src)
-     * }
-     */
-    public static MemorySegment getLinkedGatewayPos(SegmentAllocator allocator, MemorySegment en, MemorySegment sn, long seed, MemorySegment src) {
-        var mh$ = getLinkedGatewayPos.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("getLinkedGatewayPos", allocator, en, sn, seed, src);
-            }
-            return (MemorySegment)mh$.invokeExact(allocator, en, sn, seed, src);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-    private static final int HouseSmall = (int)0L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.HouseSmall = 0
-     * }
-     */
-    public static int HouseSmall() {
-        return HouseSmall;
-    }
-    private static final int Church = (int)1L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.Church = 1
-     * }
-     */
-    public static int Church() {
-        return Church;
-    }
-    private static final int Library = (int)2L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.Library = 2
-     * }
-     */
-    public static int Library() {
-        return Library;
-    }
-    private static final int WoodHut = (int)3L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.WoodHut = 3
-     * }
-     */
-    public static int WoodHut() {
-        return WoodHut;
-    }
-    private static final int Butcher = (int)4L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.Butcher = 4
-     * }
-     */
-    public static int Butcher() {
-        return Butcher;
-    }
-    private static final int FarmLarge = (int)5L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.FarmLarge = 5
-     * }
-     */
-    public static int FarmLarge() {
-        return FarmLarge;
-    }
-    private static final int FarmSmall = (int)6L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.FarmSmall = 6
-     * }
-     */
-    public static int FarmSmall() {
-        return FarmSmall;
-    }
-    private static final int Blacksmith = (int)7L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.Blacksmith = 7
-     * }
-     */
-    public static int Blacksmith() {
-        return Blacksmith;
-    }
-    private static final int HouseLarge = (int)8L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.HouseLarge = 8
-     * }
-     */
-    public static int HouseLarge() {
-        return HouseLarge;
-    }
-    private static final int HOUSE_NUM = (int)9L;
-    /**
-     * {@snippet lang=c :
-     * enum <anonymous>.HOUSE_NUM = 9
-     * }
-     */
-    public static int HOUSE_NUM() {
-        return HOUSE_NUM;
-    }
-
-    private static class getHouseList {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_LONG_LONG,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_LONG_LONG,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getHouseList");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * uint64_t getHouseList(int *houses, uint64_t seed, int chunkX, int chunkZ)
-     * }
-     */
-    public static FunctionDescriptor getHouseList$descriptor() {
-        return getHouseList.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * uint64_t getHouseList(int *houses, uint64_t seed, int chunkX, int chunkZ)
-     * }
-     */
-    public static MethodHandle getHouseList$handle() {
-        return getHouseList.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * uint64_t getHouseList(int *houses, uint64_t seed, int chunkX, int chunkZ)
-     * }
-     */
-    public static MemorySegment getHouseList$address() {
-        return getHouseList.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * uint64_t getHouseList(int *houses, uint64_t seed, int chunkX, int chunkZ)
-     * }
-     */
-    public static long getHouseList(MemorySegment houses, long seed, int chunkX, int chunkZ) {
-        var mh$ = getHouseList.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("getHouseList", houses, seed, chunkX, chunkZ);
-            }
-            return (long)mh$.invokeExact(houses, seed, chunkX, chunkZ);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class monteCarloBiomes {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Range.layout(),
-            Cubiomes.C_POINTER,
-            Cubiomes.C_DOUBLE,
-            Cubiomes.C_DOUBLE,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_POINTER
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("monteCarloBiomes");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int monteCarloBiomes(Generator *g, Range r, uint64_t *rng, double coverage, double confidence, int (*eval)(Generator *, int, int, int, int, void *), void *data)
-     * }
-     */
-    public static FunctionDescriptor monteCarloBiomes$descriptor() {
-        return monteCarloBiomes.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int monteCarloBiomes(Generator *g, Range r, uint64_t *rng, double coverage, double confidence, int (*eval)(Generator *, int, int, int, int, void *), void *data)
-     * }
-     */
-    public static MethodHandle monteCarloBiomes$handle() {
-        return monteCarloBiomes.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int monteCarloBiomes(Generator *g, Range r, uint64_t *rng, double coverage, double confidence, int (*eval)(Generator *, int, int, int, int, void *), void *data)
-     * }
-     */
-    public static MemorySegment monteCarloBiomes$address() {
-        return monteCarloBiomes.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int monteCarloBiomes(Generator *g, Range r, uint64_t *rng, double coverage, double confidence, int (*eval)(Generator *, int, int, int, int, void *), void *data)
-     * }
-     */
-    public static int monteCarloBiomes(MemorySegment g, MemorySegment r, MemorySegment rng, double coverage, double confidence, MemorySegment eval, MemorySegment data) {
-        var mh$ = monteCarloBiomes.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("monteCarloBiomes", g, r, rng, coverage, confidence, eval, data);
-            }
-            return (int)mh$.invokeExact(g, r, rng, coverage, confidence, eval, data);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class setupBiomeFilter {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("setupBiomeFilter");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * void setupBiomeFilter(BiomeFilter *bf, int mc, uint32_t flags, const int *required, int requiredLen, const int *excluded, int excludedLen, const int *matchany, int matchanyLen)
-     * }
-     */
-    public static FunctionDescriptor setupBiomeFilter$descriptor() {
-        return setupBiomeFilter.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * void setupBiomeFilter(BiomeFilter *bf, int mc, uint32_t flags, const int *required, int requiredLen, const int *excluded, int excludedLen, const int *matchany, int matchanyLen)
-     * }
-     */
-    public static MethodHandle setupBiomeFilter$handle() {
-        return setupBiomeFilter.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * void setupBiomeFilter(BiomeFilter *bf, int mc, uint32_t flags, const int *required, int requiredLen, const int *excluded, int excludedLen, const int *matchany, int matchanyLen)
-     * }
-     */
-    public static MemorySegment setupBiomeFilter$address() {
-        return setupBiomeFilter.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * void setupBiomeFilter(BiomeFilter *bf, int mc, uint32_t flags, const int *required, int requiredLen, const int *excluded, int excludedLen, const int *matchany, int matchanyLen)
-     * }
-     */
-    public static void setupBiomeFilter(MemorySegment bf, int mc, int flags, MemorySegment required, int requiredLen, MemorySegment excluded, int excludedLen, MemorySegment matchany, int matchanyLen) {
-        var mh$ = setupBiomeFilter.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("setupBiomeFilter", bf, mc, flags, required, requiredLen, excluded, excludedLen, matchany, matchanyLen);
-            }
-            mh$.invokeExact(bf, mc, flags, required, requiredLen, excluded, excludedLen, matchany, matchanyLen);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class checkForBiomes {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_POINTER,
-            Range.layout(),
-            Cubiomes.C_INT,
-            Cubiomes.C_LONG_LONG,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_POINTER
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("checkForBiomes");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int checkForBiomes(Generator *g, int *cache, Range r, int dim, uint64_t seed, const BiomeFilter *filter, volatile char *stop)
-     * }
-     */
-    public static FunctionDescriptor checkForBiomes$descriptor() {
-        return checkForBiomes.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int checkForBiomes(Generator *g, int *cache, Range r, int dim, uint64_t seed, const BiomeFilter *filter, volatile char *stop)
-     * }
-     */
-    public static MethodHandle checkForBiomes$handle() {
-        return checkForBiomes.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int checkForBiomes(Generator *g, int *cache, Range r, int dim, uint64_t seed, const BiomeFilter *filter, volatile char *stop)
-     * }
-     */
-    public static MemorySegment checkForBiomes$address() {
-        return checkForBiomes.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int checkForBiomes(Generator *g, int *cache, Range r, int dim, uint64_t seed, const BiomeFilter *filter, volatile char *stop)
-     * }
-     */
-    public static int checkForBiomes(MemorySegment g, MemorySegment cache, MemorySegment r, int dim, long seed, MemorySegment filter, MemorySegment stop) {
-        var mh$ = checkForBiomes.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("checkForBiomes", g, cache, r, dim, seed, filter, stop);
-            }
-            return (int)mh$.invokeExact(g, cache, r, dim, seed, filter, stop);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class checkForBiomesAtLayer {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_LONG_LONG,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("checkForBiomesAtLayer");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int checkForBiomesAtLayer(LayerStack *ls, Layer *entry, int *cache, uint64_t seed, int x, int z, unsigned int w, unsigned int h, const BiomeFilter *filter)
-     * }
-     */
-    public static FunctionDescriptor checkForBiomesAtLayer$descriptor() {
-        return checkForBiomesAtLayer.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int checkForBiomesAtLayer(LayerStack *ls, Layer *entry, int *cache, uint64_t seed, int x, int z, unsigned int w, unsigned int h, const BiomeFilter *filter)
-     * }
-     */
-    public static MethodHandle checkForBiomesAtLayer$handle() {
-        return checkForBiomesAtLayer.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int checkForBiomesAtLayer(LayerStack *ls, Layer *entry, int *cache, uint64_t seed, int x, int z, unsigned int w, unsigned int h, const BiomeFilter *filter)
-     * }
-     */
-    public static MemorySegment checkForBiomesAtLayer$address() {
-        return checkForBiomesAtLayer.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int checkForBiomesAtLayer(LayerStack *ls, Layer *entry, int *cache, uint64_t seed, int x, int z, unsigned int w, unsigned int h, const BiomeFilter *filter)
-     * }
-     */
-    public static int checkForBiomesAtLayer(MemorySegment ls, MemorySegment entry, MemorySegment cache, long seed, int x, int z, int w, int h, MemorySegment filter) {
-        var mh$ = checkForBiomesAtLayer.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("checkForBiomesAtLayer", ls, entry, cache, seed, x, z, w, h, filter);
-            }
-            return (int)mh$.invokeExact(ls, entry, cache, seed, x, z, w, h, filter);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class checkForTemps {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_LONG_LONG,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("checkForTemps");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int checkForTemps(LayerStack *g, uint64_t seed, int x, int z, int w, int h, const int tc[9])
-     * }
-     */
-    public static FunctionDescriptor checkForTemps$descriptor() {
-        return checkForTemps.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int checkForTemps(LayerStack *g, uint64_t seed, int x, int z, int w, int h, const int tc[9])
-     * }
-     */
-    public static MethodHandle checkForTemps$handle() {
-        return checkForTemps.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int checkForTemps(LayerStack *g, uint64_t seed, int x, int z, int w, int h, const int tc[9])
-     * }
-     */
-    public static MemorySegment checkForTemps$address() {
-        return checkForTemps.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int checkForTemps(LayerStack *g, uint64_t seed, int x, int z, int w, int h, const int tc[9])
-     * }
-     */
-    public static int checkForTemps(MemorySegment g, long seed, int x, int z, int w, int h, MemorySegment tc) {
-        var mh$ = checkForTemps.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("checkForTemps", g, seed, x, z, w, h, tc);
-            }
-            return (int)mh$.invokeExact(g, seed, x, z, w, h, tc);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class getBiomeCenters {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Range.layout(),
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getBiomeCenters");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int getBiomeCenters(Pos *pos, int *siz, int nmax, Generator *g, Range r, int match, int minsiz, int tol, volatile char *stop)
-     * }
-     */
-    public static FunctionDescriptor getBiomeCenters$descriptor() {
-        return getBiomeCenters.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int getBiomeCenters(Pos *pos, int *siz, int nmax, Generator *g, Range r, int match, int minsiz, int tol, volatile char *stop)
-     * }
-     */
-    public static MethodHandle getBiomeCenters$handle() {
-        return getBiomeCenters.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int getBiomeCenters(Pos *pos, int *siz, int nmax, Generator *g, Range r, int match, int minsiz, int tol, volatile char *stop)
-     * }
-     */
-    public static MemorySegment getBiomeCenters$address() {
-        return getBiomeCenters.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int getBiomeCenters(Pos *pos, int *siz, int nmax, Generator *g, Range r, int match, int minsiz, int tol, volatile char *stop)
-     * }
-     */
-    public static int getBiomeCenters(MemorySegment pos, MemorySegment siz, int nmax, MemorySegment g, MemorySegment r, int match, int minsiz, int tol, MemorySegment stop) {
-        var mh$ = getBiomeCenters.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("getBiomeCenters", pos, siz, nmax, g, r, match, minsiz, tol, stop);
-            }
-            return (int)mh$.invokeExact(pos, siz, nmax, g, r, match, minsiz, tol, stop);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class canBiomeGenerate {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("canBiomeGenerate");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int canBiomeGenerate(int layerId, int mc, uint32_t flags, int biomeID)
-     * }
-     */
-    public static FunctionDescriptor canBiomeGenerate$descriptor() {
-        return canBiomeGenerate.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int canBiomeGenerate(int layerId, int mc, uint32_t flags, int biomeID)
-     * }
-     */
-    public static MethodHandle canBiomeGenerate$handle() {
-        return canBiomeGenerate.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int canBiomeGenerate(int layerId, int mc, uint32_t flags, int biomeID)
-     * }
-     */
-    public static MemorySegment canBiomeGenerate$address() {
-        return canBiomeGenerate.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int canBiomeGenerate(int layerId, int mc, uint32_t flags, int biomeID)
-     * }
-     */
-    public static int canBiomeGenerate(int layerId, int mc, int flags, int biomeID) {
-        var mh$ = canBiomeGenerate.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("canBiomeGenerate", layerId, mc, flags, biomeID);
-            }
-            return (int)mh$.invokeExact(layerId, mc, flags, biomeID);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class genPotential {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
-            Cubiomes.C_POINTER,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("genPotential");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * void genPotential(uint64_t *mL, uint64_t *mM, int layerId, int mc, uint32_t flags, int biomeID)
-     * }
-     */
-    public static FunctionDescriptor genPotential$descriptor() {
-        return genPotential.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * void genPotential(uint64_t *mL, uint64_t *mM, int layerId, int mc, uint32_t flags, int biomeID)
-     * }
-     */
-    public static MethodHandle genPotential$handle() {
-        return genPotential.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * void genPotential(uint64_t *mL, uint64_t *mM, int layerId, int mc, uint32_t flags, int biomeID)
-     * }
-     */
-    public static MemorySegment genPotential$address() {
-        return genPotential.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * void genPotential(uint64_t *mL, uint64_t *mM, int layerId, int mc, uint32_t flags, int biomeID)
-     * }
-     */
-    public static void genPotential(MemorySegment mL, MemorySegment mM, int layerId, int mc, int flags, int biomeID) {
-        var mh$ = genPotential.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("genPotential", mL, mM, layerId, mc, flags, biomeID);
-            }
-            mh$.invokeExact(mL, mM, layerId, mc, flags, biomeID);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class getAvailableBiomes {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
-            Cubiomes.C_POINTER,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getAvailableBiomes");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * void getAvailableBiomes(uint64_t *mL, uint64_t *mM, int layerId, int mc, uint32_t flags)
-     * }
-     */
-    public static FunctionDescriptor getAvailableBiomes$descriptor() {
-        return getAvailableBiomes.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * void getAvailableBiomes(uint64_t *mL, uint64_t *mM, int layerId, int mc, uint32_t flags)
-     * }
-     */
-    public static MethodHandle getAvailableBiomes$handle() {
-        return getAvailableBiomes.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * void getAvailableBiomes(uint64_t *mL, uint64_t *mM, int layerId, int mc, uint32_t flags)
-     * }
-     */
-    public static MemorySegment getAvailableBiomes$address() {
-        return getAvailableBiomes.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * void getAvailableBiomes(uint64_t *mL, uint64_t *mM, int layerId, int mc, uint32_t flags)
-     * }
-     */
-    public static void getAvailableBiomes(MemorySegment mL, MemorySegment mM, int layerId, int mc, int flags) {
-        var mh$ = getAvailableBiomes.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("getAvailableBiomes", mL, mM, layerId, mc, flags);
-            }
-            mh$.invokeExact(mL, mM, layerId, mc, flags);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class getParaDescent {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_DOUBLE,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_DOUBLE,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_DOUBLE,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_POINTER
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getParaDescent");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * double getParaDescent(const DoublePerlinNoise *para, double factor, int x, int z, int w, int h, int i0, int j0, int maxrad, int maxiter, double alpha, void *data, int (*func)(void *, int, int, double))
-     * }
-     */
-    public static FunctionDescriptor getParaDescent$descriptor() {
-        return getParaDescent.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * double getParaDescent(const DoublePerlinNoise *para, double factor, int x, int z, int w, int h, int i0, int j0, int maxrad, int maxiter, double alpha, void *data, int (*func)(void *, int, int, double))
-     * }
-     */
-    public static MethodHandle getParaDescent$handle() {
-        return getParaDescent.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * double getParaDescent(const DoublePerlinNoise *para, double factor, int x, int z, int w, int h, int i0, int j0, int maxrad, int maxiter, double alpha, void *data, int (*func)(void *, int, int, double))
-     * }
-     */
-    public static MemorySegment getParaDescent$address() {
-        return getParaDescent.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * double getParaDescent(const DoublePerlinNoise *para, double factor, int x, int z, int w, int h, int i0, int j0, int maxrad, int maxiter, double alpha, void *data, int (*func)(void *, int, int, double))
-     * }
-     */
-    public static double getParaDescent(MemorySegment para, double factor, int x, int z, int w, int h, int i0, int j0, int maxrad, int maxiter, double alpha, MemorySegment data, MemorySegment func) {
-        var mh$ = getParaDescent.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("getParaDescent", para, factor, x, z, w, h, i0, j0, maxrad, maxiter, alpha, data, func);
-            }
-            return (double)mh$.invokeExact(para, factor, x, z, w, h, i0, j0, maxrad, maxiter, alpha, data, func);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class getParaRange {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_POINTER
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getParaRange");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int getParaRange(const DoublePerlinNoise *para, double *pmin, double *pmax, int x, int z, int w, int h, void *data, int (*func)(void *, int, int, double))
-     * }
-     */
-    public static FunctionDescriptor getParaRange$descriptor() {
-        return getParaRange.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int getParaRange(const DoublePerlinNoise *para, double *pmin, double *pmax, int x, int z, int w, int h, void *data, int (*func)(void *, int, int, double))
-     * }
-     */
-    public static MethodHandle getParaRange$handle() {
-        return getParaRange.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int getParaRange(const DoublePerlinNoise *para, double *pmin, double *pmax, int x, int z, int w, int h, void *data, int (*func)(void *, int, int, double))
-     * }
-     */
-    public static MemorySegment getParaRange$address() {
-        return getParaRange.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int getParaRange(const DoublePerlinNoise *para, double *pmin, double *pmax, int x, int z, int w, int h, void *data, int (*func)(void *, int, int, double))
-     * }
-     */
-    public static int getParaRange(MemorySegment para, MemorySegment pmin, MemorySegment pmax, int x, int z, int w, int h, MemorySegment data, MemorySegment func) {
-        var mh$ = getParaRange.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("getParaRange", para, pmin, pmax, x, z, w, h, data, func);
-            }
-            return (int)mh$.invokeExact(para, pmin, pmax, x, z, w, h, data, func);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class getBiomeParaExtremes {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getBiomeParaExtremes");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * const int *getBiomeParaExtremes(int mc)
-     * }
-     */
-    public static FunctionDescriptor getBiomeParaExtremes$descriptor() {
-        return getBiomeParaExtremes.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * const int *getBiomeParaExtremes(int mc)
-     * }
-     */
-    public static MethodHandle getBiomeParaExtremes$handle() {
-        return getBiomeParaExtremes.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * const int *getBiomeParaExtremes(int mc)
-     * }
-     */
-    public static MemorySegment getBiomeParaExtremes$address() {
-        return getBiomeParaExtremes.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * const int *getBiomeParaExtremes(int mc)
-     * }
-     */
-    public static MemorySegment getBiomeParaExtremes(int mc) {
-        var mh$ = getBiomeParaExtremes.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("getBiomeParaExtremes", mc);
-            }
-            return (MemorySegment)mh$.invokeExact(mc);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class getBiomeParaLimits {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getBiomeParaLimits");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * const int *getBiomeParaLimits(int mc, int id)
-     * }
-     */
-    public static FunctionDescriptor getBiomeParaLimits$descriptor() {
-        return getBiomeParaLimits.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * const int *getBiomeParaLimits(int mc, int id)
-     * }
-     */
-    public static MethodHandle getBiomeParaLimits$handle() {
-        return getBiomeParaLimits.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * const int *getBiomeParaLimits(int mc, int id)
-     * }
-     */
-    public static MemorySegment getBiomeParaLimits$address() {
-        return getBiomeParaLimits.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * const int *getBiomeParaLimits(int mc, int id)
-     * }
-     */
-    public static MemorySegment getBiomeParaLimits(int mc, int id) {
-        var mh$ = getBiomeParaLimits.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("getBiomeParaLimits", mc, id);
-            }
-            return (MemorySegment)mh$.invokeExact(mc, id);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class getPossibleBiomesForLimits {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getPossibleBiomesForLimits");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * void getPossibleBiomesForLimits(char ids[256], int mc, int limits[6][2])
-     * }
-     */
-    public static FunctionDescriptor getPossibleBiomesForLimits$descriptor() {
-        return getPossibleBiomesForLimits.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * void getPossibleBiomesForLimits(char ids[256], int mc, int limits[6][2])
-     * }
-     */
-    public static MethodHandle getPossibleBiomesForLimits$handle() {
-        return getPossibleBiomesForLimits.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * void getPossibleBiomesForLimits(char ids[256], int mc, int limits[6][2])
-     * }
-     */
-    public static MemorySegment getPossibleBiomesForLimits$address() {
-        return getPossibleBiomesForLimits.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * void getPossibleBiomesForLimits(char ids[256], int mc, int limits[6][2])
-     * }
-     */
-    public static void getPossibleBiomesForLimits(MemorySegment ids, int mc, MemorySegment limits) {
-        var mh$ = getPossibleBiomesForLimits.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("getPossibleBiomesForLimits", ids, mc, limits);
-            }
-            mh$.invokeExact(ids, mc, limits);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class getLargestRec {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_POINTER
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getLargestRec");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int getLargestRec(int match, const int *ids, int sx, int sz, Pos *p0, Pos *p1)
-     * }
-     */
-    public static FunctionDescriptor getLargestRec$descriptor() {
-        return getLargestRec.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int getLargestRec(int match, const int *ids, int sx, int sz, Pos *p0, Pos *p1)
-     * }
-     */
-    public static MethodHandle getLargestRec$handle() {
-        return getLargestRec.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int getLargestRec(int match, const int *ids, int sx, int sz, Pos *p0, Pos *p1)
-     * }
-     */
-    public static MemorySegment getLargestRec$address() {
-        return getLargestRec.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int getLargestRec(int match, const int *ids, int sx, int sz, Pos *p0, Pos *p1)
-     * }
-     */
-    public static int getLargestRec(int match, MemorySegment ids, int sx, int sz, MemorySegment p0, MemorySegment p1) {
-        var mh$ = getLargestRec.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("getLargestRec", match, ids, sx, sz, p0, p1);
-            }
-            return (int)mh$.invokeExact(match, ids, sx, sz, p0, p1);
         } catch (Error | RuntimeException ex) {
            throw ex;
         } catch (Throwable ex$) {
@@ -15354,10 +10187,27 @@ class Cubiomes_1 extends Cubiomes$shared {
     public static int OTP_MAX() {
         return OTP_MAX;
     }
+    private static final int INTERP_PRE_1_18 = (int)0L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.INTERP_PRE_1_18 = 0
+     * }
+     */
+    public static int INTERP_PRE_1_18() {
+        return INTERP_PRE_1_18;
+    }
+    private static final int INTERP_1_18 = (int)1L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.INTERP_1_18 = 1
+     * }
+     */
+    public static int INTERP_1_18() {
+        return INTERP_1_18;
+    }
 
     private static class setupTerrainNoise {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
+        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
             Cubiomes.C_POINTER,
             Cubiomes.C_INT,
             Cubiomes.C_INT
@@ -15371,7 +10221,7 @@ class Cubiomes_1 extends Cubiomes$shared {
     /**
      * Function descriptor for:
      * {@snippet lang=c :
-     * int setupTerrainNoise(TerrainNoise *params, int mc, int flags)
+     * void setupTerrainNoise(TerrainNoise *params, int mc, int flags)
      * }
      */
     public static FunctionDescriptor setupTerrainNoise$descriptor() {
@@ -15381,7 +10231,7 @@ class Cubiomes_1 extends Cubiomes$shared {
     /**
      * Downcall method handle for:
      * {@snippet lang=c :
-     * int setupTerrainNoise(TerrainNoise *params, int mc, int flags)
+     * void setupTerrainNoise(TerrainNoise *params, int mc, int flags)
      * }
      */
     public static MethodHandle setupTerrainNoise$handle() {
@@ -15391,7 +10241,7 @@ class Cubiomes_1 extends Cubiomes$shared {
     /**
      * Address for:
      * {@snippet lang=c :
-     * int setupTerrainNoise(TerrainNoise *params, int mc, int flags)
+     * void setupTerrainNoise(TerrainNoise *params, int mc, int flags)
      * }
      */
     public static MemorySegment setupTerrainNoise$address() {
@@ -15400,16 +10250,16 @@ class Cubiomes_1 extends Cubiomes$shared {
 
     /**
      * {@snippet lang=c :
-     * int setupTerrainNoise(TerrainNoise *params, int mc, int flags)
+     * void setupTerrainNoise(TerrainNoise *params, int mc, int flags)
      * }
      */
-    public static int setupTerrainNoise(MemorySegment params, int mc, int flags) {
+    public static void setupTerrainNoise(MemorySegment params, int mc, int flags) {
         var mh$ = setupTerrainNoise.HANDLE;
         try {
             if (TRACE_DOWNCALLS) {
                 traceDowncall("setupTerrainNoise", params, mc, flags);
             }
-            return (int)mh$.invokeExact(params, mc, flags);
+            mh$.invokeExact(params, mc, flags);
         } catch (Error | RuntimeException ex) {
            throw ex;
         } catch (Throwable ex$) {
@@ -15418,10 +10268,9 @@ class Cubiomes_1 extends Cubiomes$shared {
     }
 
     private static class initTerrainNoise {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
+        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
             Cubiomes.C_POINTER,
-            Cubiomes.C_LONG_LONG,
+            Cubiomes.C_LONG,
             Cubiomes.C_INT
         );
 
@@ -15433,7 +10282,7 @@ class Cubiomes_1 extends Cubiomes$shared {
     /**
      * Function descriptor for:
      * {@snippet lang=c :
-     * int initTerrainNoise(TerrainNoise *params, uint64_t ws, int dim)
+     * void initTerrainNoise(TerrainNoise *params, uint64_t ws, int dim)
      * }
      */
     public static FunctionDescriptor initTerrainNoise$descriptor() {
@@ -15443,7 +10292,7 @@ class Cubiomes_1 extends Cubiomes$shared {
     /**
      * Downcall method handle for:
      * {@snippet lang=c :
-     * int initTerrainNoise(TerrainNoise *params, uint64_t ws, int dim)
+     * void initTerrainNoise(TerrainNoise *params, uint64_t ws, int dim)
      * }
      */
     public static MethodHandle initTerrainNoise$handle() {
@@ -15453,7 +10302,7 @@ class Cubiomes_1 extends Cubiomes$shared {
     /**
      * Address for:
      * {@snippet lang=c :
-     * int initTerrainNoise(TerrainNoise *params, uint64_t ws, int dim)
+     * void initTerrainNoise(TerrainNoise *params, uint64_t ws, int dim)
      * }
      */
     public static MemorySegment initTerrainNoise$address() {
@@ -15462,16 +10311,16 @@ class Cubiomes_1 extends Cubiomes$shared {
 
     /**
      * {@snippet lang=c :
-     * int initTerrainNoise(TerrainNoise *params, uint64_t ws, int dim)
+     * void initTerrainNoise(TerrainNoise *params, uint64_t ws, int dim)
      * }
      */
-    public static int initTerrainNoise(MemorySegment params, long ws, int dim) {
+    public static void initTerrainNoise(MemorySegment params, long ws, int dim) {
         var mh$ = initTerrainNoise.HANDLE;
         try {
             if (TRACE_DOWNCALLS) {
                 traceDowncall("initTerrainNoise", params, ws, dim);
             }
-            return (int)mh$.invokeExact(params, ws, dim);
+            mh$.invokeExact(params, ws, dim);
         } catch (Error | RuntimeException ex) {
            throw ex;
         } catch (Throwable ex$) {
@@ -16309,6 +11158,69 @@ class Cubiomes_1 extends Cubiomes$shared {
         }
     }
 
+    private static class sampleNetherFinalDensity {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_DOUBLE,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("sampleNetherFinalDensity");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * double sampleNetherFinalDensity(BlendedNoise *base3dNoise, int x, int y, int z)
+     * }
+     */
+    public static FunctionDescriptor sampleNetherFinalDensity$descriptor() {
+        return sampleNetherFinalDensity.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * double sampleNetherFinalDensity(BlendedNoise *base3dNoise, int x, int y, int z)
+     * }
+     */
+    public static MethodHandle sampleNetherFinalDensity$handle() {
+        return sampleNetherFinalDensity.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * double sampleNetherFinalDensity(BlendedNoise *base3dNoise, int x, int y, int z)
+     * }
+     */
+    public static MemorySegment sampleNetherFinalDensity$address() {
+        return sampleNetherFinalDensity.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * double sampleNetherFinalDensity(BlendedNoise *base3dNoise, int x, int y, int z)
+     * }
+     */
+    public static double sampleNetherFinalDensity(MemorySegment base3dNoise, int x, int y, int z) {
+        var mh$ = sampleNetherFinalDensity.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("sampleNetherFinalDensity", base3dNoise, x, y, z);
+            }
+            return (double)mh$.invokeExact(base3dNoise, x, y, z);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
     private static class samplePreliminarySurfaceLevel {
         public static final FunctionDescriptor DESC = FunctionDescriptor.of(
             Cubiomes.C_INT,
@@ -16376,6 +11288,8 @@ class Cubiomes_1 extends Cubiomes$shared {
             Cubiomes.C_POINTER,
             Cubiomes.C_INT,
             Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
             Cubiomes.C_POINTER
         );
 
@@ -16387,7 +11301,7 @@ class Cubiomes_1 extends Cubiomes$shared {
     /**
      * Function descriptor for:
      * {@snippet lang=c :
-     * void sampleNoiseColumn(TerrainNoise *params, int cellX, int cellZ, double buffer[49])
+     * void sampleNoiseColumn(TerrainNoise *params, int cellX, int cellZ, int colYMin, int colYMax, double column[])
      * }
      */
     public static FunctionDescriptor sampleNoiseColumn$descriptor() {
@@ -16397,7 +11311,7 @@ class Cubiomes_1 extends Cubiomes$shared {
     /**
      * Downcall method handle for:
      * {@snippet lang=c :
-     * void sampleNoiseColumn(TerrainNoise *params, int cellX, int cellZ, double buffer[49])
+     * void sampleNoiseColumn(TerrainNoise *params, int cellX, int cellZ, int colYMin, int colYMax, double column[])
      * }
      */
     public static MethodHandle sampleNoiseColumn$handle() {
@@ -16407,7 +11321,7 @@ class Cubiomes_1 extends Cubiomes$shared {
     /**
      * Address for:
      * {@snippet lang=c :
-     * void sampleNoiseColumn(TerrainNoise *params, int cellX, int cellZ, double buffer[49])
+     * void sampleNoiseColumn(TerrainNoise *params, int cellX, int cellZ, int colYMin, int colYMax, double column[])
      * }
      */
     public static MemorySegment sampleNoiseColumn$address() {
@@ -16416,16 +11330,80 @@ class Cubiomes_1 extends Cubiomes$shared {
 
     /**
      * {@snippet lang=c :
-     * void sampleNoiseColumn(TerrainNoise *params, int cellX, int cellZ, double buffer[49])
+     * void sampleNoiseColumn(TerrainNoise *params, int cellX, int cellZ, int colYMin, int colYMax, double column[])
      * }
      */
-    public static void sampleNoiseColumn(MemorySegment params, int cellX, int cellZ, MemorySegment buffer) {
+    public static void sampleNoiseColumn(MemorySegment params, int cellX, int cellZ, int colYMin, int colYMax, MemorySegment column) {
         var mh$ = sampleNoiseColumn.HANDLE;
         try {
             if (TRACE_DOWNCALLS) {
-                traceDowncall("sampleNoiseColumn", params, cellX, cellZ, buffer);
+                traceDowncall("sampleNoiseColumn", params, cellX, cellZ, colYMin, colYMax, column);
             }
-            mh$.invokeExact(params, cellX, cellZ, buffer);
+            mh$.invokeExact(params, cellX, cellZ, colYMin, colYMax, column);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class sampleNetherNoiseColumn {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("sampleNetherNoiseColumn");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * void sampleNetherNoiseColumn(BlendedNoise *base3dNoise, int cellX, int cellZ, int colYMin, int colYMax, double column[])
+     * }
+     */
+    public static FunctionDescriptor sampleNetherNoiseColumn$descriptor() {
+        return sampleNetherNoiseColumn.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * void sampleNetherNoiseColumn(BlendedNoise *base3dNoise, int cellX, int cellZ, int colYMin, int colYMax, double column[])
+     * }
+     */
+    public static MethodHandle sampleNetherNoiseColumn$handle() {
+        return sampleNetherNoiseColumn.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * void sampleNetherNoiseColumn(BlendedNoise *base3dNoise, int cellX, int cellZ, int colYMin, int colYMax, double column[])
+     * }
+     */
+    public static MemorySegment sampleNetherNoiseColumn$address() {
+        return sampleNetherNoiseColumn.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * void sampleNetherNoiseColumn(BlendedNoise *base3dNoise, int cellX, int cellZ, int colYMin, int colYMax, double column[])
+     * }
+     */
+    public static void sampleNetherNoiseColumn(MemorySegment base3dNoise, int cellX, int cellZ, int colYMin, int colYMax, MemorySegment column) {
+        var mh$ = sampleNetherNoiseColumn.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("sampleNetherNoiseColumn", base3dNoise, cellX, cellZ, colYMin, colYMax, column);
+            }
+            mh$.invokeExact(base3dNoise, cellX, cellZ, colYMin, colYMax, column);
         } catch (Error | RuntimeException ex) {
            throw ex;
         } catch (Throwable ex$) {
@@ -16436,13 +11414,18 @@ class Cubiomes_1 extends Cubiomes$shared {
     private static class generateColumn {
         public static final FunctionDescriptor DESC = FunctionDescriptor.of(
             Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_POINTER,
             Cubiomes.C_INT,
             Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_POINTER,
+            Cubiomes.C_INT,
+            Cubiomes.C_DOUBLE,
+            Cubiomes.C_DOUBLE,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
             Cubiomes.C_INT
         );
 
@@ -16454,7 +11437,7 @@ class Cubiomes_1 extends Cubiomes$shared {
     /**
      * Function descriptor for:
      * {@snippet lang=c :
-     * int generateColumn(int x, int z, int blocks[384], const double ds00[49], const double ds01[49], const double ds10[49], const double ds11[49], int flag)
+     * int generateColumn(uint8_t blocks[], const double *ds00, const double *ds01, const double *ds10, const double *ds11, int colYMin, int colYMax, int cellHeight, double percentX, double percentZ, int interpFunc, int worldMinY, int flag)
      * }
      */
     public static FunctionDescriptor generateColumn$descriptor() {
@@ -16464,7 +11447,7 @@ class Cubiomes_1 extends Cubiomes$shared {
     /**
      * Downcall method handle for:
      * {@snippet lang=c :
-     * int generateColumn(int x, int z, int blocks[384], const double ds00[49], const double ds01[49], const double ds10[49], const double ds11[49], int flag)
+     * int generateColumn(uint8_t blocks[], const double *ds00, const double *ds01, const double *ds10, const double *ds11, int colYMin, int colYMax, int cellHeight, double percentX, double percentZ, int interpFunc, int worldMinY, int flag)
      * }
      */
     public static MethodHandle generateColumn$handle() {
@@ -16474,7 +11457,7 @@ class Cubiomes_1 extends Cubiomes$shared {
     /**
      * Address for:
      * {@snippet lang=c :
-     * int generateColumn(int x, int z, int blocks[384], const double ds00[49], const double ds01[49], const double ds10[49], const double ds11[49], int flag)
+     * int generateColumn(uint8_t blocks[], const double *ds00, const double *ds01, const double *ds10, const double *ds11, int colYMin, int colYMax, int cellHeight, double percentX, double percentZ, int interpFunc, int worldMinY, int flag)
      * }
      */
     public static MemorySegment generateColumn$address() {
@@ -16483,16 +11466,16 @@ class Cubiomes_1 extends Cubiomes$shared {
 
     /**
      * {@snippet lang=c :
-     * int generateColumn(int x, int z, int blocks[384], const double ds00[49], const double ds01[49], const double ds10[49], const double ds11[49], int flag)
+     * int generateColumn(uint8_t blocks[], const double *ds00, const double *ds01, const double *ds10, const double *ds11, int colYMin, int colYMax, int cellHeight, double percentX, double percentZ, int interpFunc, int worldMinY, int flag)
      * }
      */
-    public static int generateColumn(int x, int z, MemorySegment blocks, MemorySegment ds00, MemorySegment ds01, MemorySegment ds10, MemorySegment ds11, int flag) {
+    public static int generateColumn(MemorySegment blocks, MemorySegment ds00, MemorySegment ds01, MemorySegment ds10, MemorySegment ds11, int colYMin, int colYMax, int cellHeight, double percentX, double percentZ, int interpFunc, int worldMinY, int flag) {
         var mh$ = generateColumn.HANDLE;
         try {
             if (TRACE_DOWNCALLS) {
-                traceDowncall("generateColumn", x, z, blocks, ds00, ds01, ds10, ds11, flag);
+                traceDowncall("generateColumn", blocks, ds00, ds01, ds10, ds11, colYMin, colYMax, cellHeight, percentX, percentZ, interpFunc, worldMinY, flag);
             }
-            return (int)mh$.invokeExact(x, z, blocks, ds00, ds01, ds10, ds11, flag);
+            return (int)mh$.invokeExact(blocks, ds00, ds01, ds10, ds11, colYMin, colYMax, cellHeight, percentX, percentZ, interpFunc, worldMinY, flag);
         } catch (Error | RuntimeException ex) {
            throw ex;
         } catch (Throwable ex$) {
@@ -16508,6 +11491,8 @@ class Cubiomes_1 extends Cubiomes$shared {
             Cubiomes.C_INT,
             Cubiomes.C_INT,
             Cubiomes.C_POINTER,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
             Cubiomes.C_POINTER,
             Cubiomes.C_INT
         );
@@ -16520,7 +11505,7 @@ class Cubiomes_1 extends Cubiomes$shared {
     /**
      * Function descriptor for:
      * {@snippet lang=c :
-     * void generateRegion(TerrainNoise *params, int chunkX, int chunkZ, int chunkW, int chunkH, int (*blocks)[384], int *ys, int flag)
+     * void generateRegion(TerrainNoise *params, int chunkX, int chunkZ, int chunkW, int chunkH, uint8_t (*blocks)[], int colYMin, int colYMax, int *ys, int flag)
      * }
      */
     public static FunctionDescriptor generateRegion$descriptor() {
@@ -16530,7 +11515,7 @@ class Cubiomes_1 extends Cubiomes$shared {
     /**
      * Downcall method handle for:
      * {@snippet lang=c :
-     * void generateRegion(TerrainNoise *params, int chunkX, int chunkZ, int chunkW, int chunkH, int (*blocks)[384], int *ys, int flag)
+     * void generateRegion(TerrainNoise *params, int chunkX, int chunkZ, int chunkW, int chunkH, uint8_t (*blocks)[], int colYMin, int colYMax, int *ys, int flag)
      * }
      */
     public static MethodHandle generateRegion$handle() {
@@ -16540,7 +11525,7 @@ class Cubiomes_1 extends Cubiomes$shared {
     /**
      * Address for:
      * {@snippet lang=c :
-     * void generateRegion(TerrainNoise *params, int chunkX, int chunkZ, int chunkW, int chunkH, int (*blocks)[384], int *ys, int flag)
+     * void generateRegion(TerrainNoise *params, int chunkX, int chunkZ, int chunkW, int chunkH, uint8_t (*blocks)[], int colYMin, int colYMax, int *ys, int flag)
      * }
      */
     public static MemorySegment generateRegion$address() {
@@ -16549,16 +11534,4377 @@ class Cubiomes_1 extends Cubiomes$shared {
 
     /**
      * {@snippet lang=c :
-     * void generateRegion(TerrainNoise *params, int chunkX, int chunkZ, int chunkW, int chunkH, int (*blocks)[384], int *ys, int flag)
+     * void generateRegion(TerrainNoise *params, int chunkX, int chunkZ, int chunkW, int chunkH, uint8_t (*blocks)[], int colYMin, int colYMax, int *ys, int flag)
      * }
      */
-    public static void generateRegion(MemorySegment params, int chunkX, int chunkZ, int chunkW, int chunkH, MemorySegment blocks, MemorySegment ys, int flag) {
+    public static void generateRegion(MemorySegment params, int chunkX, int chunkZ, int chunkW, int chunkH, MemorySegment blocks, int colYMin, int colYMax, MemorySegment ys, int flag) {
         var mh$ = generateRegion.HANDLE;
         try {
             if (TRACE_DOWNCALLS) {
-                traceDowncall("generateRegion", params, chunkX, chunkZ, chunkW, chunkH, blocks, ys, flag);
+                traceDowncall("generateRegion", params, chunkX, chunkZ, chunkW, chunkH, blocks, colYMin, colYMax, ys, flag);
             }
-            mh$.invokeExact(params, chunkX, chunkZ, chunkW, chunkH, blocks, ys, flag);
+            mh$.invokeExact(params, chunkX, chunkZ, chunkW, chunkH, blocks, colYMin, colYMax, ys, flag);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+    private static final int Feature = (int)0L;
+    /**
+     * {@snippet lang=c :
+     * enum StructureType.Feature = 0
+     * }
+     */
+    public static int Feature() {
+        return Feature;
+    }
+    private static final int Desert_Pyramid = (int)1L;
+    /**
+     * {@snippet lang=c :
+     * enum StructureType.Desert_Pyramid = 1
+     * }
+     */
+    public static int Desert_Pyramid() {
+        return Desert_Pyramid;
+    }
+    private static final int Jungle_Temple = (int)2L;
+    /**
+     * {@snippet lang=c :
+     * enum StructureType.Jungle_Temple = 2
+     * }
+     */
+    public static int Jungle_Temple() {
+        return Jungle_Temple;
+    }
+    private static final int Jungle_Pyramid = (int)2L;
+    /**
+     * {@snippet lang=c :
+     * enum StructureType.Jungle_Pyramid = 2
+     * }
+     */
+    public static int Jungle_Pyramid() {
+        return Jungle_Pyramid;
+    }
+    private static final int Swamp_Hut = (int)3L;
+    /**
+     * {@snippet lang=c :
+     * enum StructureType.Swamp_Hut = 3
+     * }
+     */
+    public static int Swamp_Hut() {
+        return Swamp_Hut;
+    }
+    private static final int Igloo = (int)4L;
+    /**
+     * {@snippet lang=c :
+     * enum StructureType.Igloo = 4
+     * }
+     */
+    public static int Igloo() {
+        return Igloo;
+    }
+    private static final int Village = (int)5L;
+    /**
+     * {@snippet lang=c :
+     * enum StructureType.Village = 5
+     * }
+     */
+    public static int Village() {
+        return Village;
+    }
+    private static final int Ocean_Ruin = (int)6L;
+    /**
+     * {@snippet lang=c :
+     * enum StructureType.Ocean_Ruin = 6
+     * }
+     */
+    public static int Ocean_Ruin() {
+        return Ocean_Ruin;
+    }
+    private static final int Shipwreck = (int)7L;
+    /**
+     * {@snippet lang=c :
+     * enum StructureType.Shipwreck = 7
+     * }
+     */
+    public static int Shipwreck() {
+        return Shipwreck;
+    }
+    private static final int Monument = (int)8L;
+    /**
+     * {@snippet lang=c :
+     * enum StructureType.Monument = 8
+     * }
+     */
+    public static int Monument() {
+        return Monument;
+    }
+    private static final int Mansion = (int)9L;
+    /**
+     * {@snippet lang=c :
+     * enum StructureType.Mansion = 9
+     * }
+     */
+    public static int Mansion() {
+        return Mansion;
+    }
+    private static final int Outpost = (int)10L;
+    /**
+     * {@snippet lang=c :
+     * enum StructureType.Outpost = 10
+     * }
+     */
+    public static int Outpost() {
+        return Outpost;
+    }
+    private static final int Ruined_Portal = (int)11L;
+    /**
+     * {@snippet lang=c :
+     * enum StructureType.Ruined_Portal = 11
+     * }
+     */
+    public static int Ruined_Portal() {
+        return Ruined_Portal;
+    }
+    private static final int Ruined_Portal_N = (int)12L;
+    /**
+     * {@snippet lang=c :
+     * enum StructureType.Ruined_Portal_N = 12
+     * }
+     */
+    public static int Ruined_Portal_N() {
+        return Ruined_Portal_N;
+    }
+    private static final int Ancient_City = (int)13L;
+    /**
+     * {@snippet lang=c :
+     * enum StructureType.Ancient_City = 13
+     * }
+     */
+    public static int Ancient_City() {
+        return Ancient_City;
+    }
+    private static final int Treasure = (int)14L;
+    /**
+     * {@snippet lang=c :
+     * enum StructureType.Treasure = 14
+     * }
+     */
+    public static int Treasure() {
+        return Treasure;
+    }
+    private static final int Mineshaft = (int)15L;
+    /**
+     * {@snippet lang=c :
+     * enum StructureType.Mineshaft = 15
+     * }
+     */
+    public static int Mineshaft() {
+        return Mineshaft;
+    }
+    private static final int Desert_Well = (int)16L;
+    /**
+     * {@snippet lang=c :
+     * enum StructureType.Desert_Well = 16
+     * }
+     */
+    public static int Desert_Well() {
+        return Desert_Well;
+    }
+    private static final int Geode = (int)17L;
+    /**
+     * {@snippet lang=c :
+     * enum StructureType.Geode = 17
+     * }
+     */
+    public static int Geode() {
+        return Geode;
+    }
+    private static final int Fortress = (int)18L;
+    /**
+     * {@snippet lang=c :
+     * enum StructureType.Fortress = 18
+     * }
+     */
+    public static int Fortress() {
+        return Fortress;
+    }
+    private static final int Bastion = (int)19L;
+    /**
+     * {@snippet lang=c :
+     * enum StructureType.Bastion = 19
+     * }
+     */
+    public static int Bastion() {
+        return Bastion;
+    }
+    private static final int Nether_Fossil = (int)20L;
+    /**
+     * {@snippet lang=c :
+     * enum StructureType.Nether_Fossil = 20
+     * }
+     */
+    public static int Nether_Fossil() {
+        return Nether_Fossil;
+    }
+    private static final int End_City = (int)21L;
+    /**
+     * {@snippet lang=c :
+     * enum StructureType.End_City = 21
+     * }
+     */
+    public static int End_City() {
+        return End_City;
+    }
+    private static final int End_Gateway = (int)22L;
+    /**
+     * {@snippet lang=c :
+     * enum StructureType.End_Gateway = 22
+     * }
+     */
+    public static int End_Gateway() {
+        return End_Gateway;
+    }
+    private static final int End_Island = (int)23L;
+    /**
+     * {@snippet lang=c :
+     * enum StructureType.End_Island = 23
+     * }
+     */
+    public static int End_Island() {
+        return End_Island;
+    }
+    private static final int Trail_Ruins = (int)24L;
+    /**
+     * {@snippet lang=c :
+     * enum StructureType.Trail_Ruins = 24
+     * }
+     */
+    public static int Trail_Ruins() {
+        return Trail_Ruins;
+    }
+    private static final int Trial_Chambers = (int)25L;
+    /**
+     * {@snippet lang=c :
+     * enum StructureType.Trial_Chambers = 25
+     * }
+     */
+    public static int Trial_Chambers() {
+        return Trial_Chambers;
+    }
+    private static final int Abandoned_Camp = (int)26L;
+    /**
+     * {@snippet lang=c :
+     * enum StructureType.Abandoned_Camp = 26
+     * }
+     */
+    public static int Abandoned_Camp() {
+        return Abandoned_Camp;
+    }
+    private static final int Stronghold = (int)27L;
+    /**
+     * {@snippet lang=c :
+     * enum StructureType.Stronghold = 27
+     * }
+     */
+    public static int Stronghold() {
+        return Stronghold;
+    }
+    private static final int FEATURE_NUM = (int)28L;
+    /**
+     * {@snippet lang=c :
+     * enum StructureType.FEATURE_NUM = 28
+     * }
+     */
+    public static int FEATURE_NUM() {
+        return FEATURE_NUM;
+    }
+
+    private static class createPos3List {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("createPos3List");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * void createPos3List(Pos3List *list, int initialCapacity)
+     * }
+     */
+    public static FunctionDescriptor createPos3List$descriptor() {
+        return createPos3List.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * void createPos3List(Pos3List *list, int initialCapacity)
+     * }
+     */
+    public static MethodHandle createPos3List$handle() {
+        return createPos3List.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * void createPos3List(Pos3List *list, int initialCapacity)
+     * }
+     */
+    public static MemorySegment createPos3List$address() {
+        return createPos3List.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * void createPos3List(Pos3List *list, int initialCapacity)
+     * }
+     */
+    public static void createPos3List(MemorySegment list, int initialCapacity) {
+        var mh$ = createPos3List.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("createPos3List", list, initialCapacity);
+            }
+            mh$.invokeExact(list, initialCapacity);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class appendPos3List {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
+            Cubiomes.C_POINTER,
+            Pos3.layout()
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("appendPos3List");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * void appendPos3List(Pos3List *list, Pos3 pos3)
+     * }
+     */
+    public static FunctionDescriptor appendPos3List$descriptor() {
+        return appendPos3List.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * void appendPos3List(Pos3List *list, Pos3 pos3)
+     * }
+     */
+    public static MethodHandle appendPos3List$handle() {
+        return appendPos3List.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * void appendPos3List(Pos3List *list, Pos3 pos3)
+     * }
+     */
+    public static MemorySegment appendPos3List$address() {
+        return appendPos3List.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * void appendPos3List(Pos3List *list, Pos3 pos3)
+     * }
+     */
+    public static void appendPos3List(MemorySegment list, MemorySegment pos3) {
+        var mh$ = appendPos3List.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("appendPos3List", list, pos3);
+            }
+            mh$.invokeExact(list, pos3);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class freePos3List {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
+            Cubiomes.C_POINTER
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("freePos3List");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * void freePos3List(Pos3List *list)
+     * }
+     */
+    public static FunctionDescriptor freePos3List$descriptor() {
+        return freePos3List.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * void freePos3List(Pos3List *list)
+     * }
+     */
+    public static MethodHandle freePos3List$handle() {
+        return freePos3List.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * void freePos3List(Pos3List *list)
+     * }
+     */
+    public static MemorySegment freePos3List$address() {
+        return freePos3List.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * void freePos3List(Pos3List *list)
+     * }
+     */
+    public static void freePos3List(MemorySegment list) {
+        var mh$ = freePos3List.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("freePos3List", list);
+            }
+            mh$.invokeExact(list);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+    private static final int BF_APPROX = (int)1L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.BF_APPROX = 1
+     * }
+     */
+    public static int BF_APPROX() {
+        return BF_APPROX;
+    }
+    private static final int BF_FORCED_OCEAN = (int)4L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.BF_FORCED_OCEAN = 4
+     * }
+     */
+    public static int BF_FORCED_OCEAN() {
+        return BF_FORCED_OCEAN;
+    }
+
+    private static class getStructureConfig_default {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getStructureConfig_default");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int getStructureConfig_default(int structureType, int mc, StructureConfig *sconf)
+     * }
+     */
+    public static FunctionDescriptor getStructureConfig_default$descriptor() {
+        return getStructureConfig_default.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int getStructureConfig_default(int structureType, int mc, StructureConfig *sconf)
+     * }
+     */
+    public static MethodHandle getStructureConfig_default$handle() {
+        return getStructureConfig_default.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int getStructureConfig_default(int structureType, int mc, StructureConfig *sconf)
+     * }
+     */
+    public static MemorySegment getStructureConfig_default$address() {
+        return getStructureConfig_default.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int getStructureConfig_default(int structureType, int mc, StructureConfig *sconf)
+     * }
+     */
+    public static int getStructureConfig_default(int structureType, int mc, MemorySegment sconf) {
+        var mh$ = getStructureConfig_default.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("getStructureConfig_default", structureType, mc, sconf);
+            }
+            return (int)mh$.invokeExact(structureType, mc, sconf);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class setStructureConfigProvider {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
+            Cubiomes.C_POINTER
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("setStructureConfigProvider");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * void setStructureConfigProvider(StructureConfigProvider fn)
+     * }
+     */
+    public static FunctionDescriptor setStructureConfigProvider$descriptor() {
+        return setStructureConfigProvider.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * void setStructureConfigProvider(StructureConfigProvider fn)
+     * }
+     */
+    public static MethodHandle setStructureConfigProvider$handle() {
+        return setStructureConfigProvider.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * void setStructureConfigProvider(StructureConfigProvider fn)
+     * }
+     */
+    public static MemorySegment setStructureConfigProvider$address() {
+        return setStructureConfigProvider.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * void setStructureConfigProvider(StructureConfigProvider fn)
+     * }
+     */
+    public static void setStructureConfigProvider(MemorySegment fn) {
+        var mh$ = setStructureConfigProvider.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("setStructureConfigProvider", fn);
+            }
+            mh$.invokeExact(fn);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class getStructureConfig {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getStructureConfig");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int getStructureConfig(int structureType, int mc, StructureConfig *sconf)
+     * }
+     */
+    public static FunctionDescriptor getStructureConfig$descriptor() {
+        return getStructureConfig.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int getStructureConfig(int structureType, int mc, StructureConfig *sconf)
+     * }
+     */
+    public static MethodHandle getStructureConfig$handle() {
+        return getStructureConfig.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int getStructureConfig(int structureType, int mc, StructureConfig *sconf)
+     * }
+     */
+    public static MemorySegment getStructureConfig$address() {
+        return getStructureConfig.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int getStructureConfig(int structureType, int mc, StructureConfig *sconf)
+     * }
+     */
+    public static int getStructureConfig(int structureType, int mc, MemorySegment sconf) {
+        var mh$ = getStructureConfig.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("getStructureConfig", structureType, mc, sconf);
+            }
+            return (int)mh$.invokeExact(structureType, mc, sconf);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class getStructureSaltConfig {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getStructureSaltConfig");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int getStructureSaltConfig(int structureType, int mc, int biome, StructureSaltConfig *ssconf)
+     * }
+     */
+    public static FunctionDescriptor getStructureSaltConfig$descriptor() {
+        return getStructureSaltConfig.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int getStructureSaltConfig(int structureType, int mc, int biome, StructureSaltConfig *ssconf)
+     * }
+     */
+    public static MethodHandle getStructureSaltConfig$handle() {
+        return getStructureSaltConfig.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int getStructureSaltConfig(int structureType, int mc, int biome, StructureSaltConfig *ssconf)
+     * }
+     */
+    public static MemorySegment getStructureSaltConfig$address() {
+        return getStructureSaltConfig.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int getStructureSaltConfig(int structureType, int mc, int biome, StructureSaltConfig *ssconf)
+     * }
+     */
+    public static int getStructureSaltConfig(int structureType, int mc, int biome, MemorySegment ssconf) {
+        var mh$ = getStructureSaltConfig.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("getStructureSaltConfig", structureType, mc, biome, ssconf);
+            }
+            return (int)mh$.invokeExact(structureType, mc, biome, ssconf);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class getStructurePos {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_LONG,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getStructurePos");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int getStructurePos(int structureType, int mc, uint64_t seed, int regX, int regZ, Pos *pos)
+     * }
+     */
+    public static FunctionDescriptor getStructurePos$descriptor() {
+        return getStructurePos.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int getStructurePos(int structureType, int mc, uint64_t seed, int regX, int regZ, Pos *pos)
+     * }
+     */
+    public static MethodHandle getStructurePos$handle() {
+        return getStructurePos.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int getStructurePos(int structureType, int mc, uint64_t seed, int regX, int regZ, Pos *pos)
+     * }
+     */
+    public static MemorySegment getStructurePos$address() {
+        return getStructurePos.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int getStructurePos(int structureType, int mc, uint64_t seed, int regX, int regZ, Pos *pos)
+     * }
+     */
+    public static int getStructurePos(int structureType, int mc, long seed, int regX, int regZ, MemorySegment pos) {
+        var mh$ = getStructurePos.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("getStructurePos", structureType, mc, seed, regX, regZ, pos);
+            }
+            return (int)mh$.invokeExact(structureType, mc, seed, regX, regZ, pos);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class getMineshafts {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_LONG,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getMineshafts");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int getMineshafts(int mc, uint64_t seed, int chunkX, int chunkZ, int chunkW, int chunkH, Pos *out, int nout)
+     * }
+     */
+    public static FunctionDescriptor getMineshafts$descriptor() {
+        return getMineshafts.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int getMineshafts(int mc, uint64_t seed, int chunkX, int chunkZ, int chunkW, int chunkH, Pos *out, int nout)
+     * }
+     */
+    public static MethodHandle getMineshafts$handle() {
+        return getMineshafts.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int getMineshafts(int mc, uint64_t seed, int chunkX, int chunkZ, int chunkW, int chunkH, Pos *out, int nout)
+     * }
+     */
+    public static MemorySegment getMineshafts$address() {
+        return getMineshafts.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int getMineshafts(int mc, uint64_t seed, int chunkX, int chunkZ, int chunkW, int chunkH, Pos *out, int nout)
+     * }
+     */
+    public static int getMineshafts(int mc, long seed, int chunkX, int chunkZ, int chunkW, int chunkH, MemorySegment out, int nout) {
+        var mh$ = getMineshafts.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("getMineshafts", mc, seed, chunkX, chunkZ, chunkW, chunkH, out, nout);
+            }
+            return (int)mh$.invokeExact(mc, seed, chunkX, chunkZ, chunkW, chunkH, out, nout);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class setAttemptSeed {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("setAttemptSeed");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * void setAttemptSeed(uint64_t *s, int cx, int cz)
+     * }
+     */
+    public static FunctionDescriptor setAttemptSeed$descriptor() {
+        return setAttemptSeed.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * void setAttemptSeed(uint64_t *s, int cx, int cz)
+     * }
+     */
+    public static MethodHandle setAttemptSeed$handle() {
+        return setAttemptSeed.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * void setAttemptSeed(uint64_t *s, int cx, int cz)
+     * }
+     */
+    public static MemorySegment setAttemptSeed$address() {
+        return setAttemptSeed.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * void setAttemptSeed(uint64_t *s, int cx, int cz)
+     * }
+     */
+    public static void setAttemptSeed(MemorySegment s, int cx, int cz) {
+        var mh$ = setAttemptSeed.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("setAttemptSeed", s, cx, cz);
+            }
+            mh$.invokeExact(s, cx, cz);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class getPopulationSeed {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_LONG,
+            Cubiomes.C_INT,
+            Cubiomes.C_LONG,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getPopulationSeed");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * uint64_t getPopulationSeed(int mc, uint64_t ws, int x, int z)
+     * }
+     */
+    public static FunctionDescriptor getPopulationSeed$descriptor() {
+        return getPopulationSeed.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * uint64_t getPopulationSeed(int mc, uint64_t ws, int x, int z)
+     * }
+     */
+    public static MethodHandle getPopulationSeed$handle() {
+        return getPopulationSeed.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * uint64_t getPopulationSeed(int mc, uint64_t ws, int x, int z)
+     * }
+     */
+    public static MemorySegment getPopulationSeed$address() {
+        return getPopulationSeed.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * uint64_t getPopulationSeed(int mc, uint64_t ws, int x, int z)
+     * }
+     */
+    public static long getPopulationSeed(int mc, long ws, int x, int z) {
+        var mh$ = getPopulationSeed.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("getPopulationSeed", mc, ws, x, z);
+            }
+            return (long)mh$.invokeExact(mc, ws, x, z);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class getEndIslands {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT,
+            Cubiomes.C_LONG,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getEndIslands");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int getEndIslands(EndIsland islands[2], int mc, uint64_t seed, int chunkX, int chunkZ)
+     * }
+     */
+    public static FunctionDescriptor getEndIslands$descriptor() {
+        return getEndIslands.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int getEndIslands(EndIsland islands[2], int mc, uint64_t seed, int chunkX, int chunkZ)
+     * }
+     */
+    public static MethodHandle getEndIslands$handle() {
+        return getEndIslands.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int getEndIslands(EndIsland islands[2], int mc, uint64_t seed, int chunkX, int chunkZ)
+     * }
+     */
+    public static MemorySegment getEndIslands$address() {
+        return getEndIslands.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int getEndIslands(EndIsland islands[2], int mc, uint64_t seed, int chunkX, int chunkZ)
+     * }
+     */
+    public static int getEndIslands(MemorySegment islands, int mc, long seed, int chunkX, int chunkZ) {
+        var mh$ = getEndIslands.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("getEndIslands", islands, mc, seed, chunkX, chunkZ);
+            }
+            return (int)mh$.invokeExact(islands, mc, seed, chunkX, chunkZ);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class mapEndIslandHeight {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_LONG,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("mapEndIslandHeight");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int mapEndIslandHeight(float *y, const EndNoise *en, uint64_t seed, int x, int z, int w, int h, int scale)
+     * }
+     */
+    public static FunctionDescriptor mapEndIslandHeight$descriptor() {
+        return mapEndIslandHeight.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int mapEndIslandHeight(float *y, const EndNoise *en, uint64_t seed, int x, int z, int w, int h, int scale)
+     * }
+     */
+    public static MethodHandle mapEndIslandHeight$handle() {
+        return mapEndIslandHeight.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int mapEndIslandHeight(float *y, const EndNoise *en, uint64_t seed, int x, int z, int w, int h, int scale)
+     * }
+     */
+    public static MemorySegment mapEndIslandHeight$address() {
+        return mapEndIslandHeight.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int mapEndIslandHeight(float *y, const EndNoise *en, uint64_t seed, int x, int z, int w, int h, int scale)
+     * }
+     */
+    public static int mapEndIslandHeight(MemorySegment y, MemorySegment en, long seed, int x, int z, int w, int h, int scale) {
+        var mh$ = mapEndIslandHeight.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("mapEndIslandHeight", y, en, seed, x, z, w, h, scale);
+            }
+            return (int)mh$.invokeExact(y, en, seed, x, z, w, h, scale);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class isEndChunkEmpty {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_LONG,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("isEndChunkEmpty");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int isEndChunkEmpty(const EndNoise *en, const SurfaceNoise *sn, uint64_t seed, int chunkX, int chunkZ)
+     * }
+     */
+    public static FunctionDescriptor isEndChunkEmpty$descriptor() {
+        return isEndChunkEmpty.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int isEndChunkEmpty(const EndNoise *en, const SurfaceNoise *sn, uint64_t seed, int chunkX, int chunkZ)
+     * }
+     */
+    public static MethodHandle isEndChunkEmpty$handle() {
+        return isEndChunkEmpty.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int isEndChunkEmpty(const EndNoise *en, const SurfaceNoise *sn, uint64_t seed, int chunkX, int chunkZ)
+     * }
+     */
+    public static MemorySegment isEndChunkEmpty$address() {
+        return isEndChunkEmpty.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int isEndChunkEmpty(const EndNoise *en, const SurfaceNoise *sn, uint64_t seed, int chunkX, int chunkZ)
+     * }
+     */
+    public static int isEndChunkEmpty(MemorySegment en, MemorySegment sn, long seed, int chunkX, int chunkZ) {
+        var mh$ = isEndChunkEmpty.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("isEndChunkEmpty", en, sn, seed, chunkX, chunkZ);
+            }
+            return (int)mh$.invokeExact(en, sn, seed, chunkX, chunkZ);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class initFirstStronghold {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Pos.layout(),
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT,
+            Cubiomes.C_LONG
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("initFirstStronghold");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * Pos initFirstStronghold(StrongholdIter *sh, int mc, uint64_t s48)
+     * }
+     */
+    public static FunctionDescriptor initFirstStronghold$descriptor() {
+        return initFirstStronghold.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * Pos initFirstStronghold(StrongholdIter *sh, int mc, uint64_t s48)
+     * }
+     */
+    public static MethodHandle initFirstStronghold$handle() {
+        return initFirstStronghold.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * Pos initFirstStronghold(StrongholdIter *sh, int mc, uint64_t s48)
+     * }
+     */
+    public static MemorySegment initFirstStronghold$address() {
+        return initFirstStronghold.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * Pos initFirstStronghold(StrongholdIter *sh, int mc, uint64_t s48)
+     * }
+     */
+    public static MemorySegment initFirstStronghold(SegmentAllocator allocator, MemorySegment sh, int mc, long s48) {
+        var mh$ = initFirstStronghold.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("initFirstStronghold", allocator, sh, mc, s48);
+            }
+            return (MemorySegment)mh$.invokeExact(allocator, sh, mc, s48);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class nextStronghold {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_POINTER
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("nextStronghold");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int nextStronghold(StrongholdIter *sh, const Generator *g)
+     * }
+     */
+    public static FunctionDescriptor nextStronghold$descriptor() {
+        return nextStronghold.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int nextStronghold(StrongholdIter *sh, const Generator *g)
+     * }
+     */
+    public static MethodHandle nextStronghold$handle() {
+        return nextStronghold.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int nextStronghold(StrongholdIter *sh, const Generator *g)
+     * }
+     */
+    public static MemorySegment nextStronghold$address() {
+        return nextStronghold.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int nextStronghold(StrongholdIter *sh, const Generator *g)
+     * }
+     */
+    public static int nextStronghold(MemorySegment sh, MemorySegment g) {
+        var mh$ = nextStronghold.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("nextStronghold", sh, g);
+            }
+            return (int)mh$.invokeExact(sh, g);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class estimateSpawn {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Pos.layout(),
+            Cubiomes.C_POINTER,
+            Cubiomes.C_POINTER
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("estimateSpawn");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * Pos estimateSpawn(const Generator *g, uint64_t *rng)
+     * }
+     */
+    public static FunctionDescriptor estimateSpawn$descriptor() {
+        return estimateSpawn.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * Pos estimateSpawn(const Generator *g, uint64_t *rng)
+     * }
+     */
+    public static MethodHandle estimateSpawn$handle() {
+        return estimateSpawn.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * Pos estimateSpawn(const Generator *g, uint64_t *rng)
+     * }
+     */
+    public static MemorySegment estimateSpawn$address() {
+        return estimateSpawn.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * Pos estimateSpawn(const Generator *g, uint64_t *rng)
+     * }
+     */
+    public static MemorySegment estimateSpawn(SegmentAllocator allocator, MemorySegment g, MemorySegment rng) {
+        var mh$ = estimateSpawn.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("estimateSpawn", allocator, g, rng);
+            }
+            return (MemorySegment)mh$.invokeExact(allocator, g, rng);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class getSpawn {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Pos.layout(),
+            Cubiomes.C_POINTER
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getSpawn");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * Pos getSpawn(const Generator *g)
+     * }
+     */
+    public static FunctionDescriptor getSpawn$descriptor() {
+        return getSpawn.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * Pos getSpawn(const Generator *g)
+     * }
+     */
+    public static MethodHandle getSpawn$handle() {
+        return getSpawn.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * Pos getSpawn(const Generator *g)
+     * }
+     */
+    public static MemorySegment getSpawn$address() {
+        return getSpawn.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * Pos getSpawn(const Generator *g)
+     * }
+     */
+    public static MemorySegment getSpawn(SegmentAllocator allocator, MemorySegment g) {
+        var mh$ = getSpawn.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("getSpawn", allocator, g);
+            }
+            return (MemorySegment)mh$.invokeExact(allocator, g);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+    private static final int ANCIENT_DEBRIS = (int)0L;
+    /**
+     * {@snippet lang=c :
+     * enum Blocks.ANCIENT_DEBRIS = 0
+     * }
+     */
+    public static int ANCIENT_DEBRIS() {
+        return ANCIENT_DEBRIS;
+    }
+    private static final int ANDESITE = (int)1L;
+    /**
+     * {@snippet lang=c :
+     * enum Blocks.ANDESITE = 1
+     * }
+     */
+    public static int ANDESITE() {
+        return ANDESITE;
+    }
+    private static final int BASALT = (int)2L;
+    /**
+     * {@snippet lang=c :
+     * enum Blocks.BASALT = 2
+     * }
+     */
+    public static int BASALT() {
+        return BASALT;
+    }
+    private static final int BLACKSTONE = (int)3L;
+    /**
+     * {@snippet lang=c :
+     * enum Blocks.BLACKSTONE = 3
+     * }
+     */
+    public static int BLACKSTONE() {
+        return BLACKSTONE;
+    }
+    private static final int CLAY = (int)4L;
+    /**
+     * {@snippet lang=c :
+     * enum Blocks.CLAY = 4
+     * }
+     */
+    public static int CLAY() {
+        return CLAY;
+    }
+    private static final int COAL_ORE = (int)5L;
+    /**
+     * {@snippet lang=c :
+     * enum Blocks.COAL_ORE = 5
+     * }
+     */
+    public static int COAL_ORE() {
+        return COAL_ORE;
+    }
+    private static final int COPPER_ORE = (int)6L;
+    /**
+     * {@snippet lang=c :
+     * enum Blocks.COPPER_ORE = 6
+     * }
+     */
+    public static int COPPER_ORE() {
+        return COPPER_ORE;
+    }
+    private static final int DEEPSLATE = (int)7L;
+    /**
+     * {@snippet lang=c :
+     * enum Blocks.DEEPSLATE = 7
+     * }
+     */
+    public static int DEEPSLATE() {
+        return DEEPSLATE;
+    }
+    private static final int DIAMOND_ORE = (int)8L;
+    /**
+     * {@snippet lang=c :
+     * enum Blocks.DIAMOND_ORE = 8
+     * }
+     */
+    public static int DIAMOND_ORE() {
+        return DIAMOND_ORE;
+    }
+    private static final int DIORITE = (int)9L;
+    /**
+     * {@snippet lang=c :
+     * enum Blocks.DIORITE = 9
+     * }
+     */
+    public static int DIORITE() {
+        return DIORITE;
+    }
+    private static final int DIRT = (int)10L;
+    /**
+     * {@snippet lang=c :
+     * enum Blocks.DIRT = 10
+     * }
+     */
+    public static int DIRT() {
+        return DIRT;
+    }
+    private static final int EMERALD_ORE = (int)11L;
+    /**
+     * {@snippet lang=c :
+     * enum Blocks.EMERALD_ORE = 11
+     * }
+     */
+    public static int EMERALD_ORE() {
+        return EMERALD_ORE;
+    }
+    private static final int GOLD_ORE = (int)12L;
+    /**
+     * {@snippet lang=c :
+     * enum Blocks.GOLD_ORE = 12
+     * }
+     */
+    public static int GOLD_ORE() {
+        return GOLD_ORE;
+    }
+    private static final int GRANITE = (int)13L;
+    /**
+     * {@snippet lang=c :
+     * enum Blocks.GRANITE = 13
+     * }
+     */
+    public static int GRANITE() {
+        return GRANITE;
+    }
+    private static final int GRAVEL = (int)14L;
+    /**
+     * {@snippet lang=c :
+     * enum Blocks.GRAVEL = 14
+     * }
+     */
+    public static int GRAVEL() {
+        return GRAVEL;
+    }
+    private static final int INFESTED_STONE = (int)15L;
+    /**
+     * {@snippet lang=c :
+     * enum Blocks.INFESTED_STONE = 15
+     * }
+     */
+    public static int INFESTED_STONE() {
+        return INFESTED_STONE;
+    }
+    private static final int IRON_ORE = (int)16L;
+    /**
+     * {@snippet lang=c :
+     * enum Blocks.IRON_ORE = 16
+     * }
+     */
+    public static int IRON_ORE() {
+        return IRON_ORE;
+    }
+    private static final int LAPIS_ORE = (int)17L;
+    /**
+     * {@snippet lang=c :
+     * enum Blocks.LAPIS_ORE = 17
+     * }
+     */
+    public static int LAPIS_ORE() {
+        return LAPIS_ORE;
+    }
+    private static final int MAGMA_BLOCK = (int)18L;
+    /**
+     * {@snippet lang=c :
+     * enum Blocks.MAGMA_BLOCK = 18
+     * }
+     */
+    public static int MAGMA_BLOCK() {
+        return MAGMA_BLOCK;
+    }
+    private static final int NETHERRACK = (int)19L;
+    /**
+     * {@snippet lang=c :
+     * enum Blocks.NETHERRACK = 19
+     * }
+     */
+    public static int NETHERRACK() {
+        return NETHERRACK;
+    }
+    private static final int NETHER_GOLD_ORE = (int)20L;
+    /**
+     * {@snippet lang=c :
+     * enum Blocks.NETHER_GOLD_ORE = 20
+     * }
+     */
+    public static int NETHER_GOLD_ORE() {
+        return NETHER_GOLD_ORE;
+    }
+    private static final int NETHER_QUARTZ_ORE = (int)21L;
+    /**
+     * {@snippet lang=c :
+     * enum Blocks.NETHER_QUARTZ_ORE = 21
+     * }
+     */
+    public static int NETHER_QUARTZ_ORE() {
+        return NETHER_QUARTZ_ORE;
+    }
+    private static final int RAW_COPPER_BLOCK = (int)22L;
+    /**
+     * {@snippet lang=c :
+     * enum Blocks.RAW_COPPER_BLOCK = 22
+     * }
+     */
+    public static int RAW_COPPER_BLOCK() {
+        return RAW_COPPER_BLOCK;
+    }
+    private static final int RAW_IRON_BLOCK = (int)23L;
+    /**
+     * {@snippet lang=c :
+     * enum Blocks.RAW_IRON_BLOCK = 23
+     * }
+     */
+    public static int RAW_IRON_BLOCK() {
+        return RAW_IRON_BLOCK;
+    }
+    private static final int REDSTONE_ORE = (int)24L;
+    /**
+     * {@snippet lang=c :
+     * enum Blocks.REDSTONE_ORE = 24
+     * }
+     */
+    public static int REDSTONE_ORE() {
+        return REDSTONE_ORE;
+    }
+    private static final int SOUL_SAND = (int)25L;
+    /**
+     * {@snippet lang=c :
+     * enum Blocks.SOUL_SAND = 25
+     * }
+     */
+    public static int SOUL_SAND() {
+        return SOUL_SAND;
+    }
+    private static final int STONE = (int)26L;
+    /**
+     * {@snippet lang=c :
+     * enum Blocks.STONE = 26
+     * }
+     */
+    public static int STONE() {
+        return STONE;
+    }
+    private static final int TUFF = (int)27L;
+    /**
+     * {@snippet lang=c :
+     * enum Blocks.TUFF = 27
+     * }
+     */
+    public static int TUFF() {
+        return TUFF;
+    }
+    private static final int BLOCK_NUM = (int)28L;
+    /**
+     * {@snippet lang=c :
+     * enum Blocks.BLOCK_NUM = 28
+     * }
+     */
+    public static int BLOCK_NUM() {
+        return BLOCK_NUM;
+    }
+    private static final int CopperVein = (int)0L;
+    /**
+     * {@snippet lang=c :
+     * enum OreVeins.CopperVein = 0
+     * }
+     */
+    public static int CopperVein() {
+        return CopperVein;
+    }
+    private static final int IronVein = (int)1L;
+    /**
+     * {@snippet lang=c :
+     * enum OreVeins.IronVein = 1
+     * }
+     */
+    public static int IronVein() {
+        return IronVein;
+    }
+
+    private static class initOreVeinNoise {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_LONG,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("initOreVeinNoise");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int initOreVeinNoise(OreVeinParameters *params, uint64_t ws, int mc)
+     * }
+     */
+    public static FunctionDescriptor initOreVeinNoise$descriptor() {
+        return initOreVeinNoise.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int initOreVeinNoise(OreVeinParameters *params, uint64_t ws, int mc)
+     * }
+     */
+    public static MethodHandle initOreVeinNoise$handle() {
+        return initOreVeinNoise.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int initOreVeinNoise(OreVeinParameters *params, uint64_t ws, int mc)
+     * }
+     */
+    public static MemorySegment initOreVeinNoise$address() {
+        return initOreVeinNoise.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int initOreVeinNoise(OreVeinParameters *params, uint64_t ws, int mc)
+     * }
+     */
+    public static int initOreVeinNoise(MemorySegment params, long ws, int mc) {
+        var mh$ = initOreVeinNoise.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("initOreVeinNoise", params, ws, mc);
+            }
+            return (int)mh$.invokeExact(params, ws, mc);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class getOreVeinBlockAt {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getOreVeinBlockAt");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int32_t getOreVeinBlockAt(int x, int y, int z, OreVeinParameters *params)
+     * }
+     */
+    public static FunctionDescriptor getOreVeinBlockAt$descriptor() {
+        return getOreVeinBlockAt.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int32_t getOreVeinBlockAt(int x, int y, int z, OreVeinParameters *params)
+     * }
+     */
+    public static MethodHandle getOreVeinBlockAt$handle() {
+        return getOreVeinBlockAt.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int32_t getOreVeinBlockAt(int x, int y, int z, OreVeinParameters *params)
+     * }
+     */
+    public static MemorySegment getOreVeinBlockAt$address() {
+        return getOreVeinBlockAt.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int32_t getOreVeinBlockAt(int x, int y, int z, OreVeinParameters *params)
+     * }
+     */
+    public static int getOreVeinBlockAt(int x, int y, int z, MemorySegment params) {
+        var mh$ = getOreVeinBlockAt.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("getOreVeinBlockAt", x, y, z, params);
+            }
+            return (int)mh$.invokeExact(x, y, z, params);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class locateBiome {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Pos.layout(),
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_LONG,
+            Cubiomes.C_LONG,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_POINTER
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("locateBiome");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * Pos locateBiome(const Generator *g, int x, int y, int z, int radius, uint64_t validB, uint64_t validM, uint64_t *rng, int *passes)
+     * }
+     */
+    public static FunctionDescriptor locateBiome$descriptor() {
+        return locateBiome.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * Pos locateBiome(const Generator *g, int x, int y, int z, int radius, uint64_t validB, uint64_t validM, uint64_t *rng, int *passes)
+     * }
+     */
+    public static MethodHandle locateBiome$handle() {
+        return locateBiome.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * Pos locateBiome(const Generator *g, int x, int y, int z, int radius, uint64_t validB, uint64_t validM, uint64_t *rng, int *passes)
+     * }
+     */
+    public static MemorySegment locateBiome$address() {
+        return locateBiome.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * Pos locateBiome(const Generator *g, int x, int y, int z, int radius, uint64_t validB, uint64_t validM, uint64_t *rng, int *passes)
+     * }
+     */
+    public static MemorySegment locateBiome(SegmentAllocator allocator, MemorySegment g, int x, int y, int z, int radius, long validB, long validM, MemorySegment rng, MemorySegment passes) {
+        var mh$ = locateBiome.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("locateBiome", allocator, g, x, y, z, radius, validB, validM, rng, passes);
+            }
+            return (MemorySegment)mh$.invokeExact(allocator, g, x, y, z, radius, validB, validM, rng, passes);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class isViableStructurePos {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("isViableStructurePos");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int isViableStructurePos(int structType, Generator *g, int blockX, int blockZ, uint32_t flags)
+     * }
+     */
+    public static FunctionDescriptor isViableStructurePos$descriptor() {
+        return isViableStructurePos.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int isViableStructurePos(int structType, Generator *g, int blockX, int blockZ, uint32_t flags)
+     * }
+     */
+    public static MethodHandle isViableStructurePos$handle() {
+        return isViableStructurePos.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int isViableStructurePos(int structType, Generator *g, int blockX, int blockZ, uint32_t flags)
+     * }
+     */
+    public static MemorySegment isViableStructurePos$address() {
+        return isViableStructurePos.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int isViableStructurePos(int structType, Generator *g, int blockX, int blockZ, uint32_t flags)
+     * }
+     */
+    public static int isViableStructurePos(int structType, MemorySegment g, int blockX, int blockZ, int flags) {
+        var mh$ = isViableStructurePos.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("isViableStructurePos", structType, g, blockX, blockZ, flags);
+            }
+            return (int)mh$.invokeExact(structType, g, blockX, blockZ, flags);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class isViableFeatureBiome {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("isViableFeatureBiome");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int isViableFeatureBiome(int mc, int structureType, int biomeID)
+     * }
+     */
+    public static FunctionDescriptor isViableFeatureBiome$descriptor() {
+        return isViableFeatureBiome.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int isViableFeatureBiome(int mc, int structureType, int biomeID)
+     * }
+     */
+    public static MethodHandle isViableFeatureBiome$handle() {
+        return isViableFeatureBiome.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int isViableFeatureBiome(int mc, int structureType, int biomeID)
+     * }
+     */
+    public static MemorySegment isViableFeatureBiome$address() {
+        return isViableFeatureBiome.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int isViableFeatureBiome(int mc, int structureType, int biomeID)
+     * }
+     */
+    public static int isViableFeatureBiome(int mc, int structureType, int biomeID) {
+        var mh$ = isViableFeatureBiome.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("isViableFeatureBiome", mc, structureType, biomeID);
+            }
+            return (int)mh$.invokeExact(mc, structureType, biomeID);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class isViableStructureTerrain {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("isViableStructureTerrain");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int isViableStructureTerrain(int structType, Generator *g, int blockX, int blockZ)
+     * }
+     */
+    public static FunctionDescriptor isViableStructureTerrain$descriptor() {
+        return isViableStructureTerrain.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int isViableStructureTerrain(int structType, Generator *g, int blockX, int blockZ)
+     * }
+     */
+    public static MethodHandle isViableStructureTerrain$handle() {
+        return isViableStructureTerrain.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int isViableStructureTerrain(int structType, Generator *g, int blockX, int blockZ)
+     * }
+     */
+    public static MemorySegment isViableStructureTerrain$address() {
+        return isViableStructureTerrain.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int isViableStructureTerrain(int structType, Generator *g, int blockX, int blockZ)
+     * }
+     */
+    public static int isViableStructureTerrain(int structType, MemorySegment g, int blockX, int blockZ) {
+        var mh$ = isViableStructureTerrain.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("isViableStructureTerrain", structType, g, blockX, blockZ);
+            }
+            return (int)mh$.invokeExact(structType, g, blockX, blockZ);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class isViableEndCityTerrain {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("isViableEndCityTerrain");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int isViableEndCityTerrain(const Generator *g, const SurfaceNoise *sn, int blockX, int blockZ)
+     * }
+     */
+    public static FunctionDescriptor isViableEndCityTerrain$descriptor() {
+        return isViableEndCityTerrain.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int isViableEndCityTerrain(const Generator *g, const SurfaceNoise *sn, int blockX, int blockZ)
+     * }
+     */
+    public static MethodHandle isViableEndCityTerrain$handle() {
+        return isViableEndCityTerrain.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int isViableEndCityTerrain(const Generator *g, const SurfaceNoise *sn, int blockX, int blockZ)
+     * }
+     */
+    public static MemorySegment isViableEndCityTerrain$address() {
+        return isViableEndCityTerrain.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int isViableEndCityTerrain(const Generator *g, const SurfaceNoise *sn, int blockX, int blockZ)
+     * }
+     */
+    public static int isViableEndCityTerrain(MemorySegment g, MemorySegment sn, int blockX, int blockZ) {
+        var mh$ = isViableEndCityTerrain.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("isViableEndCityTerrain", g, sn, blockX, blockZ);
+            }
+            return (int)mh$.invokeExact(g, sn, blockX, blockZ);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class isViableNetherFossilTerrain {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("isViableNetherFossilTerrain");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int isViableNetherFossilTerrain(int cx, int cz, StructureVariant *sv, BlendedNoise *base3dNoise, int mc)
+     * }
+     */
+    public static FunctionDescriptor isViableNetherFossilTerrain$descriptor() {
+        return isViableNetherFossilTerrain.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int isViableNetherFossilTerrain(int cx, int cz, StructureVariant *sv, BlendedNoise *base3dNoise, int mc)
+     * }
+     */
+    public static MethodHandle isViableNetherFossilTerrain$handle() {
+        return isViableNetherFossilTerrain.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int isViableNetherFossilTerrain(int cx, int cz, StructureVariant *sv, BlendedNoise *base3dNoise, int mc)
+     * }
+     */
+    public static MemorySegment isViableNetherFossilTerrain$address() {
+        return isViableNetherFossilTerrain.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int isViableNetherFossilTerrain(int cx, int cz, StructureVariant *sv, BlendedNoise *base3dNoise, int mc)
+     * }
+     */
+    public static int isViableNetherFossilTerrain(int cx, int cz, MemorySegment sv, MemorySegment base3dNoise, int mc) {
+        var mh$ = isViableNetherFossilTerrain.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("isViableNetherFossilTerrain", cx, cz, sv, base3dNoise, mc);
+            }
+            return (int)mh$.invokeExact(cx, cz, sv, base3dNoise, mc);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class netherFossilHasGhast {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_LONG,
+            Cubiomes.C_POINTER
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("netherFossilHasGhast");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int netherFossilHasGhast(int cx, int cz, uint64_t seed, StructureVariant *sv)
+     * }
+     */
+    public static FunctionDescriptor netherFossilHasGhast$descriptor() {
+        return netherFossilHasGhast.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int netherFossilHasGhast(int cx, int cz, uint64_t seed, StructureVariant *sv)
+     * }
+     */
+    public static MethodHandle netherFossilHasGhast$handle() {
+        return netherFossilHasGhast.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int netherFossilHasGhast(int cx, int cz, uint64_t seed, StructureVariant *sv)
+     * }
+     */
+    public static MemorySegment netherFossilHasGhast$address() {
+        return netherFossilHasGhast.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int netherFossilHasGhast(int cx, int cz, uint64_t seed, StructureVariant *sv)
+     * }
+     */
+    public static int netherFossilHasGhast(int cx, int cz, long seed, MemorySegment sv) {
+        var mh$ = netherFossilHasGhast.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("netherFossilHasGhast", cx, cz, seed, sv);
+            }
+            return (int)mh$.invokeExact(cx, cz, seed, sv);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class getVariant {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_LONG,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getVariant");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int getVariant(StructureVariant *sv, int structType, int mc, uint64_t seed, int blockX, int blockZ, int biomeID)
+     * }
+     */
+    public static FunctionDescriptor getVariant$descriptor() {
+        return getVariant.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int getVariant(StructureVariant *sv, int structType, int mc, uint64_t seed, int blockX, int blockZ, int biomeID)
+     * }
+     */
+    public static MethodHandle getVariant$handle() {
+        return getVariant.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int getVariant(StructureVariant *sv, int structType, int mc, uint64_t seed, int blockX, int blockZ, int biomeID)
+     * }
+     */
+    public static MemorySegment getVariant$address() {
+        return getVariant.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int getVariant(StructureVariant *sv, int structType, int mc, uint64_t seed, int blockX, int blockZ, int biomeID)
+     * }
+     */
+    public static int getVariant(MemorySegment sv, int structType, int mc, long seed, int blockX, int blockZ, int biomeID) {
+        var mh$ = getVariant.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("getVariant", sv, structType, mc, seed, blockX, blockZ, biomeID);
+            }
+            return (int)mh$.invokeExact(sv, structType, mc, seed, blockX, blockZ, biomeID);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class getLootTableCountForStructure {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getLootTableCountForStructure");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int getLootTableCountForStructure(int structure, int mc)
+     * }
+     */
+    public static FunctionDescriptor getLootTableCountForStructure$descriptor() {
+        return getLootTableCountForStructure.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int getLootTableCountForStructure(int structure, int mc)
+     * }
+     */
+    public static MethodHandle getLootTableCountForStructure$handle() {
+        return getLootTableCountForStructure.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int getLootTableCountForStructure(int structure, int mc)
+     * }
+     */
+    public static MemorySegment getLootTableCountForStructure$address() {
+        return getLootTableCountForStructure.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int getLootTableCountForStructure(int structure, int mc)
+     * }
+     */
+    public static int getLootTableCountForStructure(int structure, int mc) {
+        var mh$ = getLootTableCountForStructure.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("getLootTableCountForStructure", structure, mc);
+            }
+            return (int)mh$.invokeExact(structure, mc);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class getStructurePieces {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            StructureSaltConfig.layout(),
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT,
+            Cubiomes.C_LONG,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getStructurePieces");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int getStructurePieces(Piece *list, int n, int stype, StructureSaltConfig ssconf, StructureVariant *sv, int mc, uint64_t seed, int posX, int posZ)
+     * }
+     */
+    public static FunctionDescriptor getStructurePieces$descriptor() {
+        return getStructurePieces.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int getStructurePieces(Piece *list, int n, int stype, StructureSaltConfig ssconf, StructureVariant *sv, int mc, uint64_t seed, int posX, int posZ)
+     * }
+     */
+    public static MethodHandle getStructurePieces$handle() {
+        return getStructurePieces.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int getStructurePieces(Piece *list, int n, int stype, StructureSaltConfig ssconf, StructureVariant *sv, int mc, uint64_t seed, int posX, int posZ)
+     * }
+     */
+    public static MemorySegment getStructurePieces$address() {
+        return getStructurePieces.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int getStructurePieces(Piece *list, int n, int stype, StructureSaltConfig ssconf, StructureVariant *sv, int mc, uint64_t seed, int posX, int posZ)
+     * }
+     */
+    public static int getStructurePieces(MemorySegment list, int n, int stype, MemorySegment ssconf, MemorySegment sv, int mc, long seed, int posX, int posZ) {
+        var mh$ = getStructurePieces.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("getStructurePieces", list, n, stype, ssconf, sv, mc, seed, posX, posZ);
+            }
+            return (int)mh$.invokeExact(list, n, stype, ssconf, sv, mc, seed, posX, posZ);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class getFixedEndGateways {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
+            Cubiomes.C_INT,
+            Cubiomes.C_LONG,
+            Cubiomes.C_POINTER
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getFixedEndGateways");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * void getFixedEndGateways(int mc, uint64_t seed, Pos src[20])
+     * }
+     */
+    public static FunctionDescriptor getFixedEndGateways$descriptor() {
+        return getFixedEndGateways.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * void getFixedEndGateways(int mc, uint64_t seed, Pos src[20])
+     * }
+     */
+    public static MethodHandle getFixedEndGateways$handle() {
+        return getFixedEndGateways.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * void getFixedEndGateways(int mc, uint64_t seed, Pos src[20])
+     * }
+     */
+    public static MemorySegment getFixedEndGateways$address() {
+        return getFixedEndGateways.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * void getFixedEndGateways(int mc, uint64_t seed, Pos src[20])
+     * }
+     */
+    public static void getFixedEndGateways(int mc, long seed, MemorySegment src) {
+        var mh$ = getFixedEndGateways.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("getFixedEndGateways", mc, seed, src);
+            }
+            mh$.invokeExact(mc, seed, src);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class getLinkedGatewayChunk {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Pos.layout(),
+            Cubiomes.C_POINTER,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_LONG,
+            Pos.layout(),
+            Cubiomes.C_POINTER
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getLinkedGatewayChunk");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * Pos getLinkedGatewayChunk(const EndNoise *en, const SurfaceNoise *sn, uint64_t seed, Pos src, Pos *dst)
+     * }
+     */
+    public static FunctionDescriptor getLinkedGatewayChunk$descriptor() {
+        return getLinkedGatewayChunk.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * Pos getLinkedGatewayChunk(const EndNoise *en, const SurfaceNoise *sn, uint64_t seed, Pos src, Pos *dst)
+     * }
+     */
+    public static MethodHandle getLinkedGatewayChunk$handle() {
+        return getLinkedGatewayChunk.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * Pos getLinkedGatewayChunk(const EndNoise *en, const SurfaceNoise *sn, uint64_t seed, Pos src, Pos *dst)
+     * }
+     */
+    public static MemorySegment getLinkedGatewayChunk$address() {
+        return getLinkedGatewayChunk.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * Pos getLinkedGatewayChunk(const EndNoise *en, const SurfaceNoise *sn, uint64_t seed, Pos src, Pos *dst)
+     * }
+     */
+    public static MemorySegment getLinkedGatewayChunk(SegmentAllocator allocator, MemorySegment en, MemorySegment sn, long seed, MemorySegment src, MemorySegment dst) {
+        var mh$ = getLinkedGatewayChunk.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("getLinkedGatewayChunk", allocator, en, sn, seed, src, dst);
+            }
+            return (MemorySegment)mh$.invokeExact(allocator, en, sn, seed, src, dst);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class getLinkedGatewayPos {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Pos.layout(),
+            Cubiomes.C_POINTER,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_LONG,
+            Pos.layout()
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getLinkedGatewayPos");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * Pos getLinkedGatewayPos(const EndNoise *en, const SurfaceNoise *sn, uint64_t seed, Pos src)
+     * }
+     */
+    public static FunctionDescriptor getLinkedGatewayPos$descriptor() {
+        return getLinkedGatewayPos.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * Pos getLinkedGatewayPos(const EndNoise *en, const SurfaceNoise *sn, uint64_t seed, Pos src)
+     * }
+     */
+    public static MethodHandle getLinkedGatewayPos$handle() {
+        return getLinkedGatewayPos.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * Pos getLinkedGatewayPos(const EndNoise *en, const SurfaceNoise *sn, uint64_t seed, Pos src)
+     * }
+     */
+    public static MemorySegment getLinkedGatewayPos$address() {
+        return getLinkedGatewayPos.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * Pos getLinkedGatewayPos(const EndNoise *en, const SurfaceNoise *sn, uint64_t seed, Pos src)
+     * }
+     */
+    public static MemorySegment getLinkedGatewayPos(SegmentAllocator allocator, MemorySegment en, MemorySegment sn, long seed, MemorySegment src) {
+        var mh$ = getLinkedGatewayPos.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("getLinkedGatewayPos", allocator, en, sn, seed, src);
+            }
+            return (MemorySegment)mh$.invokeExact(allocator, en, sn, seed, src);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+    private static final int HouseSmall = (int)0L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.HouseSmall = 0
+     * }
+     */
+    public static int HouseSmall() {
+        return HouseSmall;
+    }
+    private static final int Church = (int)1L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.Church = 1
+     * }
+     */
+    public static int Church() {
+        return Church;
+    }
+    private static final int Library = (int)2L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.Library = 2
+     * }
+     */
+    public static int Library() {
+        return Library;
+    }
+    private static final int WoodHut = (int)3L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.WoodHut = 3
+     * }
+     */
+    public static int WoodHut() {
+        return WoodHut;
+    }
+    private static final int Butcher = (int)4L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.Butcher = 4
+     * }
+     */
+    public static int Butcher() {
+        return Butcher;
+    }
+    private static final int FarmLarge = (int)5L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.FarmLarge = 5
+     * }
+     */
+    public static int FarmLarge() {
+        return FarmLarge;
+    }
+    private static final int FarmSmall = (int)6L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.FarmSmall = 6
+     * }
+     */
+    public static int FarmSmall() {
+        return FarmSmall;
+    }
+    private static final int Blacksmith = (int)7L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.Blacksmith = 7
+     * }
+     */
+    public static int Blacksmith() {
+        return Blacksmith;
+    }
+    private static final int HouseLarge = (int)8L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.HouseLarge = 8
+     * }
+     */
+    public static int HouseLarge() {
+        return HouseLarge;
+    }
+    private static final int HOUSE_NUM = (int)9L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.HOUSE_NUM = 9
+     * }
+     */
+    public static int HOUSE_NUM() {
+        return HOUSE_NUM;
+    }
+
+    private static class getHouseList {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_LONG,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_LONG,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getHouseList");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * uint64_t getHouseList(int *houses, uint64_t seed, int chunkX, int chunkZ)
+     * }
+     */
+    public static FunctionDescriptor getHouseList$descriptor() {
+        return getHouseList.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * uint64_t getHouseList(int *houses, uint64_t seed, int chunkX, int chunkZ)
+     * }
+     */
+    public static MethodHandle getHouseList$handle() {
+        return getHouseList.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * uint64_t getHouseList(int *houses, uint64_t seed, int chunkX, int chunkZ)
+     * }
+     */
+    public static MemorySegment getHouseList$address() {
+        return getHouseList.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * uint64_t getHouseList(int *houses, uint64_t seed, int chunkX, int chunkZ)
+     * }
+     */
+    public static long getHouseList(MemorySegment houses, long seed, int chunkX, int chunkZ) {
+        var mh$ = getHouseList.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("getHouseList", houses, seed, chunkX, chunkZ);
+            }
+            return (long)mh$.invokeExact(houses, seed, chunkX, chunkZ);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class monteCarloBiomes {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Range.layout(),
+            Cubiomes.C_POINTER,
+            Cubiomes.C_DOUBLE,
+            Cubiomes.C_DOUBLE,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_POINTER
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("monteCarloBiomes");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int monteCarloBiomes(Generator *g, Range r, uint64_t *rng, double coverage, double confidence, int (*eval)(Generator *, int, int, int, int, void *), void *data)
+     * }
+     */
+    public static FunctionDescriptor monteCarloBiomes$descriptor() {
+        return monteCarloBiomes.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int monteCarloBiomes(Generator *g, Range r, uint64_t *rng, double coverage, double confidence, int (*eval)(Generator *, int, int, int, int, void *), void *data)
+     * }
+     */
+    public static MethodHandle monteCarloBiomes$handle() {
+        return monteCarloBiomes.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int monteCarloBiomes(Generator *g, Range r, uint64_t *rng, double coverage, double confidence, int (*eval)(Generator *, int, int, int, int, void *), void *data)
+     * }
+     */
+    public static MemorySegment monteCarloBiomes$address() {
+        return monteCarloBiomes.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int monteCarloBiomes(Generator *g, Range r, uint64_t *rng, double coverage, double confidence, int (*eval)(Generator *, int, int, int, int, void *), void *data)
+     * }
+     */
+    public static int monteCarloBiomes(MemorySegment g, MemorySegment r, MemorySegment rng, double coverage, double confidence, MemorySegment eval, MemorySegment data) {
+        var mh$ = monteCarloBiomes.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("monteCarloBiomes", g, r, rng, coverage, confidence, eval, data);
+            }
+            return (int)mh$.invokeExact(g, r, rng, coverage, confidence, eval, data);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class setupBiomeFilter {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("setupBiomeFilter");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * void setupBiomeFilter(BiomeFilter *bf, int mc, uint32_t flags, const int *required, int requiredLen, const int *excluded, int excludedLen, const int *matchany, int matchanyLen)
+     * }
+     */
+    public static FunctionDescriptor setupBiomeFilter$descriptor() {
+        return setupBiomeFilter.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * void setupBiomeFilter(BiomeFilter *bf, int mc, uint32_t flags, const int *required, int requiredLen, const int *excluded, int excludedLen, const int *matchany, int matchanyLen)
+     * }
+     */
+    public static MethodHandle setupBiomeFilter$handle() {
+        return setupBiomeFilter.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * void setupBiomeFilter(BiomeFilter *bf, int mc, uint32_t flags, const int *required, int requiredLen, const int *excluded, int excludedLen, const int *matchany, int matchanyLen)
+     * }
+     */
+    public static MemorySegment setupBiomeFilter$address() {
+        return setupBiomeFilter.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * void setupBiomeFilter(BiomeFilter *bf, int mc, uint32_t flags, const int *required, int requiredLen, const int *excluded, int excludedLen, const int *matchany, int matchanyLen)
+     * }
+     */
+    public static void setupBiomeFilter(MemorySegment bf, int mc, int flags, MemorySegment required, int requiredLen, MemorySegment excluded, int excludedLen, MemorySegment matchany, int matchanyLen) {
+        var mh$ = setupBiomeFilter.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("setupBiomeFilter", bf, mc, flags, required, requiredLen, excluded, excludedLen, matchany, matchanyLen);
+            }
+            mh$.invokeExact(bf, mc, flags, required, requiredLen, excluded, excludedLen, matchany, matchanyLen);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class checkForBiomes {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_POINTER,
+            Range.layout(),
+            Cubiomes.C_INT,
+            Cubiomes.C_LONG,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_POINTER
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("checkForBiomes");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int checkForBiomes(Generator *g, int *cache, Range r, int dim, uint64_t seed, const BiomeFilter *filter, volatile char *stop)
+     * }
+     */
+    public static FunctionDescriptor checkForBiomes$descriptor() {
+        return checkForBiomes.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int checkForBiomes(Generator *g, int *cache, Range r, int dim, uint64_t seed, const BiomeFilter *filter, volatile char *stop)
+     * }
+     */
+    public static MethodHandle checkForBiomes$handle() {
+        return checkForBiomes.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int checkForBiomes(Generator *g, int *cache, Range r, int dim, uint64_t seed, const BiomeFilter *filter, volatile char *stop)
+     * }
+     */
+    public static MemorySegment checkForBiomes$address() {
+        return checkForBiomes.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int checkForBiomes(Generator *g, int *cache, Range r, int dim, uint64_t seed, const BiomeFilter *filter, volatile char *stop)
+     * }
+     */
+    public static int checkForBiomes(MemorySegment g, MemorySegment cache, MemorySegment r, int dim, long seed, MemorySegment filter, MemorySegment stop) {
+        var mh$ = checkForBiomes.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("checkForBiomes", g, cache, r, dim, seed, filter, stop);
+            }
+            return (int)mh$.invokeExact(g, cache, r, dim, seed, filter, stop);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class checkForBiomesAtLayer {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_LONG,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("checkForBiomesAtLayer");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int checkForBiomesAtLayer(LayerStack *ls, Layer *entry, int *cache, uint64_t seed, int x, int z, unsigned int w, unsigned int h, const BiomeFilter *filter)
+     * }
+     */
+    public static FunctionDescriptor checkForBiomesAtLayer$descriptor() {
+        return checkForBiomesAtLayer.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int checkForBiomesAtLayer(LayerStack *ls, Layer *entry, int *cache, uint64_t seed, int x, int z, unsigned int w, unsigned int h, const BiomeFilter *filter)
+     * }
+     */
+    public static MethodHandle checkForBiomesAtLayer$handle() {
+        return checkForBiomesAtLayer.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int checkForBiomesAtLayer(LayerStack *ls, Layer *entry, int *cache, uint64_t seed, int x, int z, unsigned int w, unsigned int h, const BiomeFilter *filter)
+     * }
+     */
+    public static MemorySegment checkForBiomesAtLayer$address() {
+        return checkForBiomesAtLayer.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int checkForBiomesAtLayer(LayerStack *ls, Layer *entry, int *cache, uint64_t seed, int x, int z, unsigned int w, unsigned int h, const BiomeFilter *filter)
+     * }
+     */
+    public static int checkForBiomesAtLayer(MemorySegment ls, MemorySegment entry, MemorySegment cache, long seed, int x, int z, int w, int h, MemorySegment filter) {
+        var mh$ = checkForBiomesAtLayer.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("checkForBiomesAtLayer", ls, entry, cache, seed, x, z, w, h, filter);
+            }
+            return (int)mh$.invokeExact(ls, entry, cache, seed, x, z, w, h, filter);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class checkForTemps {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_LONG,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("checkForTemps");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int checkForTemps(LayerStack *g, uint64_t seed, int x, int z, int w, int h, const int tc[9])
+     * }
+     */
+    public static FunctionDescriptor checkForTemps$descriptor() {
+        return checkForTemps.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int checkForTemps(LayerStack *g, uint64_t seed, int x, int z, int w, int h, const int tc[9])
+     * }
+     */
+    public static MethodHandle checkForTemps$handle() {
+        return checkForTemps.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int checkForTemps(LayerStack *g, uint64_t seed, int x, int z, int w, int h, const int tc[9])
+     * }
+     */
+    public static MemorySegment checkForTemps$address() {
+        return checkForTemps.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int checkForTemps(LayerStack *g, uint64_t seed, int x, int z, int w, int h, const int tc[9])
+     * }
+     */
+    public static int checkForTemps(MemorySegment g, long seed, int x, int z, int w, int h, MemorySegment tc) {
+        var mh$ = checkForTemps.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("checkForTemps", g, seed, x, z, w, h, tc);
+            }
+            return (int)mh$.invokeExact(g, seed, x, z, w, h, tc);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class getBiomeCenters {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Range.layout(),
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getBiomeCenters");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int getBiomeCenters(Pos *pos, int *siz, int nmax, Generator *g, Range r, int match, int minsiz, int tol, volatile char *stop)
+     * }
+     */
+    public static FunctionDescriptor getBiomeCenters$descriptor() {
+        return getBiomeCenters.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int getBiomeCenters(Pos *pos, int *siz, int nmax, Generator *g, Range r, int match, int minsiz, int tol, volatile char *stop)
+     * }
+     */
+    public static MethodHandle getBiomeCenters$handle() {
+        return getBiomeCenters.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int getBiomeCenters(Pos *pos, int *siz, int nmax, Generator *g, Range r, int match, int minsiz, int tol, volatile char *stop)
+     * }
+     */
+    public static MemorySegment getBiomeCenters$address() {
+        return getBiomeCenters.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int getBiomeCenters(Pos *pos, int *siz, int nmax, Generator *g, Range r, int match, int minsiz, int tol, volatile char *stop)
+     * }
+     */
+    public static int getBiomeCenters(MemorySegment pos, MemorySegment siz, int nmax, MemorySegment g, MemorySegment r, int match, int minsiz, int tol, MemorySegment stop) {
+        var mh$ = getBiomeCenters.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("getBiomeCenters", pos, siz, nmax, g, r, match, minsiz, tol, stop);
+            }
+            return (int)mh$.invokeExact(pos, siz, nmax, g, r, match, minsiz, tol, stop);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class canBiomeGenerate {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("canBiomeGenerate");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int canBiomeGenerate(int layerId, int mc, uint32_t flags, int biomeID)
+     * }
+     */
+    public static FunctionDescriptor canBiomeGenerate$descriptor() {
+        return canBiomeGenerate.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int canBiomeGenerate(int layerId, int mc, uint32_t flags, int biomeID)
+     * }
+     */
+    public static MethodHandle canBiomeGenerate$handle() {
+        return canBiomeGenerate.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int canBiomeGenerate(int layerId, int mc, uint32_t flags, int biomeID)
+     * }
+     */
+    public static MemorySegment canBiomeGenerate$address() {
+        return canBiomeGenerate.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int canBiomeGenerate(int layerId, int mc, uint32_t flags, int biomeID)
+     * }
+     */
+    public static int canBiomeGenerate(int layerId, int mc, int flags, int biomeID) {
+        var mh$ = canBiomeGenerate.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("canBiomeGenerate", layerId, mc, flags, biomeID);
+            }
+            return (int)mh$.invokeExact(layerId, mc, flags, biomeID);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class genPotential {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
+            Cubiomes.C_POINTER,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("genPotential");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * void genPotential(uint64_t *mL, uint64_t *mM, int layerId, int mc, uint32_t flags, int biomeID)
+     * }
+     */
+    public static FunctionDescriptor genPotential$descriptor() {
+        return genPotential.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * void genPotential(uint64_t *mL, uint64_t *mM, int layerId, int mc, uint32_t flags, int biomeID)
+     * }
+     */
+    public static MethodHandle genPotential$handle() {
+        return genPotential.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * void genPotential(uint64_t *mL, uint64_t *mM, int layerId, int mc, uint32_t flags, int biomeID)
+     * }
+     */
+    public static MemorySegment genPotential$address() {
+        return genPotential.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * void genPotential(uint64_t *mL, uint64_t *mM, int layerId, int mc, uint32_t flags, int biomeID)
+     * }
+     */
+    public static void genPotential(MemorySegment mL, MemorySegment mM, int layerId, int mc, int flags, int biomeID) {
+        var mh$ = genPotential.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("genPotential", mL, mM, layerId, mc, flags, biomeID);
+            }
+            mh$.invokeExact(mL, mM, layerId, mc, flags, biomeID);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class getAvailableBiomes {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
+            Cubiomes.C_POINTER,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getAvailableBiomes");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * void getAvailableBiomes(uint64_t *mL, uint64_t *mM, int layerId, int mc, uint32_t flags)
+     * }
+     */
+    public static FunctionDescriptor getAvailableBiomes$descriptor() {
+        return getAvailableBiomes.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * void getAvailableBiomes(uint64_t *mL, uint64_t *mM, int layerId, int mc, uint32_t flags)
+     * }
+     */
+    public static MethodHandle getAvailableBiomes$handle() {
+        return getAvailableBiomes.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * void getAvailableBiomes(uint64_t *mL, uint64_t *mM, int layerId, int mc, uint32_t flags)
+     * }
+     */
+    public static MemorySegment getAvailableBiomes$address() {
+        return getAvailableBiomes.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * void getAvailableBiomes(uint64_t *mL, uint64_t *mM, int layerId, int mc, uint32_t flags)
+     * }
+     */
+    public static void getAvailableBiomes(MemorySegment mL, MemorySegment mM, int layerId, int mc, int flags) {
+        var mh$ = getAvailableBiomes.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("getAvailableBiomes", mL, mM, layerId, mc, flags);
+            }
+            mh$.invokeExact(mL, mM, layerId, mc, flags);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class getParaDescent {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_DOUBLE,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_DOUBLE,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_DOUBLE,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_POINTER
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getParaDescent");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * double getParaDescent(const DoublePerlinNoise *para, double factor, int x, int z, int w, int h, int i0, int j0, int maxrad, int maxiter, double alpha, void *data, int (*func)(void *, int, int, double))
+     * }
+     */
+    public static FunctionDescriptor getParaDescent$descriptor() {
+        return getParaDescent.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * double getParaDescent(const DoublePerlinNoise *para, double factor, int x, int z, int w, int h, int i0, int j0, int maxrad, int maxiter, double alpha, void *data, int (*func)(void *, int, int, double))
+     * }
+     */
+    public static MethodHandle getParaDescent$handle() {
+        return getParaDescent.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * double getParaDescent(const DoublePerlinNoise *para, double factor, int x, int z, int w, int h, int i0, int j0, int maxrad, int maxiter, double alpha, void *data, int (*func)(void *, int, int, double))
+     * }
+     */
+    public static MemorySegment getParaDescent$address() {
+        return getParaDescent.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * double getParaDescent(const DoublePerlinNoise *para, double factor, int x, int z, int w, int h, int i0, int j0, int maxrad, int maxiter, double alpha, void *data, int (*func)(void *, int, int, double))
+     * }
+     */
+    public static double getParaDescent(MemorySegment para, double factor, int x, int z, int w, int h, int i0, int j0, int maxrad, int maxiter, double alpha, MemorySegment data, MemorySegment func) {
+        var mh$ = getParaDescent.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("getParaDescent", para, factor, x, z, w, h, i0, j0, maxrad, maxiter, alpha, data, func);
+            }
+            return (double)mh$.invokeExact(para, factor, x, z, w, h, i0, j0, maxrad, maxiter, alpha, data, func);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class getParaRange {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_POINTER
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getParaRange");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int getParaRange(const DoublePerlinNoise *para, double *pmin, double *pmax, int x, int z, int w, int h, void *data, int (*func)(void *, int, int, double))
+     * }
+     */
+    public static FunctionDescriptor getParaRange$descriptor() {
+        return getParaRange.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int getParaRange(const DoublePerlinNoise *para, double *pmin, double *pmax, int x, int z, int w, int h, void *data, int (*func)(void *, int, int, double))
+     * }
+     */
+    public static MethodHandle getParaRange$handle() {
+        return getParaRange.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int getParaRange(const DoublePerlinNoise *para, double *pmin, double *pmax, int x, int z, int w, int h, void *data, int (*func)(void *, int, int, double))
+     * }
+     */
+    public static MemorySegment getParaRange$address() {
+        return getParaRange.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int getParaRange(const DoublePerlinNoise *para, double *pmin, double *pmax, int x, int z, int w, int h, void *data, int (*func)(void *, int, int, double))
+     * }
+     */
+    public static int getParaRange(MemorySegment para, MemorySegment pmin, MemorySegment pmax, int x, int z, int w, int h, MemorySegment data, MemorySegment func) {
+        var mh$ = getParaRange.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("getParaRange", para, pmin, pmax, x, z, w, h, data, func);
+            }
+            return (int)mh$.invokeExact(para, pmin, pmax, x, z, w, h, data, func);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class getBiomeParaExtremes {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getBiomeParaExtremes");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * const int *getBiomeParaExtremes(int mc)
+     * }
+     */
+    public static FunctionDescriptor getBiomeParaExtremes$descriptor() {
+        return getBiomeParaExtremes.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * const int *getBiomeParaExtremes(int mc)
+     * }
+     */
+    public static MethodHandle getBiomeParaExtremes$handle() {
+        return getBiomeParaExtremes.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * const int *getBiomeParaExtremes(int mc)
+     * }
+     */
+    public static MemorySegment getBiomeParaExtremes$address() {
+        return getBiomeParaExtremes.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * const int *getBiomeParaExtremes(int mc)
+     * }
+     */
+    public static MemorySegment getBiomeParaExtremes(int mc) {
+        var mh$ = getBiomeParaExtremes.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("getBiomeParaExtremes", mc);
+            }
+            return (MemorySegment)mh$.invokeExact(mc);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class getBiomeParaLimits {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getBiomeParaLimits");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * const int *getBiomeParaLimits(int mc, int id)
+     * }
+     */
+    public static FunctionDescriptor getBiomeParaLimits$descriptor() {
+        return getBiomeParaLimits.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * const int *getBiomeParaLimits(int mc, int id)
+     * }
+     */
+    public static MethodHandle getBiomeParaLimits$handle() {
+        return getBiomeParaLimits.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * const int *getBiomeParaLimits(int mc, int id)
+     * }
+     */
+    public static MemorySegment getBiomeParaLimits$address() {
+        return getBiomeParaLimits.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * const int *getBiomeParaLimits(int mc, int id)
+     * }
+     */
+    public static MemorySegment getBiomeParaLimits(int mc, int id) {
+        var mh$ = getBiomeParaLimits.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("getBiomeParaLimits", mc, id);
+            }
+            return (MemorySegment)mh$.invokeExact(mc, id);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class getPossibleBiomesForLimits {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getPossibleBiomesForLimits");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * void getPossibleBiomesForLimits(char ids[256], int mc, int limits[6][2])
+     * }
+     */
+    public static FunctionDescriptor getPossibleBiomesForLimits$descriptor() {
+        return getPossibleBiomesForLimits.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * void getPossibleBiomesForLimits(char ids[256], int mc, int limits[6][2])
+     * }
+     */
+    public static MethodHandle getPossibleBiomesForLimits$handle() {
+        return getPossibleBiomesForLimits.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * void getPossibleBiomesForLimits(char ids[256], int mc, int limits[6][2])
+     * }
+     */
+    public static MemorySegment getPossibleBiomesForLimits$address() {
+        return getPossibleBiomesForLimits.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * void getPossibleBiomesForLimits(char ids[256], int mc, int limits[6][2])
+     * }
+     */
+    public static void getPossibleBiomesForLimits(MemorySegment ids, int mc, MemorySegment limits) {
+        var mh$ = getPossibleBiomesForLimits.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("getPossibleBiomesForLimits", ids, mc, limits);
+            }
+            mh$.invokeExact(ids, mc, limits);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class getLargestRec {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_POINTER
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getLargestRec");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int getLargestRec(int match, const int *ids, int sx, int sz, Pos *p0, Pos *p1)
+     * }
+     */
+    public static FunctionDescriptor getLargestRec$descriptor() {
+        return getLargestRec.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int getLargestRec(int match, const int *ids, int sx, int sz, Pos *p0, Pos *p1)
+     * }
+     */
+    public static MethodHandle getLargestRec$handle() {
+        return getLargestRec.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int getLargestRec(int match, const int *ids, int sx, int sz, Pos *p0, Pos *p1)
+     * }
+     */
+    public static MemorySegment getLargestRec$address() {
+        return getLargestRec.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int getLargestRec(int match, const int *ids, int sx, int sz, Pos *p0, Pos *p1)
+     * }
+     */
+    public static int getLargestRec(int match, MemorySegment ids, int sx, int sz, MemorySegment p0, MemorySegment p1) {
+        var mh$ = getLargestRec.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("getLargestRec", match, ids, sx, sz, p0, p1);
+            }
+            return (int)mh$.invokeExact(match, ids, sx, sz, p0, p1);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+    private static final int CANYON_CARVER = (int)0L;
+    /**
+     * {@snippet lang=c :
+     * enum CanyonCarvers.CANYON_CARVER = 0
+     * }
+     */
+    public static int CANYON_CARVER() {
+        return CANYON_CARVER;
+    }
+    private static final int UNDERWATER_CANYON_CARVER = (int)1L;
+    /**
+     * {@snippet lang=c :
+     * enum CanyonCarvers.UNDERWATER_CANYON_CARVER = 1
+     * }
+     */
+    public static int UNDERWATER_CANYON_CARVER() {
+        return UNDERWATER_CANYON_CARVER;
+    }
+    private static final int CANYON_CARVER_NUM = (int)2L;
+    /**
+     * {@snippet lang=c :
+     * enum CanyonCarvers.CANYON_CARVER_NUM = 2
+     * }
+     */
+    public static int CANYON_CARVER_NUM() {
+        return CANYON_CARVER_NUM;
+    }
+    private static final int CAVE_CARVER = (int)0L;
+    /**
+     * {@snippet lang=c :
+     * enum CaveCarvers.CAVE_CARVER = 0
+     * }
+     */
+    public static int CAVE_CARVER() {
+        return CAVE_CARVER;
+    }
+    private static final int CAVE_EXTRA_UNDERGROUND_CARVER = (int)1L;
+    /**
+     * {@snippet lang=c :
+     * enum CaveCarvers.CAVE_EXTRA_UNDERGROUND_CARVER = 1
+     * }
+     */
+    public static int CAVE_EXTRA_UNDERGROUND_CARVER() {
+        return CAVE_EXTRA_UNDERGROUND_CARVER;
+    }
+    private static final int OCEAN_CAVE_CARVER = (int)2L;
+    /**
+     * {@snippet lang=c :
+     * enum CaveCarvers.OCEAN_CAVE_CARVER = 2
+     * }
+     */
+    public static int OCEAN_CAVE_CARVER() {
+        return OCEAN_CAVE_CARVER;
+    }
+    private static final int UNDERWATER_CAVE_CARVER = (int)3L;
+    /**
+     * {@snippet lang=c :
+     * enum CaveCarvers.UNDERWATER_CAVE_CARVER = 3
+     * }
+     */
+    public static int UNDERWATER_CAVE_CARVER() {
+        return UNDERWATER_CAVE_CARVER;
+    }
+    private static final int NETHER_CAVE_CARVER = (int)4L;
+    /**
+     * {@snippet lang=c :
+     * enum CaveCarvers.NETHER_CAVE_CARVER = 4
+     * }
+     */
+    public static int NETHER_CAVE_CARVER() {
+        return NETHER_CAVE_CARVER;
+    }
+    private static final int CAVE_CARVER_NUM = (int)5L;
+    /**
+     * {@snippet lang=c :
+     * enum CaveCarvers.CAVE_CARVER_NUM = 5
+     * }
+     */
+    public static int CAVE_CARVER_NUM() {
+        return CAVE_CARVER_NUM;
+    }
+
+    private static class getCanyonCarverConfig {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getCanyonCarverConfig");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int getCanyonCarverConfig(int canyonCarverType, int mc, CanyonCarverConfig *cconf)
+     * }
+     */
+    public static FunctionDescriptor getCanyonCarverConfig$descriptor() {
+        return getCanyonCarverConfig.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int getCanyonCarverConfig(int canyonCarverType, int mc, CanyonCarverConfig *cconf)
+     * }
+     */
+    public static MethodHandle getCanyonCarverConfig$handle() {
+        return getCanyonCarverConfig.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int getCanyonCarverConfig(int canyonCarverType, int mc, CanyonCarverConfig *cconf)
+     * }
+     */
+    public static MemorySegment getCanyonCarverConfig$address() {
+        return getCanyonCarverConfig.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int getCanyonCarverConfig(int canyonCarverType, int mc, CanyonCarverConfig *cconf)
+     * }
+     */
+    public static int getCanyonCarverConfig(int canyonCarverType, int mc, MemorySegment cconf) {
+        var mh$ = getCanyonCarverConfig.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("getCanyonCarverConfig", canyonCarverType, mc, cconf);
+            }
+            return (int)mh$.invokeExact(canyonCarverType, mc, cconf);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class isViableCanyonBiome {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("isViableCanyonBiome");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int isViableCanyonBiome(int canyonCarverType, int biome)
+     * }
+     */
+    public static FunctionDescriptor isViableCanyonBiome$descriptor() {
+        return isViableCanyonBiome.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int isViableCanyonBiome(int canyonCarverType, int biome)
+     * }
+     */
+    public static MethodHandle isViableCanyonBiome$handle() {
+        return isViableCanyonBiome.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int isViableCanyonBiome(int canyonCarverType, int biome)
+     * }
+     */
+    public static MemorySegment isViableCanyonBiome$address() {
+        return isViableCanyonBiome.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int isViableCanyonBiome(int canyonCarverType, int biome)
+     * }
+     */
+    public static int isViableCanyonBiome(int canyonCarverType, int biome) {
+        var mh$ = isViableCanyonBiome.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("isViableCanyonBiome", canyonCarverType, biome);
+            }
+            return (int)mh$.invokeExact(canyonCarverType, biome);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class getCaveCarverConfig {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getCaveCarverConfig");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int getCaveCarverConfig(int caveCarverType, int mc, int biome, CaveCarverConfig *cconf)
+     * }
+     */
+    public static FunctionDescriptor getCaveCarverConfig$descriptor() {
+        return getCaveCarverConfig.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int getCaveCarverConfig(int caveCarverType, int mc, int biome, CaveCarverConfig *cconf)
+     * }
+     */
+    public static MethodHandle getCaveCarverConfig$handle() {
+        return getCaveCarverConfig.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int getCaveCarverConfig(int caveCarverType, int mc, int biome, CaveCarverConfig *cconf)
+     * }
+     */
+    public static MemorySegment getCaveCarverConfig$address() {
+        return getCaveCarverConfig.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int getCaveCarverConfig(int caveCarverType, int mc, int biome, CaveCarverConfig *cconf)
+     * }
+     */
+    public static int getCaveCarverConfig(int caveCarverType, int mc, int biome, MemorySegment cconf) {
+        var mh$ = getCaveCarverConfig.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("getCaveCarverConfig", caveCarverType, mc, biome, cconf);
+            }
+            return (int)mh$.invokeExact(caveCarverType, mc, biome, cconf);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class isViableCaveBiome {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("isViableCaveBiome");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int isViableCaveBiome(int caveCarverType, int biome)
+     * }
+     */
+    public static FunctionDescriptor isViableCaveBiome$descriptor() {
+        return isViableCaveBiome.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int isViableCaveBiome(int caveCarverType, int biome)
+     * }
+     */
+    public static MethodHandle isViableCaveBiome$handle() {
+        return isViableCaveBiome.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int isViableCaveBiome(int caveCarverType, int biome)
+     * }
+     */
+    public static MemorySegment isViableCaveBiome$address() {
+        return isViableCaveBiome.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int isViableCaveBiome(int caveCarverType, int biome)
+     * }
+     */
+    public static int isViableCaveBiome(int caveCarverType, int biome) {
+        var mh$ = isViableCaveBiome.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("isViableCaveBiome", caveCarverType, biome);
+            }
+            return (int)mh$.invokeExact(caveCarverType, biome);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class checkCanyonStart {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_LONG,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            CanyonCarverConfig.layout(),
+            Cubiomes.C_POINTER
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("checkCanyonStart");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int checkCanyonStart(uint64_t seed, int chunkX, int chunkZ, CanyonCarverConfig ccc, uint64_t *rnd)
+     * }
+     */
+    public static FunctionDescriptor checkCanyonStart$descriptor() {
+        return checkCanyonStart.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int checkCanyonStart(uint64_t seed, int chunkX, int chunkZ, CanyonCarverConfig ccc, uint64_t *rnd)
+     * }
+     */
+    public static MethodHandle checkCanyonStart$handle() {
+        return checkCanyonStart.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int checkCanyonStart(uint64_t seed, int chunkX, int chunkZ, CanyonCarverConfig ccc, uint64_t *rnd)
+     * }
+     */
+    public static MemorySegment checkCanyonStart$address() {
+        return checkCanyonStart.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int checkCanyonStart(uint64_t seed, int chunkX, int chunkZ, CanyonCarverConfig ccc, uint64_t *rnd)
+     * }
+     */
+    public static int checkCanyonStart(long seed, int chunkX, int chunkZ, MemorySegment ccc, MemorySegment rnd) {
+        var mh$ = checkCanyonStart.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("checkCanyonStart", seed, chunkX, chunkZ, ccc, rnd);
+            }
+            return (int)mh$.invokeExact(seed, chunkX, chunkZ, ccc, rnd);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class checkCaveStart {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_LONG,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            CaveCarverConfig.layout(),
+            Cubiomes.C_POINTER
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("checkCaveStart");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int checkCaveStart(uint64_t seed, int chunkX, int chunkZ, CaveCarverConfig ccc, uint64_t *rnd)
+     * }
+     */
+    public static FunctionDescriptor checkCaveStart$descriptor() {
+        return checkCaveStart.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int checkCaveStart(uint64_t seed, int chunkX, int chunkZ, CaveCarverConfig ccc, uint64_t *rnd)
+     * }
+     */
+    public static MethodHandle checkCaveStart$handle() {
+        return checkCaveStart.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int checkCaveStart(uint64_t seed, int chunkX, int chunkZ, CaveCarverConfig ccc, uint64_t *rnd)
+     * }
+     */
+    public static MemorySegment checkCaveStart$address() {
+        return checkCaveStart.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int checkCaveStart(uint64_t seed, int chunkX, int chunkZ, CaveCarverConfig ccc, uint64_t *rnd)
+     * }
+     */
+    public static int checkCaveStart(long seed, int chunkX, int chunkZ, MemorySegment ccc, MemorySegment rnd) {
+        var mh$ = checkCaveStart.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("checkCaveStart", seed, chunkX, chunkZ, ccc, rnd);
+            }
+            return (int)mh$.invokeExact(seed, chunkX, chunkZ, ccc, rnd);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class carveCanyon {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
+            Cubiomes.C_LONG,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            CanyonCarverConfig.layout(),
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_POINTER
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("carveCanyon");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * void carveCanyon(uint64_t seed, int mc, int chunkX, int chunkZ, CanyonCarverConfig ccc, int canyonCarverType, int biomes[17][17], Pos3List *poses)
+     * }
+     */
+    public static FunctionDescriptor carveCanyon$descriptor() {
+        return carveCanyon.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * void carveCanyon(uint64_t seed, int mc, int chunkX, int chunkZ, CanyonCarverConfig ccc, int canyonCarverType, int biomes[17][17], Pos3List *poses)
+     * }
+     */
+    public static MethodHandle carveCanyon$handle() {
+        return carveCanyon.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * void carveCanyon(uint64_t seed, int mc, int chunkX, int chunkZ, CanyonCarverConfig ccc, int canyonCarverType, int biomes[17][17], Pos3List *poses)
+     * }
+     */
+    public static MemorySegment carveCanyon$address() {
+        return carveCanyon.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * void carveCanyon(uint64_t seed, int mc, int chunkX, int chunkZ, CanyonCarverConfig ccc, int canyonCarverType, int biomes[17][17], Pos3List *poses)
+     * }
+     */
+    public static void carveCanyon(long seed, int mc, int chunkX, int chunkZ, MemorySegment ccc, int canyonCarverType, MemorySegment biomes, MemorySegment poses) {
+        var mh$ = carveCanyon.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("carveCanyon", seed, mc, chunkX, chunkZ, ccc, canyonCarverType, biomes, poses);
+            }
+            mh$.invokeExact(seed, mc, chunkX, chunkZ, ccc, canyonCarverType, biomes, poses);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class carveCave {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
+            Cubiomes.C_LONG,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            CaveCarverConfig.layout(),
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_POINTER
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("carveCave");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * void carveCave(uint64_t seed, int mc, int chunkX, int chunkZ, CaveCarverConfig ccc, int caveCarverType, int biomes[17][17], Pos3List *poses)
+     * }
+     */
+    public static FunctionDescriptor carveCave$descriptor() {
+        return carveCave.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * void carveCave(uint64_t seed, int mc, int chunkX, int chunkZ, CaveCarverConfig ccc, int caveCarverType, int biomes[17][17], Pos3List *poses)
+     * }
+     */
+    public static MethodHandle carveCave$handle() {
+        return carveCave.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * void carveCave(uint64_t seed, int mc, int chunkX, int chunkZ, CaveCarverConfig ccc, int caveCarverType, int biomes[17][17], Pos3List *poses)
+     * }
+     */
+    public static MemorySegment carveCave$address() {
+        return carveCave.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * void carveCave(uint64_t seed, int mc, int chunkX, int chunkZ, CaveCarverConfig ccc, int caveCarverType, int biomes[17][17], Pos3List *poses)
+     * }
+     */
+    public static void carveCave(long seed, int mc, int chunkX, int chunkZ, MemorySegment ccc, int caveCarverType, MemorySegment biomes, MemorySegment poses) {
+        var mh$ = carveCave.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("carveCave", seed, mc, chunkX, chunkZ, ccc, caveCarverType, biomes, poses);
+            }
+            mh$.invokeExact(seed, mc, chunkX, chunkZ, ccc, caveCarverType, biomes, poses);
         } catch (Error | RuntimeException ex) {
            throw ex;
         } catch (Throwable ex$) {
@@ -16988,6 +16334,126 @@ class Cubiomes_1 extends Cubiomes$shared {
         }
     }
 
+    private static class canyon2str {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("canyon2str");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * const char *canyon2str(int ctype)
+     * }
+     */
+    public static FunctionDescriptor canyon2str$descriptor() {
+        return canyon2str.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * const char *canyon2str(int ctype)
+     * }
+     */
+    public static MethodHandle canyon2str$handle() {
+        return canyon2str.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * const char *canyon2str(int ctype)
+     * }
+     */
+    public static MemorySegment canyon2str$address() {
+        return canyon2str.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * const char *canyon2str(int ctype)
+     * }
+     */
+    public static MemorySegment canyon2str(int ctype) {
+        var mh$ = canyon2str.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("canyon2str", ctype);
+            }
+            return (MemorySegment)mh$.invokeExact(ctype);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class cave2str {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("cave2str");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * const char *cave2str(int ctype)
+     * }
+     */
+    public static FunctionDescriptor cave2str$descriptor() {
+        return cave2str.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * const char *cave2str(int ctype)
+     * }
+     */
+    public static MethodHandle cave2str$handle() {
+        return cave2str.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * const char *cave2str(int ctype)
+     * }
+     */
+    public static MemorySegment cave2str$address() {
+        return cave2str.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * const char *cave2str(int ctype)
+     * }
+     */
+    public static MemorySegment cave2str(int ctype) {
+        var mh$ = cave2str.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("cave2str", ctype);
+            }
+            return (MemorySegment)mh$.invokeExact(ctype);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
     private static class initBiomeColors {
         public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
             Cubiomes.C_POINTER
@@ -17344,7 +16810,7 @@ class Cubiomes_1 extends Cubiomes$shared {
     private static class getQuadHutCst {
         public static final FunctionDescriptor DESC = FunctionDescriptor.of(
             Cubiomes.C_INT,
-            Cubiomes.C_LONG_LONG
+            Cubiomes.C_LONG
         );
 
         public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getQuadHutCst");
@@ -17538,10 +17004,10 @@ class Cubiomes_1 extends Cubiomes$shared {
             Cubiomes.C_INT,
             StructureConfig.layout(),
             Cubiomes.C_INT,
-            Cubiomes.C_LONG_LONG,
+            Cubiomes.C_LONG,
             Cubiomes.C_POINTER,
             Cubiomes.C_INT,
-            Cubiomes.C_LONG_LONG,
+            Cubiomes.C_LONG,
             Cubiomes.C_INT,
             Cubiomes.C_INT,
             Cubiomes.C_INT,
@@ -17604,13 +17070,1425 @@ class Cubiomes_1 extends Cubiomes$shared {
         }
     }
 
+    private static class getAbandonedCampPieces {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            StructureSaltConfig.layout(),
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT,
+            Cubiomes.C_LONG,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getAbandonedCampPieces");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int getAbandonedCampPieces(Piece *list, StructureSaltConfig ssconf, StructureVariant *sv, int mc, uint64_t seed, int chunkX, int chunkZ)
+     * }
+     */
+    public static FunctionDescriptor getAbandonedCampPieces$descriptor() {
+        return getAbandonedCampPieces.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int getAbandonedCampPieces(Piece *list, StructureSaltConfig ssconf, StructureVariant *sv, int mc, uint64_t seed, int chunkX, int chunkZ)
+     * }
+     */
+    public static MethodHandle getAbandonedCampPieces$handle() {
+        return getAbandonedCampPieces.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int getAbandonedCampPieces(Piece *list, StructureSaltConfig ssconf, StructureVariant *sv, int mc, uint64_t seed, int chunkX, int chunkZ)
+     * }
+     */
+    public static MemorySegment getAbandonedCampPieces$address() {
+        return getAbandonedCampPieces.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int getAbandonedCampPieces(Piece *list, StructureSaltConfig ssconf, StructureVariant *sv, int mc, uint64_t seed, int chunkX, int chunkZ)
+     * }
+     */
+    public static int getAbandonedCampPieces(MemorySegment list, MemorySegment ssconf, MemorySegment sv, int mc, long seed, int chunkX, int chunkZ) {
+        var mh$ = getAbandonedCampPieces.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("getAbandonedCampPieces", list, ssconf, sv, mc, seed, chunkX, chunkZ);
+            }
+            return (int)mh$.invokeExact(list, ssconf, sv, mc, seed, chunkX, chunkZ);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class getEndCityPieces {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_LONG,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getEndCityPieces");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int getEndCityPieces(Piece *pieces, uint64_t seed, int chunkX, int chunkZ)
+     * }
+     */
+    public static FunctionDescriptor getEndCityPieces$descriptor() {
+        return getEndCityPieces.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int getEndCityPieces(Piece *pieces, uint64_t seed, int chunkX, int chunkZ)
+     * }
+     */
+    public static MethodHandle getEndCityPieces$handle() {
+        return getEndCityPieces.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int getEndCityPieces(Piece *pieces, uint64_t seed, int chunkX, int chunkZ)
+     * }
+     */
+    public static MemorySegment getEndCityPieces$address() {
+        return getEndCityPieces.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int getEndCityPieces(Piece *pieces, uint64_t seed, int chunkX, int chunkZ)
+     * }
+     */
+    public static int getEndCityPieces(MemorySegment pieces, long seed, int chunkX, int chunkZ) {
+        var mh$ = getEndCityPieces.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("getEndCityPieces", pieces, seed, chunkX, chunkZ);
+            }
+            return (int)mh$.invokeExact(pieces, seed, chunkX, chunkZ);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+    private static final int BASE_FLOOR = (int)0L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.BASE_FLOOR = 0
+     * }
+     */
+    public static int BASE_FLOOR() {
+        return BASE_FLOOR;
+    }
+    private static final int BASE_ROOF = (int)1L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.BASE_ROOF = 1
+     * }
+     */
+    public static int BASE_ROOF() {
+        return BASE_ROOF;
+    }
+    private static final int BRIDGE_END = (int)2L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.BRIDGE_END = 2
+     * }
+     */
+    public static int BRIDGE_END() {
+        return BRIDGE_END;
+    }
+    private static final int BRIDGE_GENTLE_STAIRS = (int)3L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.BRIDGE_GENTLE_STAIRS = 3
+     * }
+     */
+    public static int BRIDGE_GENTLE_STAIRS() {
+        return BRIDGE_GENTLE_STAIRS;
+    }
+    private static final int BRIDGE_PIECE = (int)4L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.BRIDGE_PIECE = 4
+     * }
+     */
+    public static int BRIDGE_PIECE() {
+        return BRIDGE_PIECE;
+    }
+    private static final int BRIDGE_STEEP_STAIRS = (int)5L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.BRIDGE_STEEP_STAIRS = 5
+     * }
+     */
+    public static int BRIDGE_STEEP_STAIRS() {
+        return BRIDGE_STEEP_STAIRS;
+    }
+    private static final int FAT_TOWER_BASE = (int)6L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.FAT_TOWER_BASE = 6
+     * }
+     */
+    public static int FAT_TOWER_BASE() {
+        return FAT_TOWER_BASE;
+    }
+    private static final int FAT_TOWER_MIDDLE = (int)7L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.FAT_TOWER_MIDDLE = 7
+     * }
+     */
+    public static int FAT_TOWER_MIDDLE() {
+        return FAT_TOWER_MIDDLE;
+    }
+    private static final int FAT_TOWER_TOP = (int)8L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.FAT_TOWER_TOP = 8
+     * }
+     */
+    public static int FAT_TOWER_TOP() {
+        return FAT_TOWER_TOP;
+    }
+    private static final int SECOND_FLOOR_1 = (int)9L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.SECOND_FLOOR_1 = 9
+     * }
+     */
+    public static int SECOND_FLOOR_1() {
+        return SECOND_FLOOR_1;
+    }
+    private static final int SECOND_FLOOR_2 = (int)10L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.SECOND_FLOOR_2 = 10
+     * }
+     */
+    public static int SECOND_FLOOR_2() {
+        return SECOND_FLOOR_2;
+    }
+    private static final int SECOND_ROOF = (int)11L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.SECOND_ROOF = 11
+     * }
+     */
+    public static int SECOND_ROOF() {
+        return SECOND_ROOF;
+    }
+    private static final int END_SHIP = (int)12L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.END_SHIP = 12
+     * }
+     */
+    public static int END_SHIP() {
+        return END_SHIP;
+    }
+    private static final int THIRD_FLOOR_1 = (int)13L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.THIRD_FLOOR_1 = 13
+     * }
+     */
+    public static int THIRD_FLOOR_1() {
+        return THIRD_FLOOR_1;
+    }
+    private static final int THIRD_FLOOR_2 = (int)14L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.THIRD_FLOOR_2 = 14
+     * }
+     */
+    public static int THIRD_FLOOR_2() {
+        return THIRD_FLOOR_2;
+    }
+    private static final int THIRD_ROOF = (int)15L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.THIRD_ROOF = 15
+     * }
+     */
+    public static int THIRD_ROOF() {
+        return THIRD_ROOF;
+    }
+    private static final int TOWER_BASE = (int)16L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.TOWER_BASE = 16
+     * }
+     */
+    public static int TOWER_BASE() {
+        return TOWER_BASE;
+    }
+    private static final int TOWER_FLOOR = (int)17L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.TOWER_FLOOR = 17
+     * }
+     */
+    public static int TOWER_FLOOR() {
+        return TOWER_FLOOR;
+    }
+    private static final int TOWER_PIECE = (int)18L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.TOWER_PIECE = 18
+     * }
+     */
+    public static int TOWER_PIECE() {
+        return TOWER_PIECE;
+    }
+    private static final int TOWER_TOP = (int)19L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.TOWER_TOP = 19
+     * }
+     */
+    public static int TOWER_TOP() {
+        return TOWER_TOP;
+    }
+    private static final int END_CITY_PIECE_COUNT = (int)20L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.END_CITY_PIECE_COUNT = 20
+     * }
+     */
+    public static int END_CITY_PIECE_COUNT() {
+        return END_CITY_PIECE_COUNT;
+    }
+    private static final int END_CITY_PIECES_MAX = (int)421L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.END_CITY_PIECES_MAX = 421
+     * }
+     */
+    public static int END_CITY_PIECES_MAX() {
+        return END_CITY_PIECES_MAX;
+    }
+
+    private static class getFortressPieces {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_LONG,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getFortressPieces");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int getFortressPieces(Piece *list, int n, int mc, uint64_t seed, int chunkX, int chunkZ)
+     * }
+     */
+    public static FunctionDescriptor getFortressPieces$descriptor() {
+        return getFortressPieces.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int getFortressPieces(Piece *list, int n, int mc, uint64_t seed, int chunkX, int chunkZ)
+     * }
+     */
+    public static MethodHandle getFortressPieces$handle() {
+        return getFortressPieces.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int getFortressPieces(Piece *list, int n, int mc, uint64_t seed, int chunkX, int chunkZ)
+     * }
+     */
+    public static MemorySegment getFortressPieces$address() {
+        return getFortressPieces.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int getFortressPieces(Piece *list, int n, int mc, uint64_t seed, int chunkX, int chunkZ)
+     * }
+     */
+    public static int getFortressPieces(MemorySegment list, int n, int mc, long seed, int chunkX, int chunkZ) {
+        var mh$ = getFortressPieces.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("getFortressPieces", list, n, mc, seed, chunkX, chunkZ);
+            }
+            return (int)mh$.invokeExact(list, n, mc, seed, chunkX, chunkZ);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+    private static final int FORTRESS_START = (int)0L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.FORTRESS_START = 0
+     * }
+     */
+    public static int FORTRESS_START() {
+        return FORTRESS_START;
+    }
+    private static final int BRIDGE_STRAIGHT = (int)1L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.BRIDGE_STRAIGHT = 1
+     * }
+     */
+    public static int BRIDGE_STRAIGHT() {
+        return BRIDGE_STRAIGHT;
+    }
+    private static final int BRIDGE_CROSSING = (int)2L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.BRIDGE_CROSSING = 2
+     * }
+     */
+    public static int BRIDGE_CROSSING() {
+        return BRIDGE_CROSSING;
+    }
+    private static final int BRIDGE_FORTIFIED_CROSSING = (int)3L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.BRIDGE_FORTIFIED_CROSSING = 3
+     * }
+     */
+    public static int BRIDGE_FORTIFIED_CROSSING() {
+        return BRIDGE_FORTIFIED_CROSSING;
+    }
+    private static final int BRIDGE_STAIRS = (int)4L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.BRIDGE_STAIRS = 4
+     * }
+     */
+    public static int BRIDGE_STAIRS() {
+        return BRIDGE_STAIRS;
+    }
+    private static final int BRIDGE_SPAWNER = (int)5L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.BRIDGE_SPAWNER = 5
+     * }
+     */
+    public static int BRIDGE_SPAWNER() {
+        return BRIDGE_SPAWNER;
+    }
+    private static final int BRIDGE_CORRIDOR_ENTRANCE = (int)6L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.BRIDGE_CORRIDOR_ENTRANCE = 6
+     * }
+     */
+    public static int BRIDGE_CORRIDOR_ENTRANCE() {
+        return BRIDGE_CORRIDOR_ENTRANCE;
+    }
+    private static final int CORRIDOR_STRAIGHT = (int)7L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.CORRIDOR_STRAIGHT = 7
+     * }
+     */
+    public static int CORRIDOR_STRAIGHT() {
+        return CORRIDOR_STRAIGHT;
+    }
+    private static final int CORRIDOR_CROSSING = (int)8L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.CORRIDOR_CROSSING = 8
+     * }
+     */
+    public static int CORRIDOR_CROSSING() {
+        return CORRIDOR_CROSSING;
+    }
+    private static final int CORRIDOR_TURN_RIGHT = (int)9L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.CORRIDOR_TURN_RIGHT = 9
+     * }
+     */
+    public static int CORRIDOR_TURN_RIGHT() {
+        return CORRIDOR_TURN_RIGHT;
+    }
+    private static final int CORRIDOR_TURN_LEFT = (int)10L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.CORRIDOR_TURN_LEFT = 10
+     * }
+     */
+    public static int CORRIDOR_TURN_LEFT() {
+        return CORRIDOR_TURN_LEFT;
+    }
+    private static final int CORRIDOR_STAIRS = (int)11L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.CORRIDOR_STAIRS = 11
+     * }
+     */
+    public static int CORRIDOR_STAIRS() {
+        return CORRIDOR_STAIRS;
+    }
+    private static final int CORRIDOR_T_CROSSING = (int)12L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.CORRIDOR_T_CROSSING = 12
+     * }
+     */
+    public static int CORRIDOR_T_CROSSING() {
+        return CORRIDOR_T_CROSSING;
+    }
+    private static final int CORRIDOR_NETHER_WART = (int)13L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.CORRIDOR_NETHER_WART = 13
+     * }
+     */
+    public static int CORRIDOR_NETHER_WART() {
+        return CORRIDOR_NETHER_WART;
+    }
+    private static final int FORTRESS_END = (int)14L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.FORTRESS_END = 14
+     * }
+     */
+    public static int FORTRESS_END() {
+        return FORTRESS_END;
+    }
+    private static final int FORTRESS_PIECE_COUNT = (int)15L;
+    /**
+     * {@snippet lang=c :
+     * enum <anonymous>.FORTRESS_PIECE_COUNT = 15
+     * }
+     */
+    public static int FORTRESS_PIECE_COUNT() {
+        return FORTRESS_PIECE_COUNT;
+    }
+    private static final int AndesiteOre = (int)0L;
+    /**
+     * {@snippet lang=c :
+     * enum Ores.AndesiteOre = 0
+     * }
+     */
+    public static int AndesiteOre() {
+        return AndesiteOre;
+    }
+    private static final int BlackstoneOre = (int)1L;
+    /**
+     * {@snippet lang=c :
+     * enum Ores.BlackstoneOre = 1
+     * }
+     */
+    public static int BlackstoneOre() {
+        return BlackstoneOre;
+    }
+    private static final int BuriedDiamondOre = (int)2L;
+    /**
+     * {@snippet lang=c :
+     * enum Ores.BuriedDiamondOre = 2
+     * }
+     */
+    public static int BuriedDiamondOre() {
+        return BuriedDiamondOre;
+    }
+    private static final int BuriedLapisOre = (int)3L;
+    /**
+     * {@snippet lang=c :
+     * enum Ores.BuriedLapisOre = 3
+     * }
+     */
+    public static int BuriedLapisOre() {
+        return BuriedLapisOre;
+    }
+    private static final int ClayOre = (int)4L;
+    /**
+     * {@snippet lang=c :
+     * enum Ores.ClayOre = 4
+     * }
+     */
+    public static int ClayOre() {
+        return ClayOre;
+    }
+    private static final int CoalOre = (int)5L;
+    /**
+     * {@snippet lang=c :
+     * enum Ores.CoalOre = 5
+     * }
+     */
+    public static int CoalOre() {
+        return CoalOre;
+    }
+    private static final int CopperOre = (int)6L;
+    /**
+     * {@snippet lang=c :
+     * enum Ores.CopperOre = 6
+     * }
+     */
+    public static int CopperOre() {
+        return CopperOre;
+    }
+    private static final int DeepslateOre = (int)7L;
+    /**
+     * {@snippet lang=c :
+     * enum Ores.DeepslateOre = 7
+     * }
+     */
+    public static int DeepslateOre() {
+        return DeepslateOre;
+    }
+    private static final int DeltasGoldOre = (int)8L;
+    /**
+     * {@snippet lang=c :
+     * enum Ores.DeltasGoldOre = 8
+     * }
+     */
+    public static int DeltasGoldOre() {
+        return DeltasGoldOre;
+    }
+    private static final int DeltasQuartzOre = (int)9L;
+    /**
+     * {@snippet lang=c :
+     * enum Ores.DeltasQuartzOre = 9
+     * }
+     */
+    public static int DeltasQuartzOre() {
+        return DeltasQuartzOre;
+    }
+    private static final int DiamondOre = (int)10L;
+    /**
+     * {@snippet lang=c :
+     * enum Ores.DiamondOre = 10
+     * }
+     */
+    public static int DiamondOre() {
+        return DiamondOre;
+    }
+    private static final int DioriteOre = (int)11L;
+    /**
+     * {@snippet lang=c :
+     * enum Ores.DioriteOre = 11
+     * }
+     */
+    public static int DioriteOre() {
+        return DioriteOre;
+    }
+    private static final int DirtOre = (int)12L;
+    /**
+     * {@snippet lang=c :
+     * enum Ores.DirtOre = 12
+     * }
+     */
+    public static int DirtOre() {
+        return DirtOre;
+    }
+    private static final int EmeraldOre = (int)13L;
+    /**
+     * {@snippet lang=c :
+     * enum Ores.EmeraldOre = 13
+     * }
+     */
+    public static int EmeraldOre() {
+        return EmeraldOre;
+    }
+    private static final int ExtraGoldOre = (int)14L;
+    /**
+     * {@snippet lang=c :
+     * enum Ores.ExtraGoldOre = 14
+     * }
+     */
+    public static int ExtraGoldOre() {
+        return ExtraGoldOre;
+    }
+    private static final int GoldOre = (int)15L;
+    /**
+     * {@snippet lang=c :
+     * enum Ores.GoldOre = 15
+     * }
+     */
+    public static int GoldOre() {
+        return GoldOre;
+    }
+    private static final int GraniteOre = (int)16L;
+    /**
+     * {@snippet lang=c :
+     * enum Ores.GraniteOre = 16
+     * }
+     */
+    public static int GraniteOre() {
+        return GraniteOre;
+    }
+    private static final int GravelOre = (int)17L;
+    /**
+     * {@snippet lang=c :
+     * enum Ores.GravelOre = 17
+     * }
+     */
+    public static int GravelOre() {
+        return GravelOre;
+    }
+    private static final int InfestedOre = (int)18L;
+    /**
+     * {@snippet lang=c :
+     * enum Ores.InfestedOre = 18
+     * }
+     */
+    public static int InfestedOre() {
+        return InfestedOre;
+    }
+    private static final int IronOre = (int)19L;
+    /**
+     * {@snippet lang=c :
+     * enum Ores.IronOre = 19
+     * }
+     */
+    public static int IronOre() {
+        return IronOre;
+    }
+    private static final int LapisOre = (int)20L;
+    /**
+     * {@snippet lang=c :
+     * enum Ores.LapisOre = 20
+     * }
+     */
+    public static int LapisOre() {
+        return LapisOre;
+    }
+    private static final int LargeCopperOre = (int)21L;
+    /**
+     * {@snippet lang=c :
+     * enum Ores.LargeCopperOre = 21
+     * }
+     */
+    public static int LargeCopperOre() {
+        return LargeCopperOre;
+    }
+    private static final int LargeDebrisOre = (int)22L;
+    /**
+     * {@snippet lang=c :
+     * enum Ores.LargeDebrisOre = 22
+     * }
+     */
+    public static int LargeDebrisOre() {
+        return LargeDebrisOre;
+    }
+    private static final int LargeDiamondOre = (int)23L;
+    /**
+     * {@snippet lang=c :
+     * enum Ores.LargeDiamondOre = 23
+     * }
+     */
+    public static int LargeDiamondOre() {
+        return LargeDiamondOre;
+    }
+    private static final int LowerAndesiteOre = (int)24L;
+    /**
+     * {@snippet lang=c :
+     * enum Ores.LowerAndesiteOre = 24
+     * }
+     */
+    public static int LowerAndesiteOre() {
+        return LowerAndesiteOre;
+    }
+    private static final int LowerCoalOre = (int)25L;
+    /**
+     * {@snippet lang=c :
+     * enum Ores.LowerCoalOre = 25
+     * }
+     */
+    public static int LowerCoalOre() {
+        return LowerCoalOre;
+    }
+    private static final int LowerDioriteOre = (int)26L;
+    /**
+     * {@snippet lang=c :
+     * enum Ores.LowerDioriteOre = 26
+     * }
+     */
+    public static int LowerDioriteOre() {
+        return LowerDioriteOre;
+    }
+    private static final int LowerGoldOre = (int)27L;
+    /**
+     * {@snippet lang=c :
+     * enum Ores.LowerGoldOre = 27
+     * }
+     */
+    public static int LowerGoldOre() {
+        return LowerGoldOre;
+    }
+    private static final int LowerGraniteOre = (int)28L;
+    /**
+     * {@snippet lang=c :
+     * enum Ores.LowerGraniteOre = 28
+     * }
+     */
+    public static int LowerGraniteOre() {
+        return LowerGraniteOre;
+    }
+    private static final int LowerRedstoneOre = (int)29L;
+    /**
+     * {@snippet lang=c :
+     * enum Ores.LowerRedstoneOre = 29
+     * }
+     */
+    public static int LowerRedstoneOre() {
+        return LowerRedstoneOre;
+    }
+    private static final int MagmaOre = (int)30L;
+    /**
+     * {@snippet lang=c :
+     * enum Ores.MagmaOre = 30
+     * }
+     */
+    public static int MagmaOre() {
+        return MagmaOre;
+    }
+    private static final int MediumDiamondOre = (int)31L;
+    /**
+     * {@snippet lang=c :
+     * enum Ores.MediumDiamondOre = 31
+     * }
+     */
+    public static int MediumDiamondOre() {
+        return MediumDiamondOre;
+    }
+    private static final int MiddleIronOre = (int)32L;
+    /**
+     * {@snippet lang=c :
+     * enum Ores.MiddleIronOre = 32
+     * }
+     */
+    public static int MiddleIronOre() {
+        return MiddleIronOre;
+    }
+    private static final int NetherGoldOre = (int)33L;
+    /**
+     * {@snippet lang=c :
+     * enum Ores.NetherGoldOre = 33
+     * }
+     */
+    public static int NetherGoldOre() {
+        return NetherGoldOre;
+    }
+    private static final int NetherGravelOre = (int)34L;
+    /**
+     * {@snippet lang=c :
+     * enum Ores.NetherGravelOre = 34
+     * }
+     */
+    public static int NetherGravelOre() {
+        return NetherGravelOre;
+    }
+    private static final int NetherQuartzOre = (int)35L;
+    /**
+     * {@snippet lang=c :
+     * enum Ores.NetherQuartzOre = 35
+     * }
+     */
+    public static int NetherQuartzOre() {
+        return NetherQuartzOre;
+    }
+    private static final int RedstoneOre = (int)36L;
+    /**
+     * {@snippet lang=c :
+     * enum Ores.RedstoneOre = 36
+     * }
+     */
+    public static int RedstoneOre() {
+        return RedstoneOre;
+    }
+    private static final int SmallDebrisOre = (int)37L;
+    /**
+     * {@snippet lang=c :
+     * enum Ores.SmallDebrisOre = 37
+     * }
+     */
+    public static int SmallDebrisOre() {
+        return SmallDebrisOre;
+    }
+    private static final int SmallIronOre = (int)38L;
+    /**
+     * {@snippet lang=c :
+     * enum Ores.SmallIronOre = 38
+     * }
+     */
+    public static int SmallIronOre() {
+        return SmallIronOre;
+    }
+    private static final int SoulSandOre = (int)39L;
+    /**
+     * {@snippet lang=c :
+     * enum Ores.SoulSandOre = 39
+     * }
+     */
+    public static int SoulSandOre() {
+        return SoulSandOre;
+    }
+    private static final int TuffOre = (int)40L;
+    /**
+     * {@snippet lang=c :
+     * enum Ores.TuffOre = 40
+     * }
+     */
+    public static int TuffOre() {
+        return TuffOre;
+    }
+    private static final int UpperAndesiteOre = (int)41L;
+    /**
+     * {@snippet lang=c :
+     * enum Ores.UpperAndesiteOre = 41
+     * }
+     */
+    public static int UpperAndesiteOre() {
+        return UpperAndesiteOre;
+    }
+    private static final int UpperCoalOre = (int)42L;
+    /**
+     * {@snippet lang=c :
+     * enum Ores.UpperCoalOre = 42
+     * }
+     */
+    public static int UpperCoalOre() {
+        return UpperCoalOre;
+    }
+    private static final int UpperDioriteOre = (int)43L;
+    /**
+     * {@snippet lang=c :
+     * enum Ores.UpperDioriteOre = 43
+     * }
+     */
+    public static int UpperDioriteOre() {
+        return UpperDioriteOre;
+    }
+    private static final int UpperGraniteOre = (int)44L;
+    /**
+     * {@snippet lang=c :
+     * enum Ores.UpperGraniteOre = 44
+     * }
+     */
+    public static int UpperGraniteOre() {
+        return UpperGraniteOre;
+    }
+    private static final int UpperIronOre = (int)45L;
+    /**
+     * {@snippet lang=c :
+     * enum Ores.UpperIronOre = 45
+     * }
+     */
+    public static int UpperIronOre() {
+        return UpperIronOre;
+    }
+    private static final int ORE_NUM = (int)46L;
+    /**
+     * {@snippet lang=c :
+     * enum Ores.ORE_NUM = 46
+     * }
+     */
+    public static int ORE_NUM() {
+        return ORE_NUM;
+    }
+
+    private static class getOreConfig {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getOreConfig");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int getOreConfig(int oreType, int mc, int biomeID, OreConfig *oconf)
+     * }
+     */
+    public static FunctionDescriptor getOreConfig$descriptor() {
+        return getOreConfig.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int getOreConfig(int oreType, int mc, int biomeID, OreConfig *oconf)
+     * }
+     */
+    public static MethodHandle getOreConfig$handle() {
+        return getOreConfig.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int getOreConfig(int oreType, int mc, int biomeID, OreConfig *oconf)
+     * }
+     */
+    public static MemorySegment getOreConfig$address() {
+        return getOreConfig.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int getOreConfig(int oreType, int mc, int biomeID, OreConfig *oconf)
+     * }
+     */
+    public static int getOreConfig(int oreType, int mc, int biomeID, MemorySegment oconf) {
+        var mh$ = getOreConfig.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("getOreConfig", oreType, mc, biomeID, oconf);
+            }
+            return (int)mh$.invokeExact(oreType, mc, biomeID, oconf);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class getBiomeForOreGen {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("getBiomeForOreGen");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int getBiomeForOreGen(const Generator *g, int chunkX, int chunkZ, int y)
+     * }
+     */
+    public static FunctionDescriptor getBiomeForOreGen$descriptor() {
+        return getBiomeForOreGen.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int getBiomeForOreGen(const Generator *g, int chunkX, int chunkZ, int y)
+     * }
+     */
+    public static MethodHandle getBiomeForOreGen$handle() {
+        return getBiomeForOreGen.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int getBiomeForOreGen(const Generator *g, int chunkX, int chunkZ, int y)
+     * }
+     */
+    public static MemorySegment getBiomeForOreGen$address() {
+        return getBiomeForOreGen.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int getBiomeForOreGen(const Generator *g, int chunkX, int chunkZ, int y)
+     * }
+     */
+    public static int getBiomeForOreGen(MemorySegment g, int chunkX, int chunkZ, int y) {
+        var mh$ = getBiomeForOreGen.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("getBiomeForOreGen", g, chunkX, chunkZ, y);
+            }
+            return (int)mh$.invokeExact(g, chunkX, chunkZ, y);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class isViableOreBiome {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("isViableOreBiome");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int isViableOreBiome(int mc, int oreType, int biomeID)
+     * }
+     */
+    public static FunctionDescriptor isViableOreBiome$descriptor() {
+        return isViableOreBiome.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int isViableOreBiome(int mc, int oreType, int biomeID)
+     * }
+     */
+    public static MethodHandle isViableOreBiome$handle() {
+        return isViableOreBiome.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int isViableOreBiome(int mc, int oreType, int biomeID)
+     * }
+     */
+    public static MemorySegment isViableOreBiome$address() {
+        return isViableOreBiome.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int isViableOreBiome(int mc, int oreType, int biomeID)
+     * }
+     */
+    public static int isViableOreBiome(int mc, int oreType, int biomeID) {
+        var mh$ = isViableOreBiome.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("isViableOreBiome", mc, oreType, biomeID);
+            }
+            return (int)mh$.invokeExact(mc, oreType, biomeID);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class generateOres {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Pos3List.layout(),
+            Cubiomes.C_POINTER,
+            Cubiomes.C_POINTER,
+            OreConfig.layout(),
+            Cubiomes.C_INT,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("generateOres");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * Pos3List generateOres(const Generator *g, const SurfaceNoise *sn, OreConfig config, int chunkX, int chunkZ)
+     * }
+     */
+    public static FunctionDescriptor generateOres$descriptor() {
+        return generateOres.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * Pos3List generateOres(const Generator *g, const SurfaceNoise *sn, OreConfig config, int chunkX, int chunkZ)
+     * }
+     */
+    public static MethodHandle generateOres$handle() {
+        return generateOres.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * Pos3List generateOres(const Generator *g, const SurfaceNoise *sn, OreConfig config, int chunkX, int chunkZ)
+     * }
+     */
+    public static MemorySegment generateOres$address() {
+        return generateOres.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * Pos3List generateOres(const Generator *g, const SurfaceNoise *sn, OreConfig config, int chunkX, int chunkZ)
+     * }
+     */
+    public static MemorySegment generateOres(SegmentAllocator allocator, MemorySegment g, MemorySegment sn, MemorySegment config, int chunkX, int chunkZ) {
+        var mh$ = generateOres.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("generateOres", allocator, g, sn, config, chunkX, chunkZ);
+            }
+            return (MemorySegment)mh$.invokeExact(allocator, g, sn, config, chunkX, chunkZ);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class generateBaseOrePosition {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Pos3.layout(),
+            Cubiomes.C_INT,
+            OreConfig.layout(),
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("generateBaseOrePosition");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * Pos3 generateBaseOrePosition(int mc, OreConfig config, int chunkX, int chunkZ, RandomSource *rnd)
+     * }
+     */
+    public static FunctionDescriptor generateBaseOrePosition$descriptor() {
+        return generateBaseOrePosition.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * Pos3 generateBaseOrePosition(int mc, OreConfig config, int chunkX, int chunkZ, RandomSource *rnd)
+     * }
+     */
+    public static MethodHandle generateBaseOrePosition$handle() {
+        return generateBaseOrePosition.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * Pos3 generateBaseOrePosition(int mc, OreConfig config, int chunkX, int chunkZ, RandomSource *rnd)
+     * }
+     */
+    public static MemorySegment generateBaseOrePosition$address() {
+        return generateBaseOrePosition.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * Pos3 generateBaseOrePosition(int mc, OreConfig config, int chunkX, int chunkZ, RandomSource *rnd)
+     * }
+     */
+    public static MemorySegment generateBaseOrePosition(SegmentAllocator allocator, int mc, MemorySegment config, int chunkX, int chunkZ, MemorySegment rnd) {
+        var mh$ = generateBaseOrePosition.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("generateBaseOrePosition", allocator, mc, config, chunkX, chunkZ, rnd);
+            }
+            return (MemorySegment)mh$.invokeExact(allocator, mc, config, chunkX, chunkZ, rnd);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class generateOrePositions {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
+            Cubiomes.C_POINTER,
+            Cubiomes.C_POINTER,
+            OreConfig.layout(),
+            Pos3.layout(),
+            Cubiomes.C_POINTER,
+            Cubiomes.C_POINTER
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("generateOrePositions");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * void generateOrePositions(const Generator *g, const SurfaceNoise *sn, OreConfig config, Pos3 pos, RandomSource *rnd, Pos3List *pos3s)
+     * }
+     */
+    public static FunctionDescriptor generateOrePositions$descriptor() {
+        return generateOrePositions.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * void generateOrePositions(const Generator *g, const SurfaceNoise *sn, OreConfig config, Pos3 pos, RandomSource *rnd, Pos3List *pos3s)
+     * }
+     */
+    public static MethodHandle generateOrePositions$handle() {
+        return generateOrePositions.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * void generateOrePositions(const Generator *g, const SurfaceNoise *sn, OreConfig config, Pos3 pos, RandomSource *rnd, Pos3List *pos3s)
+     * }
+     */
+    public static MemorySegment generateOrePositions$address() {
+        return generateOrePositions.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * void generateOrePositions(const Generator *g, const SurfaceNoise *sn, OreConfig config, Pos3 pos, RandomSource *rnd, Pos3List *pos3s)
+     * }
+     */
+    public static void generateOrePositions(MemorySegment g, MemorySegment sn, MemorySegment config, MemorySegment pos, MemorySegment rnd, MemorySegment pos3s) {
+        var mh$ = generateOrePositions.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("generateOrePositions", g, sn, config, pos, rnd, pos3s);
+            }
+            mh$.invokeExact(g, sn, config, pos, rnd, pos3s);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class generateVeinPart {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
+            Cubiomes.C_INT,
+            OreConfig.layout(),
+            Cubiomes.C_POINTER,
+            Cubiomes.C_DOUBLE,
+            Cubiomes.C_DOUBLE,
+            Cubiomes.C_DOUBLE,
+            Cubiomes.C_DOUBLE,
+            Cubiomes.C_DOUBLE,
+            Cubiomes.C_DOUBLE,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("generateVeinPart");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * void generateVeinPart(int mc, OreConfig config, RandomSource *rnd, double offsetXPos, double offsetXNeg, double offsetZPos, double offsetZNeg, double offsetYPos, double offsetYNeg, int startX, int startY, int startZ, int oreSize, int radius, Pos3List *pos3s)
+     * }
+     */
+    public static FunctionDescriptor generateVeinPart$descriptor() {
+        return generateVeinPart.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * void generateVeinPart(int mc, OreConfig config, RandomSource *rnd, double offsetXPos, double offsetXNeg, double offsetZPos, double offsetZNeg, double offsetYPos, double offsetYNeg, int startX, int startY, int startZ, int oreSize, int radius, Pos3List *pos3s)
+     * }
+     */
+    public static MethodHandle generateVeinPart$handle() {
+        return generateVeinPart.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * void generateVeinPart(int mc, OreConfig config, RandomSource *rnd, double offsetXPos, double offsetXNeg, double offsetZPos, double offsetZNeg, double offsetYPos, double offsetYNeg, int startX, int startY, int startZ, int oreSize, int radius, Pos3List *pos3s)
+     * }
+     */
+    public static MemorySegment generateVeinPart$address() {
+        return generateVeinPart.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * void generateVeinPart(int mc, OreConfig config, RandomSource *rnd, double offsetXPos, double offsetXNeg, double offsetZPos, double offsetZNeg, double offsetYPos, double offsetYNeg, int startX, int startY, int startZ, int oreSize, int radius, Pos3List *pos3s)
+     * }
+     */
+    public static void generateVeinPart(int mc, MemorySegment config, MemorySegment rnd, double offsetXPos, double offsetXNeg, double offsetZPos, double offsetZNeg, double offsetYPos, double offsetYNeg, int startX, int startY, int startZ, int oreSize, int radius, MemorySegment pos3s) {
+        var mh$ = generateVeinPart.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("generateVeinPart", mc, config, rnd, offsetXPos, offsetXNeg, offsetZPos, offsetZNeg, offsetYPos, offsetYNeg, startX, startY, startZ, oreSize, radius, pos3s);
+            }
+            mh$.invokeExact(mc, config, rnd, offsetXPos, offsetXNeg, offsetZPos, offsetZNeg, offsetYPos, offsetYNeg, startX, startY, startZ, oreSize, radius, pos3s);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
     private static class getStrongholdPieces {
         public static final FunctionDescriptor DESC = FunctionDescriptor.of(
             Cubiomes.C_INT,
             Cubiomes.C_POINTER,
             Cubiomes.C_INT,
             Cubiomes.C_INT,
-            Cubiomes.C_LONG_LONG,
+            Cubiomes.C_LONG,
             Cubiomes.C_INT,
             Cubiomes.C_INT
         );
@@ -17793,7 +18671,7 @@ class Cubiomes_1 extends Cubiomes$shared {
             Cubiomes.C_INT,
             StructureSaltConfig.layout(),
             Cubiomes.C_INT,
-            Cubiomes.C_LONG_LONG,
+            Cubiomes.C_LONG,
             Cubiomes.C_INT,
             Cubiomes.C_INT
         );
@@ -17860,1099 +18738,1531 @@ class Cubiomes_1 extends Cubiomes$shared {
     public static int ITEM_UNKNOWN() {
         return ITEM_UNKNOWN;
     }
-    private static final int ITEM_ANCIENT_DEBRIS = (int)0L;
+    private static final int ITEM_ABANDONED_CAMP_MAP = (int)0L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_ANCIENT_DEBRIS = 0
+     * enum Item.ITEM_ABANDONED_CAMP_MAP = 0
+     * }
+     */
+    public static int ITEM_ABANDONED_CAMP_MAP() {
+        return ITEM_ABANDONED_CAMP_MAP;
+    }
+    private static final int ITEM_ANCIENT_DEBRIS = (int)1L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.ITEM_ANCIENT_DEBRIS = 1
      * }
      */
     public static int ITEM_ANCIENT_DEBRIS() {
         return ITEM_ANCIENT_DEBRIS;
     }
-    private static final int ITEM_APPLE = (int)1L;
+    private static final int ITEM_APPLE = (int)2L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_APPLE = 1
+     * enum Item.ITEM_APPLE = 2
      * }
      */
     public static int ITEM_APPLE() {
         return ITEM_APPLE;
     }
-    private static final int ITEM_ARROW = (int)2L;
+    private static final int ITEM_ARROW = (int)3L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_ARROW = 2
+     * enum Item.ITEM_ARROW = 3
      * }
      */
     public static int ITEM_ARROW() {
         return ITEM_ARROW;
     }
-    private static final int ITEM_BAMBOO = (int)3L;
+    private static final int ITEM_BAMBOO = (int)4L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_BAMBOO = 3
+     * enum Item.ITEM_BAMBOO = 4
      * }
      */
     public static int ITEM_BAMBOO() {
         return ITEM_BAMBOO;
     }
-    private static final int ITEM_BEETROOT_SEEDS = (int)4L;
+    private static final int ITEM_BEETROOT_SEEDS = (int)5L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_BEETROOT_SEEDS = 4
+     * enum Item.ITEM_BEETROOT_SEEDS = 5
      * }
      */
     public static int ITEM_BEETROOT_SEEDS() {
         return ITEM_BEETROOT_SEEDS;
     }
-    private static final int ITEM_BELL = (int)5L;
+    private static final int ITEM_BELL = (int)6L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_BELL = 5
+     * enum Item.ITEM_BELL = 6
      * }
      */
     public static int ITEM_BELL() {
         return ITEM_BELL;
     }
-    private static final int ITEM_BONE = (int)6L;
+    private static final int ITEM_BOLT_ARMOR_TRIM_SMITHING_TEMPLATE = (int)7L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_BONE = 6
+     * enum Item.ITEM_BOLT_ARMOR_TRIM_SMITHING_TEMPLATE = 7
+     * }
+     */
+    public static int ITEM_BOLT_ARMOR_TRIM_SMITHING_TEMPLATE() {
+        return ITEM_BOLT_ARMOR_TRIM_SMITHING_TEMPLATE;
+    }
+    private static final int ITEM_BONE = (int)8L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.ITEM_BONE = 8
      * }
      */
     public static int ITEM_BONE() {
         return ITEM_BONE;
     }
-    private static final int ITEM_BONE_BLOCK = (int)7L;
+    private static final int ITEM_BONE_BLOCK = (int)9L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_BONE_BLOCK = 7
+     * enum Item.ITEM_BONE_BLOCK = 9
      * }
      */
     public static int ITEM_BONE_BLOCK() {
         return ITEM_BONE_BLOCK;
     }
-    private static final int ITEM_BOOK = (int)8L;
+    private static final int ITEM_BOOK = (int)10L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_BOOK = 8
+     * enum Item.ITEM_BOOK = 10
      * }
      */
     public static int ITEM_BOOK() {
         return ITEM_BOOK;
     }
-    private static final int ITEM_BREAD = (int)9L;
+    private static final int ITEM_BOW = (int)11L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_BREAD = 9
+     * enum Item.ITEM_BOW = 11
+     * }
+     */
+    public static int ITEM_BOW() {
+        return ITEM_BOW;
+    }
+    private static final int ITEM_BOWL = (int)12L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.ITEM_BOWL = 12
+     * }
+     */
+    public static int ITEM_BOWL() {
+        return ITEM_BOWL;
+    }
+    private static final int ITEM_BREAD = (int)13L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.ITEM_BREAD = 13
      * }
      */
     public static int ITEM_BREAD() {
         return ITEM_BREAD;
     }
-    private static final int ITEM_CARROT = (int)10L;
+    private static final int ITEM_BUCKET = (int)14L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_CARROT = 10
+     * enum Item.ITEM_BUCKET = 14
+     * }
+     */
+    public static int ITEM_BUCKET() {
+        return ITEM_BUCKET;
+    }
+    private static final int ITEM_BUNDLE = (int)15L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.ITEM_BUNDLE = 15
+     * }
+     */
+    public static int ITEM_BUNDLE() {
+        return ITEM_BUNDLE;
+    }
+    private static final int ITEM_BURIED_ANCIENT_CITY_MAP = (int)16L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.ITEM_BURIED_ANCIENT_CITY_MAP = 16
+     * }
+     */
+    public static int ITEM_BURIED_ANCIENT_CITY_MAP() {
+        return ITEM_BURIED_ANCIENT_CITY_MAP;
+    }
+    private static final int ITEM_BURIED_MINESHAFT_MAP = (int)17L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.ITEM_BURIED_MINESHAFT_MAP = 17
+     * }
+     */
+    public static int ITEM_BURIED_MINESHAFT_MAP() {
+        return ITEM_BURIED_MINESHAFT_MAP;
+    }
+    private static final int ITEM_BURIED_TRIAL_CHAMBERS_MAP = (int)18L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.ITEM_BURIED_TRIAL_CHAMBERS_MAP = 18
+     * }
+     */
+    public static int ITEM_BURIED_TRIAL_CHAMBERS_MAP() {
+        return ITEM_BURIED_TRIAL_CHAMBERS_MAP;
+    }
+    private static final int ITEM_CARROT = (int)19L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.ITEM_CARROT = 19
      * }
      */
     public static int ITEM_CARROT() {
         return ITEM_CARROT;
     }
-    private static final int ITEM_CHAIN = (int)11L;
+    private static final int ITEM_CHAIN = (int)20L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_CHAIN = 11
+     * enum Item.ITEM_CHAIN = 20
      * }
      */
     public static int ITEM_CHAIN() {
         return ITEM_CHAIN;
     }
-    private static final int ITEM_IRON_CHAIN = (int)11L;
+    private static final int ITEM_IRON_CHAIN = (int)20L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_IRON_CHAIN = 11
+     * enum Item.ITEM_IRON_CHAIN = 20
      * }
      */
     public static int ITEM_IRON_CHAIN() {
         return ITEM_IRON_CHAIN;
     }
-    private static final int ITEM_CLOCK = (int)12L;
+    private static final int ITEM_CLOCK = (int)21L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_CLOCK = 12
+     * enum Item.ITEM_CLOCK = 21
      * }
      */
     public static int ITEM_CLOCK() {
         return ITEM_CLOCK;
     }
-    private static final int ITEM_COAL = (int)13L;
+    private static final int ITEM_COAL = (int)22L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_COAL = 13
+     * enum Item.ITEM_COAL = 22
      * }
      */
     public static int ITEM_COAL() {
         return ITEM_COAL;
     }
-    private static final int ITEM_COAST_ARMOR_TRIM_SMITHING_TEMPLATE = (int)14L;
+    private static final int ITEM_COAST_ARMOR_TRIM_SMITHING_TEMPLATE = (int)23L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_COAST_ARMOR_TRIM_SMITHING_TEMPLATE = 14
+     * enum Item.ITEM_COAST_ARMOR_TRIM_SMITHING_TEMPLATE = 23
      * }
      */
     public static int ITEM_COAST_ARMOR_TRIM_SMITHING_TEMPLATE() {
         return ITEM_COAST_ARMOR_TRIM_SMITHING_TEMPLATE;
     }
-    private static final int ITEM_COMPASS = (int)15L;
+    private static final int ITEM_COBWEB = (int)24L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_COMPASS = 15
+     * enum Item.ITEM_COBWEB = 24
+     * }
+     */
+    public static int ITEM_COBWEB() {
+        return ITEM_COBWEB;
+    }
+    private static final int ITEM_COMPASS = (int)25L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.ITEM_COMPASS = 25
      * }
      */
     public static int ITEM_COMPASS() {
         return ITEM_COMPASS;
     }
-    private static final int ITEM_COOKED_COD = (int)16L;
+    private static final int ITEM_COOKED_COD = (int)26L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_COOKED_COD = 16
+     * enum Item.ITEM_COOKED_COD = 26
      * }
      */
     public static int ITEM_COOKED_COD() {
         return ITEM_COOKED_COD;
     }
-    private static final int ITEM_COOKED_PORKCHOP = (int)17L;
+    private static final int ITEM_COOKED_PORKCHOP = (int)27L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_COOKED_PORKCHOP = 17
+     * enum Item.ITEM_COOKED_PORKCHOP = 27
      * }
      */
     public static int ITEM_COOKED_PORKCHOP() {
         return ITEM_COOKED_PORKCHOP;
     }
-    private static final int ITEM_COOKED_SALMON = (int)18L;
+    private static final int ITEM_COOKED_SALMON = (int)28L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_COOKED_SALMON = 18
+     * enum Item.ITEM_COOKED_SALMON = 28
      * }
      */
     public static int ITEM_COOKED_SALMON() {
         return ITEM_COOKED_SALMON;
     }
-    private static final int ITEM_COPPER_HORSE_ARMOR = (int)19L;
+    private static final int ITEM_COPPER_AXE = (int)29L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_COPPER_HORSE_ARMOR = 19
+     * enum Item.ITEM_COPPER_AXE = 29
+     * }
+     */
+    public static int ITEM_COPPER_AXE() {
+        return ITEM_COPPER_AXE;
+    }
+    private static final int ITEM_COPPER_BOOTS = (int)30L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.ITEM_COPPER_BOOTS = 30
+     * }
+     */
+    public static int ITEM_COPPER_BOOTS() {
+        return ITEM_COPPER_BOOTS;
+    }
+    private static final int ITEM_COPPER_CHESTPLATE = (int)31L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.ITEM_COPPER_CHESTPLATE = 31
+     * }
+     */
+    public static int ITEM_COPPER_CHESTPLATE() {
+        return ITEM_COPPER_CHESTPLATE;
+    }
+    private static final int ITEM_COPPER_HORSE_ARMOR = (int)32L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.ITEM_COPPER_HORSE_ARMOR = 32
      * }
      */
     public static int ITEM_COPPER_HORSE_ARMOR() {
         return ITEM_COPPER_HORSE_ARMOR;
     }
-    private static final int ITEM_COPPER_NAUTILUS_ARMOR = (int)20L;
+    private static final int ITEM_COPPER_INGOT = (int)33L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_COPPER_NAUTILUS_ARMOR = 20
+     * enum Item.ITEM_COPPER_INGOT = 33
+     * }
+     */
+    public static int ITEM_COPPER_INGOT() {
+        return ITEM_COPPER_INGOT;
+    }
+    private static final int ITEM_COPPER_LEGGINGS = (int)34L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.ITEM_COPPER_LEGGINGS = 34
+     * }
+     */
+    public static int ITEM_COPPER_LEGGINGS() {
+        return ITEM_COPPER_LEGGINGS;
+    }
+    private static final int ITEM_COPPER_NAUTILUS_ARMOR = (int)35L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.ITEM_COPPER_NAUTILUS_ARMOR = 35
      * }
      */
     public static int ITEM_COPPER_NAUTILUS_ARMOR() {
         return ITEM_COPPER_NAUTILUS_ARMOR;
     }
-    private static final int ITEM_CROSSBOW = (int)21L;
+    private static final int ITEM_COPPER_SPEAR = (int)36L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_CROSSBOW = 21
+     * enum Item.ITEM_COPPER_SPEAR = 36
+     * }
+     */
+    public static int ITEM_COPPER_SPEAR() {
+        return ITEM_COPPER_SPEAR;
+    }
+    private static final int ITEM_COPPER_SWORD = (int)37L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.ITEM_COPPER_SWORD = 37
+     * }
+     */
+    public static int ITEM_COPPER_SWORD() {
+        return ITEM_COPPER_SWORD;
+    }
+    private static final int ITEM_CROSSBOW = (int)38L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.ITEM_CROSSBOW = 38
      * }
      */
     public static int ITEM_CROSSBOW() {
         return ITEM_CROSSBOW;
     }
-    private static final int ITEM_CRYING_OBSIDIAN = (int)22L;
+    private static final int ITEM_CRYING_OBSIDIAN = (int)39L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_CRYING_OBSIDIAN = 22
+     * enum Item.ITEM_CRYING_OBSIDIAN = 39
      * }
      */
     public static int ITEM_CRYING_OBSIDIAN() {
         return ITEM_CRYING_OBSIDIAN;
     }
-    private static final int ITEM_DARK_OAK_LOG = (int)23L;
+    private static final int ITEM_DARK_OAK_LOG = (int)40L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_DARK_OAK_LOG = 23
+     * enum Item.ITEM_DARK_OAK_LOG = 40
      * }
      */
     public static int ITEM_DARK_OAK_LOG() {
         return ITEM_DARK_OAK_LOG;
     }
-    private static final int ITEM_DIAMOND = (int)24L;
+    private static final int ITEM_DESERT_PYRAMID_MAP = (int)41L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_DIAMOND = 24
+     * enum Item.ITEM_DESERT_PYRAMID_MAP = 41
+     * }
+     */
+    public static int ITEM_DESERT_PYRAMID_MAP() {
+        return ITEM_DESERT_PYRAMID_MAP;
+    }
+    private static final int ITEM_DIAMOND = (int)42L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.ITEM_DIAMOND = 42
      * }
      */
     public static int ITEM_DIAMOND() {
         return ITEM_DIAMOND;
     }
-    private static final int ITEM_DIAMOND_BOOTS = (int)25L;
+    private static final int ITEM_DIAMOND_AXE = (int)43L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_DIAMOND_BOOTS = 25
+     * enum Item.ITEM_DIAMOND_AXE = 43
+     * }
+     */
+    public static int ITEM_DIAMOND_AXE() {
+        return ITEM_DIAMOND_AXE;
+    }
+    private static final int ITEM_DIAMOND_BLOCK = (int)44L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.ITEM_DIAMOND_BLOCK = 44
+     * }
+     */
+    public static int ITEM_DIAMOND_BLOCK() {
+        return ITEM_DIAMOND_BLOCK;
+    }
+    private static final int ITEM_DIAMOND_BOOTS = (int)45L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.ITEM_DIAMOND_BOOTS = 45
      * }
      */
     public static int ITEM_DIAMOND_BOOTS() {
         return ITEM_DIAMOND_BOOTS;
     }
-    private static final int ITEM_DIAMOND_CHESTPLATE = (int)26L;
+    private static final int ITEM_DIAMOND_CHESTPLATE = (int)46L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_DIAMOND_CHESTPLATE = 26
+     * enum Item.ITEM_DIAMOND_CHESTPLATE = 46
      * }
      */
     public static int ITEM_DIAMOND_CHESTPLATE() {
         return ITEM_DIAMOND_CHESTPLATE;
     }
-    private static final int ITEM_DIAMOND_HELMET = (int)27L;
+    private static final int ITEM_DIAMOND_HELMET = (int)47L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_DIAMOND_HELMET = 27
+     * enum Item.ITEM_DIAMOND_HELMET = 47
      * }
      */
     public static int ITEM_DIAMOND_HELMET() {
         return ITEM_DIAMOND_HELMET;
     }
-    private static final int ITEM_DIAMOND_HORSE_ARMOR = (int)28L;
+    private static final int ITEM_DIAMOND_HORSE_ARMOR = (int)48L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_DIAMOND_HORSE_ARMOR = 28
+     * enum Item.ITEM_DIAMOND_HORSE_ARMOR = 48
      * }
      */
     public static int ITEM_DIAMOND_HORSE_ARMOR() {
         return ITEM_DIAMOND_HORSE_ARMOR;
     }
-    private static final int ITEM_DIAMOND_LEGGINGS = (int)29L;
+    private static final int ITEM_DIAMOND_LEGGINGS = (int)49L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_DIAMOND_LEGGINGS = 29
+     * enum Item.ITEM_DIAMOND_LEGGINGS = 49
      * }
      */
     public static int ITEM_DIAMOND_LEGGINGS() {
         return ITEM_DIAMOND_LEGGINGS;
     }
-    private static final int ITEM_DIAMOND_NAUTILUS_ARMOR = (int)30L;
+    private static final int ITEM_DIAMOND_NAUTILUS_ARMOR = (int)50L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_DIAMOND_NAUTILUS_ARMOR = 30
+     * enum Item.ITEM_DIAMOND_NAUTILUS_ARMOR = 50
      * }
      */
     public static int ITEM_DIAMOND_NAUTILUS_ARMOR() {
         return ITEM_DIAMOND_NAUTILUS_ARMOR;
     }
-    private static final int ITEM_DIAMOND_PICKAXE = (int)31L;
+    private static final int ITEM_DIAMOND_PICKAXE = (int)51L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_DIAMOND_PICKAXE = 31
+     * enum Item.ITEM_DIAMOND_PICKAXE = 51
      * }
      */
     public static int ITEM_DIAMOND_PICKAXE() {
         return ITEM_DIAMOND_PICKAXE;
     }
-    private static final int ITEM_DIAMOND_SHOVEL = (int)32L;
+    private static final int ITEM_DIAMOND_SHOVEL = (int)52L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_DIAMOND_SHOVEL = 32
+     * enum Item.ITEM_DIAMOND_SHOVEL = 52
      * }
      */
     public static int ITEM_DIAMOND_SHOVEL() {
         return ITEM_DIAMOND_SHOVEL;
     }
-    private static final int ITEM_DIAMOND_SPEAR = (int)33L;
+    private static final int ITEM_DIAMOND_SPEAR = (int)53L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_DIAMOND_SPEAR = 33
+     * enum Item.ITEM_DIAMOND_SPEAR = 53
      * }
      */
     public static int ITEM_DIAMOND_SPEAR() {
         return ITEM_DIAMOND_SPEAR;
     }
-    private static final int ITEM_DIAMOND_SWORD = (int)34L;
+    private static final int ITEM_DIAMOND_SWORD = (int)54L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_DIAMOND_SWORD = 34
+     * enum Item.ITEM_DIAMOND_SWORD = 54
      * }
      */
     public static int ITEM_DIAMOND_SWORD() {
         return ITEM_DIAMOND_SWORD;
     }
-    private static final int ITEM_DUNE_ARMOR_TRIM_SMITHING_TEMPLATE = (int)35L;
+    private static final int ITEM_DUNE_ARMOR_TRIM_SMITHING_TEMPLATE = (int)55L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_DUNE_ARMOR_TRIM_SMITHING_TEMPLATE = 35
+     * enum Item.ITEM_DUNE_ARMOR_TRIM_SMITHING_TEMPLATE = 55
      * }
      */
     public static int ITEM_DUNE_ARMOR_TRIM_SMITHING_TEMPLATE() {
         return ITEM_DUNE_ARMOR_TRIM_SMITHING_TEMPLATE;
     }
-    private static final int ITEM_EMERALD = (int)36L;
+    private static final int ITEM_EMERALD = (int)56L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_EMERALD = 36
+     * enum Item.ITEM_EMERALD = 56
      * }
      */
     public static int ITEM_EMERALD() {
         return ITEM_EMERALD;
     }
-    private static final int ITEM_ENCHANTED_GOLDEN_APPLE = (int)37L;
+    private static final int ITEM_EMERALD_BLOCK = (int)57L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_ENCHANTED_GOLDEN_APPLE = 37
+     * enum Item.ITEM_EMERALD_BLOCK = 57
+     * }
+     */
+    public static int ITEM_EMERALD_BLOCK() {
+        return ITEM_EMERALD_BLOCK;
+    }
+    private static final int ITEM_ENCHANTED_GOLDEN_APPLE = (int)58L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.ITEM_ENCHANTED_GOLDEN_APPLE = 58
      * }
      */
     public static int ITEM_ENCHANTED_GOLDEN_APPLE() {
         return ITEM_ENCHANTED_GOLDEN_APPLE;
     }
-    private static final int ITEM_ENDER_PEARL = (int)38L;
+    private static final int ITEM_ENDER_PEARL = (int)59L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_ENDER_PEARL = 38
+     * enum Item.ITEM_ENDER_PEARL = 59
      * }
      */
     public static int ITEM_ENDER_PEARL() {
         return ITEM_ENDER_PEARL;
     }
-    private static final int ITEM_EXPERIENCE_BOTTLE = (int)39L;
+    private static final int ITEM_EXPERIENCE_BOTTLE = (int)60L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_EXPERIENCE_BOTTLE = 39
+     * enum Item.ITEM_EXPERIENCE_BOTTLE = 60
      * }
      */
     public static int ITEM_EXPERIENCE_BOTTLE() {
         return ITEM_EXPERIENCE_BOTTLE;
     }
-    private static final int ITEM_EYE_ARMOR_TRIM_SMITHING_TEMPLATE = (int)40L;
+    private static final int ITEM_EYE_ARMOR_TRIM_SMITHING_TEMPLATE = (int)61L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_EYE_ARMOR_TRIM_SMITHING_TEMPLATE = 40
+     * enum Item.ITEM_EYE_ARMOR_TRIM_SMITHING_TEMPLATE = 61
      * }
      */
     public static int ITEM_EYE_ARMOR_TRIM_SMITHING_TEMPLATE() {
         return ITEM_EYE_ARMOR_TRIM_SMITHING_TEMPLATE;
     }
-    private static final int ITEM_FEATHER = (int)41L;
+    private static final int ITEM_FEATHER = (int)62L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_FEATHER = 41
+     * enum Item.ITEM_FEATHER = 62
      * }
      */
     public static int ITEM_FEATHER() {
         return ITEM_FEATHER;
     }
-    private static final int ITEM_FIRE_CHARGE = (int)42L;
+    private static final int ITEM_FIRE_CHARGE = (int)63L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_FIRE_CHARGE = 42
+     * enum Item.ITEM_FIRE_CHARGE = 63
      * }
      */
     public static int ITEM_FIRE_CHARGE() {
         return ITEM_FIRE_CHARGE;
     }
-    private static final int ITEM_FLINT = (int)43L;
+    private static final int ITEM_FIREWORK_ROCKET = (int)64L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_FLINT = 43
+     * enum Item.ITEM_FIREWORK_ROCKET = 64
+     * }
+     */
+    public static int ITEM_FIREWORK_ROCKET() {
+        return ITEM_FIREWORK_ROCKET;
+    }
+    private static final int ITEM_FISHING_ROD = (int)65L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.ITEM_FISHING_ROD = 65
+     * }
+     */
+    public static int ITEM_FISHING_ROD() {
+        return ITEM_FISHING_ROD;
+    }
+    private static final int ITEM_FLINT = (int)66L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.ITEM_FLINT = 66
      * }
      */
     public static int ITEM_FLINT() {
         return ITEM_FLINT;
     }
-    private static final int ITEM_FLINT_AND_STEEL = (int)44L;
+    private static final int ITEM_FLINT_AND_STEEL = (int)67L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_FLINT_AND_STEEL = 44
+     * enum Item.ITEM_FLINT_AND_STEEL = 67
      * }
      */
     public static int ITEM_FLINT_AND_STEEL() {
         return ITEM_FLINT_AND_STEEL;
     }
-    private static final int ITEM_GILDED_BLACKSTONE = (int)45L;
+    private static final int ITEM_FLOW_ARMOR_TRIM_SMITHING_TEMPLATE = (int)68L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_GILDED_BLACKSTONE = 45
+     * enum Item.ITEM_FLOW_ARMOR_TRIM_SMITHING_TEMPLATE = 68
+     * }
+     */
+    public static int ITEM_FLOW_ARMOR_TRIM_SMITHING_TEMPLATE() {
+        return ITEM_FLOW_ARMOR_TRIM_SMITHING_TEMPLATE;
+    }
+    private static final int ITEM_FLOW_BANNER_PATTERN = (int)69L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.ITEM_FLOW_BANNER_PATTERN = 69
+     * }
+     */
+    public static int ITEM_FLOW_BANNER_PATTERN() {
+        return ITEM_FLOW_BANNER_PATTERN;
+    }
+    private static final int ITEM_GILDED_BLACKSTONE = (int)70L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.ITEM_GILDED_BLACKSTONE = 70
      * }
      */
     public static int ITEM_GILDED_BLACKSTONE() {
         return ITEM_GILDED_BLACKSTONE;
     }
-    private static final int ITEM_GLISTERING_MELON_SLICE = (int)46L;
+    private static final int ITEM_GLASS_BOTTLE = (int)71L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_GLISTERING_MELON_SLICE = 46
+     * enum Item.ITEM_GLASS_BOTTLE = 71
+     * }
+     */
+    public static int ITEM_GLASS_BOTTLE() {
+        return ITEM_GLASS_BOTTLE;
+    }
+    private static final int ITEM_GLISTERING_MELON_SLICE = (int)72L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.ITEM_GLISTERING_MELON_SLICE = 72
      * }
      */
     public static int ITEM_GLISTERING_MELON_SLICE() {
         return ITEM_GLISTERING_MELON_SLICE;
     }
-    private static final int ITEM_GOAT_HORN = (int)47L;
+    private static final int ITEM_GOAT_HORN = (int)73L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_GOAT_HORN = 47
+     * enum Item.ITEM_GOAT_HORN = 73
      * }
      */
     public static int ITEM_GOAT_HORN() {
         return ITEM_GOAT_HORN;
     }
-    private static final int ITEM_GOLDEN_APPLE = (int)48L;
+    private static final int ITEM_GOLDEN_APPLE = (int)74L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_GOLDEN_APPLE = 48
+     * enum Item.ITEM_GOLDEN_APPLE = 74
      * }
      */
     public static int ITEM_GOLDEN_APPLE() {
         return ITEM_GOLDEN_APPLE;
     }
-    private static final int ITEM_GOLDEN_AXE = (int)49L;
+    private static final int ITEM_GOLDEN_AXE = (int)75L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_GOLDEN_AXE = 49
+     * enum Item.ITEM_GOLDEN_AXE = 75
      * }
      */
     public static int ITEM_GOLDEN_AXE() {
         return ITEM_GOLDEN_AXE;
     }
-    private static final int ITEM_GOLDEN_BOOTS = (int)50L;
+    private static final int ITEM_GOLDEN_BOOTS = (int)76L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_GOLDEN_BOOTS = 50
+     * enum Item.ITEM_GOLDEN_BOOTS = 76
      * }
      */
     public static int ITEM_GOLDEN_BOOTS() {
         return ITEM_GOLDEN_BOOTS;
     }
-    private static final int ITEM_GOLDEN_CARROT = (int)51L;
+    private static final int ITEM_GOLDEN_CARROT = (int)77L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_GOLDEN_CARROT = 51
+     * enum Item.ITEM_GOLDEN_CARROT = 77
      * }
      */
     public static int ITEM_GOLDEN_CARROT() {
         return ITEM_GOLDEN_CARROT;
     }
-    private static final int ITEM_GOLDEN_CHESTPLATE = (int)52L;
+    private static final int ITEM_GOLDEN_CHESTPLATE = (int)78L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_GOLDEN_CHESTPLATE = 52
+     * enum Item.ITEM_GOLDEN_CHESTPLATE = 78
      * }
      */
     public static int ITEM_GOLDEN_CHESTPLATE() {
         return ITEM_GOLDEN_CHESTPLATE;
     }
-    private static final int ITEM_GOLDEN_HELMET = (int)53L;
+    private static final int ITEM_GOLDEN_HELMET = (int)79L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_GOLDEN_HELMET = 53
+     * enum Item.ITEM_GOLDEN_HELMET = 79
      * }
      */
     public static int ITEM_GOLDEN_HELMET() {
         return ITEM_GOLDEN_HELMET;
     }
-    private static final int ITEM_GOLDEN_HOE = (int)54L;
+    private static final int ITEM_GOLDEN_HOE = (int)80L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_GOLDEN_HOE = 54
+     * enum Item.ITEM_GOLDEN_HOE = 80
      * }
      */
     public static int ITEM_GOLDEN_HOE() {
         return ITEM_GOLDEN_HOE;
     }
-    private static final int ITEM_GOLDEN_HORSE_ARMOR = (int)55L;
+    private static final int ITEM_GOLDEN_HORSE_ARMOR = (int)81L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_GOLDEN_HORSE_ARMOR = 55
+     * enum Item.ITEM_GOLDEN_HORSE_ARMOR = 81
      * }
      */
     public static int ITEM_GOLDEN_HORSE_ARMOR() {
         return ITEM_GOLDEN_HORSE_ARMOR;
     }
-    private static final int ITEM_GOLDEN_LEGGINGS = (int)56L;
+    private static final int ITEM_GOLDEN_LEGGINGS = (int)82L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_GOLDEN_LEGGINGS = 56
+     * enum Item.ITEM_GOLDEN_LEGGINGS = 82
      * }
      */
     public static int ITEM_GOLDEN_LEGGINGS() {
         return ITEM_GOLDEN_LEGGINGS;
     }
-    private static final int ITEM_GOLDEN_NAUTILUS_ARMOR = (int)57L;
+    private static final int ITEM_GOLDEN_NAUTILUS_ARMOR = (int)83L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_GOLDEN_NAUTILUS_ARMOR = 57
+     * enum Item.ITEM_GOLDEN_NAUTILUS_ARMOR = 83
      * }
      */
     public static int ITEM_GOLDEN_NAUTILUS_ARMOR() {
         return ITEM_GOLDEN_NAUTILUS_ARMOR;
     }
-    private static final int ITEM_GOLDEN_PICKAXE = (int)58L;
+    private static final int ITEM_GOLDEN_PICKAXE = (int)84L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_GOLDEN_PICKAXE = 58
+     * enum Item.ITEM_GOLDEN_PICKAXE = 84
      * }
      */
     public static int ITEM_GOLDEN_PICKAXE() {
         return ITEM_GOLDEN_PICKAXE;
     }
-    private static final int ITEM_GOLDEN_SHOVEL = (int)59L;
+    private static final int ITEM_GOLDEN_SHOVEL = (int)85L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_GOLDEN_SHOVEL = 59
+     * enum Item.ITEM_GOLDEN_SHOVEL = 85
      * }
      */
     public static int ITEM_GOLDEN_SHOVEL() {
         return ITEM_GOLDEN_SHOVEL;
     }
-    private static final int ITEM_GOLDEN_SWORD = (int)60L;
+    private static final int ITEM_GOLDEN_SWORD = (int)86L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_GOLDEN_SWORD = 60
+     * enum Item.ITEM_GOLDEN_SWORD = 86
      * }
      */
     public static int ITEM_GOLDEN_SWORD() {
         return ITEM_GOLDEN_SWORD;
     }
-    private static final int ITEM_GOLD_BLOCK = (int)61L;
+    private static final int ITEM_GOLD_BLOCK = (int)87L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_GOLD_BLOCK = 61
+     * enum Item.ITEM_GOLD_BLOCK = 87
      * }
      */
     public static int ITEM_GOLD_BLOCK() {
         return ITEM_GOLD_BLOCK;
     }
-    private static final int ITEM_GOLD_INGOT = (int)62L;
+    private static final int ITEM_GOLD_INGOT = (int)88L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_GOLD_INGOT = 62
+     * enum Item.ITEM_GOLD_INGOT = 88
      * }
      */
     public static int ITEM_GOLD_INGOT() {
         return ITEM_GOLD_INGOT;
     }
-    private static final int ITEM_GOLD_NUGGET = (int)63L;
+    private static final int ITEM_GOLD_NUGGET = (int)89L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_GOLD_NUGGET = 63
+     * enum Item.ITEM_GOLD_NUGGET = 89
      * }
      */
     public static int ITEM_GOLD_NUGGET() {
         return ITEM_GOLD_NUGGET;
     }
-    private static final int ITEM_GUNPOWDER = (int)64L;
+    private static final int ITEM_GUNPOWDER = (int)90L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_GUNPOWDER = 64
+     * enum Item.ITEM_GUNPOWDER = 90
      * }
      */
     public static int ITEM_GUNPOWDER() {
         return ITEM_GUNPOWDER;
     }
-    private static final int ITEM_HEART_OF_THE_SEA = (int)65L;
+    private static final int ITEM_GUSTER_BANNER_PATTERN = (int)91L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_HEART_OF_THE_SEA = 65
+     * enum Item.ITEM_GUSTER_BANNER_PATTERN = 91
+     * }
+     */
+    public static int ITEM_GUSTER_BANNER_PATTERN() {
+        return ITEM_GUSTER_BANNER_PATTERN;
+    }
+    private static final int ITEM_HEART_OF_THE_SEA = (int)92L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.ITEM_HEART_OF_THE_SEA = 92
      * }
      */
     public static int ITEM_HEART_OF_THE_SEA() {
         return ITEM_HEART_OF_THE_SEA;
     }
-    private static final int ITEM_IRON_BLOCK = (int)66L;
+    private static final int ITEM_HEAVY_CORE = (int)93L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_IRON_BLOCK = 66
+     * enum Item.ITEM_HEAVY_CORE = 93
+     * }
+     */
+    public static int ITEM_HEAVY_CORE() {
+        return ITEM_HEAVY_CORE;
+    }
+    private static final int ITEM_HONEY_BOTTLE = (int)94L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.ITEM_HONEY_BOTTLE = 94
+     * }
+     */
+    public static int ITEM_HONEY_BOTTLE() {
+        return ITEM_HONEY_BOTTLE;
+    }
+    private static final int ITEM_IRON_AXE = (int)95L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.ITEM_IRON_AXE = 95
+     * }
+     */
+    public static int ITEM_IRON_AXE() {
+        return ITEM_IRON_AXE;
+    }
+    private static final int ITEM_IRON_BLOCK = (int)96L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.ITEM_IRON_BLOCK = 96
      * }
      */
     public static int ITEM_IRON_BLOCK() {
         return ITEM_IRON_BLOCK;
     }
-    private static final int ITEM_IRON_BOOTS = (int)67L;
+    private static final int ITEM_IRON_BOOTS = (int)97L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_IRON_BOOTS = 67
+     * enum Item.ITEM_IRON_BOOTS = 97
      * }
      */
     public static int ITEM_IRON_BOOTS() {
         return ITEM_IRON_BOOTS;
     }
-    private static final int ITEM_IRON_CHESTPLATE = (int)68L;
+    private static final int ITEM_IRON_CHESTPLATE = (int)98L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_IRON_CHESTPLATE = 68
+     * enum Item.ITEM_IRON_CHESTPLATE = 98
      * }
      */
     public static int ITEM_IRON_CHESTPLATE() {
         return ITEM_IRON_CHESTPLATE;
     }
-    private static final int ITEM_IRON_HELMET = (int)69L;
+    private static final int ITEM_IRON_HELMET = (int)99L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_IRON_HELMET = 69
+     * enum Item.ITEM_IRON_HELMET = 99
      * }
      */
     public static int ITEM_IRON_HELMET() {
         return ITEM_IRON_HELMET;
     }
-    private static final int ITEM_IRON_HORSE_ARMOR = (int)70L;
+    private static final int ITEM_IRON_HORSE_ARMOR = (int)100L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_IRON_HORSE_ARMOR = 70
+     * enum Item.ITEM_IRON_HORSE_ARMOR = 100
      * }
      */
     public static int ITEM_IRON_HORSE_ARMOR() {
         return ITEM_IRON_HORSE_ARMOR;
     }
-    private static final int ITEM_IRON_INGOT = (int)71L;
+    private static final int ITEM_IRON_INGOT = (int)101L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_IRON_INGOT = 71
+     * enum Item.ITEM_IRON_INGOT = 101
      * }
      */
     public static int ITEM_IRON_INGOT() {
         return ITEM_IRON_INGOT;
     }
-    private static final int ITEM_IRON_LEGGINGS = (int)72L;
+    private static final int ITEM_IRON_LEGGINGS = (int)102L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_IRON_LEGGINGS = 72
+     * enum Item.ITEM_IRON_LEGGINGS = 102
      * }
      */
     public static int ITEM_IRON_LEGGINGS() {
         return ITEM_IRON_LEGGINGS;
     }
-    private static final int ITEM_IRON_NAUTILUS_ARMOR = (int)73L;
+    private static final int ITEM_IRON_NAUTILUS_ARMOR = (int)103L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_IRON_NAUTILUS_ARMOR = 73
+     * enum Item.ITEM_IRON_NAUTILUS_ARMOR = 103
      * }
      */
     public static int ITEM_IRON_NAUTILUS_ARMOR() {
         return ITEM_IRON_NAUTILUS_ARMOR;
     }
-    private static final int ITEM_IRON_NUGGET = (int)74L;
+    private static final int ITEM_IRON_NUGGET = (int)104L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_IRON_NUGGET = 74
+     * enum Item.ITEM_IRON_NUGGET = 104
      * }
      */
     public static int ITEM_IRON_NUGGET() {
         return ITEM_IRON_NUGGET;
     }
-    private static final int ITEM_IRON_PICKAXE = (int)75L;
+    private static final int ITEM_IRON_PICKAXE = (int)105L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_IRON_PICKAXE = 75
+     * enum Item.ITEM_IRON_PICKAXE = 105
      * }
      */
     public static int ITEM_IRON_PICKAXE() {
         return ITEM_IRON_PICKAXE;
     }
-    private static final int ITEM_IRON_SHOVEL = (int)76L;
+    private static final int ITEM_IRON_SHOVEL = (int)106L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_IRON_SHOVEL = 76
+     * enum Item.ITEM_IRON_SHOVEL = 106
      * }
      */
     public static int ITEM_IRON_SHOVEL() {
         return ITEM_IRON_SHOVEL;
     }
-    private static final int ITEM_IRON_SPEAR = (int)77L;
+    private static final int ITEM_IRON_SPEAR = (int)107L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_IRON_SPEAR = 77
+     * enum Item.ITEM_IRON_SPEAR = 107
      * }
      */
     public static int ITEM_IRON_SPEAR() {
         return ITEM_IRON_SPEAR;
     }
-    private static final int ITEM_IRON_SWORD = (int)78L;
+    private static final int ITEM_IRON_SWORD = (int)108L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_IRON_SWORD = 78
+     * enum Item.ITEM_IRON_SWORD = 108
      * }
      */
     public static int ITEM_IRON_SWORD() {
         return ITEM_IRON_SWORD;
     }
-    private static final int ITEM_LAPIS_LAZULI = (int)79L;
+    private static final int ITEM_JUNGLE_PYRAMID_MAP = (int)109L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_LAPIS_LAZULI = 79
+     * enum Item.ITEM_JUNGLE_PYRAMID_MAP = 109
+     * }
+     */
+    public static int ITEM_JUNGLE_PYRAMID_MAP() {
+        return ITEM_JUNGLE_PYRAMID_MAP;
+    }
+    private static final int ITEM_LAPIS_LAZULI = (int)110L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.ITEM_LAPIS_LAZULI = 110
      * }
      */
     public static int ITEM_LAPIS_LAZULI() {
         return ITEM_LAPIS_LAZULI;
     }
-    private static final int ITEM_LEATHER = (int)80L;
+    private static final int ITEM_LEAD = (int)111L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_LEATHER = 80
+     * enum Item.ITEM_LEAD = 111
+     * }
+     */
+    public static int ITEM_LEAD() {
+        return ITEM_LEAD;
+    }
+    private static final int ITEM_LEATHER = (int)112L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.ITEM_LEATHER = 112
      * }
      */
     public static int ITEM_LEATHER() {
         return ITEM_LEATHER;
     }
-    private static final int ITEM_LEATHER_BOOTS = (int)81L;
+    private static final int ITEM_LEATHER_BOOTS = (int)113L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_LEATHER_BOOTS = 81
+     * enum Item.ITEM_LEATHER_BOOTS = 113
      * }
      */
     public static int ITEM_LEATHER_BOOTS() {
         return ITEM_LEATHER_BOOTS;
     }
-    private static final int ITEM_LEATHER_CHESTPLATE = (int)82L;
+    private static final int ITEM_LEATHER_CHESTPLATE = (int)114L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_LEATHER_CHESTPLATE = 82
+     * enum Item.ITEM_LEATHER_CHESTPLATE = 114
      * }
      */
     public static int ITEM_LEATHER_CHESTPLATE() {
         return ITEM_LEATHER_CHESTPLATE;
     }
-    private static final int ITEM_LEATHER_HELMET = (int)83L;
+    private static final int ITEM_LEATHER_HELMET = (int)115L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_LEATHER_HELMET = 83
+     * enum Item.ITEM_LEATHER_HELMET = 115
      * }
      */
     public static int ITEM_LEATHER_HELMET() {
         return ITEM_LEATHER_HELMET;
     }
-    private static final int ITEM_LEATHER_LEGGINGS = (int)84L;
+    private static final int ITEM_LEATHER_LEGGINGS = (int)116L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_LEATHER_LEGGINGS = 84
+     * enum Item.ITEM_LEATHER_LEGGINGS = 116
      * }
      */
     public static int ITEM_LEATHER_LEGGINGS() {
         return ITEM_LEATHER_LEGGINGS;
     }
-    private static final int ITEM_LIGHT_WEIGHTED_PRESSURE_PLATE = (int)85L;
+    private static final int ITEM_LIGHT_WEIGHTED_PRESSURE_PLATE = (int)117L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_LIGHT_WEIGHTED_PRESSURE_PLATE = 85
+     * enum Item.ITEM_LIGHT_WEIGHTED_PRESSURE_PLATE = 117
      * }
      */
     public static int ITEM_LIGHT_WEIGHTED_PRESSURE_PLATE() {
         return ITEM_LIGHT_WEIGHTED_PRESSURE_PLATE;
     }
-    private static final int ITEM_LODESTONE = (int)86L;
+    private static final int ITEM_LODESTONE = (int)118L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_LODESTONE = 86
+     * enum Item.ITEM_LODESTONE = 118
      * }
      */
     public static int ITEM_LODESTONE() {
         return ITEM_LODESTONE;
     }
-    private static final int ITEM_MAGMA_CREAM = (int)87L;
+    private static final int ITEM_MAGMA_CREAM = (int)119L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_MAGMA_CREAM = 87
+     * enum Item.ITEM_MAGMA_CREAM = 119
      * }
      */
     public static int ITEM_MAGMA_CREAM() {
         return ITEM_MAGMA_CREAM;
     }
-    private static final int ITEM_MAP = (int)88L;
+    private static final int ITEM_MAP = (int)120L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_MAP = 88
+     * enum Item.ITEM_MAP = 120
      * }
      */
     public static int ITEM_MAP() {
         return ITEM_MAP;
     }
-    private static final int ITEM_MOSS_BLOCK = (int)89L;
+    private static final int ITEM_MOSS_BLOCK = (int)121L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_MOSS_BLOCK = 89
+     * enum Item.ITEM_MOSS_BLOCK = 121
      * }
      */
     public static int ITEM_MOSS_BLOCK() {
         return ITEM_MOSS_BLOCK;
     }
-    private static final int ITEM_MUSIC_DISC_OTHERSIDE = (int)90L;
+    private static final int ITEM_MUSIC_DISC_CREATOR = (int)122L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_MUSIC_DISC_OTHERSIDE = 90
+     * enum Item.ITEM_MUSIC_DISC_CREATOR = 122
+     * }
+     */
+    public static int ITEM_MUSIC_DISC_CREATOR() {
+        return ITEM_MUSIC_DISC_CREATOR;
+    }
+    private static final int ITEM_MUSIC_DISC_OTHERSIDE = (int)123L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.ITEM_MUSIC_DISC_OTHERSIDE = 123
      * }
      */
     public static int ITEM_MUSIC_DISC_OTHERSIDE() {
         return ITEM_MUSIC_DISC_OTHERSIDE;
     }
-    private static final int ITEM_MUSIC_DISC_PIGSTEP = (int)91L;
+    private static final int ITEM_MUSIC_DISC_PIGSTEP = (int)124L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_MUSIC_DISC_PIGSTEP = 91
+     * enum Item.ITEM_MUSIC_DISC_PIGSTEP = 124
      * }
      */
     public static int ITEM_MUSIC_DISC_PIGSTEP() {
         return ITEM_MUSIC_DISC_PIGSTEP;
     }
-    private static final int ITEM_NETHERITE_SCRAP = (int)92L;
+    private static final int ITEM_MUSIC_DISC_PRECIPICE = (int)125L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_NETHERITE_SCRAP = 92
+     * enum Item.ITEM_MUSIC_DISC_PRECIPICE = 125
+     * }
+     */
+    public static int ITEM_MUSIC_DISC_PRECIPICE() {
+        return ITEM_MUSIC_DISC_PRECIPICE;
+    }
+    private static final int ITEM_NETHERITE_SCRAP = (int)126L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.ITEM_NETHERITE_SCRAP = 126
      * }
      */
     public static int ITEM_NETHERITE_SCRAP() {
         return ITEM_NETHERITE_SCRAP;
     }
-    private static final int ITEM_NETHERITE_UPGRADE_SMITHING_TEMPLATE = (int)93L;
+    private static final int ITEM_NETHERITE_UPGRADE_SMITHING_TEMPLATE = (int)127L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_NETHERITE_UPGRADE_SMITHING_TEMPLATE = 93
+     * enum Item.ITEM_NETHERITE_UPGRADE_SMITHING_TEMPLATE = 127
      * }
      */
     public static int ITEM_NETHERITE_UPGRADE_SMITHING_TEMPLATE() {
         return ITEM_NETHERITE_UPGRADE_SMITHING_TEMPLATE;
     }
-    private static final int ITEM_NETHER_WART = (int)94L;
+    private static final int ITEM_NETHER_WART = (int)128L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_NETHER_WART = 94
+     * enum Item.ITEM_NETHER_WART = 128
      * }
      */
     public static int ITEM_NETHER_WART() {
         return ITEM_NETHER_WART;
     }
-    private static final int ITEM_OBSIDIAN = (int)95L;
+    private static final int ITEM_OBSIDIAN = (int)129L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_OBSIDIAN = 95
+     * enum Item.ITEM_OBSIDIAN = 129
      * }
      */
     public static int ITEM_OBSIDIAN() {
         return ITEM_OBSIDIAN;
     }
-    private static final int ITEM_PAPER = (int)96L;
+    private static final int ITEM_OMINOUS_BOTTLE = (int)130L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_PAPER = 96
+     * enum Item.ITEM_OMINOUS_BOTTLE = 130
+     * }
+     */
+    public static int ITEM_OMINOUS_BOTTLE() {
+        return ITEM_OMINOUS_BOTTLE;
+    }
+    private static final int ITEM_PAPER = (int)131L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.ITEM_PAPER = 131
      * }
      */
     public static int ITEM_PAPER() {
         return ITEM_PAPER;
     }
-    private static final int ITEM_PIGLIN_BANNER_PATTERN = (int)97L;
+    private static final int ITEM_PIGLIN_BANNER_PATTERN = (int)132L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_PIGLIN_BANNER_PATTERN = 97
+     * enum Item.ITEM_PIGLIN_BANNER_PATTERN = 132
      * }
      */
     public static int ITEM_PIGLIN_BANNER_PATTERN() {
         return ITEM_PIGLIN_BANNER_PATTERN;
     }
-    private static final int ITEM_POISONOUS_POTATO = (int)98L;
+    private static final int ITEM_POISONOUS_POTATO = (int)133L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_POISONOUS_POTATO = 98
+     * enum Item.ITEM_POISONOUS_POTATO = 133
      * }
      */
     public static int ITEM_POISONOUS_POTATO() {
         return ITEM_POISONOUS_POTATO;
     }
-    private static final int ITEM_POTION = (int)99L;
+    private static final int ITEM_POTATO = (int)134L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_POTION = 99
-     * }
-     */
-    public static int ITEM_POTION() {
-        return ITEM_POTION;
-    }
-    private static final int ITEM_POTATO = (int)100L;
-    /**
-     * {@snippet lang=c :
-     * enum Item.ITEM_POTATO = 100
+     * enum Item.ITEM_POTATO = 134
      * }
      */
     public static int ITEM_POTATO() {
         return ITEM_POTATO;
     }
-    private static final int ITEM_PRISMARINE_CRYSTALS = (int)101L;
+    private static final int ITEM_POTION = (int)135L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_PRISMARINE_CRYSTALS = 101
+     * enum Item.ITEM_POTION = 135
+     * }
+     */
+    public static int ITEM_POTION() {
+        return ITEM_POTION;
+    }
+    private static final int ITEM_PRISMARINE_CRYSTALS = (int)136L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.ITEM_PRISMARINE_CRYSTALS = 136
      * }
      */
     public static int ITEM_PRISMARINE_CRYSTALS() {
         return ITEM_PRISMARINE_CRYSTALS;
     }
-    private static final int ITEM_PUMPKIN = (int)102L;
+    private static final int ITEM_PUMPKIN = (int)137L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_PUMPKIN = 102
+     * enum Item.ITEM_PUMPKIN = 137
      * }
      */
     public static int ITEM_PUMPKIN() {
         return ITEM_PUMPKIN;
     }
-    private static final int ITEM_REDSTONE = (int)103L;
+    private static final int ITEM_RABBIT_HIDE = (int)138L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_REDSTONE = 103
+     * enum Item.ITEM_RABBIT_HIDE = 138
+     * }
+     */
+    public static int ITEM_RABBIT_HIDE() {
+        return ITEM_RABBIT_HIDE;
+    }
+    private static final int ITEM_REDSTONE = (int)139L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.ITEM_REDSTONE = 139
      * }
      */
     public static int ITEM_REDSTONE() {
         return ITEM_REDSTONE;
     }
-    private static final int ITEM_RIB_ARMOR_TRIM_SMITHING_TEMPLATE = (int)104L;
+    private static final int ITEM_RIB_ARMOR_TRIM_SMITHING_TEMPLATE = (int)140L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_RIB_ARMOR_TRIM_SMITHING_TEMPLATE = 104
+     * enum Item.ITEM_RIB_ARMOR_TRIM_SMITHING_TEMPLATE = 140
      * }
      */
     public static int ITEM_RIB_ARMOR_TRIM_SMITHING_TEMPLATE() {
         return ITEM_RIB_ARMOR_TRIM_SMITHING_TEMPLATE;
     }
-    private static final int ITEM_ROTTEN_FLESH = (int)105L;
+    private static final int ITEM_ROTTEN_FLESH = (int)141L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_ROTTEN_FLESH = 105
+     * enum Item.ITEM_ROTTEN_FLESH = 141
      * }
      */
     public static int ITEM_ROTTEN_FLESH() {
         return ITEM_ROTTEN_FLESH;
     }
-    private static final int ITEM_SADDLE = (int)106L;
+    private static final int ITEM_SADDLE = (int)142L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_SADDLE = 106
+     * enum Item.ITEM_SADDLE = 142
      * }
      */
     public static int ITEM_SADDLE() {
         return ITEM_SADDLE;
     }
-    private static final int ITEM_SAND = (int)107L;
+    private static final int ITEM_SAND = (int)143L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_SAND = 107
+     * enum Item.ITEM_SAND = 143
      * }
      */
     public static int ITEM_SAND() {
         return ITEM_SAND;
     }
-    private static final int ITEM_SENTRY_ARMOR_TRIM_SMITHING_TEMPLATE = (int)108L;
+    private static final int ITEM_SENTRY_ARMOR_TRIM_SMITHING_TEMPLATE = (int)144L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_SENTRY_ARMOR_TRIM_SMITHING_TEMPLATE = 108
+     * enum Item.ITEM_SENTRY_ARMOR_TRIM_SMITHING_TEMPLATE = 144
      * }
      */
     public static int ITEM_SENTRY_ARMOR_TRIM_SMITHING_TEMPLATE() {
         return ITEM_SENTRY_ARMOR_TRIM_SMITHING_TEMPLATE;
     }
-    private static final int ITEM_SNOUT_ARMOR_TRIM_SMITHING_TEMPLATE = (int)109L;
+    private static final int ITEM_SHEARS = (int)145L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_SNOUT_ARMOR_TRIM_SMITHING_TEMPLATE = 109
+     * enum Item.ITEM_SHEARS = 145
+     * }
+     */
+    public static int ITEM_SHEARS() {
+        return ITEM_SHEARS;
+    }
+    private static final int ITEM_SHIELD = (int)146L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.ITEM_SHIELD = 146
+     * }
+     */
+    public static int ITEM_SHIELD() {
+        return ITEM_SHIELD;
+    }
+    private static final int ITEM_SNOUT_ARMOR_TRIM_SMITHING_TEMPLATE = (int)147L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.ITEM_SNOUT_ARMOR_TRIM_SMITHING_TEMPLATE = 147
      * }
      */
     public static int ITEM_SNOUT_ARMOR_TRIM_SMITHING_TEMPLATE() {
         return ITEM_SNOUT_ARMOR_TRIM_SMITHING_TEMPLATE;
     }
-    private static final int ITEM_SPECTRAL_ARROW = (int)110L;
+    private static final int ITEM_SPECTRAL_ARROW = (int)148L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_SPECTRAL_ARROW = 110
+     * enum Item.ITEM_SPECTRAL_ARROW = 148
      * }
      */
     public static int ITEM_SPECTRAL_ARROW() {
         return ITEM_SPECTRAL_ARROW;
     }
-    private static final int ITEM_SPIDER_EYE = (int)111L;
+    private static final int ITEM_SPIDER_EYE = (int)149L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_SPIDER_EYE = 111
+     * enum Item.ITEM_SPIDER_EYE = 149
      * }
      */
     public static int ITEM_SPIDER_EYE() {
         return ITEM_SPIDER_EYE;
     }
-    private static final int ITEM_SPIRE_ARMOR_TRIM_SMITHING_TEMPLATE = (int)112L;
+    private static final int ITEM_SPIRE_ARMOR_TRIM_SMITHING_TEMPLATE = (int)150L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_SPIRE_ARMOR_TRIM_SMITHING_TEMPLATE = 112
+     * enum Item.ITEM_SPIRE_ARMOR_TRIM_SMITHING_TEMPLATE = 150
      * }
      */
     public static int ITEM_SPIRE_ARMOR_TRIM_SMITHING_TEMPLATE() {
         return ITEM_SPIRE_ARMOR_TRIM_SMITHING_TEMPLATE;
     }
-    private static final int ITEM_STONE_AXE = (int)113L;
+    private static final int ITEM_SPYGLASS = (int)151L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_STONE_AXE = 113
+     * enum Item.ITEM_SPYGLASS = 151
+     * }
+     */
+    public static int ITEM_SPYGLASS() {
+        return ITEM_SPYGLASS;
+    }
+    private static final int ITEM_STONE_AXE = (int)152L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.ITEM_STONE_AXE = 152
      * }
      */
     public static int ITEM_STONE_AXE() {
         return ITEM_STONE_AXE;
     }
-    private static final int ITEM_STRING = (int)114L;
+    private static final int ITEM_STRAW_BED = (int)153L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_STRING = 114
+     * enum Item.ITEM_STRAW_BED = 153
+     * }
+     */
+    public static int ITEM_STRAW_BED() {
+        return ITEM_STRAW_BED;
+    }
+    private static final int ITEM_STRING = (int)154L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.ITEM_STRING = 154
      * }
      */
     public static int ITEM_STRING() {
         return ITEM_STRING;
     }
-    private static final int ITEM_SUSPICIOUS_STEW = (int)115L;
+    private static final int ITEM_SUSPICIOUS_STEW = (int)155L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_SUSPICIOUS_STEW = 115
+     * enum Item.ITEM_SUSPICIOUS_STEW = 155
      * }
      */
     public static int ITEM_SUSPICIOUS_STEW() {
         return ITEM_SUSPICIOUS_STEW;
     }
-    private static final int ITEM_TNT = (int)116L;
+    private static final int ITEM_TIPPED_ARROW = (int)156L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_TNT = 116
+     * enum Item.ITEM_TIPPED_ARROW = 156
+     * }
+     */
+    public static int ITEM_TIPPED_ARROW() {
+        return ITEM_TIPPED_ARROW;
+    }
+    private static final int ITEM_TNT = (int)157L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.ITEM_TNT = 157
      * }
      */
     public static int ITEM_TNT() {
         return ITEM_TNT;
     }
-    private static final int ITEM_TRIPWIRE_HOOK = (int)117L;
+    private static final int ITEM_TRIDENT = (int)158L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_TRIPWIRE_HOOK = 117
+     * enum Item.ITEM_TRIDENT = 158
+     * }
+     */
+    public static int ITEM_TRIDENT() {
+        return ITEM_TRIDENT;
+    }
+    private static final int ITEM_TRIPWIRE_HOOK = (int)159L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.ITEM_TRIPWIRE_HOOK = 159
      * }
      */
     public static int ITEM_TRIPWIRE_HOOK() {
         return ITEM_TRIPWIRE_HOOK;
     }
-    private static final int ITEM_WHEAT = (int)118L;
+    private static final int ITEM_WARM_OCEAN_RUINS_MAP = (int)160L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_WHEAT = 118
+     * enum Item.ITEM_WARM_OCEAN_RUINS_MAP = 160
+     * }
+     */
+    public static int ITEM_WARM_OCEAN_RUINS_MAP() {
+        return ITEM_WARM_OCEAN_RUINS_MAP;
+    }
+    private static final int ITEM_WHEAT = (int)161L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.ITEM_WHEAT = 161
      * }
      */
     public static int ITEM_WHEAT() {
         return ITEM_WHEAT;
     }
-    private static final int ITEM_WILD_ARMOR_TRIM_SMITHING_TEMPLATE = (int)119L;
+    private static final int ITEM_WHITE_CANDLE = (int)162L;
     /**
      * {@snippet lang=c :
-     * enum Item.ITEM_WILD_ARMOR_TRIM_SMITHING_TEMPLATE = 119
+     * enum Item.ITEM_WHITE_CANDLE = 162
+     * }
+     */
+    public static int ITEM_WHITE_CANDLE() {
+        return ITEM_WHITE_CANDLE;
+    }
+    private static final int ITEM_WHITE_CUSHION = (int)163L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.ITEM_WHITE_CUSHION = 163
+     * }
+     */
+    public static int ITEM_WHITE_CUSHION() {
+        return ITEM_WHITE_CUSHION;
+    }
+    private static final int ITEM_WILD_ARMOR_TRIM_SMITHING_TEMPLATE = (int)164L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.ITEM_WILD_ARMOR_TRIM_SMITHING_TEMPLATE = 164
      * }
      */
     public static int ITEM_WILD_ARMOR_TRIM_SMITHING_TEMPLATE() {
         return ITEM_WILD_ARMOR_TRIM_SMITHING_TEMPLATE;
     }
-    private static final int NUM_ITEMS = (int)120L;
+    private static final int ITEM_WIND_CHARGE = (int)165L;
     /**
      * {@snippet lang=c :
-     * enum Item.NUM_ITEMS = 120
+     * enum Item.ITEM_WIND_CHARGE = 165
+     * }
+     */
+    public static int ITEM_WIND_CHARGE() {
+        return ITEM_WIND_CHARGE;
+    }
+    private static final int ITEM_WOODEN_AXE = (int)166L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.ITEM_WOODEN_AXE = 166
+     * }
+     */
+    public static int ITEM_WOODEN_AXE() {
+        return ITEM_WOODEN_AXE;
+    }
+    private static final int ITEM_WOODLAND_MANSION_MAP = (int)167L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.ITEM_WOODLAND_MANSION_MAP = 167
+     * }
+     */
+    public static int ITEM_WOODLAND_MANSION_MAP() {
+        return ITEM_WOODLAND_MANSION_MAP;
+    }
+    private static final int NUM_ITEMS = (int)168L;
+    /**
+     * {@snippet lang=c :
+     * enum Item.NUM_ITEMS = 168
      * }
      */
     public static int NUM_ITEMS() {
@@ -19655,2239 +20965,4 @@ class Cubiomes_1 extends Cubiomes$shared {
     public static int EFFECT_HASTE() {
         return EFFECT_HASTE;
     }
-    private static final int EFFECT_MINING_FATIGUE = (int)3L;
-    /**
-     * {@snippet lang=c :
-     * enum MobEffectType.EFFECT_MINING_FATIGUE = 3
-     * }
-     */
-    public static int EFFECT_MINING_FATIGUE() {
-        return EFFECT_MINING_FATIGUE;
-    }
-    private static final int EFFECT_STRENGTH = (int)4L;
-    /**
-     * {@snippet lang=c :
-     * enum MobEffectType.EFFECT_STRENGTH = 4
-     * }
-     */
-    public static int EFFECT_STRENGTH() {
-        return EFFECT_STRENGTH;
-    }
-    private static final int EFFECT_INSTANT_HEALTH = (int)5L;
-    /**
-     * {@snippet lang=c :
-     * enum MobEffectType.EFFECT_INSTANT_HEALTH = 5
-     * }
-     */
-    public static int EFFECT_INSTANT_HEALTH() {
-        return EFFECT_INSTANT_HEALTH;
-    }
-    private static final int EFFECT_INSTANT_DAMAGE = (int)6L;
-    /**
-     * {@snippet lang=c :
-     * enum MobEffectType.EFFECT_INSTANT_DAMAGE = 6
-     * }
-     */
-    public static int EFFECT_INSTANT_DAMAGE() {
-        return EFFECT_INSTANT_DAMAGE;
-    }
-    private static final int EFFECT_JUMP_BOOST = (int)7L;
-    /**
-     * {@snippet lang=c :
-     * enum MobEffectType.EFFECT_JUMP_BOOST = 7
-     * }
-     */
-    public static int EFFECT_JUMP_BOOST() {
-        return EFFECT_JUMP_BOOST;
-    }
-    private static final int EFFECT_NAUSEA = (int)8L;
-    /**
-     * {@snippet lang=c :
-     * enum MobEffectType.EFFECT_NAUSEA = 8
-     * }
-     */
-    public static int EFFECT_NAUSEA() {
-        return EFFECT_NAUSEA;
-    }
-    private static final int EFFECT_REGENERATION = (int)9L;
-    /**
-     * {@snippet lang=c :
-     * enum MobEffectType.EFFECT_REGENERATION = 9
-     * }
-     */
-    public static int EFFECT_REGENERATION() {
-        return EFFECT_REGENERATION;
-    }
-    private static final int EFFECT_RESISTANCE = (int)10L;
-    /**
-     * {@snippet lang=c :
-     * enum MobEffectType.EFFECT_RESISTANCE = 10
-     * }
-     */
-    public static int EFFECT_RESISTANCE() {
-        return EFFECT_RESISTANCE;
-    }
-    private static final int EFFECT_FIRE_RESISTANCE = (int)11L;
-    /**
-     * {@snippet lang=c :
-     * enum MobEffectType.EFFECT_FIRE_RESISTANCE = 11
-     * }
-     */
-    public static int EFFECT_FIRE_RESISTANCE() {
-        return EFFECT_FIRE_RESISTANCE;
-    }
-    private static final int EFFECT_WATER_BREATHING = (int)12L;
-    /**
-     * {@snippet lang=c :
-     * enum MobEffectType.EFFECT_WATER_BREATHING = 12
-     * }
-     */
-    public static int EFFECT_WATER_BREATHING() {
-        return EFFECT_WATER_BREATHING;
-    }
-    private static final int EFFECT_INVISIBILITY = (int)13L;
-    /**
-     * {@snippet lang=c :
-     * enum MobEffectType.EFFECT_INVISIBILITY = 13
-     * }
-     */
-    public static int EFFECT_INVISIBILITY() {
-        return EFFECT_INVISIBILITY;
-    }
-    private static final int EFFECT_BLINDNESS = (int)14L;
-    /**
-     * {@snippet lang=c :
-     * enum MobEffectType.EFFECT_BLINDNESS = 14
-     * }
-     */
-    public static int EFFECT_BLINDNESS() {
-        return EFFECT_BLINDNESS;
-    }
-    private static final int EFFECT_NIGHT_VISION = (int)15L;
-    /**
-     * {@snippet lang=c :
-     * enum MobEffectType.EFFECT_NIGHT_VISION = 15
-     * }
-     */
-    public static int EFFECT_NIGHT_VISION() {
-        return EFFECT_NIGHT_VISION;
-    }
-    private static final int EFFECT_HUNGER = (int)16L;
-    /**
-     * {@snippet lang=c :
-     * enum MobEffectType.EFFECT_HUNGER = 16
-     * }
-     */
-    public static int EFFECT_HUNGER() {
-        return EFFECT_HUNGER;
-    }
-    private static final int EFFECT_WEAKNESS = (int)17L;
-    /**
-     * {@snippet lang=c :
-     * enum MobEffectType.EFFECT_WEAKNESS = 17
-     * }
-     */
-    public static int EFFECT_WEAKNESS() {
-        return EFFECT_WEAKNESS;
-    }
-    private static final int EFFECT_POISON = (int)18L;
-    /**
-     * {@snippet lang=c :
-     * enum MobEffectType.EFFECT_POISON = 18
-     * }
-     */
-    public static int EFFECT_POISON() {
-        return EFFECT_POISON;
-    }
-    private static final int EFFECT_WITHER = (int)19L;
-    /**
-     * {@snippet lang=c :
-     * enum MobEffectType.EFFECT_WITHER = 19
-     * }
-     */
-    public static int EFFECT_WITHER() {
-        return EFFECT_WITHER;
-    }
-    private static final int EFFECT_HEALTH_BOOST = (int)20L;
-    /**
-     * {@snippet lang=c :
-     * enum MobEffectType.EFFECT_HEALTH_BOOST = 20
-     * }
-     */
-    public static int EFFECT_HEALTH_BOOST() {
-        return EFFECT_HEALTH_BOOST;
-    }
-    private static final int EFFECT_ABSORPTION = (int)21L;
-    /**
-     * {@snippet lang=c :
-     * enum MobEffectType.EFFECT_ABSORPTION = 21
-     * }
-     */
-    public static int EFFECT_ABSORPTION() {
-        return EFFECT_ABSORPTION;
-    }
-    private static final int EFFECT_SATURATION = (int)22L;
-    /**
-     * {@snippet lang=c :
-     * enum MobEffectType.EFFECT_SATURATION = 22
-     * }
-     */
-    public static int EFFECT_SATURATION() {
-        return EFFECT_SATURATION;
-    }
-    private static final int EFFECT_GLOWING = (int)23L;
-    /**
-     * {@snippet lang=c :
-     * enum MobEffectType.EFFECT_GLOWING = 23
-     * }
-     */
-    public static int EFFECT_GLOWING() {
-        return EFFECT_GLOWING;
-    }
-    private static final int EFFECT_LEVITATION = (int)24L;
-    /**
-     * {@snippet lang=c :
-     * enum MobEffectType.EFFECT_LEVITATION = 24
-     * }
-     */
-    public static int EFFECT_LEVITATION() {
-        return EFFECT_LEVITATION;
-    }
-    private static final int EFFECT_LUCK = (int)25L;
-    /**
-     * {@snippet lang=c :
-     * enum MobEffectType.EFFECT_LUCK = 25
-     * }
-     */
-    public static int EFFECT_LUCK() {
-        return EFFECT_LUCK;
-    }
-    private static final int EFFECT_UNLUCK = (int)26L;
-    /**
-     * {@snippet lang=c :
-     * enum MobEffectType.EFFECT_UNLUCK = 26
-     * }
-     */
-    public static int EFFECT_UNLUCK() {
-        return EFFECT_UNLUCK;
-    }
-    private static final int EFFECT_SLOW_FALLING = (int)27L;
-    /**
-     * {@snippet lang=c :
-     * enum MobEffectType.EFFECT_SLOW_FALLING = 27
-     * }
-     */
-    public static int EFFECT_SLOW_FALLING() {
-        return EFFECT_SLOW_FALLING;
-    }
-    private static final int EFFECT_CONDUIT_POWER = (int)28L;
-    /**
-     * {@snippet lang=c :
-     * enum MobEffectType.EFFECT_CONDUIT_POWER = 28
-     * }
-     */
-    public static int EFFECT_CONDUIT_POWER() {
-        return EFFECT_CONDUIT_POWER;
-    }
-    private static final int EFFECT_DOLPHINS_GRACE = (int)29L;
-    /**
-     * {@snippet lang=c :
-     * enum MobEffectType.EFFECT_DOLPHINS_GRACE = 29
-     * }
-     */
-    public static int EFFECT_DOLPHINS_GRACE() {
-        return EFFECT_DOLPHINS_GRACE;
-    }
-    private static final int EFFECT_BAD_OMEN = (int)30L;
-    /**
-     * {@snippet lang=c :
-     * enum MobEffectType.EFFECT_BAD_OMEN = 30
-     * }
-     */
-    public static int EFFECT_BAD_OMEN() {
-        return EFFECT_BAD_OMEN;
-    }
-    private static final int EFFECT_HERO_OF_THE_VILLAGE = (int)31L;
-    /**
-     * {@snippet lang=c :
-     * enum MobEffectType.EFFECT_HERO_OF_THE_VILLAGE = 31
-     * }
-     */
-    public static int EFFECT_HERO_OF_THE_VILLAGE() {
-        return EFFECT_HERO_OF_THE_VILLAGE;
-    }
-    private static final int EFFECT_DARKNESS = (int)32L;
-    /**
-     * {@snippet lang=c :
-     * enum MobEffectType.EFFECT_DARKNESS = 32
-     * }
-     */
-    public static int EFFECT_DARKNESS() {
-        return EFFECT_DARKNESS;
-    }
-    private static final int EFFECT_TRIAL_OMEN = (int)33L;
-    /**
-     * {@snippet lang=c :
-     * enum MobEffectType.EFFECT_TRIAL_OMEN = 33
-     * }
-     */
-    public static int EFFECT_TRIAL_OMEN() {
-        return EFFECT_TRIAL_OMEN;
-    }
-    private static final int EFFECT_RAID_OMEN = (int)34L;
-    /**
-     * {@snippet lang=c :
-     * enum MobEffectType.EFFECT_RAID_OMEN = 34
-     * }
-     */
-    public static int EFFECT_RAID_OMEN() {
-        return EFFECT_RAID_OMEN;
-    }
-    private static final int EFFECT_WIND_CHARGED = (int)35L;
-    /**
-     * {@snippet lang=c :
-     * enum MobEffectType.EFFECT_WIND_CHARGED = 35
-     * }
-     */
-    public static int EFFECT_WIND_CHARGED() {
-        return EFFECT_WIND_CHARGED;
-    }
-    private static final int EFFECT_WEAVING = (int)36L;
-    /**
-     * {@snippet lang=c :
-     * enum MobEffectType.EFFECT_WEAVING = 36
-     * }
-     */
-    public static int EFFECT_WEAVING() {
-        return EFFECT_WEAVING;
-    }
-    private static final int EFFECT_OOZING = (int)37L;
-    /**
-     * {@snippet lang=c :
-     * enum MobEffectType.EFFECT_OOZING = 37
-     * }
-     */
-    public static int EFFECT_OOZING() {
-        return EFFECT_OOZING;
-    }
-    private static final int EFFECT_INFESTED = (int)38L;
-    /**
-     * {@snippet lang=c :
-     * enum MobEffectType.EFFECT_INFESTED = 38
-     * }
-     */
-    public static int EFFECT_INFESTED() {
-        return EFFECT_INFESTED;
-    }
-    private static final int EFFECT_BREATH_OF_THE_NAUTILUS = (int)39L;
-    /**
-     * {@snippet lang=c :
-     * enum MobEffectType.EFFECT_BREATH_OF_THE_NAUTILUS = 39
-     * }
-     */
-    public static int EFFECT_BREATH_OF_THE_NAUTILUS() {
-        return EFFECT_BREATH_OF_THE_NAUTILUS;
-    }
-    private static final int EFFECT_NUM = (int)40L;
-    /**
-     * {@snippet lang=c :
-     * enum MobEffectType.EFFECT_NUM = 40
-     * }
-     */
-    public static int EFFECT_NUM() {
-        return EFFECT_NUM;
-    }
-
-    private static class MOB_EFFECTS$constants {
-        public static final SequenceLayout LAYOUT = MemoryLayout.sequenceLayout(40, MobEffect.layout());
-        public static final MemorySegment SEGMENT = SYMBOL_LOOKUP.findOrThrow("MOB_EFFECTS").reinterpret(LAYOUT.byteSize());
-    public static final MethodHandle HANDLE = LAYOUT.sliceHandle(sequenceElement());
-        public static final long[] DIMS = { 40 };
-    }
-
-    /**
-     * Layout for variable:
-     * {@snippet lang=c :
-     * extern const struct MobEffect MOB_EFFECTS[40]
-     * }
-     */
-    public static SequenceLayout MOB_EFFECTS$layout() {
-        return MOB_EFFECTS$constants.LAYOUT;
-    }
-
-    /**
-     * Dimensions for array variable:
-     * {@snippet lang=c :
-     * extern const struct MobEffect MOB_EFFECTS[40]
-     * }
-     */
-    public static long[] MOB_EFFECTS$dimensions() {
-        return MOB_EFFECTS$constants.DIMS;
-    }
-
-    /**
-     * Getter for variable:
-     * {@snippet lang=c :
-     * extern const struct MobEffect MOB_EFFECTS[40]
-     * }
-     */
-    public static MemorySegment MOB_EFFECTS() {
-        return MOB_EFFECTS$constants.SEGMENT;
-    }
-
-    /**
-     * Setter for variable:
-     * {@snippet lang=c :
-     * extern const struct MobEffect MOB_EFFECTS[40]
-     * }
-     */
-    public static void MOB_EFFECTS(MemorySegment varValue) {
-        MemorySegment.copy(varValue, 0L, MOB_EFFECTS$constants.SEGMENT, 0L, MOB_EFFECTS$constants.LAYOUT.byteSize());
-    }
-
-    /**
-     * Indexed getter for variable:
-     * {@snippet lang=c :
-     * extern const struct MobEffect MOB_EFFECTS[40]
-     * }
-     */
-    public static MemorySegment MOB_EFFECTS(long index0) {
-        try {
-            return (MemorySegment)MOB_EFFECTS$constants.HANDLE.invokeExact(MOB_EFFECTS$constants.SEGMENT, 0L, index0);
-        } catch (Error | RuntimeException ex) {
-            throw ex;
-        } catch (Throwable ex$) {
-            throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    /**
-     * Indexed setter for variable:
-     * {@snippet lang=c :
-     * extern const struct MobEffect MOB_EFFECTS[40]
-     * }
-     */
-    public static void MOB_EFFECTS(long index0, MemorySegment varValue) {
-        MemorySegment.copy(varValue, 0L, MOB_EFFECTS(index0), 0L, MobEffect.layout().byteSize());
-    }
-
-    private static class create_set_count {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("create_set_count");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * void create_set_count(LootFunction *lf, const int min, const int max)
-     * }
-     */
-    public static FunctionDescriptor create_set_count$descriptor() {
-        return create_set_count.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * void create_set_count(LootFunction *lf, const int min, const int max)
-     * }
-     */
-    public static MethodHandle create_set_count$handle() {
-        return create_set_count.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * void create_set_count(LootFunction *lf, const int min, const int max)
-     * }
-     */
-    public static MemorySegment create_set_count$address() {
-        return create_set_count.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * void create_set_count(LootFunction *lf, const int min, const int max)
-     * }
-     */
-    public static void create_set_count(MemorySegment lf, int min, int max) {
-        var mh$ = create_set_count.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("create_set_count", lf, min, max);
-            }
-            mh$.invokeExact(lf, min, max);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class create_set_effect {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("create_set_effect");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * void create_set_effect(LootFunction *lf, const int count, const MobEffectEntry mobEffects[])
-     * }
-     */
-    public static FunctionDescriptor create_set_effect$descriptor() {
-        return create_set_effect.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * void create_set_effect(LootFunction *lf, const int count, const MobEffectEntry mobEffects[])
-     * }
-     */
-    public static MethodHandle create_set_effect$handle() {
-        return create_set_effect.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * void create_set_effect(LootFunction *lf, const int count, const MobEffectEntry mobEffects[])
-     * }
-     */
-    public static MemorySegment create_set_effect$address() {
-        return create_set_effect.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * void create_set_effect(LootFunction *lf, const int count, const MobEffectEntry mobEffects[])
-     * }
-     */
-    public static void create_set_effect(MemorySegment lf, int count, MemorySegment mobEffects) {
-        var mh$ = create_set_effect.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("create_set_effect", lf, count, mobEffects);
-            }
-            mh$.invokeExact(lf, count, mobEffects);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class create_set_damage {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
-            Cubiomes.C_POINTER
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("create_set_damage");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * void create_set_damage(LootFunction *lf)
-     * }
-     */
-    public static FunctionDescriptor create_set_damage$descriptor() {
-        return create_set_damage.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * void create_set_damage(LootFunction *lf)
-     * }
-     */
-    public static MethodHandle create_set_damage$handle() {
-        return create_set_damage.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * void create_set_damage(LootFunction *lf)
-     * }
-     */
-    public static MemorySegment create_set_damage$address() {
-        return create_set_damage.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * void create_set_damage(LootFunction *lf)
-     * }
-     */
-    public static void create_set_damage(MemorySegment lf) {
-        var mh$ = create_set_damage.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("create_set_damage", lf);
-            }
-            mh$.invokeExact(lf);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class create_skip_calls {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("create_skip_calls");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * void create_skip_calls(LootFunction *lf, const int skip_count)
-     * }
-     */
-    public static FunctionDescriptor create_skip_calls$descriptor() {
-        return create_skip_calls.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * void create_skip_calls(LootFunction *lf, const int skip_count)
-     * }
-     */
-    public static MethodHandle create_skip_calls$handle() {
-        return create_skip_calls.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * void create_skip_calls(LootFunction *lf, const int skip_count)
-     * }
-     */
-    public static MemorySegment create_skip_calls$address() {
-        return create_skip_calls.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * void create_skip_calls(LootFunction *lf, const int skip_count)
-     * }
-     */
-    public static void create_skip_calls(MemorySegment lf, int skip_count) {
-        var mh$ = create_skip_calls.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("create_skip_calls", lf, skip_count);
-            }
-            mh$.invokeExact(lf, skip_count);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class create_no_op {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
-            Cubiomes.C_POINTER
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("create_no_op");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * void create_no_op(LootFunction *lf)
-     * }
-     */
-    public static FunctionDescriptor create_no_op$descriptor() {
-        return create_no_op.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * void create_no_op(LootFunction *lf)
-     * }
-     */
-    public static MethodHandle create_no_op$handle() {
-        return create_no_op.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * void create_no_op(LootFunction *lf)
-     * }
-     */
-    public static MemorySegment create_no_op$address() {
-        return create_no_op.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * void create_no_op(LootFunction *lf)
-     * }
-     */
-    public static void create_no_op(MemorySegment lf) {
-        var mh$ = create_no_op.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("create_no_op", lf);
-            }
-            mh$.invokeExact(lf);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class create_enchant_randomly_one_enchant {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("create_enchant_randomly_one_enchant");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * void create_enchant_randomly_one_enchant(LootFunction *lf, const Enchantment enchantment)
-     * }
-     */
-    public static FunctionDescriptor create_enchant_randomly_one_enchant$descriptor() {
-        return create_enchant_randomly_one_enchant.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * void create_enchant_randomly_one_enchant(LootFunction *lf, const Enchantment enchantment)
-     * }
-     */
-    public static MethodHandle create_enchant_randomly_one_enchant$handle() {
-        return create_enchant_randomly_one_enchant.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * void create_enchant_randomly_one_enchant(LootFunction *lf, const Enchantment enchantment)
-     * }
-     */
-    public static MemorySegment create_enchant_randomly_one_enchant$address() {
-        return create_enchant_randomly_one_enchant.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * void create_enchant_randomly_one_enchant(LootFunction *lf, const Enchantment enchantment)
-     * }
-     */
-    public static void create_enchant_randomly_one_enchant(MemorySegment lf, int enchantment) {
-        var mh$ = create_enchant_randomly_one_enchant.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("create_enchant_randomly_one_enchant", lf, enchantment);
-            }
-            mh$.invokeExact(lf, enchantment);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class create_enchant_randomly_list {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
-            Cubiomes.C_POINTER,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("create_enchant_randomly_list");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * void create_enchant_randomly_list(LootFunction *lf, const Enchantment *list, const int list_length)
-     * }
-     */
-    public static FunctionDescriptor create_enchant_randomly_list$descriptor() {
-        return create_enchant_randomly_list.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * void create_enchant_randomly_list(LootFunction *lf, const Enchantment *list, const int list_length)
-     * }
-     */
-    public static MethodHandle create_enchant_randomly_list$handle() {
-        return create_enchant_randomly_list.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * void create_enchant_randomly_list(LootFunction *lf, const Enchantment *list, const int list_length)
-     * }
-     */
-    public static MemorySegment create_enchant_randomly_list$address() {
-        return create_enchant_randomly_list.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * void create_enchant_randomly_list(LootFunction *lf, const Enchantment *list, const int list_length)
-     * }
-     */
-    public static void create_enchant_randomly_list(MemorySegment lf, MemorySegment list, int list_length) {
-        var mh$ = create_enchant_randomly_list.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("create_enchant_randomly_list", lf, list, list_length);
-            }
-            mh$.invokeExact(lf, list, list_length);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class create_enchant_randomly {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("create_enchant_randomly");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * void create_enchant_randomly(LootFunction *lf, const int version, const ItemType item, const int isTreasure)
-     * }
-     */
-    public static FunctionDescriptor create_enchant_randomly$descriptor() {
-        return create_enchant_randomly.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * void create_enchant_randomly(LootFunction *lf, const int version, const ItemType item, const int isTreasure)
-     * }
-     */
-    public static MethodHandle create_enchant_randomly$handle() {
-        return create_enchant_randomly.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * void create_enchant_randomly(LootFunction *lf, const int version, const ItemType item, const int isTreasure)
-     * }
-     */
-    public static MemorySegment create_enchant_randomly$address() {
-        return create_enchant_randomly.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * void create_enchant_randomly(LootFunction *lf, const int version, const ItemType item, const int isTreasure)
-     * }
-     */
-    public static void create_enchant_randomly(MemorySegment lf, int version, int item, int isTreasure) {
-        var mh$ = create_enchant_randomly.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("create_enchant_randomly", lf, version, item, isTreasure);
-            }
-            mh$.invokeExact(lf, version, item, isTreasure);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class create_enchant_randomly_tag {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("create_enchant_randomly_tag");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * void create_enchant_randomly_tag(LootFunction *lf, const int version, const ItemType item, const char *tag, const int allowTreasure)
-     * }
-     */
-    public static FunctionDescriptor create_enchant_randomly_tag$descriptor() {
-        return create_enchant_randomly_tag.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * void create_enchant_randomly_tag(LootFunction *lf, const int version, const ItemType item, const char *tag, const int allowTreasure)
-     * }
-     */
-    public static MethodHandle create_enchant_randomly_tag$handle() {
-        return create_enchant_randomly_tag.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * void create_enchant_randomly_tag(LootFunction *lf, const int version, const ItemType item, const char *tag, const int allowTreasure)
-     * }
-     */
-    public static MemorySegment create_enchant_randomly_tag$address() {
-        return create_enchant_randomly_tag.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * void create_enchant_randomly_tag(LootFunction *lf, const int version, const ItemType item, const char *tag, const int allowTreasure)
-     * }
-     */
-    public static void create_enchant_randomly_tag(MemorySegment lf, int version, int item, MemorySegment tag, int allowTreasure) {
-        var mh$ = create_enchant_randomly_tag.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("create_enchant_randomly_tag", lf, version, item, tag, allowTreasure);
-            }
-            mh$.invokeExact(lf, version, item, tag, allowTreasure);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class create_enchant_with_levels {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("create_enchant_with_levels");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * void create_enchant_with_levels(LootFunction *lf, const int version, const char *item_name, const ItemType item_type, const int min_level, const int max_level, const int isTreasure)
-     * }
-     */
-    public static FunctionDescriptor create_enchant_with_levels$descriptor() {
-        return create_enchant_with_levels.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * void create_enchant_with_levels(LootFunction *lf, const int version, const char *item_name, const ItemType item_type, const int min_level, const int max_level, const int isTreasure)
-     * }
-     */
-    public static MethodHandle create_enchant_with_levels$handle() {
-        return create_enchant_with_levels.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * void create_enchant_with_levels(LootFunction *lf, const int version, const char *item_name, const ItemType item_type, const int min_level, const int max_level, const int isTreasure)
-     * }
-     */
-    public static MemorySegment create_enchant_with_levels$address() {
-        return create_enchant_with_levels.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * void create_enchant_with_levels(LootFunction *lf, const int version, const char *item_name, const ItemType item_type, const int min_level, const int max_level, const int isTreasure)
-     * }
-     */
-    public static void create_enchant_with_levels(MemorySegment lf, int version, MemorySegment item_name, int item_type, int min_level, int max_level, int isTreasure) {
-        var mh$ = create_enchant_with_levels.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("create_enchant_with_levels", lf, version, item_name, item_type, min_level, max_level, isTreasure);
-            }
-            mh$.invokeExact(lf, version, item_name, item_type, min_level, max_level, isTreasure);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class create_enchant_with_levels_tag {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("create_enchant_with_levels_tag");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * void create_enchant_with_levels_tag(LootFunction *lf, const int version, const char *item_name, const ItemType item_type, const int min_level, const int max_level, const char *tag, const int allowTreasure)
-     * }
-     */
-    public static FunctionDescriptor create_enchant_with_levels_tag$descriptor() {
-        return create_enchant_with_levels_tag.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * void create_enchant_with_levels_tag(LootFunction *lf, const int version, const char *item_name, const ItemType item_type, const int min_level, const int max_level, const char *tag, const int allowTreasure)
-     * }
-     */
-    public static MethodHandle create_enchant_with_levels_tag$handle() {
-        return create_enchant_with_levels_tag.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * void create_enchant_with_levels_tag(LootFunction *lf, const int version, const char *item_name, const ItemType item_type, const int min_level, const int max_level, const char *tag, const int allowTreasure)
-     * }
-     */
-    public static MemorySegment create_enchant_with_levels_tag$address() {
-        return create_enchant_with_levels_tag.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * void create_enchant_with_levels_tag(LootFunction *lf, const int version, const char *item_name, const ItemType item_type, const int min_level, const int max_level, const char *tag, const int allowTreasure)
-     * }
-     */
-    public static void create_enchant_with_levels_tag(MemorySegment lf, int version, MemorySegment item_name, int item_type, int min_level, int max_level, MemorySegment tag, int allowTreasure) {
-        var mh$ = create_enchant_with_levels_tag.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("create_enchant_with_levels_tag", lf, version, item_name, item_type, min_level, max_level, tag, allowTreasure);
-            }
-            mh$.invokeExact(lf, version, item_name, item_type, min_level, max_level, tag, allowTreasure);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class get_enchantment_name {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("get_enchantment_name");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * const char *get_enchantment_name(const Enchantment enchantment)
-     * }
-     */
-    public static FunctionDescriptor get_enchantment_name$descriptor() {
-        return get_enchantment_name.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * const char *get_enchantment_name(const Enchantment enchantment)
-     * }
-     */
-    public static MethodHandle get_enchantment_name$handle() {
-        return get_enchantment_name.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * const char *get_enchantment_name(const Enchantment enchantment)
-     * }
-     */
-    public static MemorySegment get_enchantment_name$address() {
-        return get_enchantment_name.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * const char *get_enchantment_name(const Enchantment enchantment)
-     * }
-     */
-    public static MemorySegment get_enchantment_name(int enchantment) {
-        var mh$ = get_enchantment_name.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("get_enchantment_name", enchantment);
-            }
-            return (MemorySegment)mh$.invokeExact(enchantment);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    /**
-     * Variadic invoker class for:
-     * {@snippet lang=c :
-     * void test_enchant_vec()
-     * }
-     */
-    public static class test_enchant_vec {
-        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.ofVoid(        );
-        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("test_enchant_vec");
-
-        private final MethodHandle handle;
-        private final FunctionDescriptor descriptor;
-        private final MethodHandle spreader;
-
-        private test_enchant_vec(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
-            this.handle = handle;
-            this.descriptor = descriptor;
-            this.spreader = spreader;
-        }
-
-        /**
-         * Variadic invoker factory for:
-         * {@snippet lang=c :
-         * void test_enchant_vec()
-         * }
-         */
-        public static test_enchant_vec makeInvoker(MemoryLayout... layouts) {
-            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
-            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
-            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
-            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
-            return new test_enchant_vec(mh$, desc$, spreader$);
-        }
-
-        /**
-         * {@return the address}
-         */
-        public static MemorySegment address() {
-            return ADDR;
-        }
-
-        /**
-         * {@return the specialized method handle}
-         */
-        public MethodHandle handle() {
-            return handle;
-        }
-
-        /**
-         * {@return the specialized descriptor}
-         */
-        public FunctionDescriptor descriptor() {
-            return descriptor;
-        }
-
-        public void apply(Object... x0) {
-            try {
-                if (TRACE_DOWNCALLS) {
-                    traceDowncall("test_enchant_vec", x0);
-                }
-                 spreader.invokeExact(x0);
-            } catch(IllegalArgumentException | ClassCastException ex$)  {
-                throw ex$; // rethrow IAE from passing wrong number/type of args
-            } catch (Throwable ex$) {
-               throw new AssertionError("should not reach here", ex$);
-            }
-        }
-    }
-    private static final int GENERATE_NATURAL = (int)0L;
-    /**
-     * {@snippet lang=c :
-     * enum GenerationMode.GENERATE_NATURAL = 0
-     * }
-     */
-    public static int GENERATE_NATURAL() {
-        return GENERATE_NATURAL;
-    }
-    private static final int GENERATE_INDEXED = (int)1L;
-    /**
-     * {@snippet lang=c :
-     * enum GenerationMode.GENERATE_INDEXED = 1
-     * }
-     */
-    public static int GENERATE_INDEXED() {
-        return GENERATE_INDEXED;
-    }
-    private static final int GENERATE_AGGREGATED = (int)2L;
-    /**
-     * {@snippet lang=c :
-     * enum GenerationMode.GENERATE_AGGREGATED = 2
-     * }
-     */
-    public static int GENERATE_AGGREGATED() {
-        return GENERATE_AGGREGATED;
-    }
-    private static final int SKIP_ENCHANTMENTS = (int)4L;
-    /**
-     * {@snippet lang=c :
-     * enum GenerationMode.SKIP_ENCHANTMENTS = 4
-     * }
-     */
-    public static int SKIP_ENCHANTMENTS() {
-        return SKIP_ENCHANTMENTS;
-    }
-    private static final int STOP_AT_PREDICATE_MATCH = (int)8L;
-    /**
-     * {@snippet lang=c :
-     * enum GenerationMode.STOP_AT_PREDICATE_MATCH = 8
-     * }
-     */
-    public static int STOP_AT_PREDICATE_MATCH() {
-        return STOP_AT_PREDICATE_MATCH;
-    }
-
-    private static class set_loot_seed {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
-            Cubiomes.C_POINTER,
-            Cubiomes.C_LONG_LONG
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("set_loot_seed");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * void set_loot_seed(LootTableContext *context, uint64_t seed)
-     * }
-     */
-    public static FunctionDescriptor set_loot_seed$descriptor() {
-        return set_loot_seed.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * void set_loot_seed(LootTableContext *context, uint64_t seed)
-     * }
-     */
-    public static MethodHandle set_loot_seed$handle() {
-        return set_loot_seed.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * void set_loot_seed(LootTableContext *context, uint64_t seed)
-     * }
-     */
-    public static MemorySegment set_loot_seed$address() {
-        return set_loot_seed.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * void set_loot_seed(LootTableContext *context, uint64_t seed)
-     * }
-     */
-    public static void set_loot_seed(MemorySegment context, long seed) {
-        var mh$ = set_loot_seed.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("set_loot_seed", context, seed);
-            }
-            mh$.invokeExact(context, seed);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class set_internal_loot_seed {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
-            Cubiomes.C_POINTER,
-            Cubiomes.C_LONG_LONG
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("set_internal_loot_seed");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * void set_internal_loot_seed(LootTableContext *context, uint64_t internal_seed)
-     * }
-     */
-    public static FunctionDescriptor set_internal_loot_seed$descriptor() {
-        return set_internal_loot_seed.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * void set_internal_loot_seed(LootTableContext *context, uint64_t internal_seed)
-     * }
-     */
-    public static MethodHandle set_internal_loot_seed$handle() {
-        return set_internal_loot_seed.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * void set_internal_loot_seed(LootTableContext *context, uint64_t internal_seed)
-     * }
-     */
-    public static MemorySegment set_internal_loot_seed$address() {
-        return set_internal_loot_seed.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * void set_internal_loot_seed(LootTableContext *context, uint64_t internal_seed)
-     * }
-     */
-    public static void set_internal_loot_seed(MemorySegment context, long internal_seed) {
-        var mh$ = set_internal_loot_seed.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("set_internal_loot_seed", context, internal_seed);
-            }
-            mh$.invokeExact(context, internal_seed);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class get_item_id {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_POINTER
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("get_item_id");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int get_item_id(LootTableContext *context, const char *item_name)
-     * }
-     */
-    public static FunctionDescriptor get_item_id$descriptor() {
-        return get_item_id.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int get_item_id(LootTableContext *context, const char *item_name)
-     * }
-     */
-    public static MethodHandle get_item_id$handle() {
-        return get_item_id.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int get_item_id(LootTableContext *context, const char *item_name)
-     * }
-     */
-    public static MemorySegment get_item_id$address() {
-        return get_item_id.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int get_item_id(LootTableContext *context, const char *item_name)
-     * }
-     */
-    public static int get_item_id(MemorySegment context, MemorySegment item_name) {
-        var mh$ = get_item_id.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("get_item_id", context, item_name);
-            }
-            return (int)mh$.invokeExact(context, item_name);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class get_global_item_id {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("get_global_item_id");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int get_global_item_id(LootTableContext *context, int item_id)
-     * }
-     */
-    public static FunctionDescriptor get_global_item_id$descriptor() {
-        return get_global_item_id.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int get_global_item_id(LootTableContext *context, int item_id)
-     * }
-     */
-    public static MethodHandle get_global_item_id$handle() {
-        return get_global_item_id.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int get_global_item_id(LootTableContext *context, int item_id)
-     * }
-     */
-    public static MemorySegment get_global_item_id$address() {
-        return get_global_item_id.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int get_global_item_id(LootTableContext *context, int item_id)
-     * }
-     */
-    public static int get_global_item_id(MemorySegment context, int item_id) {
-        var mh$ = get_global_item_id.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("get_global_item_id", context, item_id);
-            }
-            return (int)mh$.invokeExact(context, item_id);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class get_item_name {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_POINTER,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("get_item_name");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * const char *get_item_name(LootTableContext *context, int item_id)
-     * }
-     */
-    public static FunctionDescriptor get_item_name$descriptor() {
-        return get_item_name.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * const char *get_item_name(LootTableContext *context, int item_id)
-     * }
-     */
-    public static MethodHandle get_item_name$handle() {
-        return get_item_name.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * const char *get_item_name(LootTableContext *context, int item_id)
-     * }
-     */
-    public static MemorySegment get_item_name$address() {
-        return get_item_name.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * const char *get_item_name(LootTableContext *context, int item_id)
-     * }
-     */
-    public static MemorySegment get_item_name(MemorySegment context, int item_id) {
-        var mh$ = get_item_name.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("get_item_name", context, item_id);
-            }
-            return (MemorySegment)mh$.invokeExact(context, item_id);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class has_item {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("has_item");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int has_item(LootTableContext *context, int global_item_id)
-     * }
-     */
-    public static FunctionDescriptor has_item$descriptor() {
-        return has_item.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int has_item(LootTableContext *context, int global_item_id)
-     * }
-     */
-    public static MethodHandle has_item$handle() {
-        return has_item.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int has_item(LootTableContext *context, int global_item_id)
-     * }
-     */
-    public static MemorySegment has_item$address() {
-        return has_item.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int has_item(LootTableContext *context, int global_item_id)
-     * }
-     */
-    public static int has_item(MemorySegment context, int global_item_id) {
-        var mh$ = has_item.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("has_item", context, global_item_id);
-            }
-            return (int)mh$.invokeExact(context, global_item_id);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class generate_loot {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
-            Cubiomes.C_POINTER
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("generate_loot");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * void generate_loot(LootTableContext *context)
-     * }
-     */
-    public static FunctionDescriptor generate_loot$descriptor() {
-        return generate_loot.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * void generate_loot(LootTableContext *context)
-     * }
-     */
-    public static MethodHandle generate_loot$handle() {
-        return generate_loot.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * void generate_loot(LootTableContext *context)
-     * }
-     */
-    public static MemorySegment generate_loot$address() {
-        return generate_loot.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * void generate_loot(LootTableContext *context)
-     * }
-     */
-    public static void generate_loot(MemorySegment context) {
-        var mh$ = generate_loot.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("generate_loot", context);
-            }
-            mh$.invokeExact(context);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class get_item_type {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("get_item_type");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * ItemType get_item_type(const char *item_name)
-     * }
-     */
-    public static FunctionDescriptor get_item_type$descriptor() {
-        return get_item_type.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * ItemType get_item_type(const char *item_name)
-     * }
-     */
-    public static MethodHandle get_item_type$handle() {
-        return get_item_type.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * ItemType get_item_type(const char *item_name)
-     * }
-     */
-    public static MemorySegment get_item_type$address() {
-        return get_item_type.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * ItemType get_item_type(const char *item_name)
-     * }
-     */
-    public static int get_item_type(MemorySegment item_name) {
-        var mh$ = get_item_type.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("get_item_type", item_name);
-            }
-            return (int)mh$.invokeExact(item_name);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class get_mob_effect_from_name {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_POINTER,
-            Cubiomes.C_POINTER
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("get_mob_effect_from_name");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * const MobEffect *get_mob_effect_from_name(const char *mob_effect)
-     * }
-     */
-    public static FunctionDescriptor get_mob_effect_from_name$descriptor() {
-        return get_mob_effect_from_name.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * const MobEffect *get_mob_effect_from_name(const char *mob_effect)
-     * }
-     */
-    public static MethodHandle get_mob_effect_from_name$handle() {
-        return get_mob_effect_from_name.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * const MobEffect *get_mob_effect_from_name(const char *mob_effect)
-     * }
-     */
-    public static MemorySegment get_mob_effect_from_name$address() {
-        return get_mob_effect_from_name.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * const MobEffect *get_mob_effect_from_name(const char *mob_effect)
-     * }
-     */
-    public static MemorySegment get_mob_effect_from_name(MemorySegment mob_effect) {
-        var mh$ = get_mob_effect_from_name.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("get_mob_effect_from_name", mob_effect);
-            }
-            return (MemorySegment)mh$.invokeExact(mob_effect);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class get_enchantment_from_name {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("get_enchantment_from_name");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * Enchantment get_enchantment_from_name(const char *ench)
-     * }
-     */
-    public static FunctionDescriptor get_enchantment_from_name$descriptor() {
-        return get_enchantment_from_name.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * Enchantment get_enchantment_from_name(const char *ench)
-     * }
-     */
-    public static MethodHandle get_enchantment_from_name$handle() {
-        return get_enchantment_from_name.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * Enchantment get_enchantment_from_name(const char *ench)
-     * }
-     */
-    public static MemorySegment get_enchantment_from_name$address() {
-        return get_enchantment_from_name.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * Enchantment get_enchantment_from_name(const char *ench)
-     * }
-     */
-    public static int get_enchantment_from_name(MemorySegment ench) {
-        var mh$ = get_enchantment_from_name.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("get_enchantment_from_name", ench);
-            }
-            return (int)mh$.invokeExact(ench);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class free_loot_function {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
-            Cubiomes.C_POINTER
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("free_loot_function");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * void free_loot_function(LootFunction *lf)
-     * }
-     */
-    public static FunctionDescriptor free_loot_function$descriptor() {
-        return free_loot_function.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * void free_loot_function(LootFunction *lf)
-     * }
-     */
-    public static MethodHandle free_loot_function$handle() {
-        return free_loot_function.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * void free_loot_function(LootFunction *lf)
-     * }
-     */
-    public static MemorySegment free_loot_function$address() {
-        return free_loot_function.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * void free_loot_function(LootFunction *lf)
-     * }
-     */
-    public static void free_loot_function(MemorySegment lf) {
-        var mh$ = free_loot_function.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("free_loot_function", lf);
-            }
-            mh$.invokeExact(lf);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class init_loot_table_name {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_loot_table_name");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int init_loot_table_name(LootTableContext **context, const char *loot_table, int version)
-     * }
-     */
-    public static FunctionDescriptor init_loot_table_name$descriptor() {
-        return init_loot_table_name.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int init_loot_table_name(LootTableContext **context, const char *loot_table, int version)
-     * }
-     */
-    public static MethodHandle init_loot_table_name$handle() {
-        return init_loot_table_name.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int init_loot_table_name(LootTableContext **context, const char *loot_table, int version)
-     * }
-     */
-    public static MemorySegment init_loot_table_name$address() {
-        return init_loot_table_name.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int init_loot_table_name(LootTableContext **context, const char *loot_table, int version)
-     * }
-     */
-    public static int init_loot_table_name(MemorySegment context, MemorySegment loot_table, int version) {
-        var mh$ = init_loot_table_name.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("init_loot_table_name", context, loot_table, version);
-            }
-            return (int)mh$.invokeExact(context, loot_table, version);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class init_bastion_bridge {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_bastion_bridge");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int init_bastion_bridge(LootTableContext **context, int version)
-     * }
-     */
-    public static FunctionDescriptor init_bastion_bridge$descriptor() {
-        return init_bastion_bridge.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int init_bastion_bridge(LootTableContext **context, int version)
-     * }
-     */
-    public static MethodHandle init_bastion_bridge$handle() {
-        return init_bastion_bridge.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int init_bastion_bridge(LootTableContext **context, int version)
-     * }
-     */
-    public static MemorySegment init_bastion_bridge$address() {
-        return init_bastion_bridge.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int init_bastion_bridge(LootTableContext **context, int version)
-     * }
-     */
-    public static int init_bastion_bridge(MemorySegment context, int version) {
-        var mh$ = init_bastion_bridge.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("init_bastion_bridge", context, version);
-            }
-            return (int)mh$.invokeExact(context, version);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class init_bastion_other {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_bastion_other");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int init_bastion_other(LootTableContext **context, int version)
-     * }
-     */
-    public static FunctionDescriptor init_bastion_other$descriptor() {
-        return init_bastion_other.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int init_bastion_other(LootTableContext **context, int version)
-     * }
-     */
-    public static MethodHandle init_bastion_other$handle() {
-        return init_bastion_other.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int init_bastion_other(LootTableContext **context, int version)
-     * }
-     */
-    public static MemorySegment init_bastion_other$address() {
-        return init_bastion_other.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int init_bastion_other(LootTableContext **context, int version)
-     * }
-     */
-    public static int init_bastion_other(MemorySegment context, int version) {
-        var mh$ = init_bastion_other.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("init_bastion_other", context, version);
-            }
-            return (int)mh$.invokeExact(context, version);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class init_buried_treasure {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_buried_treasure");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int init_buried_treasure(LootTableContext **context, int version)
-     * }
-     */
-    public static FunctionDescriptor init_buried_treasure$descriptor() {
-        return init_buried_treasure.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int init_buried_treasure(LootTableContext **context, int version)
-     * }
-     */
-    public static MethodHandle init_buried_treasure$handle() {
-        return init_buried_treasure.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int init_buried_treasure(LootTableContext **context, int version)
-     * }
-     */
-    public static MemorySegment init_buried_treasure$address() {
-        return init_buried_treasure.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int init_buried_treasure(LootTableContext **context, int version)
-     * }
-     */
-    public static int init_buried_treasure(MemorySegment context, int version) {
-        var mh$ = init_buried_treasure.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("init_buried_treasure", context, version);
-            }
-            return (int)mh$.invokeExact(context, version);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class init_desert_pyramid {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            Cubiomes.C_INT,
-            Cubiomes.C_POINTER,
-            Cubiomes.C_INT
-        );
-
-        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_desert_pyramid");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int init_desert_pyramid(LootTableContext **context, int version)
-     * }
-     */
-    public static FunctionDescriptor init_desert_pyramid$descriptor() {
-        return init_desert_pyramid.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int init_desert_pyramid(LootTableContext **context, int version)
-     * }
-     */
-    public static MethodHandle init_desert_pyramid$handle() {
-        return init_desert_pyramid.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int init_desert_pyramid(LootTableContext **context, int version)
-     * }
-     */
-    public static MemorySegment init_desert_pyramid$address() {
-        return init_desert_pyramid.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int init_desert_pyramid(LootTableContext **context, int version)
-     * }
-     */
-    public static int init_desert_pyramid(MemorySegment context, int version) {
-        var mh$ = init_desert_pyramid.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("init_desert_pyramid", context, version);
-            }
-            return (int)mh$.invokeExact(context, version);
-        } catch (Error | RuntimeException ex) {
-           throw ex;
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
 }
-

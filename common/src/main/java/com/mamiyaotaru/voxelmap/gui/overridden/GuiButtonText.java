@@ -1,5 +1,6 @@
 package com.mamiyaotaru.voxelmap.gui.overridden;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
@@ -8,7 +9,6 @@ import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
-import org.lwjgl.glfw.GLFW;
 
 import java.util.List;
 import java.util.Locale;
@@ -113,7 +113,7 @@ public class GuiButtonText extends Button.Plain {
         if (!(editing)) {
             return super.keyPressed(keyEvent);
         }
-        if (keyCode == GLFW.GLFW_KEY_TAB) {
+        if (keyCode == com.mojang.blaze3d.platform.InputConstants.KEY_TAB) {
             String completion = getAutocompleteCompletion();
             if (completion != null) {
                 setText(completion);
@@ -122,7 +122,7 @@ public class GuiButtonText extends Button.Plain {
             setEditing(false);
             return false;
         }
-        if (keyCode != GLFW.GLFW_KEY_ENTER && keyCode != GLFW.GLFW_KEY_KP_ENTER) {
+        if (keyCode != com.mojang.blaze3d.platform.InputConstants.KEY_RETURN && keyCode != com.mojang.blaze3d.platform.InputConstants.KEY_NUMPADENTER) {
             return textField.keyPressed(keyEvent);
         }
 

@@ -3,8 +3,9 @@ package com.mamiyaotaru.voxelmap.interfaces;
 import com.mamiyaotaru.voxelmap.gui.overridden.EnumOptionsMinimap;
 
 public interface ISettingsManager {
-    String getKeyText(EnumOptionsMinimap option);
-
+    default String getKeyText(EnumOptionsMinimap option) {
+        return option.toString();
+    }
     void loadAll();
 
     void saveAll();

@@ -17,7 +17,6 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.ARGB;
-import org.lwjgl.glfw.GLFW;
 
 public class GuiSeedMapperEspProfiles extends GuiScreenMinimap {
     private enum ColorTarget {
@@ -236,11 +235,11 @@ public class GuiSeedMapperEspProfiles extends GuiScreenMinimap {
     @Override
     public boolean keyPressed(KeyEvent keyEvent) {
         if (isColorPickerOpen()) {
-            if (keyEvent.key() == GLFW.GLFW_KEY_ESCAPE) {
+            if (keyEvent.key() == com.mojang.blaze3d.platform.InputConstants.KEY_ESCAPE) {
                 cancelColorPickerSelection();
                 return true;
             }
-            if (keyEvent.key() == GLFW.GLFW_KEY_ENTER || keyEvent.key() == GLFW.GLFW_KEY_KP_ENTER) {
+            if (keyEvent.key() == com.mojang.blaze3d.platform.InputConstants.KEY_RETURN || keyEvent.key() == com.mojang.blaze3d.platform.InputConstants.KEY_NUMPADENTER) {
                 applyColorPickerSelection();
                 return true;
             }

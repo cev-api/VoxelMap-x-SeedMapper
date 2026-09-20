@@ -10,10 +10,11 @@ import com.mamiyaotaru.voxelmap.util.BiomeRepository;
 import com.mamiyaotaru.voxelmap.util.CommandUtils;
 import com.mamiyaotaru.voxelmap.util.MessageUtils;
 import com.mamiyaotaru.voxelmap.util.ModrinthUpdateChecker;
-import com.mojang.blaze3d.systems.GpuDevice;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import java.util.Locale;
+import com.mamiyaotaru.voxelmap.rendering.SubmitPass;
+import java.util.OptionalDouble;
 import java.util.Optional;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
@@ -23,7 +24,6 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.server.IntegratedServer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.client.gui.screens.ChatScreen;
@@ -33,6 +33,7 @@ import net.minecraft.world.level.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import org.joml.Matrix4fStack;
 
 public final class VoxelConstants {
     private static final Logger LOGGER = LogManager.getLogger("VoxelMap");
@@ -69,20 +70,6 @@ public final class VoxelConstants {
 
     public static boolean hasVulkanMod() {
         return MultiLoaderManager.getModApiBridge().isModEnabled("vulkanmod");
-    }
-
-    public static boolean isVulkanRenderer() {
-        if (hasVulkanMod()) {
-            return true;
-        }
-
-        GpuDevice device = RenderSystem.tryGetDevice();
-        if (device == null) {
-            return false;
-        }
-
-        String backendName = device.getDeviceInfo().backendName();
-        return backendName != null && backendName.toLowerCase(Locale.ROOT).contains("vulkan");
     }
 
     @NotNull
@@ -174,11 +161,16 @@ public final class VoxelConstants {
         }
     }
 
-    public static void onRenderWaypoints(float gameTimeDeltaPartialTick, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, Camera camera) {
+    public static void onRenderWaypoints(Matrix4fStack matrixStack, Camera camera, float partialTick) {
         try {
-            VoxelConstants.getVoxelMapInstance().getWaypointManager().renderWaypoints(gameTimeDeltaPartialTick, poseStack, submitNodeCollector, camera);
-            SeedMapperEspRenderer.render(gameTimeDeltaPartialTick, poseStack, submitNodeCollector, camera);
-            ChunkAnalysisRenderer.render(poseStack, submitNodeCollector, camera);
+            VoxelConstants.getVoxelMapInstance().getWaypointManager().renderWaypoints(matrixStack, camera, partialTick);
+            PoseStack poseStack = new PoseStack();
+            poseStack.last().pose().set(matrixStack);
+            var target = getMinecraft().gameRenderer.mainRenderTarget();
+            try (SubmitPass pass = new SubmitPass("VoxelMap fork overlays", target.getColorTextureView(), Optional.empty(), target.getDepthTextureView(), OptionalDouble.empty())) {
+                SeedMapperEspRenderer.render(partialTick, poseStack, pass.collector(), camera);
+                ChunkAnalysisRenderer.render(poseStack, pass.collector(), camera);
+            }
         } catch (RuntimeException e) {
             VoxelConstants.getLogger().log(org.apache.logging.log4j.Level.ERROR, "Error while render waypoints", e);
         }

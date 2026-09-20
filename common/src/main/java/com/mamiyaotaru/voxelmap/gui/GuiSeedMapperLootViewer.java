@@ -42,7 +42,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.HashSet;
 import java.util.TreeSet;
-import org.lwjgl.glfw.GLFW;
 import com.mamiyaotaru.voxelmap.gui.overridden.GuiScreenMinimap;
 
 public final class GuiSeedMapperLootViewer extends Screen {
@@ -404,7 +403,7 @@ public final class GuiSeedMapperLootViewer extends Screen {
 
     @Override
     public boolean keyPressed(KeyEvent keyEvent) {
-        if (keyEvent.key() == GLFW.GLFW_KEY_ESCAPE) {
+        if (keyEvent.key() == com.mojang.blaze3d.platform.InputConstants.KEY_ESCAPE) {
             closeToPreviousScreen();
             return true;
         }
@@ -997,7 +996,7 @@ public final class GuiSeedMapperLootViewer extends Screen {
         }
 
         if (itemTooltip != null) {
-            context.tooltip(this.font, itemTooltip, itemTooltipX, itemTooltipY, DefaultTooltipPositioner.INSTANCE, null);
+            context.tooltip(this.font, itemTooltip, itemTooltipX, itemTooltipY, DefaultTooltipPositioner.INSTANCE, null, false);
         }
         super.extractRenderState(context, mouseX, mouseY, delta);
     }

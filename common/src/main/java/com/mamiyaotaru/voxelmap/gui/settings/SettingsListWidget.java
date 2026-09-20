@@ -1,5 +1,8 @@
 package com.mamiyaotaru.voxelmap.gui.settings;
 
+import de.voxelmap.voxelconfig.SettingsCategory;
+import de.voxelmap.voxelconfig.SettingsGroup;
+import de.voxelmap.voxelconfig.SettingsOption;
 import com.mamiyaotaru.voxelmap.MapSettingsManager;
 import com.mamiyaotaru.voxelmap.VoxelConstants;
 import com.mamiyaotaru.voxelmap.gui.GuiMinimapOptions;
@@ -17,13 +20,13 @@ import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import org.lwjgl.glfw.GLFW;
 
 public final class SettingsListWidget extends AbstractSelectionList<SettingsListWidget.Entry> {
     private static final int OPTION_HEIGHT = 28;
@@ -43,6 +46,9 @@ public final class SettingsListWidget extends AbstractSelectionList<SettingsList
     }
 
     private void populate() {
+        if (category.id().equals("controls")) {
+            addKeyBindings();
+        }
         for (SettingsGroup group : category.groups()) {
             String collapseKey = category.id() + "|" + group.title().getString();
             boolean collapsed = collapsedGroups.contains(collapseKey);
@@ -54,16 +60,17 @@ public final class SettingsListWidget extends AbstractSelectionList<SettingsList
                 addEntry(new OptionEntry(option), OPTION_HEIGHT);
             }
         }
+    }
 
-        if (category.specialView() == SettingsCategory.SpecialView.KEY_BINDINGS) {
-            addEntry(new GroupEntry(Component.translatable("options.voxelmap.group.keyBindings"), null, false), HEADER_HEIGHT);
-            KeyMapping[] mappings = VoxelConstants.getVoxelMapInstance().getMapOptions().keyBindings.clone();
-            Arrays.sort(mappings);
-            for (KeyMapping mapping : mappings) {
-                addEntry(new KeyEntry(mapping), OPTION_HEIGHT);
-            }
-            addEntry(new HelpEntry(Component.translatable("options.voxelmap.controls.unbindHelp")), HEADER_HEIGHT);
+    /** Appends VoxelMap key binding entries to the list. Call after construction if needed. */
+    public void addKeyBindings() {
+        addEntry(new GroupEntry(Component.translatable("options.voxelmap.group.keyBindings"), null, false), HEADER_HEIGHT);
+        KeyMapping[] mappings = VoxelConstants.getVoxelMapInstance().getMapOptions().keyBindings.clone();
+        Arrays.sort(mappings);
+        for (KeyMapping mapping : mappings) {
+            addEntry(new KeyEntry(mapping), OPTION_HEIGHT);
         }
+        addEntry(new HelpEntry(Component.translatable("options.voxelmap.controls.unbindHelp")), HEADER_HEIGHT);
     }
 
     private void toggleGroup(String collapseKey) {
@@ -88,6 +95,11 @@ public final class SettingsListWidget extends AbstractSelectionList<SettingsList
     }
 
     @Override
+    protected boolean entriesCanBeSelected() {
+        return false;
+    }
+
+    @Override
     protected void updateWidgetNarration(NarrationElementOutput output) {
     }
 
@@ -95,7 +107,7 @@ public final class SettingsListWidget extends AbstractSelectionList<SettingsList
     public boolean keyPressed(KeyEvent event) {
         if (editingKey != null) {
             MapSettingsManager map = VoxelConstants.getVoxelMapInstance().getMapOptions();
-            if (event.key() == GLFW.GLFW_KEY_ESCAPE) {
+            if (event.key() == InputConstants.KEY_ESCAPE) {
                 if (!editingKey.same(map.keyBindMenu))
                     map.setKeyBinding(editingKey, InputConstants.UNKNOWN);
             } else {
@@ -110,6 +122,17 @@ public final class SettingsListWidget extends AbstractSelectionList<SettingsList
 
     public boolean isEditingKey() {
         return editingKey != null;
+    }
+
+    @Override
+    public void setFocused(GuiEventListener focused) {
+        Entry previous = getFocused();
+        if (previous != focused && previous instanceof OptionEntry optionEntry)
+            optionEntry.control.setFocused(false);
+
+        super.setFocused(focused);
+        if (focused instanceof OptionEntry optionEntry)
+            optionEntry.control.setFocused(true);
     }
 
     @Override
@@ -235,6 +258,8 @@ public final class SettingsListWidget extends AbstractSelectionList<SettingsList
             int controlWidth = Math.clamp(getWidth() / 2, 105, 190);
             control.setRectangle(controlWidth, 20, getX() + getWidth() - controlWidth - 8, getY() + 4);
             control.active = enabled;
+            if (!enabled && control.isFocused())
+                control.setFocused(false);
 
             if (control instanceof Button)
                 control.setMessage(formatOption(option));
@@ -353,7 +378,8 @@ public final class SettingsListWidget extends AbstractSelectionList<SettingsList
         private void commit() {
             if (!dirty)
                 return;
-            option.set(getValue());
+            if (option.enabled())
+                option.set(getValue());
             dirty = false;
             setFromOption();
         }
@@ -367,12 +393,12 @@ public final class SettingsListWidget extends AbstractSelectionList<SettingsList
 
         @Override
         public boolean keyPressed(KeyEvent event) {
-            if (event.key() == GLFW.GLFW_KEY_ENTER || event.key() == GLFW.GLFW_KEY_KP_ENTER) {
+            if (event.key() == InputConstants.KEY_RETURN || event.key() == InputConstants.KEY_NUMPADENTER) {
                 commit();
                 setFocused(false);
                 return true;
             }
-            if (event.key() == GLFW.GLFW_KEY_TAB && isFocused()) {
+            if (event.key() == com.mojang.blaze3d.platform.InputConstants.KEY_TAB && isFocused()) {
                 String completion = autocompleteMatches().stream()
                         .filter(match -> !match.equalsIgnoreCase(getValue().trim()))
                         .findFirst()
@@ -386,12 +412,12 @@ public final class SettingsListWidget extends AbstractSelectionList<SettingsList
         }
 
         private List<String> autocompleteMatches() {
-            if (option.autocompleteOptions().isEmpty())
+            if (SettingsAutocomplete.options(option).isEmpty())
                 return List.of();
             String current = getValue().trim().toLowerCase(Locale.ROOT);
             if (current.isEmpty())
                 return List.of();
-            return option.autocompleteOptions().stream()
+            return SettingsAutocomplete.options(option).stream()
                     .filter(match -> match.toLowerCase(Locale.ROOT).startsWith(current))
                     .toList();
         }

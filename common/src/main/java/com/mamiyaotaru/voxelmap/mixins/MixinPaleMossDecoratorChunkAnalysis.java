@@ -36,7 +36,7 @@ public abstract class MixinPaleMossDecoratorChunkAnalysis {
         if (!logs.isEmpty()) {
             BlockPos origin = Collections.min(logs, Comparator.comparingInt(Vec3i::getY));
             if (random.nextFloat() < this.groundProbability) {
-                context.level().registryAccess().lookup(Registries.CONFIGURED_FEATURE)
+                context.level().registryAccess().lookup(Registries.FEATURE)
                         .flatMap(registry -> registry.get(VegetationFeatures.PALE_MOSS_PATCH))
                         .ifPresent(feature -> feature.value().place(context.level(), ChunkAnalysisRuntime.generator(), random, origin.above()));
             }

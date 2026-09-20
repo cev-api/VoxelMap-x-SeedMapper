@@ -11,7 +11,6 @@ import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
-import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -118,7 +117,7 @@ class GuiChunkSyncPlayerList extends AbstractSelectionList<GuiChunkSyncPlayerLis
 
         @Override
         public boolean keyPressed(KeyEvent event) {
-            if ((event.key() == GLFW.GLFW_KEY_ENTER || event.key() == GLFW.GLFW_KEY_KP_ENTER) && colorInput.isFocused()) {
+            if ((event.key() == com.mojang.blaze3d.platform.InputConstants.KEY_RETURN || event.key() == com.mojang.blaze3d.platform.InputConstants.KEY_NUMPADENTER) && colorInput.isFocused()) {
                 parent.setPlayerLayerColor(layer.slug(), colorInput.getValue());
                 return true;
             }

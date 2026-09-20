@@ -18,7 +18,6 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import org.lwjgl.glfw.GLFW;
 
 public class GuiListKeys extends AbstractSelectionList<GuiListKeys.RowItem> {
     private final MapSettingsManager options;
@@ -82,7 +81,7 @@ public class GuiListKeys extends AbstractSelectionList<GuiListKeys.RowItem> {
     @Override
     public boolean keyPressed(KeyEvent keyEvent) {
         if (this.keyEditing()) {
-            if (keyEvent.key() == GLFW.GLFW_KEY_ESCAPE) {
+            if (keyEvent.key() == com.mojang.blaze3d.platform.InputConstants.KEY_ESCAPE) {
                 return unbindEditingKey();
             } else {
                 this.options.setKeyBinding(this.keyForEdit, InputConstants.getKey(keyEvent));

@@ -7,9 +7,9 @@ import net.minecraft.core.Vec3i;
 import net.minecraft.util.RandomSource;
 import net.minecraft.util.Util;
 import net.minecraft.world.level.block.Rotation;
-import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
+import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.levelgen.feature.TemplateFeature;
-import net.minecraft.world.level.levelgen.feature.configurations.TemplateFeatureConfiguration;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import org.spongepowered.asm.mixin.Mixin;
@@ -26,17 +26,18 @@ public abstract class MixinTemplateFeatureChunkAnalysis {
     }
 
     @Inject(method = "place", at = @At("HEAD"), cancellable = true)
-    private void voxelmap$placeWithoutServerLevel(FeaturePlaceContext<TemplateFeatureConfiguration> context,
+    private void voxelmap$placeWithoutServerLevel(WorldGenLevel level, ChunkGenerator generator, RandomSource random, BlockPos origin,
                                                    CallbackInfoReturnable<Boolean> cir) {
         if (!ChunkAnalysisRuntime.active()) return;
-        RandomSource random = context.random();
-        TemplateFeatureConfiguration.TemplateEntry entry = context.config().templates().getRandomOrThrow(random);
+        TemplateFeature feature = (TemplateFeature) (Object) this;
+        TemplateFeature.TemplateEntry entry = feature.templates().getRandomOrThrow(random);
         Rotation rotation = Util.getRandom(entry.rotations(), random);
         StructureTemplate template = ChunkAnalysisRuntime.templates().getOrCreate(entry.template());
-        BlockPos pos = context.origin()
+        BlockPos pos = origin
                 .offset(this.getRotatedOffset(rotation, Direction.Axis.X, template))
                 .offset(this.getRotatedOffset(rotation, Direction.Axis.Z, template));
         StructurePlaceSettings settings = new StructurePlaceSettings().setRotation(rotation).setRandom(random);
-        cir.setReturnValue(template.placeInWorld(context.level(), pos, pos, settings, random, 3));
+        feature.processors().ifPresent(processors -> processors.value().list().forEach(settings::addProcessor));
+        cir.setReturnValue(template.placeInWorld(level, pos, pos, settings, random, 3));
     }
 }

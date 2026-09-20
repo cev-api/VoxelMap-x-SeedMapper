@@ -1005,7 +1005,10 @@ public final class SeedMapperCommandHandler {
             forEachChunkInSpiral(playerChunkX, playerChunkZ, chunkRange, (chunkX, chunkZ) -> {
                 var chunkAccess = level.getChunkSource().getChunk(chunkX, chunkZ, ChunkStatus.FULL, false);
                 LevelChunk chunk = chunkAccess instanceof LevelChunk lc ? lc : null;
-                boolean doAirCheck = chunk != null;
+                // Do not draw predictions for chunks that are not available on the
+                // client.  Without the real block state there is no safe way to
+                // tell an exposed ore attempt from an actual ore block.
+                if (chunk == null) return;
                 Map<BlockPos, Integer> generatedOres = new HashMap<>();
                 List<Integer> biomes = mcVersion <= Cubiomes.MC_1_17()
                         ? List.of(Cubiomes.getBiomeForOreGen(generator, chunkX, chunkZ, 0))
@@ -1034,7 +1037,11 @@ public final class SeedMapperCommandHandler {
                         for (int i = 0; i < size; i++) {
                             MemorySegment pos3 = Pos3.asSlice(pos3s, i);
                             BlockPos pos = new BlockPos(Pos3.x(pos3), Pos3.y(pos3), Pos3.z(pos3));
-                            if (doAirCheck && isAirOrLava(chunk, pos)) continue;
+                            // Cubiomes returns ore placement attempts.  The
+                            // client chunk is authoritative for whether that
+                            // attempt actually became an ore block; this also
+                            // rejects exposed attempts in air or water.
+                            if (!isTargetOreState(chunk.getBlockState(pos), targetBlock)) continue;
 
                             Integer previous = generatedOres.get(pos);
                             if (previous != null) {
@@ -1098,7 +1105,7 @@ public final class SeedMapperCommandHandler {
         forEachChunkInSpiral(centerChunkX, centerChunkZ, chunkRange, (chunkX, chunkZ) -> {
             var chunkAccess = level.getChunkSource().getChunk(chunkX, chunkZ, ChunkStatus.FULL, false);
             LevelChunk chunk = chunkAccess instanceof LevelChunk lc ? lc : null;
-            boolean doAirCheck = chunk != null;
+            if (chunk == null) return;
             int minX = chunkX << 4;
             int minZ = chunkZ << 4;
 
@@ -1108,7 +1115,7 @@ public final class SeedMapperCommandHandler {
                         int block = OreVeinPredictor.blockAt(predictor, minX + x, y, minZ + z);
                         if (block == -1 || block == Cubiomes.GRANITE() || block == Cubiomes.TUFF()) continue;
                         BlockPos pos = new BlockPos(minX + x, y, minZ + z);
-                        if (doAirCheck && isAirOrLava(chunk, pos)) continue;
+                        if (isAirOrFluid(chunk, pos)) continue;
                         blocks.put(pos, block);
                     }
                 }
@@ -1126,7 +1133,7 @@ public final class SeedMapperCommandHandler {
             var chunkAccess = level.getChunkSource().getChunk(chunkX, chunkZ, ChunkStatus.FULL, false);
             chunk = chunkAccess instanceof LevelChunk lc ? lc : null;
         }
-        boolean doAirCheck = chunk != null;
+        if (chunk == null) return out;
         int minX = chunkX << 4;
         int minZ = chunkZ << 4;
         for (int x = 0; x < 16; x++) {
@@ -1143,7 +1150,7 @@ public final class SeedMapperCommandHandler {
                     }
                     if (!keep) continue;
                     BlockPos pos = new BlockPos(minX + x, y, minZ + z);
-                    if (doAirCheck && isAirOrLava(chunk, pos)) continue;
+                    if (isAirOrFluid(chunk, pos)) continue;
                     out.add(pos);
                 }
             }
@@ -1277,19 +1284,13 @@ public final class SeedMapperCommandHandler {
         Set<BlockPos> blocks = new HashSet<>();
         try (Arena arena = Arena.ofConfined()) {
             MemorySegment params = TerrainNoise.allocate(arena);
-            if (Cubiomes.setupTerrainNoise(params, version, generatorFlags) == 0) {
-                send("Terrain ESP is unavailable for this MC version.");
-                return;
-            }
-            if (Cubiomes.initTerrainNoise(params, seed, dimension) == 0) {
-                send("Terrain ESP could not initialize for this seed.");
-                return;
-            }
-
-            SequenceLayout columnLayout = MemoryLayout.sequenceLayout(384, Cubiomes.C_INT);
-            MemorySegment blockStates = arena.allocate(columnLayout, (long) blockW * blockH);
+            Cubiomes.setupTerrainNoise(params, version, generatorFlags);
+            Cubiomes.initTerrainNoise(params, seed, dimension);
+            int worldMinY = version >= Cubiomes.MC_1_18() ? -64 : 0;
+            int columnCount = version >= Cubiomes.MC_1_18() ? 48 : 32;
             MemorySegment heights = arena.allocate(Cubiomes.C_INT, (long) blockW * blockH);
-            Cubiomes.generateRegion(params, minChunkX, minChunkZ, chunkW, chunkH, blockStates, heights, 1);
+            Cubiomes.generateRegion(params, minChunkX, minChunkZ, chunkW, chunkH,
+                    MemorySegment.NULL, 0, columnCount, heights, 1);
 
             for (int relX = 0; relX < blockW; relX++) {
                 int x = minX + relX;
@@ -1297,10 +1298,10 @@ public final class SeedMapperCommandHandler {
                     int z = minZ + relZ;
                     int columnIndex = relX * blockH + relZ;
                     int stored = heights.getAtIndex(Cubiomes.C_INT, columnIndex);
-                    if (stored <= -64) {
+                    if (stored <= worldMinY) {
                         continue;
                     }
-                    int surfaceY = stored - 1 - 64;
+                    int surfaceY = stored - 1;
                     blocks.add(new BlockPos(x, surfaceY, z));
                 }
             }
@@ -1716,10 +1717,41 @@ public final class SeedMapperCommandHandler {
         return 0x00CFFF;
     }
 
-    private static boolean isAirOrLava(LevelChunk chunk, BlockPos pos) {
-        if (chunk == null) return false;
+    private static boolean isAirOrFluid(LevelChunk chunk, BlockPos pos) {
         var state = chunk.getBlockState(pos);
-        return state.isAir() || state.is(Blocks.LAVA) || state.getFluidState().is(Fluids.LAVA);
+        return state.isAir()
+                || state.is(Blocks.LAVA)
+                || state.is(Blocks.WATER)
+                || state.getFluidState().is(Fluids.LAVA)
+                || state.getFluidState().is(Fluids.WATER);
+    }
+
+    private static boolean isTargetOreState(BlockState state, int targetBlock) {
+        if (targetBlock == Cubiomes.ANCIENT_DEBRIS()) return state.is(Blocks.ANCIENT_DEBRIS);
+        if (targetBlock == Cubiomes.ANDESITE()) return state.is(Blocks.ANDESITE);
+        if (targetBlock == Cubiomes.BLACKSTONE()) return state.is(Blocks.BLACKSTONE);
+        if (targetBlock == Cubiomes.CLAY()) return state.is(Blocks.CLAY);
+        if (targetBlock == Cubiomes.COAL_ORE()) return state.is(Blocks.COAL_ORE) || state.is(Blocks.DEEPSLATE_COAL_ORE);
+        if (targetBlock == Cubiomes.COPPER_ORE()) return state.is(Blocks.COPPER_ORE) || state.is(Blocks.DEEPSLATE_COPPER_ORE);
+        if (targetBlock == Cubiomes.DEEPSLATE()) return state.is(Blocks.DEEPSLATE);
+        if (targetBlock == Cubiomes.DIAMOND_ORE()) return state.is(Blocks.DIAMOND_ORE) || state.is(Blocks.DEEPSLATE_DIAMOND_ORE);
+        if (targetBlock == Cubiomes.DIORITE()) return state.is(Blocks.DIORITE);
+        if (targetBlock == Cubiomes.DIRT()) return state.is(Blocks.DIRT);
+        if (targetBlock == Cubiomes.EMERALD_ORE()) return state.is(Blocks.EMERALD_ORE) || state.is(Blocks.DEEPSLATE_EMERALD_ORE);
+        if (targetBlock == Cubiomes.GOLD_ORE()) return state.is(Blocks.GOLD_ORE) || state.is(Blocks.DEEPSLATE_GOLD_ORE);
+        if (targetBlock == Cubiomes.GRANITE()) return state.is(Blocks.GRANITE);
+        if (targetBlock == Cubiomes.GRAVEL()) return state.is(Blocks.GRAVEL);
+        if (targetBlock == Cubiomes.IRON_ORE()) return state.is(Blocks.IRON_ORE) || state.is(Blocks.DEEPSLATE_IRON_ORE);
+        if (targetBlock == Cubiomes.LAPIS_ORE()) return state.is(Blocks.LAPIS_ORE) || state.is(Blocks.DEEPSLATE_LAPIS_ORE);
+        if (targetBlock == Cubiomes.MAGMA_BLOCK()) return state.is(Blocks.MAGMA_BLOCK);
+        if (targetBlock == Cubiomes.NETHER_GOLD_ORE()) return state.is(Blocks.NETHER_GOLD_ORE);
+        if (targetBlock == Cubiomes.NETHER_QUARTZ_ORE()) return state.is(Blocks.NETHER_QUARTZ_ORE);
+        if (targetBlock == Cubiomes.RAW_COPPER_BLOCK()) return state.is(Blocks.RAW_COPPER_BLOCK);
+        if (targetBlock == Cubiomes.RAW_IRON_BLOCK()) return state.is(Blocks.RAW_IRON_BLOCK);
+        if (targetBlock == Cubiomes.REDSTONE_ORE()) return state.is(Blocks.REDSTONE_ORE) || state.is(Blocks.DEEPSLATE_REDSTONE_ORE);
+        if (targetBlock == Cubiomes.SOUL_SAND()) return state.is(Blocks.SOUL_SAND);
+        if (targetBlock == Cubiomes.STONE()) return state.is(Blocks.STONE);
+        return targetBlock == Cubiomes.TUFF() && state.is(Blocks.TUFF);
     }
 
     private static SeedMapperMarker findNearestMarker(java.util.function.Predicate<SeedMapperMarker> predicate, int maxRadius) {

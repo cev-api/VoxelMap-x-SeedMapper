@@ -18,10 +18,8 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractSelectionList;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.input.MouseButtonEvent;
-import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
-import org.lwjgl.glfw.GLFW;
 
 import java.awt.Color;
 import java.util.ArrayList;
@@ -180,14 +178,14 @@ class GuiListWaypoints extends AbstractSelectionList<GuiListWaypoints.WaypointIt
 
     private boolean isCtrlDown() {
         var window = VoxelConstants.getMinecraft().getWindow();
-        return InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_CONTROL)
-                || InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_CONTROL);
+        return InputConstants.isKeyDown(com.mojang.blaze3d.platform.InputConstants.KEY_LCONTROL)
+                || InputConstants.isKeyDown(com.mojang.blaze3d.platform.InputConstants.KEY_RCONTROL);
     }
 
     private boolean isShiftDown() {
         var window = VoxelConstants.getMinecraft().getWindow();
-        return InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_SHIFT)
-                || InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_SHIFT);
+        return InputConstants.isKeyDown(com.mojang.blaze3d.platform.InputConstants.KEY_LSHIFT)
+                || InputConstants.isKeyDown(com.mojang.blaze3d.platform.InputConstants.KEY_RSHIFT);
     }
 
     @Override
@@ -255,7 +253,6 @@ class GuiListWaypoints extends AbstractSelectionList<GuiListWaypoints.WaypointIt
 
         @Override
         public boolean mouseClicked(MouseButtonEvent mouseButtonEvent, boolean doubleClick) {
-            double mouseX = mouseButtonEvent.x();
             double mouseY = mouseButtonEvent.y();
             if (mouseY < getY() || mouseY > getBottom()) {
                 return false;

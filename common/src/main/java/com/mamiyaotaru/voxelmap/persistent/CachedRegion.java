@@ -352,7 +352,12 @@ public class CachedRegion {
                                         if (!this.closed && this.data.getHeight(tx * CHUNK_BLOCKS, sx * CHUNK_BLOCKS) == Short.MIN_VALUE && this.data.getLight(tx * CHUNK_BLOCKS, sx * CHUNK_BLOCKS) == 0) {
                                             int index = tx + sx * CHUNKS_WIDTH;
                                             ChunkPos chunkPos = new ChunkPos(this.x * CHUNKS_WIDTH + tx, this.z * CHUNKS_WIDTH + sx);
-                                            CompoundTag rawNbt = this.chunkLoader.read(chunkPos).join().get();
+                                            Optional<CompoundTag> rawNbtResult = this.chunkLoader.read(chunkPos).join();
+                                            if (rawNbtResult.isEmpty()) {
+                                                continue;
+                                            }
+
+                                            CompoundTag rawNbt = rawNbtResult.get();
                                             CompoundTag nbt = this.chunkLoader.upgradeChunkTag(rawNbt, -1);
                                             if (!this.closed && nbt.contains("Level")) {
                                                 CompoundTag level = nbt.getCompound("Level").get();
@@ -475,7 +480,7 @@ public class CachedRegion {
 
     private void loadCachedData() {
         try {
-            File cachedRegionFileDir = new File(VoxelConstants.getVoxelMapInstance().getDataStore().getWorldCacheDir(), this.subworldNamePathPart + this.dimensionNamePathPart);
+            File cachedRegionFileDir = VoxelConstants.getVoxelMapInstance().getDataStore().getWorldCacheDir(this.subworldNamePathPart + this.dimensionNamePathPart);
             cachedRegionFileDir.mkdirs();
             File cachedRegionFile = new File(cachedRegionFileDir, "/" + this.fileKey + ".zip");
             if (cachedRegionFile.exists()) {
@@ -585,7 +590,7 @@ public class CachedRegion {
         BiMap<Biome, Integer> biomeToInt = this.data.getBiomeToInt();
         byte[] byteArray = this.data.getData();
         if (byteArray.length == this.data.getExpectedDataLength(CompressibleMapData.DATA_VERSION)) {
-            File cachedRegionFileDir = new File(VoxelConstants.getVoxelMapInstance().getDataStore().getWorldCacheDir(), this.subworldNamePathPart + this.dimensionNamePathPart);
+            File cachedRegionFileDir = VoxelConstants.getVoxelMapInstance().getDataStore().getWorldCacheDir(this.subworldNamePathPart + this.dimensionNamePathPart);
             cachedRegionFileDir.mkdirs();
             File cachedRegionFile = new File(cachedRegionFileDir, "/" + this.fileKey + ".zip");
             try (FileOutputStream fos = new FileOutputStream(cachedRegionFile); ZipOutputStream zos = new ZipOutputStream(fos)) {
@@ -656,7 +661,7 @@ public class CachedRegion {
     private void saveImage() {
         if (!this.empty && this.image != null) {
 
-            File imageFileDir = new File(VoxelConstants.getVoxelMapInstance().getDataStore().getWorldCacheDir(), this.subworldNamePathPart + this.dimensionNamePathPart + "/images/z1");
+            File imageFileDir = VoxelConstants.getVoxelMapInstance().getDataStore().getWorldCacheDir(this.subworldNamePathPart + this.dimensionNamePathPart + "/images/z1");
             imageFileDir.mkdirs();
             final File imageFile = new File(imageFileDir, this.fileKey + ".png");
                        

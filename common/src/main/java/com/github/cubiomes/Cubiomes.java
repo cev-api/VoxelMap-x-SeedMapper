@@ -17,6 +17,2922 @@ public class Cubiomes extends Cubiomes_1 {
     Cubiomes() {
         // Should not be called directly
     }
+    private static final int EFFECT_MINING_FATIGUE = (int)3L;
+    /**
+     * {@snippet lang=c :
+     * enum MobEffectType.EFFECT_MINING_FATIGUE = 3
+     * }
+     */
+    public static int EFFECT_MINING_FATIGUE() {
+        return EFFECT_MINING_FATIGUE;
+    }
+    private static final int EFFECT_STRENGTH = (int)4L;
+    /**
+     * {@snippet lang=c :
+     * enum MobEffectType.EFFECT_STRENGTH = 4
+     * }
+     */
+    public static int EFFECT_STRENGTH() {
+        return EFFECT_STRENGTH;
+    }
+    private static final int EFFECT_INSTANT_HEALTH = (int)5L;
+    /**
+     * {@snippet lang=c :
+     * enum MobEffectType.EFFECT_INSTANT_HEALTH = 5
+     * }
+     */
+    public static int EFFECT_INSTANT_HEALTH() {
+        return EFFECT_INSTANT_HEALTH;
+    }
+    private static final int EFFECT_INSTANT_DAMAGE = (int)6L;
+    /**
+     * {@snippet lang=c :
+     * enum MobEffectType.EFFECT_INSTANT_DAMAGE = 6
+     * }
+     */
+    public static int EFFECT_INSTANT_DAMAGE() {
+        return EFFECT_INSTANT_DAMAGE;
+    }
+    private static final int EFFECT_JUMP_BOOST = (int)7L;
+    /**
+     * {@snippet lang=c :
+     * enum MobEffectType.EFFECT_JUMP_BOOST = 7
+     * }
+     */
+    public static int EFFECT_JUMP_BOOST() {
+        return EFFECT_JUMP_BOOST;
+    }
+    private static final int EFFECT_NAUSEA = (int)8L;
+    /**
+     * {@snippet lang=c :
+     * enum MobEffectType.EFFECT_NAUSEA = 8
+     * }
+     */
+    public static int EFFECT_NAUSEA() {
+        return EFFECT_NAUSEA;
+    }
+    private static final int EFFECT_REGENERATION = (int)9L;
+    /**
+     * {@snippet lang=c :
+     * enum MobEffectType.EFFECT_REGENERATION = 9
+     * }
+     */
+    public static int EFFECT_REGENERATION() {
+        return EFFECT_REGENERATION;
+    }
+    private static final int EFFECT_RESISTANCE = (int)10L;
+    /**
+     * {@snippet lang=c :
+     * enum MobEffectType.EFFECT_RESISTANCE = 10
+     * }
+     */
+    public static int EFFECT_RESISTANCE() {
+        return EFFECT_RESISTANCE;
+    }
+    private static final int EFFECT_FIRE_RESISTANCE = (int)11L;
+    /**
+     * {@snippet lang=c :
+     * enum MobEffectType.EFFECT_FIRE_RESISTANCE = 11
+     * }
+     */
+    public static int EFFECT_FIRE_RESISTANCE() {
+        return EFFECT_FIRE_RESISTANCE;
+    }
+    private static final int EFFECT_WATER_BREATHING = (int)12L;
+    /**
+     * {@snippet lang=c :
+     * enum MobEffectType.EFFECT_WATER_BREATHING = 12
+     * }
+     */
+    public static int EFFECT_WATER_BREATHING() {
+        return EFFECT_WATER_BREATHING;
+    }
+    private static final int EFFECT_INVISIBILITY = (int)13L;
+    /**
+     * {@snippet lang=c :
+     * enum MobEffectType.EFFECT_INVISIBILITY = 13
+     * }
+     */
+    public static int EFFECT_INVISIBILITY() {
+        return EFFECT_INVISIBILITY;
+    }
+    private static final int EFFECT_BLINDNESS = (int)14L;
+    /**
+     * {@snippet lang=c :
+     * enum MobEffectType.EFFECT_BLINDNESS = 14
+     * }
+     */
+    public static int EFFECT_BLINDNESS() {
+        return EFFECT_BLINDNESS;
+    }
+    private static final int EFFECT_NIGHT_VISION = (int)15L;
+    /**
+     * {@snippet lang=c :
+     * enum MobEffectType.EFFECT_NIGHT_VISION = 15
+     * }
+     */
+    public static int EFFECT_NIGHT_VISION() {
+        return EFFECT_NIGHT_VISION;
+    }
+    private static final int EFFECT_HUNGER = (int)16L;
+    /**
+     * {@snippet lang=c :
+     * enum MobEffectType.EFFECT_HUNGER = 16
+     * }
+     */
+    public static int EFFECT_HUNGER() {
+        return EFFECT_HUNGER;
+    }
+    private static final int EFFECT_WEAKNESS = (int)17L;
+    /**
+     * {@snippet lang=c :
+     * enum MobEffectType.EFFECT_WEAKNESS = 17
+     * }
+     */
+    public static int EFFECT_WEAKNESS() {
+        return EFFECT_WEAKNESS;
+    }
+    private static final int EFFECT_POISON = (int)18L;
+    /**
+     * {@snippet lang=c :
+     * enum MobEffectType.EFFECT_POISON = 18
+     * }
+     */
+    public static int EFFECT_POISON() {
+        return EFFECT_POISON;
+    }
+    private static final int EFFECT_WITHER = (int)19L;
+    /**
+     * {@snippet lang=c :
+     * enum MobEffectType.EFFECT_WITHER = 19
+     * }
+     */
+    public static int EFFECT_WITHER() {
+        return EFFECT_WITHER;
+    }
+    private static final int EFFECT_HEALTH_BOOST = (int)20L;
+    /**
+     * {@snippet lang=c :
+     * enum MobEffectType.EFFECT_HEALTH_BOOST = 20
+     * }
+     */
+    public static int EFFECT_HEALTH_BOOST() {
+        return EFFECT_HEALTH_BOOST;
+    }
+    private static final int EFFECT_ABSORPTION = (int)21L;
+    /**
+     * {@snippet lang=c :
+     * enum MobEffectType.EFFECT_ABSORPTION = 21
+     * }
+     */
+    public static int EFFECT_ABSORPTION() {
+        return EFFECT_ABSORPTION;
+    }
+    private static final int EFFECT_SATURATION = (int)22L;
+    /**
+     * {@snippet lang=c :
+     * enum MobEffectType.EFFECT_SATURATION = 22
+     * }
+     */
+    public static int EFFECT_SATURATION() {
+        return EFFECT_SATURATION;
+    }
+    private static final int EFFECT_GLOWING = (int)23L;
+    /**
+     * {@snippet lang=c :
+     * enum MobEffectType.EFFECT_GLOWING = 23
+     * }
+     */
+    public static int EFFECT_GLOWING() {
+        return EFFECT_GLOWING;
+    }
+    private static final int EFFECT_LEVITATION = (int)24L;
+    /**
+     * {@snippet lang=c :
+     * enum MobEffectType.EFFECT_LEVITATION = 24
+     * }
+     */
+    public static int EFFECT_LEVITATION() {
+        return EFFECT_LEVITATION;
+    }
+    private static final int EFFECT_LUCK = (int)25L;
+    /**
+     * {@snippet lang=c :
+     * enum MobEffectType.EFFECT_LUCK = 25
+     * }
+     */
+    public static int EFFECT_LUCK() {
+        return EFFECT_LUCK;
+    }
+    private static final int EFFECT_UNLUCK = (int)26L;
+    /**
+     * {@snippet lang=c :
+     * enum MobEffectType.EFFECT_UNLUCK = 26
+     * }
+     */
+    public static int EFFECT_UNLUCK() {
+        return EFFECT_UNLUCK;
+    }
+    private static final int EFFECT_SLOW_FALLING = (int)27L;
+    /**
+     * {@snippet lang=c :
+     * enum MobEffectType.EFFECT_SLOW_FALLING = 27
+     * }
+     */
+    public static int EFFECT_SLOW_FALLING() {
+        return EFFECT_SLOW_FALLING;
+    }
+    private static final int EFFECT_CONDUIT_POWER = (int)28L;
+    /**
+     * {@snippet lang=c :
+     * enum MobEffectType.EFFECT_CONDUIT_POWER = 28
+     * }
+     */
+    public static int EFFECT_CONDUIT_POWER() {
+        return EFFECT_CONDUIT_POWER;
+    }
+    private static final int EFFECT_DOLPHINS_GRACE = (int)29L;
+    /**
+     * {@snippet lang=c :
+     * enum MobEffectType.EFFECT_DOLPHINS_GRACE = 29
+     * }
+     */
+    public static int EFFECT_DOLPHINS_GRACE() {
+        return EFFECT_DOLPHINS_GRACE;
+    }
+    private static final int EFFECT_BAD_OMEN = (int)30L;
+    /**
+     * {@snippet lang=c :
+     * enum MobEffectType.EFFECT_BAD_OMEN = 30
+     * }
+     */
+    public static int EFFECT_BAD_OMEN() {
+        return EFFECT_BAD_OMEN;
+    }
+    private static final int EFFECT_HERO_OF_THE_VILLAGE = (int)31L;
+    /**
+     * {@snippet lang=c :
+     * enum MobEffectType.EFFECT_HERO_OF_THE_VILLAGE = 31
+     * }
+     */
+    public static int EFFECT_HERO_OF_THE_VILLAGE() {
+        return EFFECT_HERO_OF_THE_VILLAGE;
+    }
+    private static final int EFFECT_DARKNESS = (int)32L;
+    /**
+     * {@snippet lang=c :
+     * enum MobEffectType.EFFECT_DARKNESS = 32
+     * }
+     */
+    public static int EFFECT_DARKNESS() {
+        return EFFECT_DARKNESS;
+    }
+    private static final int EFFECT_TRIAL_OMEN = (int)33L;
+    /**
+     * {@snippet lang=c :
+     * enum MobEffectType.EFFECT_TRIAL_OMEN = 33
+     * }
+     */
+    public static int EFFECT_TRIAL_OMEN() {
+        return EFFECT_TRIAL_OMEN;
+    }
+    private static final int EFFECT_RAID_OMEN = (int)34L;
+    /**
+     * {@snippet lang=c :
+     * enum MobEffectType.EFFECT_RAID_OMEN = 34
+     * }
+     */
+    public static int EFFECT_RAID_OMEN() {
+        return EFFECT_RAID_OMEN;
+    }
+    private static final int EFFECT_WIND_CHARGED = (int)35L;
+    /**
+     * {@snippet lang=c :
+     * enum MobEffectType.EFFECT_WIND_CHARGED = 35
+     * }
+     */
+    public static int EFFECT_WIND_CHARGED() {
+        return EFFECT_WIND_CHARGED;
+    }
+    private static final int EFFECT_WEAVING = (int)36L;
+    /**
+     * {@snippet lang=c :
+     * enum MobEffectType.EFFECT_WEAVING = 36
+     * }
+     */
+    public static int EFFECT_WEAVING() {
+        return EFFECT_WEAVING;
+    }
+    private static final int EFFECT_OOZING = (int)37L;
+    /**
+     * {@snippet lang=c :
+     * enum MobEffectType.EFFECT_OOZING = 37
+     * }
+     */
+    public static int EFFECT_OOZING() {
+        return EFFECT_OOZING;
+    }
+    private static final int EFFECT_INFESTED = (int)38L;
+    /**
+     * {@snippet lang=c :
+     * enum MobEffectType.EFFECT_INFESTED = 38
+     * }
+     */
+    public static int EFFECT_INFESTED() {
+        return EFFECT_INFESTED;
+    }
+    private static final int EFFECT_BREATH_OF_THE_NAUTILUS = (int)39L;
+    /**
+     * {@snippet lang=c :
+     * enum MobEffectType.EFFECT_BREATH_OF_THE_NAUTILUS = 39
+     * }
+     */
+    public static int EFFECT_BREATH_OF_THE_NAUTILUS() {
+        return EFFECT_BREATH_OF_THE_NAUTILUS;
+    }
+    private static final int EFFECT_NUM = (int)40L;
+    /**
+     * {@snippet lang=c :
+     * enum MobEffectType.EFFECT_NUM = 40
+     * }
+     */
+    public static int EFFECT_NUM() {
+        return EFFECT_NUM;
+    }
+    private static final int POTION_WATER = (int)0L;
+    /**
+     * {@snippet lang=c :
+     * enum PotionType.POTION_WATER = 0
+     * }
+     */
+    public static int POTION_WATER() {
+        return POTION_WATER;
+    }
+    private static final int POTION_MUNDANE = (int)1L;
+    /**
+     * {@snippet lang=c :
+     * enum PotionType.POTION_MUNDANE = 1
+     * }
+     */
+    public static int POTION_MUNDANE() {
+        return POTION_MUNDANE;
+    }
+    private static final int POTION_THICK = (int)2L;
+    /**
+     * {@snippet lang=c :
+     * enum PotionType.POTION_THICK = 2
+     * }
+     */
+    public static int POTION_THICK() {
+        return POTION_THICK;
+    }
+    private static final int POTION_AWKWARD = (int)3L;
+    /**
+     * {@snippet lang=c :
+     * enum PotionType.POTION_AWKWARD = 3
+     * }
+     */
+    public static int POTION_AWKWARD() {
+        return POTION_AWKWARD;
+    }
+    private static final int POTION_NIGHT_VISION = (int)4L;
+    /**
+     * {@snippet lang=c :
+     * enum PotionType.POTION_NIGHT_VISION = 4
+     * }
+     */
+    public static int POTION_NIGHT_VISION() {
+        return POTION_NIGHT_VISION;
+    }
+    private static final int POTION_LONG_NIGHT_VISION = (int)5L;
+    /**
+     * {@snippet lang=c :
+     * enum PotionType.POTION_LONG_NIGHT_VISION = 5
+     * }
+     */
+    public static int POTION_LONG_NIGHT_VISION() {
+        return POTION_LONG_NIGHT_VISION;
+    }
+    private static final int POTION_INVISIBILITY = (int)6L;
+    /**
+     * {@snippet lang=c :
+     * enum PotionType.POTION_INVISIBILITY = 6
+     * }
+     */
+    public static int POTION_INVISIBILITY() {
+        return POTION_INVISIBILITY;
+    }
+    private static final int POTION_LONG_INVISIBILITY = (int)7L;
+    /**
+     * {@snippet lang=c :
+     * enum PotionType.POTION_LONG_INVISIBILITY = 7
+     * }
+     */
+    public static int POTION_LONG_INVISIBILITY() {
+        return POTION_LONG_INVISIBILITY;
+    }
+    private static final int POTION_LEAPING = (int)8L;
+    /**
+     * {@snippet lang=c :
+     * enum PotionType.POTION_LEAPING = 8
+     * }
+     */
+    public static int POTION_LEAPING() {
+        return POTION_LEAPING;
+    }
+    private static final int POTION_LONG_LEAPING = (int)9L;
+    /**
+     * {@snippet lang=c :
+     * enum PotionType.POTION_LONG_LEAPING = 9
+     * }
+     */
+    public static int POTION_LONG_LEAPING() {
+        return POTION_LONG_LEAPING;
+    }
+    private static final int POTION_STRONG_LEAPING = (int)10L;
+    /**
+     * {@snippet lang=c :
+     * enum PotionType.POTION_STRONG_LEAPING = 10
+     * }
+     */
+    public static int POTION_STRONG_LEAPING() {
+        return POTION_STRONG_LEAPING;
+    }
+    private static final int POTION_FIRE_RESISTANCE = (int)11L;
+    /**
+     * {@snippet lang=c :
+     * enum PotionType.POTION_FIRE_RESISTANCE = 11
+     * }
+     */
+    public static int POTION_FIRE_RESISTANCE() {
+        return POTION_FIRE_RESISTANCE;
+    }
+    private static final int POTION_LONG_FIRE_RESISTANCE = (int)12L;
+    /**
+     * {@snippet lang=c :
+     * enum PotionType.POTION_LONG_FIRE_RESISTANCE = 12
+     * }
+     */
+    public static int POTION_LONG_FIRE_RESISTANCE() {
+        return POTION_LONG_FIRE_RESISTANCE;
+    }
+    private static final int POTION_SWIFTNESS = (int)13L;
+    /**
+     * {@snippet lang=c :
+     * enum PotionType.POTION_SWIFTNESS = 13
+     * }
+     */
+    public static int POTION_SWIFTNESS() {
+        return POTION_SWIFTNESS;
+    }
+    private static final int POTION_LONG_SWIFTNESS = (int)14L;
+    /**
+     * {@snippet lang=c :
+     * enum PotionType.POTION_LONG_SWIFTNESS = 14
+     * }
+     */
+    public static int POTION_LONG_SWIFTNESS() {
+        return POTION_LONG_SWIFTNESS;
+    }
+    private static final int POTION_STRONG_SWIFTNESS = (int)15L;
+    /**
+     * {@snippet lang=c :
+     * enum PotionType.POTION_STRONG_SWIFTNESS = 15
+     * }
+     */
+    public static int POTION_STRONG_SWIFTNESS() {
+        return POTION_STRONG_SWIFTNESS;
+    }
+    private static final int POTION_SLOWNESS = (int)16L;
+    /**
+     * {@snippet lang=c :
+     * enum PotionType.POTION_SLOWNESS = 16
+     * }
+     */
+    public static int POTION_SLOWNESS() {
+        return POTION_SLOWNESS;
+    }
+    private static final int POTION_LONG_SLOWNESS = (int)17L;
+    /**
+     * {@snippet lang=c :
+     * enum PotionType.POTION_LONG_SLOWNESS = 17
+     * }
+     */
+    public static int POTION_LONG_SLOWNESS() {
+        return POTION_LONG_SLOWNESS;
+    }
+    private static final int POTION_STRONG_SLOWNESS = (int)18L;
+    /**
+     * {@snippet lang=c :
+     * enum PotionType.POTION_STRONG_SLOWNESS = 18
+     * }
+     */
+    public static int POTION_STRONG_SLOWNESS() {
+        return POTION_STRONG_SLOWNESS;
+    }
+    private static final int POTION_TURTLE_MASTER = (int)19L;
+    /**
+     * {@snippet lang=c :
+     * enum PotionType.POTION_TURTLE_MASTER = 19
+     * }
+     */
+    public static int POTION_TURTLE_MASTER() {
+        return POTION_TURTLE_MASTER;
+    }
+    private static final int POTION_LONG_TURTLE_MASTER = (int)20L;
+    /**
+     * {@snippet lang=c :
+     * enum PotionType.POTION_LONG_TURTLE_MASTER = 20
+     * }
+     */
+    public static int POTION_LONG_TURTLE_MASTER() {
+        return POTION_LONG_TURTLE_MASTER;
+    }
+    private static final int POTION_STRONG_TURTLE_MASTER = (int)21L;
+    /**
+     * {@snippet lang=c :
+     * enum PotionType.POTION_STRONG_TURTLE_MASTER = 21
+     * }
+     */
+    public static int POTION_STRONG_TURTLE_MASTER() {
+        return POTION_STRONG_TURTLE_MASTER;
+    }
+    private static final int POTION_WATER_BREATHING = (int)22L;
+    /**
+     * {@snippet lang=c :
+     * enum PotionType.POTION_WATER_BREATHING = 22
+     * }
+     */
+    public static int POTION_WATER_BREATHING() {
+        return POTION_WATER_BREATHING;
+    }
+    private static final int POTION_LONG_WATER_BREATHING = (int)23L;
+    /**
+     * {@snippet lang=c :
+     * enum PotionType.POTION_LONG_WATER_BREATHING = 23
+     * }
+     */
+    public static int POTION_LONG_WATER_BREATHING() {
+        return POTION_LONG_WATER_BREATHING;
+    }
+    private static final int POTION_HEALING = (int)24L;
+    /**
+     * {@snippet lang=c :
+     * enum PotionType.POTION_HEALING = 24
+     * }
+     */
+    public static int POTION_HEALING() {
+        return POTION_HEALING;
+    }
+    private static final int POTION_STRONG_HEALING = (int)25L;
+    /**
+     * {@snippet lang=c :
+     * enum PotionType.POTION_STRONG_HEALING = 25
+     * }
+     */
+    public static int POTION_STRONG_HEALING() {
+        return POTION_STRONG_HEALING;
+    }
+    private static final int POTION_HARMING = (int)26L;
+    /**
+     * {@snippet lang=c :
+     * enum PotionType.POTION_HARMING = 26
+     * }
+     */
+    public static int POTION_HARMING() {
+        return POTION_HARMING;
+    }
+    private static final int POTION_STRONG_HARMING = (int)27L;
+    /**
+     * {@snippet lang=c :
+     * enum PotionType.POTION_STRONG_HARMING = 27
+     * }
+     */
+    public static int POTION_STRONG_HARMING() {
+        return POTION_STRONG_HARMING;
+    }
+    private static final int POTION_POISON = (int)28L;
+    /**
+     * {@snippet lang=c :
+     * enum PotionType.POTION_POISON = 28
+     * }
+     */
+    public static int POTION_POISON() {
+        return POTION_POISON;
+    }
+    private static final int POTION_LONG_POISON = (int)29L;
+    /**
+     * {@snippet lang=c :
+     * enum PotionType.POTION_LONG_POISON = 29
+     * }
+     */
+    public static int POTION_LONG_POISON() {
+        return POTION_LONG_POISON;
+    }
+    private static final int POTION_STRONG_POISON = (int)30L;
+    /**
+     * {@snippet lang=c :
+     * enum PotionType.POTION_STRONG_POISON = 30
+     * }
+     */
+    public static int POTION_STRONG_POISON() {
+        return POTION_STRONG_POISON;
+    }
+    private static final int POTION_REGENERATION = (int)31L;
+    /**
+     * {@snippet lang=c :
+     * enum PotionType.POTION_REGENERATION = 31
+     * }
+     */
+    public static int POTION_REGENERATION() {
+        return POTION_REGENERATION;
+    }
+    private static final int POTION_LONG_REGENERATION = (int)32L;
+    /**
+     * {@snippet lang=c :
+     * enum PotionType.POTION_LONG_REGENERATION = 32
+     * }
+     */
+    public static int POTION_LONG_REGENERATION() {
+        return POTION_LONG_REGENERATION;
+    }
+    private static final int POTION_STRONG_REGENERATION = (int)33L;
+    /**
+     * {@snippet lang=c :
+     * enum PotionType.POTION_STRONG_REGENERATION = 33
+     * }
+     */
+    public static int POTION_STRONG_REGENERATION() {
+        return POTION_STRONG_REGENERATION;
+    }
+    private static final int POTION_STRENGTH = (int)34L;
+    /**
+     * {@snippet lang=c :
+     * enum PotionType.POTION_STRENGTH = 34
+     * }
+     */
+    public static int POTION_STRENGTH() {
+        return POTION_STRENGTH;
+    }
+    private static final int POTION_LONG_STRENGTH = (int)35L;
+    /**
+     * {@snippet lang=c :
+     * enum PotionType.POTION_LONG_STRENGTH = 35
+     * }
+     */
+    public static int POTION_LONG_STRENGTH() {
+        return POTION_LONG_STRENGTH;
+    }
+    private static final int POTION_STRONG_STRENGTH = (int)36L;
+    /**
+     * {@snippet lang=c :
+     * enum PotionType.POTION_STRONG_STRENGTH = 36
+     * }
+     */
+    public static int POTION_STRONG_STRENGTH() {
+        return POTION_STRONG_STRENGTH;
+    }
+    private static final int POTION_WEAKNESS = (int)37L;
+    /**
+     * {@snippet lang=c :
+     * enum PotionType.POTION_WEAKNESS = 37
+     * }
+     */
+    public static int POTION_WEAKNESS() {
+        return POTION_WEAKNESS;
+    }
+    private static final int POTION_LONG_WEAKNESS = (int)38L;
+    /**
+     * {@snippet lang=c :
+     * enum PotionType.POTION_LONG_WEAKNESS = 38
+     * }
+     */
+    public static int POTION_LONG_WEAKNESS() {
+        return POTION_LONG_WEAKNESS;
+    }
+    private static final int POTION_LUCK = (int)39L;
+    /**
+     * {@snippet lang=c :
+     * enum PotionType.POTION_LUCK = 39
+     * }
+     */
+    public static int POTION_LUCK() {
+        return POTION_LUCK;
+    }
+    private static final int POTION_SLOW_FALLING = (int)40L;
+    /**
+     * {@snippet lang=c :
+     * enum PotionType.POTION_SLOW_FALLING = 40
+     * }
+     */
+    public static int POTION_SLOW_FALLING() {
+        return POTION_SLOW_FALLING;
+    }
+    private static final int POTION_LONG_SLOW_FALLING = (int)41L;
+    /**
+     * {@snippet lang=c :
+     * enum PotionType.POTION_LONG_SLOW_FALLING = 41
+     * }
+     */
+    public static int POTION_LONG_SLOW_FALLING() {
+        return POTION_LONG_SLOW_FALLING;
+    }
+    private static final int POTION_WIND_CHARGED = (int)42L;
+    /**
+     * {@snippet lang=c :
+     * enum PotionType.POTION_WIND_CHARGED = 42
+     * }
+     */
+    public static int POTION_WIND_CHARGED() {
+        return POTION_WIND_CHARGED;
+    }
+    private static final int POTION_WEAVING = (int)43L;
+    /**
+     * {@snippet lang=c :
+     * enum PotionType.POTION_WEAVING = 43
+     * }
+     */
+    public static int POTION_WEAVING() {
+        return POTION_WEAVING;
+    }
+    private static final int POTION_OOZING = (int)44L;
+    /**
+     * {@snippet lang=c :
+     * enum PotionType.POTION_OOZING = 44
+     * }
+     */
+    public static int POTION_OOZING() {
+        return POTION_OOZING;
+    }
+    private static final int POTION_INFESTED = (int)45L;
+    /**
+     * {@snippet lang=c :
+     * enum PotionType.POTION_INFESTED = 45
+     * }
+     */
+    public static int POTION_INFESTED() {
+        return POTION_INFESTED;
+    }
+    private static final int POTION_NUM = (int)46L;
+    /**
+     * {@snippet lang=c :
+     * enum PotionType.POTION_NUM = 46
+     * }
+     */
+    public static int POTION_NUM() {
+        return POTION_NUM;
+    }
+
+    private static class MOB_EFFECTS$constants {
+        public static final SequenceLayout LAYOUT = MemoryLayout.sequenceLayout(40, MobEffect.layout());
+        public static final MemorySegment SEGMENT = SYMBOL_LOOKUP.findOrThrow("MOB_EFFECTS").reinterpret(LAYOUT.byteSize());
+    public static final MethodHandle HANDLE = LAYOUT.sliceHandle(sequenceElement());
+        public static final long[] DIMS = { 40 };
+    }
+
+    /**
+     * Layout for variable:
+     * {@snippet lang=c :
+     * extern const struct MobEffect MOB_EFFECTS[40]
+     * }
+     */
+    public static SequenceLayout MOB_EFFECTS$layout() {
+        return MOB_EFFECTS$constants.LAYOUT;
+    }
+
+    /**
+     * Dimensions for array variable:
+     * {@snippet lang=c :
+     * extern const struct MobEffect MOB_EFFECTS[40]
+     * }
+     */
+    public static long[] MOB_EFFECTS$dimensions() {
+        return MOB_EFFECTS$constants.DIMS;
+    }
+
+    /**
+     * Getter for variable:
+     * {@snippet lang=c :
+     * extern const struct MobEffect MOB_EFFECTS[40]
+     * }
+     */
+    public static MemorySegment MOB_EFFECTS() {
+        return MOB_EFFECTS$constants.SEGMENT;
+    }
+
+    /**
+     * Setter for variable:
+     * {@snippet lang=c :
+     * extern const struct MobEffect MOB_EFFECTS[40]
+     * }
+     */
+    public static void MOB_EFFECTS(MemorySegment varValue) {
+        MemorySegment.copy(varValue, 0L, MOB_EFFECTS$constants.SEGMENT, 0L, MOB_EFFECTS$constants.LAYOUT.byteSize());
+    }
+
+    /**
+     * Indexed getter for variable:
+     * {@snippet lang=c :
+     * extern const struct MobEffect MOB_EFFECTS[40]
+     * }
+     */
+    public static MemorySegment MOB_EFFECTS(long index0) {
+        try {
+            return (MemorySegment)MOB_EFFECTS$constants.HANDLE.invokeExact(MOB_EFFECTS$constants.SEGMENT, 0L, index0);
+        } catch (Error | RuntimeException ex) {
+            throw ex;
+        } catch (Throwable ex$) {
+            throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    /**
+     * Indexed setter for variable:
+     * {@snippet lang=c :
+     * extern const struct MobEffect MOB_EFFECTS[40]
+     * }
+     */
+    public static void MOB_EFFECTS(long index0, MemorySegment varValue) {
+        MemorySegment.copy(varValue, 0L, MOB_EFFECTS(index0), 0L, MobEffect.layout().byteSize());
+    }
+
+    private static class POTIONS$constants {
+        public static final SequenceLayout LAYOUT = MemoryLayout.sequenceLayout(46, Potion.layout());
+        public static final MemorySegment SEGMENT = SYMBOL_LOOKUP.findOrThrow("POTIONS").reinterpret(LAYOUT.byteSize());
+    public static final MethodHandle HANDLE = LAYOUT.sliceHandle(sequenceElement());
+        public static final long[] DIMS = { 46 };
+    }
+
+    /**
+     * Layout for variable:
+     * {@snippet lang=c :
+     * extern const struct Potion POTIONS[46]
+     * }
+     */
+    public static SequenceLayout POTIONS$layout() {
+        return POTIONS$constants.LAYOUT;
+    }
+
+    /**
+     * Dimensions for array variable:
+     * {@snippet lang=c :
+     * extern const struct Potion POTIONS[46]
+     * }
+     */
+    public static long[] POTIONS$dimensions() {
+        return POTIONS$constants.DIMS;
+    }
+
+    /**
+     * Getter for variable:
+     * {@snippet lang=c :
+     * extern const struct Potion POTIONS[46]
+     * }
+     */
+    public static MemorySegment POTIONS() {
+        return POTIONS$constants.SEGMENT;
+    }
+
+    /**
+     * Setter for variable:
+     * {@snippet lang=c :
+     * extern const struct Potion POTIONS[46]
+     * }
+     */
+    public static void POTIONS(MemorySegment varValue) {
+        MemorySegment.copy(varValue, 0L, POTIONS$constants.SEGMENT, 0L, POTIONS$constants.LAYOUT.byteSize());
+    }
+
+    /**
+     * Indexed getter for variable:
+     * {@snippet lang=c :
+     * extern const struct Potion POTIONS[46]
+     * }
+     */
+    public static MemorySegment POTIONS(long index0) {
+        try {
+            return (MemorySegment)POTIONS$constants.HANDLE.invokeExact(POTIONS$constants.SEGMENT, 0L, index0);
+        } catch (Error | RuntimeException ex) {
+            throw ex;
+        } catch (Throwable ex$) {
+            throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    /**
+     * Indexed setter for variable:
+     * {@snippet lang=c :
+     * extern const struct Potion POTIONS[46]
+     * }
+     */
+    public static void POTIONS(long index0, MemorySegment varValue) {
+        MemorySegment.copy(varValue, 0L, POTIONS(index0), 0L, Potion.layout().byteSize());
+    }
+
+    private static class create_random_chance {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
+            Cubiomes.C_POINTER,
+            Cubiomes.C_FLOAT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("create_random_chance");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * void create_random_chance(LootItemCondition *lic, float chance)
+     * }
+     */
+    public static FunctionDescriptor create_random_chance$descriptor() {
+        return create_random_chance.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * void create_random_chance(LootItemCondition *lic, float chance)
+     * }
+     */
+    public static MethodHandle create_random_chance$handle() {
+        return create_random_chance.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * void create_random_chance(LootItemCondition *lic, float chance)
+     * }
+     */
+    public static MemorySegment create_random_chance$address() {
+        return create_random_chance.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * void create_random_chance(LootItemCondition *lic, float chance)
+     * }
+     */
+    public static void create_random_chance(MemorySegment lic, float chance) {
+        var mh$ = create_random_chance.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("create_random_chance", lic, chance);
+            }
+            mh$.invokeExact(lic, chance);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class create_set_count {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("create_set_count");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * void create_set_count(LootFunction *lf, const int min, const int max)
+     * }
+     */
+    public static FunctionDescriptor create_set_count$descriptor() {
+        return create_set_count.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * void create_set_count(LootFunction *lf, const int min, const int max)
+     * }
+     */
+    public static MethodHandle create_set_count$handle() {
+        return create_set_count.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * void create_set_count(LootFunction *lf, const int min, const int max)
+     * }
+     */
+    public static MemorySegment create_set_count$address() {
+        return create_set_count.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * void create_set_count(LootFunction *lf, const int min, const int max)
+     * }
+     */
+    public static void create_set_count(MemorySegment lf, int min, int max) {
+        var mh$ = create_set_count.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("create_set_count", lf, min, max);
+            }
+            mh$.invokeExact(lf, min, max);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class create_set_effect {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("create_set_effect");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * void create_set_effect(LootFunction *lf, const int count, const MobEffectEntry mobEffects[])
+     * }
+     */
+    public static FunctionDescriptor create_set_effect$descriptor() {
+        return create_set_effect.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * void create_set_effect(LootFunction *lf, const int count, const MobEffectEntry mobEffects[])
+     * }
+     */
+    public static MethodHandle create_set_effect$handle() {
+        return create_set_effect.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * void create_set_effect(LootFunction *lf, const int count, const MobEffectEntry mobEffects[])
+     * }
+     */
+    public static MemorySegment create_set_effect$address() {
+        return create_set_effect.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * void create_set_effect(LootFunction *lf, const int count, const MobEffectEntry mobEffects[])
+     * }
+     */
+    public static void create_set_effect(MemorySegment lf, int count, MemorySegment mobEffects) {
+        var mh$ = create_set_effect.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("create_set_effect", lf, count, mobEffects);
+            }
+            mh$.invokeExact(lf, count, mobEffects);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class create_set_potion {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
+            Cubiomes.C_POINTER,
+            Cubiomes.C_POINTER
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("create_set_potion");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * void create_set_potion(LootFunction *lf, const Potion *potion)
+     * }
+     */
+    public static FunctionDescriptor create_set_potion$descriptor() {
+        return create_set_potion.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * void create_set_potion(LootFunction *lf, const Potion *potion)
+     * }
+     */
+    public static MethodHandle create_set_potion$handle() {
+        return create_set_potion.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * void create_set_potion(LootFunction *lf, const Potion *potion)
+     * }
+     */
+    public static MemorySegment create_set_potion$address() {
+        return create_set_potion.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * void create_set_potion(LootFunction *lf, const Potion *potion)
+     * }
+     */
+    public static void create_set_potion(MemorySegment lf, MemorySegment potion) {
+        var mh$ = create_set_potion.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("create_set_potion", lf, potion);
+            }
+            mh$.invokeExact(lf, potion);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class create_set_damage {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
+            Cubiomes.C_POINTER
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("create_set_damage");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * void create_set_damage(LootFunction *lf)
+     * }
+     */
+    public static FunctionDescriptor create_set_damage$descriptor() {
+        return create_set_damage.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * void create_set_damage(LootFunction *lf)
+     * }
+     */
+    public static MethodHandle create_set_damage$handle() {
+        return create_set_damage.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * void create_set_damage(LootFunction *lf)
+     * }
+     */
+    public static MemorySegment create_set_damage$address() {
+        return create_set_damage.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * void create_set_damage(LootFunction *lf)
+     * }
+     */
+    public static void create_set_damage(MemorySegment lf) {
+        var mh$ = create_set_damage.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("create_set_damage", lf);
+            }
+            mh$.invokeExact(lf);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class create_skip_calls {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("create_skip_calls");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * void create_skip_calls(LootFunction *lf, const int skip_count)
+     * }
+     */
+    public static FunctionDescriptor create_skip_calls$descriptor() {
+        return create_skip_calls.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * void create_skip_calls(LootFunction *lf, const int skip_count)
+     * }
+     */
+    public static MethodHandle create_skip_calls$handle() {
+        return create_skip_calls.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * void create_skip_calls(LootFunction *lf, const int skip_count)
+     * }
+     */
+    public static MemorySegment create_skip_calls$address() {
+        return create_skip_calls.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * void create_skip_calls(LootFunction *lf, const int skip_count)
+     * }
+     */
+    public static void create_skip_calls(MemorySegment lf, int skip_count) {
+        var mh$ = create_skip_calls.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("create_skip_calls", lf, skip_count);
+            }
+            mh$.invokeExact(lf, skip_count);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class create_no_op {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
+            Cubiomes.C_POINTER
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("create_no_op");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * void create_no_op(LootFunction *lf)
+     * }
+     */
+    public static FunctionDescriptor create_no_op$descriptor() {
+        return create_no_op.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * void create_no_op(LootFunction *lf)
+     * }
+     */
+    public static MethodHandle create_no_op$handle() {
+        return create_no_op.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * void create_no_op(LootFunction *lf)
+     * }
+     */
+    public static MemorySegment create_no_op$address() {
+        return create_no_op.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * void create_no_op(LootFunction *lf)
+     * }
+     */
+    public static void create_no_op(MemorySegment lf) {
+        var mh$ = create_no_op.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("create_no_op", lf);
+            }
+            mh$.invokeExact(lf);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class create_enchant_randomly_one_enchant {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("create_enchant_randomly_one_enchant");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * void create_enchant_randomly_one_enchant(LootFunction *lf, const Enchantment enchantment)
+     * }
+     */
+    public static FunctionDescriptor create_enchant_randomly_one_enchant$descriptor() {
+        return create_enchant_randomly_one_enchant.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * void create_enchant_randomly_one_enchant(LootFunction *lf, const Enchantment enchantment)
+     * }
+     */
+    public static MethodHandle create_enchant_randomly_one_enchant$handle() {
+        return create_enchant_randomly_one_enchant.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * void create_enchant_randomly_one_enchant(LootFunction *lf, const Enchantment enchantment)
+     * }
+     */
+    public static MemorySegment create_enchant_randomly_one_enchant$address() {
+        return create_enchant_randomly_one_enchant.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * void create_enchant_randomly_one_enchant(LootFunction *lf, const Enchantment enchantment)
+     * }
+     */
+    public static void create_enchant_randomly_one_enchant(MemorySegment lf, int enchantment) {
+        var mh$ = create_enchant_randomly_one_enchant.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("create_enchant_randomly_one_enchant", lf, enchantment);
+            }
+            mh$.invokeExact(lf, enchantment);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class create_enchant_randomly_list {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
+            Cubiomes.C_POINTER,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("create_enchant_randomly_list");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * void create_enchant_randomly_list(LootFunction *lf, const Enchantment *list, const int list_length)
+     * }
+     */
+    public static FunctionDescriptor create_enchant_randomly_list$descriptor() {
+        return create_enchant_randomly_list.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * void create_enchant_randomly_list(LootFunction *lf, const Enchantment *list, const int list_length)
+     * }
+     */
+    public static MethodHandle create_enchant_randomly_list$handle() {
+        return create_enchant_randomly_list.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * void create_enchant_randomly_list(LootFunction *lf, const Enchantment *list, const int list_length)
+     * }
+     */
+    public static MemorySegment create_enchant_randomly_list$address() {
+        return create_enchant_randomly_list.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * void create_enchant_randomly_list(LootFunction *lf, const Enchantment *list, const int list_length)
+     * }
+     */
+    public static void create_enchant_randomly_list(MemorySegment lf, MemorySegment list, int list_length) {
+        var mh$ = create_enchant_randomly_list.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("create_enchant_randomly_list", lf, list, list_length);
+            }
+            mh$.invokeExact(lf, list, list_length);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class create_enchant_randomly {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("create_enchant_randomly");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * void create_enchant_randomly(LootFunction *lf, const int version, const ItemType item, const int isTreasure)
+     * }
+     */
+    public static FunctionDescriptor create_enchant_randomly$descriptor() {
+        return create_enchant_randomly.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * void create_enchant_randomly(LootFunction *lf, const int version, const ItemType item, const int isTreasure)
+     * }
+     */
+    public static MethodHandle create_enchant_randomly$handle() {
+        return create_enchant_randomly.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * void create_enchant_randomly(LootFunction *lf, const int version, const ItemType item, const int isTreasure)
+     * }
+     */
+    public static MemorySegment create_enchant_randomly$address() {
+        return create_enchant_randomly.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * void create_enchant_randomly(LootFunction *lf, const int version, const ItemType item, const int isTreasure)
+     * }
+     */
+    public static void create_enchant_randomly(MemorySegment lf, int version, int item, int isTreasure) {
+        var mh$ = create_enchant_randomly.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("create_enchant_randomly", lf, version, item, isTreasure);
+            }
+            mh$.invokeExact(lf, version, item, isTreasure);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class create_enchant_randomly_tag {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("create_enchant_randomly_tag");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * void create_enchant_randomly_tag(LootFunction *lf, const int version, const ItemType item, const char *tag, const int allowTreasure)
+     * }
+     */
+    public static FunctionDescriptor create_enchant_randomly_tag$descriptor() {
+        return create_enchant_randomly_tag.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * void create_enchant_randomly_tag(LootFunction *lf, const int version, const ItemType item, const char *tag, const int allowTreasure)
+     * }
+     */
+    public static MethodHandle create_enchant_randomly_tag$handle() {
+        return create_enchant_randomly_tag.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * void create_enchant_randomly_tag(LootFunction *lf, const int version, const ItemType item, const char *tag, const int allowTreasure)
+     * }
+     */
+    public static MemorySegment create_enchant_randomly_tag$address() {
+        return create_enchant_randomly_tag.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * void create_enchant_randomly_tag(LootFunction *lf, const int version, const ItemType item, const char *tag, const int allowTreasure)
+     * }
+     */
+    public static void create_enchant_randomly_tag(MemorySegment lf, int version, int item, MemorySegment tag, int allowTreasure) {
+        var mh$ = create_enchant_randomly_tag.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("create_enchant_randomly_tag", lf, version, item, tag, allowTreasure);
+            }
+            mh$.invokeExact(lf, version, item, tag, allowTreasure);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class create_enchant_with_levels {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("create_enchant_with_levels");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * void create_enchant_with_levels(LootFunction *lf, const int version, const char *item_name, const ItemType item_type, const int min_level, const int max_level, const int isTreasure)
+     * }
+     */
+    public static FunctionDescriptor create_enchant_with_levels$descriptor() {
+        return create_enchant_with_levels.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * void create_enchant_with_levels(LootFunction *lf, const int version, const char *item_name, const ItemType item_type, const int min_level, const int max_level, const int isTreasure)
+     * }
+     */
+    public static MethodHandle create_enchant_with_levels$handle() {
+        return create_enchant_with_levels.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * void create_enchant_with_levels(LootFunction *lf, const int version, const char *item_name, const ItemType item_type, const int min_level, const int max_level, const int isTreasure)
+     * }
+     */
+    public static MemorySegment create_enchant_with_levels$address() {
+        return create_enchant_with_levels.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * void create_enchant_with_levels(LootFunction *lf, const int version, const char *item_name, const ItemType item_type, const int min_level, const int max_level, const int isTreasure)
+     * }
+     */
+    public static void create_enchant_with_levels(MemorySegment lf, int version, MemorySegment item_name, int item_type, int min_level, int max_level, int isTreasure) {
+        var mh$ = create_enchant_with_levels.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("create_enchant_with_levels", lf, version, item_name, item_type, min_level, max_level, isTreasure);
+            }
+            mh$.invokeExact(lf, version, item_name, item_type, min_level, max_level, isTreasure);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class create_enchant_with_levels_tag {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("create_enchant_with_levels_tag");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * void create_enchant_with_levels_tag(LootFunction *lf, const int version, const char *item_name, const ItemType item_type, const int min_level, const int max_level, const char *tag, const int allowTreasure)
+     * }
+     */
+    public static FunctionDescriptor create_enchant_with_levels_tag$descriptor() {
+        return create_enchant_with_levels_tag.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * void create_enchant_with_levels_tag(LootFunction *lf, const int version, const char *item_name, const ItemType item_type, const int min_level, const int max_level, const char *tag, const int allowTreasure)
+     * }
+     */
+    public static MethodHandle create_enchant_with_levels_tag$handle() {
+        return create_enchant_with_levels_tag.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * void create_enchant_with_levels_tag(LootFunction *lf, const int version, const char *item_name, const ItemType item_type, const int min_level, const int max_level, const char *tag, const int allowTreasure)
+     * }
+     */
+    public static MemorySegment create_enchant_with_levels_tag$address() {
+        return create_enchant_with_levels_tag.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * void create_enchant_with_levels_tag(LootFunction *lf, const int version, const char *item_name, const ItemType item_type, const int min_level, const int max_level, const char *tag, const int allowTreasure)
+     * }
+     */
+    public static void create_enchant_with_levels_tag(MemorySegment lf, int version, MemorySegment item_name, int item_type, int min_level, int max_level, MemorySegment tag, int allowTreasure) {
+        var mh$ = create_enchant_with_levels_tag.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("create_enchant_with_levels_tag", lf, version, item_name, item_type, min_level, max_level, tag, allowTreasure);
+            }
+            mh$.invokeExact(lf, version, item_name, item_type, min_level, max_level, tag, allowTreasure);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class create_set_enchantments {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
+            Cubiomes.C_POINTER,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("create_set_enchantments");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * void create_set_enchantments(LootFunction *lf, const Enchantment *enchantments, const int *levels, const int list_length)
+     * }
+     */
+    public static FunctionDescriptor create_set_enchantments$descriptor() {
+        return create_set_enchantments.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * void create_set_enchantments(LootFunction *lf, const Enchantment *enchantments, const int *levels, const int list_length)
+     * }
+     */
+    public static MethodHandle create_set_enchantments$handle() {
+        return create_set_enchantments.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * void create_set_enchantments(LootFunction *lf, const Enchantment *enchantments, const int *levels, const int list_length)
+     * }
+     */
+    public static MemorySegment create_set_enchantments$address() {
+        return create_set_enchantments.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * void create_set_enchantments(LootFunction *lf, const Enchantment *enchantments, const int *levels, const int list_length)
+     * }
+     */
+    public static void create_set_enchantments(MemorySegment lf, MemorySegment enchantments, MemorySegment levels, int list_length) {
+        var mh$ = create_set_enchantments.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("create_set_enchantments", lf, enchantments, levels, list_length);
+            }
+            mh$.invokeExact(lf, enchantments, levels, list_length);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class get_enchantment_name {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("get_enchantment_name");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * const char *get_enchantment_name(const Enchantment enchantment)
+     * }
+     */
+    public static FunctionDescriptor get_enchantment_name$descriptor() {
+        return get_enchantment_name.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * const char *get_enchantment_name(const Enchantment enchantment)
+     * }
+     */
+    public static MethodHandle get_enchantment_name$handle() {
+        return get_enchantment_name.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * const char *get_enchantment_name(const Enchantment enchantment)
+     * }
+     */
+    public static MemorySegment get_enchantment_name$address() {
+        return get_enchantment_name.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * const char *get_enchantment_name(const Enchantment enchantment)
+     * }
+     */
+    public static MemorySegment get_enchantment_name(int enchantment) {
+        var mh$ = get_enchantment_name.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("get_enchantment_name", enchantment);
+            }
+            return (MemorySegment)mh$.invokeExact(enchantment);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * void test_enchant_vec()
+     * }
+     */
+    public static class test_enchant_vec {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.ofVoid(        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("test_enchant_vec");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private test_enchant_vec(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * void test_enchant_vec()
+         * }
+         */
+        public static test_enchant_vec makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new test_enchant_vec(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public void apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("test_enchant_vec", x0);
+                }
+                 spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+    private static final int GENERATE_NATURAL = (int)0L;
+    /**
+     * {@snippet lang=c :
+     * enum GenerationMode.GENERATE_NATURAL = 0
+     * }
+     */
+    public static int GENERATE_NATURAL() {
+        return GENERATE_NATURAL;
+    }
+    private static final int GENERATE_INDEXED = (int)1L;
+    /**
+     * {@snippet lang=c :
+     * enum GenerationMode.GENERATE_INDEXED = 1
+     * }
+     */
+    public static int GENERATE_INDEXED() {
+        return GENERATE_INDEXED;
+    }
+    private static final int GENERATE_AGGREGATED = (int)2L;
+    /**
+     * {@snippet lang=c :
+     * enum GenerationMode.GENERATE_AGGREGATED = 2
+     * }
+     */
+    public static int GENERATE_AGGREGATED() {
+        return GENERATE_AGGREGATED;
+    }
+    private static final int SKIP_ENCHANTMENTS = (int)4L;
+    /**
+     * {@snippet lang=c :
+     * enum GenerationMode.SKIP_ENCHANTMENTS = 4
+     * }
+     */
+    public static int SKIP_ENCHANTMENTS() {
+        return SKIP_ENCHANTMENTS;
+    }
+    private static final int STOP_AT_PREDICATE_MATCH = (int)8L;
+    /**
+     * {@snippet lang=c :
+     * enum GenerationMode.STOP_AT_PREDICATE_MATCH = 8
+     * }
+     */
+    public static int STOP_AT_PREDICATE_MATCH() {
+        return STOP_AT_PREDICATE_MATCH;
+    }
+
+    private static class set_loot_prng_type {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("set_loot_prng_type");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * void set_loot_prng_type(LootTableContext *context, int type)
+     * }
+     */
+    public static FunctionDescriptor set_loot_prng_type$descriptor() {
+        return set_loot_prng_type.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * void set_loot_prng_type(LootTableContext *context, int type)
+     * }
+     */
+    public static MethodHandle set_loot_prng_type$handle() {
+        return set_loot_prng_type.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * void set_loot_prng_type(LootTableContext *context, int type)
+     * }
+     */
+    public static MemorySegment set_loot_prng_type$address() {
+        return set_loot_prng_type.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * void set_loot_prng_type(LootTableContext *context, int type)
+     * }
+     */
+    public static void set_loot_prng_type(MemorySegment context, int type) {
+        var mh$ = set_loot_prng_type.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("set_loot_prng_type", context, type);
+            }
+            mh$.invokeExact(context, type);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class set_loot_seed {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
+            Cubiomes.C_POINTER,
+            Cubiomes.C_LONG
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("set_loot_seed");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * void set_loot_seed(LootTableContext *context, uint64_t seed)
+     * }
+     */
+    public static FunctionDescriptor set_loot_seed$descriptor() {
+        return set_loot_seed.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * void set_loot_seed(LootTableContext *context, uint64_t seed)
+     * }
+     */
+    public static MethodHandle set_loot_seed$handle() {
+        return set_loot_seed.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * void set_loot_seed(LootTableContext *context, uint64_t seed)
+     * }
+     */
+    public static MemorySegment set_loot_seed$address() {
+        return set_loot_seed.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * void set_loot_seed(LootTableContext *context, uint64_t seed)
+     * }
+     */
+    public static void set_loot_seed(MemorySegment context, long seed) {
+        var mh$ = set_loot_seed.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("set_loot_seed", context, seed);
+            }
+            mh$.invokeExact(context, seed);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class set_internal_loot_seed {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
+            Cubiomes.C_POINTER,
+            RandomState.layout()
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("set_internal_loot_seed");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * void set_internal_loot_seed(LootTableContext *context, RandomState internal_seed)
+     * }
+     */
+    public static FunctionDescriptor set_internal_loot_seed$descriptor() {
+        return set_internal_loot_seed.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * void set_internal_loot_seed(LootTableContext *context, RandomState internal_seed)
+     * }
+     */
+    public static MethodHandle set_internal_loot_seed$handle() {
+        return set_internal_loot_seed.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * void set_internal_loot_seed(LootTableContext *context, RandomState internal_seed)
+     * }
+     */
+    public static MemorySegment set_internal_loot_seed$address() {
+        return set_internal_loot_seed.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * void set_internal_loot_seed(LootTableContext *context, RandomState internal_seed)
+     * }
+     */
+    public static void set_internal_loot_seed(MemorySegment context, MemorySegment internal_seed) {
+        var mh$ = set_internal_loot_seed.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("set_internal_loot_seed", context, internal_seed);
+            }
+            mh$.invokeExact(context, internal_seed);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class get_item_id {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_POINTER
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("get_item_id");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int get_item_id(LootTableContext *context, const char *item_name)
+     * }
+     */
+    public static FunctionDescriptor get_item_id$descriptor() {
+        return get_item_id.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int get_item_id(LootTableContext *context, const char *item_name)
+     * }
+     */
+    public static MethodHandle get_item_id$handle() {
+        return get_item_id.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int get_item_id(LootTableContext *context, const char *item_name)
+     * }
+     */
+    public static MemorySegment get_item_id$address() {
+        return get_item_id.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int get_item_id(LootTableContext *context, const char *item_name)
+     * }
+     */
+    public static int get_item_id(MemorySegment context, MemorySegment item_name) {
+        var mh$ = get_item_id.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("get_item_id", context, item_name);
+            }
+            return (int)mh$.invokeExact(context, item_name);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class get_global_item_id {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("get_global_item_id");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int get_global_item_id(LootTableContext *context, int item_id)
+     * }
+     */
+    public static FunctionDescriptor get_global_item_id$descriptor() {
+        return get_global_item_id.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int get_global_item_id(LootTableContext *context, int item_id)
+     * }
+     */
+    public static MethodHandle get_global_item_id$handle() {
+        return get_global_item_id.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int get_global_item_id(LootTableContext *context, int item_id)
+     * }
+     */
+    public static MemorySegment get_global_item_id$address() {
+        return get_global_item_id.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int get_global_item_id(LootTableContext *context, int item_id)
+     * }
+     */
+    public static int get_global_item_id(MemorySegment context, int item_id) {
+        var mh$ = get_global_item_id.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("get_global_item_id", context, item_id);
+            }
+            return (int)mh$.invokeExact(context, item_id);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class get_item_name {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_POINTER,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("get_item_name");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * const char *get_item_name(LootTableContext *context, int item_id)
+     * }
+     */
+    public static FunctionDescriptor get_item_name$descriptor() {
+        return get_item_name.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * const char *get_item_name(LootTableContext *context, int item_id)
+     * }
+     */
+    public static MethodHandle get_item_name$handle() {
+        return get_item_name.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * const char *get_item_name(LootTableContext *context, int item_id)
+     * }
+     */
+    public static MemorySegment get_item_name$address() {
+        return get_item_name.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * const char *get_item_name(LootTableContext *context, int item_id)
+     * }
+     */
+    public static MemorySegment get_item_name(MemorySegment context, int item_id) {
+        var mh$ = get_item_name.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("get_item_name", context, item_id);
+            }
+            return (MemorySegment)mh$.invokeExact(context, item_id);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class has_item {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("has_item");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int has_item(LootTableContext *context, int global_item_id)
+     * }
+     */
+    public static FunctionDescriptor has_item$descriptor() {
+        return has_item.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int has_item(LootTableContext *context, int global_item_id)
+     * }
+     */
+    public static MethodHandle has_item$handle() {
+        return has_item.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int has_item(LootTableContext *context, int global_item_id)
+     * }
+     */
+    public static MemorySegment has_item$address() {
+        return has_item.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int has_item(LootTableContext *context, int global_item_id)
+     * }
+     */
+    public static int has_item(MemorySegment context, int global_item_id) {
+        var mh$ = has_item.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("has_item", context, global_item_id);
+            }
+            return (int)mh$.invokeExact(context, global_item_id);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class generate_loot {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
+            Cubiomes.C_POINTER
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("generate_loot");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * void generate_loot(LootTableContext *context)
+     * }
+     */
+    public static FunctionDescriptor generate_loot$descriptor() {
+        return generate_loot.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * void generate_loot(LootTableContext *context)
+     * }
+     */
+    public static MethodHandle generate_loot$handle() {
+        return generate_loot.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * void generate_loot(LootTableContext *context)
+     * }
+     */
+    public static MemorySegment generate_loot$address() {
+        return generate_loot.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * void generate_loot(LootTableContext *context)
+     * }
+     */
+    public static void generate_loot(MemorySegment context) {
+        var mh$ = generate_loot.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("generate_loot", context);
+            }
+            mh$.invokeExact(context);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class init_loot_table_name {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_loot_table_name");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int init_loot_table_name(LootTableContext **context, const char *loot_table, int version)
+     * }
+     */
+    public static FunctionDescriptor init_loot_table_name$descriptor() {
+        return init_loot_table_name.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int init_loot_table_name(LootTableContext **context, const char *loot_table, int version)
+     * }
+     */
+    public static MethodHandle init_loot_table_name$handle() {
+        return init_loot_table_name.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int init_loot_table_name(LootTableContext **context, const char *loot_table, int version)
+     * }
+     */
+    public static MemorySegment init_loot_table_name$address() {
+        return init_loot_table_name.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int init_loot_table_name(LootTableContext **context, const char *loot_table, int version)
+     * }
+     */
+    public static int init_loot_table_name(MemorySegment context, MemorySegment loot_table, int version) {
+        var mh$ = init_loot_table_name.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("init_loot_table_name", context, loot_table, version);
+            }
+            return (int)mh$.invokeExact(context, loot_table, version);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class init_abandoned_camp_barrel {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_abandoned_camp_barrel");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int init_abandoned_camp_barrel(LootTableContext **context, int version)
+     * }
+     */
+    public static FunctionDescriptor init_abandoned_camp_barrel$descriptor() {
+        return init_abandoned_camp_barrel.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int init_abandoned_camp_barrel(LootTableContext **context, int version)
+     * }
+     */
+    public static MethodHandle init_abandoned_camp_barrel$handle() {
+        return init_abandoned_camp_barrel.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int init_abandoned_camp_barrel(LootTableContext **context, int version)
+     * }
+     */
+    public static MemorySegment init_abandoned_camp_barrel$address() {
+        return init_abandoned_camp_barrel.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int init_abandoned_camp_barrel(LootTableContext **context, int version)
+     * }
+     */
+    public static int init_abandoned_camp_barrel(MemorySegment context, int version) {
+        var mh$ = init_abandoned_camp_barrel.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("init_abandoned_camp_barrel", context, version);
+            }
+            return (int)mh$.invokeExact(context, version);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class init_abandoned_camp_common_chest {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_abandoned_camp_common_chest");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int init_abandoned_camp_common_chest(LootTableContext **context, int version)
+     * }
+     */
+    public static FunctionDescriptor init_abandoned_camp_common_chest$descriptor() {
+        return init_abandoned_camp_common_chest.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int init_abandoned_camp_common_chest(LootTableContext **context, int version)
+     * }
+     */
+    public static MethodHandle init_abandoned_camp_common_chest$handle() {
+        return init_abandoned_camp_common_chest.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int init_abandoned_camp_common_chest(LootTableContext **context, int version)
+     * }
+     */
+    public static MemorySegment init_abandoned_camp_common_chest$address() {
+        return init_abandoned_camp_common_chest.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int init_abandoned_camp_common_chest(LootTableContext **context, int version)
+     * }
+     */
+    public static int init_abandoned_camp_common_chest(MemorySegment context, int version) {
+        var mh$ = init_abandoned_camp_common_chest.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("init_abandoned_camp_common_chest", context, version);
+            }
+            return (int)mh$.invokeExact(context, version);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class init_abandoned_camp_secret_chest {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_abandoned_camp_secret_chest");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int init_abandoned_camp_secret_chest(LootTableContext **context, int version)
+     * }
+     */
+    public static FunctionDescriptor init_abandoned_camp_secret_chest$descriptor() {
+        return init_abandoned_camp_secret_chest.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int init_abandoned_camp_secret_chest(LootTableContext **context, int version)
+     * }
+     */
+    public static MethodHandle init_abandoned_camp_secret_chest$handle() {
+        return init_abandoned_camp_secret_chest.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int init_abandoned_camp_secret_chest(LootTableContext **context, int version)
+     * }
+     */
+    public static MemorySegment init_abandoned_camp_secret_chest$address() {
+        return init_abandoned_camp_secret_chest.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int init_abandoned_camp_secret_chest(LootTableContext **context, int version)
+     * }
+     */
+    public static int init_abandoned_camp_secret_chest(MemorySegment context, int version) {
+        var mh$ = init_abandoned_camp_secret_chest.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("init_abandoned_camp_secret_chest", context, version);
+            }
+            return (int)mh$.invokeExact(context, version);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class init_bastion_bridge {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_bastion_bridge");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int init_bastion_bridge(LootTableContext **context, int version)
+     * }
+     */
+    public static FunctionDescriptor init_bastion_bridge$descriptor() {
+        return init_bastion_bridge.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int init_bastion_bridge(LootTableContext **context, int version)
+     * }
+     */
+    public static MethodHandle init_bastion_bridge$handle() {
+        return init_bastion_bridge.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int init_bastion_bridge(LootTableContext **context, int version)
+     * }
+     */
+    public static MemorySegment init_bastion_bridge$address() {
+        return init_bastion_bridge.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int init_bastion_bridge(LootTableContext **context, int version)
+     * }
+     */
+    public static int init_bastion_bridge(MemorySegment context, int version) {
+        var mh$ = init_bastion_bridge.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("init_bastion_bridge", context, version);
+            }
+            return (int)mh$.invokeExact(context, version);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class init_bastion_other {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_bastion_other");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int init_bastion_other(LootTableContext **context, int version)
+     * }
+     */
+    public static FunctionDescriptor init_bastion_other$descriptor() {
+        return init_bastion_other.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int init_bastion_other(LootTableContext **context, int version)
+     * }
+     */
+    public static MethodHandle init_bastion_other$handle() {
+        return init_bastion_other.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int init_bastion_other(LootTableContext **context, int version)
+     * }
+     */
+    public static MemorySegment init_bastion_other$address() {
+        return init_bastion_other.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int init_bastion_other(LootTableContext **context, int version)
+     * }
+     */
+    public static int init_bastion_other(MemorySegment context, int version) {
+        var mh$ = init_bastion_other.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("init_bastion_other", context, version);
+            }
+            return (int)mh$.invokeExact(context, version);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class init_buried_treasure {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_buried_treasure");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int init_buried_treasure(LootTableContext **context, int version)
+     * }
+     */
+    public static FunctionDescriptor init_buried_treasure$descriptor() {
+        return init_buried_treasure.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int init_buried_treasure(LootTableContext **context, int version)
+     * }
+     */
+    public static MethodHandle init_buried_treasure$handle() {
+        return init_buried_treasure.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int init_buried_treasure(LootTableContext **context, int version)
+     * }
+     */
+    public static MemorySegment init_buried_treasure$address() {
+        return init_buried_treasure.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int init_buried_treasure(LootTableContext **context, int version)
+     * }
+     */
+    public static int init_buried_treasure(MemorySegment context, int version) {
+        var mh$ = init_buried_treasure.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("init_buried_treasure", context, version);
+            }
+            return (int)mh$.invokeExact(context, version);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class init_desert_pyramid {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_desert_pyramid");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int init_desert_pyramid(LootTableContext **context, int version)
+     * }
+     */
+    public static FunctionDescriptor init_desert_pyramid$descriptor() {
+        return init_desert_pyramid.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int init_desert_pyramid(LootTableContext **context, int version)
+     * }
+     */
+    public static MethodHandle init_desert_pyramid$handle() {
+        return init_desert_pyramid.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int init_desert_pyramid(LootTableContext **context, int version)
+     * }
+     */
+    public static MemorySegment init_desert_pyramid$address() {
+        return init_desert_pyramid.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int init_desert_pyramid(LootTableContext **context, int version)
+     * }
+     */
+    public static int init_desert_pyramid(MemorySegment context, int version) {
+        var mh$ = init_desert_pyramid.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("init_desert_pyramid", context, version);
+            }
+            return (int)mh$.invokeExact(context, version);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
 
     private static class init_end_city_treasure {
         public static final FunctionDescriptor DESC = FunctionDescriptor.of(
@@ -628,6 +3544,1101 @@ public class Cubiomes extends Cubiomes_1 {
         }
     }
 
+    private static class init_stronghold_corridor {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_stronghold_corridor");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int init_stronghold_corridor(LootTableContext **context, int version)
+     * }
+     */
+    public static FunctionDescriptor init_stronghold_corridor$descriptor() {
+        return init_stronghold_corridor.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int init_stronghold_corridor(LootTableContext **context, int version)
+     * }
+     */
+    public static MethodHandle init_stronghold_corridor$handle() {
+        return init_stronghold_corridor.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int init_stronghold_corridor(LootTableContext **context, int version)
+     * }
+     */
+    public static MemorySegment init_stronghold_corridor$address() {
+        return init_stronghold_corridor.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int init_stronghold_corridor(LootTableContext **context, int version)
+     * }
+     */
+    public static int init_stronghold_corridor(MemorySegment context, int version) {
+        var mh$ = init_stronghold_corridor.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("init_stronghold_corridor", context, version);
+            }
+            return (int)mh$.invokeExact(context, version);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class init_stronghold_crossing {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_stronghold_crossing");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int init_stronghold_crossing(LootTableContext **context, int version)
+     * }
+     */
+    public static FunctionDescriptor init_stronghold_crossing$descriptor() {
+        return init_stronghold_crossing.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int init_stronghold_crossing(LootTableContext **context, int version)
+     * }
+     */
+    public static MethodHandle init_stronghold_crossing$handle() {
+        return init_stronghold_crossing.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int init_stronghold_crossing(LootTableContext **context, int version)
+     * }
+     */
+    public static MemorySegment init_stronghold_crossing$address() {
+        return init_stronghold_crossing.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int init_stronghold_crossing(LootTableContext **context, int version)
+     * }
+     */
+    public static int init_stronghold_crossing(MemorySegment context, int version) {
+        var mh$ = init_stronghold_crossing.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("init_stronghold_crossing", context, version);
+            }
+            return (int)mh$.invokeExact(context, version);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class init_stronghold_library {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_stronghold_library");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int init_stronghold_library(LootTableContext **context, int version)
+     * }
+     */
+    public static FunctionDescriptor init_stronghold_library$descriptor() {
+        return init_stronghold_library.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int init_stronghold_library(LootTableContext **context, int version)
+     * }
+     */
+    public static MethodHandle init_stronghold_library$handle() {
+        return init_stronghold_library.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int init_stronghold_library(LootTableContext **context, int version)
+     * }
+     */
+    public static MemorySegment init_stronghold_library$address() {
+        return init_stronghold_library.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int init_stronghold_library(LootTableContext **context, int version)
+     * }
+     */
+    public static int init_stronghold_library(MemorySegment context, int version) {
+        var mh$ = init_stronghold_library.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("init_stronghold_library", context, version);
+            }
+            return (int)mh$.invokeExact(context, version);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class init_reward {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_reward");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int init_reward(LootTableContext **context, int version)
+     * }
+     */
+    public static FunctionDescriptor init_reward$descriptor() {
+        return init_reward.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int init_reward(LootTableContext **context, int version)
+     * }
+     */
+    public static MethodHandle init_reward$handle() {
+        return init_reward.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int init_reward(LootTableContext **context, int version)
+     * }
+     */
+    public static MemorySegment init_reward$address() {
+        return init_reward.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int init_reward(LootTableContext **context, int version)
+     * }
+     */
+    public static int init_reward(MemorySegment context, int version) {
+        var mh$ = init_reward.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("init_reward", context, version);
+            }
+            return (int)mh$.invokeExact(context, version);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class init_reward_common {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_reward_common");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int init_reward_common(LootTableContext **context, int version)
+     * }
+     */
+    public static FunctionDescriptor init_reward_common$descriptor() {
+        return init_reward_common.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int init_reward_common(LootTableContext **context, int version)
+     * }
+     */
+    public static MethodHandle init_reward_common$handle() {
+        return init_reward_common.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int init_reward_common(LootTableContext **context, int version)
+     * }
+     */
+    public static MemorySegment init_reward_common$address() {
+        return init_reward_common.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int init_reward_common(LootTableContext **context, int version)
+     * }
+     */
+    public static int init_reward_common(MemorySegment context, int version) {
+        var mh$ = init_reward_common.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("init_reward_common", context, version);
+            }
+            return (int)mh$.invokeExact(context, version);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class init_reward_ominous {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_reward_ominous");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int init_reward_ominous(LootTableContext **context, int version)
+     * }
+     */
+    public static FunctionDescriptor init_reward_ominous$descriptor() {
+        return init_reward_ominous.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int init_reward_ominous(LootTableContext **context, int version)
+     * }
+     */
+    public static MethodHandle init_reward_ominous$handle() {
+        return init_reward_ominous.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int init_reward_ominous(LootTableContext **context, int version)
+     * }
+     */
+    public static MemorySegment init_reward_ominous$address() {
+        return init_reward_ominous.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int init_reward_ominous(LootTableContext **context, int version)
+     * }
+     */
+    public static int init_reward_ominous(MemorySegment context, int version) {
+        var mh$ = init_reward_ominous.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("init_reward_ominous", context, version);
+            }
+            return (int)mh$.invokeExact(context, version);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class init_reward_ominous_common {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_reward_ominous_common");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int init_reward_ominous_common(LootTableContext **context, int version)
+     * }
+     */
+    public static FunctionDescriptor init_reward_ominous_common$descriptor() {
+        return init_reward_ominous_common.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int init_reward_ominous_common(LootTableContext **context, int version)
+     * }
+     */
+    public static MethodHandle init_reward_ominous_common$handle() {
+        return init_reward_ominous_common.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int init_reward_ominous_common(LootTableContext **context, int version)
+     * }
+     */
+    public static MemorySegment init_reward_ominous_common$address() {
+        return init_reward_ominous_common.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int init_reward_ominous_common(LootTableContext **context, int version)
+     * }
+     */
+    public static int init_reward_ominous_common(MemorySegment context, int version) {
+        var mh$ = init_reward_ominous_common.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("init_reward_ominous_common", context, version);
+            }
+            return (int)mh$.invokeExact(context, version);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class init_reward_ominous_rare {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_reward_ominous_rare");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int init_reward_ominous_rare(LootTableContext **context, int version)
+     * }
+     */
+    public static FunctionDescriptor init_reward_ominous_rare$descriptor() {
+        return init_reward_ominous_rare.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int init_reward_ominous_rare(LootTableContext **context, int version)
+     * }
+     */
+    public static MethodHandle init_reward_ominous_rare$handle() {
+        return init_reward_ominous_rare.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int init_reward_ominous_rare(LootTableContext **context, int version)
+     * }
+     */
+    public static MemorySegment init_reward_ominous_rare$address() {
+        return init_reward_ominous_rare.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int init_reward_ominous_rare(LootTableContext **context, int version)
+     * }
+     */
+    public static int init_reward_ominous_rare(MemorySegment context, int version) {
+        var mh$ = init_reward_ominous_rare.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("init_reward_ominous_rare", context, version);
+            }
+            return (int)mh$.invokeExact(context, version);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class init_reward_ominous_unique {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_reward_ominous_unique");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int init_reward_ominous_unique(LootTableContext **context, int version)
+     * }
+     */
+    public static FunctionDescriptor init_reward_ominous_unique$descriptor() {
+        return init_reward_ominous_unique.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int init_reward_ominous_unique(LootTableContext **context, int version)
+     * }
+     */
+    public static MethodHandle init_reward_ominous_unique$handle() {
+        return init_reward_ominous_unique.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int init_reward_ominous_unique(LootTableContext **context, int version)
+     * }
+     */
+    public static MemorySegment init_reward_ominous_unique$address() {
+        return init_reward_ominous_unique.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int init_reward_ominous_unique(LootTableContext **context, int version)
+     * }
+     */
+    public static int init_reward_ominous_unique(MemorySegment context, int version) {
+        var mh$ = init_reward_ominous_unique.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("init_reward_ominous_unique", context, version);
+            }
+            return (int)mh$.invokeExact(context, version);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class init_reward_rare {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_reward_rare");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int init_reward_rare(LootTableContext **context, int version)
+     * }
+     */
+    public static FunctionDescriptor init_reward_rare$descriptor() {
+        return init_reward_rare.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int init_reward_rare(LootTableContext **context, int version)
+     * }
+     */
+    public static MethodHandle init_reward_rare$handle() {
+        return init_reward_rare.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int init_reward_rare(LootTableContext **context, int version)
+     * }
+     */
+    public static MemorySegment init_reward_rare$address() {
+        return init_reward_rare.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int init_reward_rare(LootTableContext **context, int version)
+     * }
+     */
+    public static int init_reward_rare(MemorySegment context, int version) {
+        var mh$ = init_reward_rare.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("init_reward_rare", context, version);
+            }
+            return (int)mh$.invokeExact(context, version);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class init_reward_unique {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_reward_unique");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int init_reward_unique(LootTableContext **context, int version)
+     * }
+     */
+    public static FunctionDescriptor init_reward_unique$descriptor() {
+        return init_reward_unique.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int init_reward_unique(LootTableContext **context, int version)
+     * }
+     */
+    public static MethodHandle init_reward_unique$handle() {
+        return init_reward_unique.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int init_reward_unique(LootTableContext **context, int version)
+     * }
+     */
+    public static MemorySegment init_reward_unique$address() {
+        return init_reward_unique.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int init_reward_unique(LootTableContext **context, int version)
+     * }
+     */
+    public static int init_reward_unique(MemorySegment context, int version) {
+        var mh$ = init_reward_unique.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("init_reward_unique", context, version);
+            }
+            return (int)mh$.invokeExact(context, version);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class get_item_type {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("get_item_type");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * ItemType get_item_type(const char *item_name)
+     * }
+     */
+    public static FunctionDescriptor get_item_type$descriptor() {
+        return get_item_type.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * ItemType get_item_type(const char *item_name)
+     * }
+     */
+    public static MethodHandle get_item_type$handle() {
+        return get_item_type.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * ItemType get_item_type(const char *item_name)
+     * }
+     */
+    public static MemorySegment get_item_type$address() {
+        return get_item_type.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * ItemType get_item_type(const char *item_name)
+     * }
+     */
+    public static int get_item_type(MemorySegment item_name) {
+        var mh$ = get_item_type.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("get_item_type", item_name);
+            }
+            return (int)mh$.invokeExact(item_name);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class get_mob_effect_from_name {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_POINTER,
+            Cubiomes.C_POINTER
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("get_mob_effect_from_name");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * const MobEffect *get_mob_effect_from_name(const char *mob_effect)
+     * }
+     */
+    public static FunctionDescriptor get_mob_effect_from_name$descriptor() {
+        return get_mob_effect_from_name.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * const MobEffect *get_mob_effect_from_name(const char *mob_effect)
+     * }
+     */
+    public static MethodHandle get_mob_effect_from_name$handle() {
+        return get_mob_effect_from_name.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * const MobEffect *get_mob_effect_from_name(const char *mob_effect)
+     * }
+     */
+    public static MemorySegment get_mob_effect_from_name$address() {
+        return get_mob_effect_from_name.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * const MobEffect *get_mob_effect_from_name(const char *mob_effect)
+     * }
+     */
+    public static MemorySegment get_mob_effect_from_name(MemorySegment mob_effect) {
+        var mh$ = get_mob_effect_from_name.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("get_mob_effect_from_name", mob_effect);
+            }
+            return (MemorySegment)mh$.invokeExact(mob_effect);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class get_potion_from_name {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_POINTER,
+            Cubiomes.C_POINTER
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("get_potion_from_name");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * const Potion *get_potion_from_name(const char *potion)
+     * }
+     */
+    public static FunctionDescriptor get_potion_from_name$descriptor() {
+        return get_potion_from_name.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * const Potion *get_potion_from_name(const char *potion)
+     * }
+     */
+    public static MethodHandle get_potion_from_name$handle() {
+        return get_potion_from_name.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * const Potion *get_potion_from_name(const char *potion)
+     * }
+     */
+    public static MemorySegment get_potion_from_name$address() {
+        return get_potion_from_name.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * const Potion *get_potion_from_name(const char *potion)
+     * }
+     */
+    public static MemorySegment get_potion_from_name(MemorySegment potion) {
+        var mh$ = get_potion_from_name.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("get_potion_from_name", potion);
+            }
+            return (MemorySegment)mh$.invokeExact(potion);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class get_enchantment_from_name {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("get_enchantment_from_name");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * Enchantment get_enchantment_from_name(const char *ench)
+     * }
+     */
+    public static FunctionDescriptor get_enchantment_from_name$descriptor() {
+        return get_enchantment_from_name.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * Enchantment get_enchantment_from_name(const char *ench)
+     * }
+     */
+    public static MethodHandle get_enchantment_from_name$handle() {
+        return get_enchantment_from_name.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * Enchantment get_enchantment_from_name(const char *ench)
+     * }
+     */
+    public static MemorySegment get_enchantment_from_name$address() {
+        return get_enchantment_from_name.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * Enchantment get_enchantment_from_name(const char *ench)
+     * }
+     */
+    public static int get_enchantment_from_name(MemorySegment ench) {
+        var mh$ = get_enchantment_from_name.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("get_enchantment_from_name", ench);
+            }
+            return (int)mh$.invokeExact(ench);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class merge_item_lists {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("merge_item_lists");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int merge_item_lists(LootTableContext *ctx, const LootTableContext *sub_ctx, int is_ctx_static)
+     * }
+     */
+    public static FunctionDescriptor merge_item_lists$descriptor() {
+        return merge_item_lists.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int merge_item_lists(LootTableContext *ctx, const LootTableContext *sub_ctx, int is_ctx_static)
+     * }
+     */
+    public static MethodHandle merge_item_lists$handle() {
+        return merge_item_lists.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int merge_item_lists(LootTableContext *ctx, const LootTableContext *sub_ctx, int is_ctx_static)
+     * }
+     */
+    public static MemorySegment merge_item_lists$address() {
+        return merge_item_lists.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int merge_item_lists(LootTableContext *ctx, const LootTableContext *sub_ctx, int is_ctx_static)
+     * }
+     */
+    public static int merge_item_lists(MemorySegment ctx, MemorySegment sub_ctx, int is_ctx_static) {
+        var mh$ = merge_item_lists.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("merge_item_lists", ctx, sub_ctx, is_ctx_static);
+            }
+            return (int)mh$.invokeExact(ctx, sub_ctx, is_ctx_static);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class merge_loot_pools {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            Cubiomes.C_INT,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_POINTER,
+            Cubiomes.C_INT,
+            Cubiomes.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("merge_loot_pools");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int merge_loot_pools(LootTableContext *ctx, const LootTableContext *sub_ctx, int is_ctx_static, int is_sub_ctx_static)
+     * }
+     */
+    public static FunctionDescriptor merge_loot_pools$descriptor() {
+        return merge_loot_pools.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int merge_loot_pools(LootTableContext *ctx, const LootTableContext *sub_ctx, int is_ctx_static, int is_sub_ctx_static)
+     * }
+     */
+    public static MethodHandle merge_loot_pools$handle() {
+        return merge_loot_pools.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int merge_loot_pools(LootTableContext *ctx, const LootTableContext *sub_ctx, int is_ctx_static, int is_sub_ctx_static)
+     * }
+     */
+    public static MemorySegment merge_loot_pools$address() {
+        return merge_loot_pools.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int merge_loot_pools(LootTableContext *ctx, const LootTableContext *sub_ctx, int is_ctx_static, int is_sub_ctx_static)
+     * }
+     */
+    public static int merge_loot_pools(MemorySegment ctx, MemorySegment sub_ctx, int is_ctx_static, int is_sub_ctx_static) {
+        var mh$ = merge_loot_pools.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("merge_loot_pools", ctx, sub_ctx, is_ctx_static, is_sub_ctx_static);
+            }
+            return (int)mh$.invokeExact(ctx, sub_ctx, is_ctx_static, is_sub_ctx_static);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class free_loot_function {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(
+            Cubiomes.C_POINTER
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("free_loot_function");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * void free_loot_function(LootFunction *lf)
+     * }
+     */
+    public static FunctionDescriptor free_loot_function$descriptor() {
+        return free_loot_function.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * void free_loot_function(LootFunction *lf)
+     * }
+     */
+    public static MethodHandle free_loot_function$handle() {
+        return free_loot_function.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * void free_loot_function(LootFunction *lf)
+     * }
+     */
+    public static MemorySegment free_loot_function$address() {
+        return free_loot_function.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * void free_loot_function(LootFunction *lf)
+     * }
+     */
+    public static void free_loot_function(MemorySegment lf) {
+        var mh$ = free_loot_function.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("free_loot_function", lf);
+            }
+            mh$.invokeExact(lf);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
     private static class init_loot_table {
         public static final FunctionDescriptor DESC = FunctionDescriptor.of(
             Cubiomes.C_INT,
@@ -932,6 +4943,4766 @@ public class Cubiomes extends Cubiomes_1 {
            throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_abandoned_camp_barrel_26_3()
+     * }
+     */
+    public static class init_abandoned_camp_barrel_26_3 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_abandoned_camp_barrel_26_3");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_abandoned_camp_barrel_26_3(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_abandoned_camp_barrel_26_3()
+         * }
+         */
+        public static init_abandoned_camp_barrel_26_3 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_abandoned_camp_barrel_26_3(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_abandoned_camp_barrel_26_3", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_abandoned_camp_common_chest_26_3()
+     * }
+     */
+    public static class init_abandoned_camp_common_chest_26_3 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_abandoned_camp_common_chest_26_3");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_abandoned_camp_common_chest_26_3(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_abandoned_camp_common_chest_26_3()
+         * }
+         */
+        public static init_abandoned_camp_common_chest_26_3 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_abandoned_camp_common_chest_26_3(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_abandoned_camp_common_chest_26_3", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_abandoned_camp_secret_chest_26_3()
+     * }
+     */
+    public static class init_abandoned_camp_secret_chest_26_3 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_abandoned_camp_secret_chest_26_3");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_abandoned_camp_secret_chest_26_3(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_abandoned_camp_secret_chest_26_3()
+         * }
+         */
+        public static init_abandoned_camp_secret_chest_26_3 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_abandoned_camp_secret_chest_26_3(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_abandoned_camp_secret_chest_26_3", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_bastion_bridge_1_16_1()
+     * }
+     */
+    public static class init_bastion_bridge_1_16_1 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_bastion_bridge_1_16_1");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_bastion_bridge_1_16_1(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_bastion_bridge_1_16_1()
+         * }
+         */
+        public static init_bastion_bridge_1_16_1 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_bastion_bridge_1_16_1(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_bastion_bridge_1_16_1", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_bastion_bridge_1_16_5()
+     * }
+     */
+    public static class init_bastion_bridge_1_16_5 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_bastion_bridge_1_16_5");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_bastion_bridge_1_16_5(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_bastion_bridge_1_16_5()
+         * }
+         */
+        public static init_bastion_bridge_1_16_5 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_bastion_bridge_1_16_5(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_bastion_bridge_1_16_5", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_bastion_bridge_1_20()
+     * }
+     */
+    public static class init_bastion_bridge_1_20 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_bastion_bridge_1_20");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_bastion_bridge_1_20(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_bastion_bridge_1_20()
+         * }
+         */
+        public static init_bastion_bridge_1_20 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_bastion_bridge_1_20(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_bastion_bridge_1_20", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_bastion_other_1_16_1()
+     * }
+     */
+    public static class init_bastion_other_1_16_1 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_bastion_other_1_16_1");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_bastion_other_1_16_1(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_bastion_other_1_16_1()
+         * }
+         */
+        public static init_bastion_other_1_16_1 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_bastion_other_1_16_1(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_bastion_other_1_16_1", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_bastion_other_1_16_5()
+     * }
+     */
+    public static class init_bastion_other_1_16_5 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_bastion_other_1_16_5");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_bastion_other_1_16_5(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_bastion_other_1_16_5()
+         * }
+         */
+        public static init_bastion_other_1_16_5 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_bastion_other_1_16_5(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_bastion_other_1_16_5", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_bastion_other_1_20()
+     * }
+     */
+    public static class init_bastion_other_1_20 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_bastion_other_1_20");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_bastion_other_1_20(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_bastion_other_1_20()
+         * }
+         */
+        public static init_bastion_other_1_20 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_bastion_other_1_20(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_bastion_other_1_20", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_bastion_other_1_21_1()
+     * }
+     */
+    public static class init_bastion_other_1_21_1 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_bastion_other_1_21_1");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_bastion_other_1_21_1(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_bastion_other_1_21_1()
+         * }
+         */
+        public static init_bastion_other_1_21_1 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_bastion_other_1_21_1(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_bastion_other_1_21_1", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_bastion_other_1_21_9()
+     * }
+     */
+    public static class init_bastion_other_1_21_9 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_bastion_other_1_21_9");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_bastion_other_1_21_9(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_bastion_other_1_21_9()
+         * }
+         */
+        public static init_bastion_other_1_21_9 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_bastion_other_1_21_9(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_bastion_other_1_21_9", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_buried_treasure_1_13()
+     * }
+     */
+    public static class init_buried_treasure_1_13 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_buried_treasure_1_13");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_buried_treasure_1_13(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_buried_treasure_1_13()
+         * }
+         */
+        public static init_buried_treasure_1_13 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_buried_treasure_1_13(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_buried_treasure_1_13", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_buried_treasure_1_18()
+     * }
+     */
+    public static class init_buried_treasure_1_18 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_buried_treasure_1_18");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_buried_treasure_1_18(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_buried_treasure_1_18()
+         * }
+         */
+        public static init_buried_treasure_1_18 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_buried_treasure_1_18(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_buried_treasure_1_18", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_buried_treasure_1_21_11()
+     * }
+     */
+    public static class init_buried_treasure_1_21_11 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_buried_treasure_1_21_11");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_buried_treasure_1_21_11(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_buried_treasure_1_21_11()
+         * }
+         */
+        public static init_buried_treasure_1_21_11 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_buried_treasure_1_21_11(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_buried_treasure_1_21_11", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_desert_pyramid_1_13()
+     * }
+     */
+    public static class init_desert_pyramid_1_13 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_desert_pyramid_1_13");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_desert_pyramid_1_13(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_desert_pyramid_1_13()
+         * }
+         */
+        public static init_desert_pyramid_1_13 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_desert_pyramid_1_13(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_desert_pyramid_1_13", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_desert_pyramid_1_20()
+     * }
+     */
+    public static class init_desert_pyramid_1_20 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_desert_pyramid_1_20");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_desert_pyramid_1_20(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_desert_pyramid_1_20()
+         * }
+         */
+        public static init_desert_pyramid_1_20 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_desert_pyramid_1_20(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_desert_pyramid_1_20", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_desert_pyramid_1_21_6()
+     * }
+     */
+    public static class init_desert_pyramid_1_21_6 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_desert_pyramid_1_21_6");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_desert_pyramid_1_21_6(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_desert_pyramid_1_21_6()
+         * }
+         */
+        public static init_desert_pyramid_1_21_6 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_desert_pyramid_1_21_6(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_desert_pyramid_1_21_6", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_desert_pyramid_1_21_9()
+     * }
+     */
+    public static class init_desert_pyramid_1_21_9 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_desert_pyramid_1_21_9");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_desert_pyramid_1_21_9(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_desert_pyramid_1_21_9()
+         * }
+         */
+        public static init_desert_pyramid_1_21_9 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_desert_pyramid_1_21_9(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_desert_pyramid_1_21_9", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_desert_pyramid_1_21_11()
+     * }
+     */
+    public static class init_desert_pyramid_1_21_11 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_desert_pyramid_1_21_11");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_desert_pyramid_1_21_11(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_desert_pyramid_1_21_11()
+         * }
+         */
+        public static init_desert_pyramid_1_21_11 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_desert_pyramid_1_21_11(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_desert_pyramid_1_21_11", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_end_city_treasure_1_13()
+     * }
+     */
+    public static class init_end_city_treasure_1_13 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_end_city_treasure_1_13");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_end_city_treasure_1_13(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_end_city_treasure_1_13()
+         * }
+         */
+        public static init_end_city_treasure_1_13 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_end_city_treasure_1_13(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_end_city_treasure_1_13", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_end_city_treasure_1_20()
+     * }
+     */
+    public static class init_end_city_treasure_1_20 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_end_city_treasure_1_20");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_end_city_treasure_1_20(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_end_city_treasure_1_20()
+         * }
+         */
+        public static init_end_city_treasure_1_20 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_end_city_treasure_1_20(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_end_city_treasure_1_20", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_end_city_treasure_1_21_9()
+     * }
+     */
+    public static class init_end_city_treasure_1_21_9 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_end_city_treasure_1_21_9");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_end_city_treasure_1_21_9(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_end_city_treasure_1_21_9()
+         * }
+         */
+        public static init_end_city_treasure_1_21_9 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_end_city_treasure_1_21_9(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_end_city_treasure_1_21_9", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_end_city_treasure_1_21_11()
+     * }
+     */
+    public static class init_end_city_treasure_1_21_11 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_end_city_treasure_1_21_11");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_end_city_treasure_1_21_11(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_end_city_treasure_1_21_11()
+         * }
+         */
+        public static init_end_city_treasure_1_21_11 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_end_city_treasure_1_21_11(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_end_city_treasure_1_21_11", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_igloo_chest_1_13()
+     * }
+     */
+    public static class init_igloo_chest_1_13 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_igloo_chest_1_13");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_igloo_chest_1_13(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_igloo_chest_1_13()
+         * }
+         */
+        public static init_igloo_chest_1_13 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_igloo_chest_1_13(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_igloo_chest_1_13", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_jungle_temple_1_13()
+     * }
+     */
+    public static class init_jungle_temple_1_13 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_jungle_temple_1_13");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_jungle_temple_1_13(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_jungle_temple_1_13()
+         * }
+         */
+        public static init_jungle_temple_1_13 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_jungle_temple_1_13(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_jungle_temple_1_13", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_jungle_temple_1_14()
+     * }
+     */
+    public static class init_jungle_temple_1_14 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_jungle_temple_1_14");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_jungle_temple_1_14(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_jungle_temple_1_14()
+         * }
+         */
+        public static init_jungle_temple_1_14 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_jungle_temple_1_14(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_jungle_temple_1_14", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_jungle_temple_1_20()
+     * }
+     */
+    public static class init_jungle_temple_1_20 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_jungle_temple_1_20");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_jungle_temple_1_20(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_jungle_temple_1_20()
+         * }
+         */
+        public static init_jungle_temple_1_20 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_jungle_temple_1_20(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_jungle_temple_1_20", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_jungle_temple_1_21_6()
+     * }
+     */
+    public static class init_jungle_temple_1_21_6 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_jungle_temple_1_21_6");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_jungle_temple_1_21_6(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_jungle_temple_1_21_6()
+         * }
+         */
+        public static init_jungle_temple_1_21_6 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_jungle_temple_1_21_6(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_jungle_temple_1_21_6", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_jungle_temple_1_21_9()
+     * }
+     */
+    public static class init_jungle_temple_1_21_9 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_jungle_temple_1_21_9");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_jungle_temple_1_21_9(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_jungle_temple_1_21_9()
+         * }
+         */
+        public static init_jungle_temple_1_21_9 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_jungle_temple_1_21_9(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_jungle_temple_1_21_9", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_jungle_temple_1_21_11()
+     * }
+     */
+    public static class init_jungle_temple_1_21_11 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_jungle_temple_1_21_11");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_jungle_temple_1_21_11(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_jungle_temple_1_21_11()
+         * }
+         */
+        public static init_jungle_temple_1_21_11 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_jungle_temple_1_21_11(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_jungle_temple_1_21_11", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_jungle_temple_dispenser_1_13()
+     * }
+     */
+    public static class init_jungle_temple_dispenser_1_13 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_jungle_temple_dispenser_1_13");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_jungle_temple_dispenser_1_13(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_jungle_temple_dispenser_1_13()
+         * }
+         */
+        public static init_jungle_temple_dispenser_1_13 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_jungle_temple_dispenser_1_13(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_jungle_temple_dispenser_1_13", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_nether_bridge_1_13()
+     * }
+     */
+    public static class init_nether_bridge_1_13 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_nether_bridge_1_13");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_nether_bridge_1_13(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_nether_bridge_1_13()
+         * }
+         */
+        public static init_nether_bridge_1_13 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_nether_bridge_1_13(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_nether_bridge_1_13", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_nether_bridge_1_20()
+     * }
+     */
+    public static class init_nether_bridge_1_20 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_nether_bridge_1_20");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_nether_bridge_1_20(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_nether_bridge_1_20()
+         * }
+         */
+        public static init_nether_bridge_1_20 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_nether_bridge_1_20(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_nether_bridge_1_20", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_nether_bridge_1_21_9()
+     * }
+     */
+    public static class init_nether_bridge_1_21_9 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_nether_bridge_1_21_9");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_nether_bridge_1_21_9(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_nether_bridge_1_21_9()
+         * }
+         */
+        public static init_nether_bridge_1_21_9 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_nether_bridge_1_21_9(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_nether_bridge_1_21_9", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_pillager_outpost_1_14()
+     * }
+     */
+    public static class init_pillager_outpost_1_14 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_pillager_outpost_1_14");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_pillager_outpost_1_14(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_pillager_outpost_1_14()
+         * }
+         */
+        public static init_pillager_outpost_1_14 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_pillager_outpost_1_14(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_pillager_outpost_1_14", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_pillager_outpost_1_19_2()
+     * }
+     */
+    public static class init_pillager_outpost_1_19_2 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_pillager_outpost_1_19_2");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_pillager_outpost_1_19_2(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_pillager_outpost_1_19_2()
+         * }
+         */
+        public static init_pillager_outpost_1_19_2 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_pillager_outpost_1_19_2(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_pillager_outpost_1_19_2", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_pillager_outpost_1_20()
+     * }
+     */
+    public static class init_pillager_outpost_1_20 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_pillager_outpost_1_20");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_pillager_outpost_1_20(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_pillager_outpost_1_20()
+         * }
+         */
+        public static init_pillager_outpost_1_20 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_pillager_outpost_1_20(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_pillager_outpost_1_20", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_pillager_outpost_1_21_11()
+     * }
+     */
+    public static class init_pillager_outpost_1_21_11 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_pillager_outpost_1_21_11");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_pillager_outpost_1_21_11(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_pillager_outpost_1_21_11()
+         * }
+         */
+        public static init_pillager_outpost_1_21_11 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_pillager_outpost_1_21_11(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_pillager_outpost_1_21_11", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_ruined_portal_1_16_1()
+     * }
+     */
+    public static class init_ruined_portal_1_16_1 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_ruined_portal_1_16_1");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_ruined_portal_1_16_1(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_ruined_portal_1_16_1()
+         * }
+         */
+        public static init_ruined_portal_1_16_1 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_ruined_portal_1_16_1(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_ruined_portal_1_16_1", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_ruined_portal_1_21_5()
+     * }
+     */
+    public static class init_ruined_portal_1_21_5 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_ruined_portal_1_21_5");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_ruined_portal_1_21_5(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_ruined_portal_1_21_5()
+         * }
+         */
+        public static init_ruined_portal_1_21_5 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_ruined_portal_1_21_5(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_ruined_portal_1_21_5", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_shipwreck_map_1_13()
+     * }
+     */
+    public static class init_shipwreck_map_1_13 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_shipwreck_map_1_13");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_shipwreck_map_1_13(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_shipwreck_map_1_13()
+         * }
+         */
+        public static init_shipwreck_map_1_13 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_shipwreck_map_1_13(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_shipwreck_map_1_13", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_shipwreck_map_1_18()
+     * }
+     */
+    public static class init_shipwreck_map_1_18 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_shipwreck_map_1_18");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_shipwreck_map_1_18(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_shipwreck_map_1_18()
+         * }
+         */
+        public static init_shipwreck_map_1_18 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_shipwreck_map_1_18(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_shipwreck_map_1_18", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_shipwreck_map_1_20()
+     * }
+     */
+    public static class init_shipwreck_map_1_20 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_shipwreck_map_1_20");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_shipwreck_map_1_20(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_shipwreck_map_1_20()
+         * }
+         */
+        public static init_shipwreck_map_1_20 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_shipwreck_map_1_20(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_shipwreck_map_1_20", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_shipwreck_map_1_21_11()
+     * }
+     */
+    public static class init_shipwreck_map_1_21_11 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_shipwreck_map_1_21_11");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_shipwreck_map_1_21_11(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_shipwreck_map_1_21_11()
+         * }
+         */
+        public static init_shipwreck_map_1_21_11 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_shipwreck_map_1_21_11(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_shipwreck_map_1_21_11", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_shipwreck_supply_1_13()
+     * }
+     */
+    public static class init_shipwreck_supply_1_13 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_shipwreck_supply_1_13");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_shipwreck_supply_1_13(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_shipwreck_supply_1_13()
+         * }
+         */
+        public static init_shipwreck_supply_1_13 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_shipwreck_supply_1_13(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_shipwreck_supply_1_13", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_shipwreck_supply_1_14()
+     * }
+     */
+    public static class init_shipwreck_supply_1_14 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_shipwreck_supply_1_14");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_shipwreck_supply_1_14(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_shipwreck_supply_1_14()
+         * }
+         */
+        public static init_shipwreck_supply_1_14 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_shipwreck_supply_1_14(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_shipwreck_supply_1_14", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_shipwreck_supply_1_17()
+     * }
+     */
+    public static class init_shipwreck_supply_1_17 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_shipwreck_supply_1_17");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_shipwreck_supply_1_17(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_shipwreck_supply_1_17()
+         * }
+         */
+        public static init_shipwreck_supply_1_17 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_shipwreck_supply_1_17(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_shipwreck_supply_1_17", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_shipwreck_supply_1_20()
+     * }
+     */
+    public static class init_shipwreck_supply_1_20 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_shipwreck_supply_1_20");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_shipwreck_supply_1_20(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_shipwreck_supply_1_20()
+         * }
+         */
+        public static init_shipwreck_supply_1_20 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_shipwreck_supply_1_20(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_shipwreck_supply_1_20", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_shipwreck_supply_1_21_11()
+     * }
+     */
+    public static class init_shipwreck_supply_1_21_11 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_shipwreck_supply_1_21_11");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_shipwreck_supply_1_21_11(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_shipwreck_supply_1_21_11()
+         * }
+         */
+        public static init_shipwreck_supply_1_21_11 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_shipwreck_supply_1_21_11(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_shipwreck_supply_1_21_11", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_shipwreck_treasure_1_13()
+     * }
+     */
+    public static class init_shipwreck_treasure_1_13 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_shipwreck_treasure_1_13");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_shipwreck_treasure_1_13(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_shipwreck_treasure_1_13()
+         * }
+         */
+        public static init_shipwreck_treasure_1_13 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_shipwreck_treasure_1_13(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_shipwreck_treasure_1_13", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_shipwreck_treasure_1_20()
+     * }
+     */
+    public static class init_shipwreck_treasure_1_20 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_shipwreck_treasure_1_20");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_shipwreck_treasure_1_20(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_shipwreck_treasure_1_20()
+         * }
+         */
+        public static init_shipwreck_treasure_1_20 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_shipwreck_treasure_1_20(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_shipwreck_treasure_1_20", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_shipwreck_treasure_1_21_11()
+     * }
+     */
+    public static class init_shipwreck_treasure_1_21_11 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_shipwreck_treasure_1_21_11");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_shipwreck_treasure_1_21_11(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_shipwreck_treasure_1_21_11()
+         * }
+         */
+        public static init_shipwreck_treasure_1_21_11 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_shipwreck_treasure_1_21_11(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_shipwreck_treasure_1_21_11", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_stronghold_corridor_1_13()
+     * }
+     */
+    public static class init_stronghold_corridor_1_13 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_stronghold_corridor_1_13");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_stronghold_corridor_1_13(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_stronghold_corridor_1_13()
+         * }
+         */
+        public static init_stronghold_corridor_1_13 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_stronghold_corridor_1_13(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_stronghold_corridor_1_13", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_stronghold_corridor_1_18()
+     * }
+     */
+    public static class init_stronghold_corridor_1_18 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_stronghold_corridor_1_18");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_stronghold_corridor_1_18(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_stronghold_corridor_1_18()
+         * }
+         */
+        public static init_stronghold_corridor_1_18 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_stronghold_corridor_1_18(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_stronghold_corridor_1_18", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_stronghold_corridor_1_20()
+     * }
+     */
+    public static class init_stronghold_corridor_1_20 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_stronghold_corridor_1_20");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_stronghold_corridor_1_20(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_stronghold_corridor_1_20()
+         * }
+         */
+        public static init_stronghold_corridor_1_20 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_stronghold_corridor_1_20(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_stronghold_corridor_1_20", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_stronghold_corridor_1_21_6()
+     * }
+     */
+    public static class init_stronghold_corridor_1_21_6 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_stronghold_corridor_1_21_6");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_stronghold_corridor_1_21_6(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_stronghold_corridor_1_21_6()
+         * }
+         */
+        public static init_stronghold_corridor_1_21_6 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_stronghold_corridor_1_21_6(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_stronghold_corridor_1_21_6", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_stronghold_corridor_1_21_9()
+     * }
+     */
+    public static class init_stronghold_corridor_1_21_9 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_stronghold_corridor_1_21_9");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_stronghold_corridor_1_21_9(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_stronghold_corridor_1_21_9()
+         * }
+         */
+        public static init_stronghold_corridor_1_21_9 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_stronghold_corridor_1_21_9(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_stronghold_corridor_1_21_9", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_stronghold_crossing_1_13()
+     * }
+     */
+    public static class init_stronghold_crossing_1_13 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_stronghold_crossing_1_13");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_stronghold_crossing_1_13(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_stronghold_crossing_1_13()
+         * }
+         */
+        public static init_stronghold_crossing_1_13 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_stronghold_crossing_1_13(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_stronghold_crossing_1_13", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_stronghold_library_1_13()
+     * }
+     */
+    public static class init_stronghold_library_1_13 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_stronghold_library_1_13");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_stronghold_library_1_13(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_stronghold_library_1_13()
+         * }
+         */
+        public static init_stronghold_library_1_13 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_stronghold_library_1_13(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_stronghold_library_1_13", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_stronghold_library_1_20()
+     * }
+     */
+    public static class init_stronghold_library_1_20 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_stronghold_library_1_20");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_stronghold_library_1_20(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_stronghold_library_1_20()
+         * }
+         */
+        public static init_stronghold_library_1_20 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_stronghold_library_1_20(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_stronghold_library_1_20", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_reward_1_21_1()
+     * }
+     */
+    public static class init_reward_1_21_1 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_reward_1_21_1");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_reward_1_21_1(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_reward_1_21_1()
+         * }
+         */
+        public static init_reward_1_21_1 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_reward_1_21_1(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_reward_1_21_1", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_reward_common_1_21_1()
+     * }
+     */
+    public static class init_reward_common_1_21_1 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_reward_common_1_21_1");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_reward_common_1_21_1(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_reward_common_1_21_1()
+         * }
+         */
+        public static init_reward_common_1_21_1 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_reward_common_1_21_1(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_reward_common_1_21_1", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_reward_ominous_1_21_1()
+     * }
+     */
+    public static class init_reward_ominous_1_21_1 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_reward_ominous_1_21_1");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_reward_ominous_1_21_1(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_reward_ominous_1_21_1()
+         * }
+         */
+        public static init_reward_ominous_1_21_1 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_reward_ominous_1_21_1(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_reward_ominous_1_21_1", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_reward_ominous_common_1_21_1()
+     * }
+     */
+    public static class init_reward_ominous_common_1_21_1 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_reward_ominous_common_1_21_1");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_reward_ominous_common_1_21_1(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_reward_ominous_common_1_21_1()
+         * }
+         */
+        public static init_reward_ominous_common_1_21_1 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_reward_ominous_common_1_21_1(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_reward_ominous_common_1_21_1", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_reward_ominous_rare_1_21_1()
+     * }
+     */
+    public static class init_reward_ominous_rare_1_21_1 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_reward_ominous_rare_1_21_1");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_reward_ominous_rare_1_21_1(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_reward_ominous_rare_1_21_1()
+         * }
+         */
+        public static init_reward_ominous_rare_1_21_1 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_reward_ominous_rare_1_21_1(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_reward_ominous_rare_1_21_1", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_reward_ominous_unique_1_21_1()
+     * }
+     */
+    public static class init_reward_ominous_unique_1_21_1 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_reward_ominous_unique_1_21_1");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_reward_ominous_unique_1_21_1(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_reward_ominous_unique_1_21_1()
+         * }
+         */
+        public static init_reward_ominous_unique_1_21_1 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_reward_ominous_unique_1_21_1(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_reward_ominous_unique_1_21_1", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_reward_rare_1_21_1()
+     * }
+     */
+    public static class init_reward_rare_1_21_1 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_reward_rare_1_21_1");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_reward_rare_1_21_1(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_reward_rare_1_21_1()
+         * }
+         */
+        public static init_reward_rare_1_21_1 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_reward_rare_1_21_1(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_reward_rare_1_21_1", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * LootTableContext *init_reward_unique_1_21_1()
+     * }
+     */
+    public static class init_reward_unique_1_21_1 {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                Cubiomes.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("init_reward_unique_1_21_1");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private init_reward_unique_1_21_1(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * LootTableContext *init_reward_unique_1_21_1()
+         * }
+         */
+        public static init_reward_unique_1_21_1 makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new init_reward_unique_1_21_1(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("init_reward_unique_1_21_1", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
         }
     }
     private static final long LAYER_INIT_SHA = -1L;

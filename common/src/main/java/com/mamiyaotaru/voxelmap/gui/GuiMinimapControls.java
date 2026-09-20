@@ -26,7 +26,7 @@ public class GuiMinimapControls extends GuiScreenMinimap {
 
     @Override
     public boolean keyPressed(KeyEvent keyEvent) {
-        if (this.keymapList != null && keyEvent.key() == org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE && this.keymapList.unbindEditingKey()) {
+        if (this.keymapList != null && keyEvent.key() == com.mojang.blaze3d.platform.InputConstants.KEY_ESCAPE && this.keymapList.unbindEditingKey()) {
             return true;
         }
 

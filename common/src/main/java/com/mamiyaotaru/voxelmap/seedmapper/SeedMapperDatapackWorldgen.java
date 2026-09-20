@@ -396,6 +396,7 @@ final class SeedMapperDatapackWorldgen {
                     this.registryAccess,
                     context.chunkGenerator(),
                     context.biomeSource(),
+                    context.randomState().createClimateSampler(net.minecraft.world.level.levelgen.densityfunction.SamplerContext.EMPTY_UNCACHED),
                     context.randomState(),
                     this.templateManager,
                     this.seed,
@@ -612,7 +613,7 @@ final class SeedMapperDatapackWorldgen {
                 .setMetadata(ResourceMetadata.EMPTY)
                 .pushJarResources()
                 .exposeNamespace("minecraft", "c")
-                .build(info);
+                .build(info).fullResources();
     }
 
     private static RegistryAccess.Frozen loadRegistryAccess(ResourceManager resourceManager) {
@@ -627,14 +628,17 @@ final class SeedMapperDatapackWorldgen {
                                         || Registries.BIOME.equals(key)
                                         || Registries.LEVEL_STEM.equals(key)
                                         || Registries.DIMENSION_TYPE.equals(key)
-                                        || Registries.CONFIGURED_CARVER.equals(key)
+                                        || Registries.CARVER.equals(key)
                                         || Registries.PLACED_FEATURE.equals(key)
-                                        || Registries.CONFIGURED_FEATURE.equals(key)
+                                        || Registries.FEATURE.equals(key)
                                         || Registries.PROCESSOR_LIST.equals(key)
                                         || Registries.TEMPLATE_POOL.equals(key)
                                         || Registries.NOISE_SETTINGS.equals(key)
                                         || Registries.NOISE.equals(key)
                                         || Registries.DENSITY_FUNCTION.equals(key)
+                                        || Registries.MATERIAL_RULE.equals(key)
+                                        || Registries.MATERIAL_CONDITION.equals(key)
+                                        || Registries.BLOCK_STATE_PROVIDER.equals(key)
                                         || Registries.MULTI_NOISE_BIOME_SOURCE_PARAMETER_LIST.equals(key)))
         );
         Exception lastError = null;
@@ -656,7 +660,7 @@ final class SeedMapperDatapackWorldgen {
         LayeredRegistryAccess<RegistryLayer> layered = RegistryLayer.createRegistryAccess();
         RegistryAccess.Frozen staticAccess = layered.getLayer(RegistryLayer.STATIC);
         List<HolderLookup.RegistryLookup<?>> staticLookups = staticAccess.listRegistries().collect(Collectors.toList());
-        List<RegistryDataLoader.RegistryData<?>> worldgenRegistries = filterRegistryData(RegistryDataLoader.WORLDGEN_REGISTRIES, registryFilter);
+        List<RegistryDataLoader.RegistryData<?>> worldgenRegistries = filterRegistryData(RegistryDataLoader.WORLD_REGISTRIES, registryFilter);
         RegistryAccess.Frozen worldgen = RegistryDataLoader.load(resourceManager, staticLookups, worldgenRegistries, Runnable::run).join();
         List<HolderLookup.RegistryLookup<?>> dimensionLookups = Stream.concat(staticLookups.stream(), worldgen.listRegistries()).collect(Collectors.toList());
         List<RegistryDataLoader.RegistryData<?>> dimensionRegistries = filterRegistryData(RegistryDataLoader.DIMENSION_REGISTRIES, registryFilter);
@@ -665,7 +669,7 @@ final class SeedMapperDatapackWorldgen {
         if (loadedStems.isEmpty() || loadedStems.get().keySet().isEmpty()) {
             dimensions = layered.getLayer(RegistryLayer.DIMENSIONS);
         }
-        RegistryAccess.Frozen composite = layered.replaceFrom(RegistryLayer.WORLDGEN, worldgen, dimensions).compositeAccess();
+        RegistryAccess.Frozen composite = layered.replaceFrom(RegistryLayer.WORLD, worldgen, dimensions).compositeAccess();
         try {
             List<Registry.PendingTags<?>> pendingTags = TagLoader.loadTagsForExistingRegistries(resourceManager, composite);
             for (Registry.PendingTags<?> pending : pendingTags) {
@@ -695,19 +699,29 @@ final class SeedMapperDatapackWorldgen {
                 || path.startsWith("worldgen/dimension")
                 || path.startsWith("worldgen/dimension_type")
                 || path.startsWith("worldgen/configured_carver")
+                || path.startsWith("worldgen/carver")
                 || path.startsWith("worldgen/placed_feature")
                 || path.startsWith("worldgen/configured_feature")
+                || path.startsWith("worldgen/feature")
                 || path.startsWith("worldgen/processor_list")
                 || path.startsWith("worldgen/template_pool")
+                || path.startsWith("worldgen/material_rule")
+                || path.startsWith("worldgen/material_condition")
+                || path.startsWith("worldgen/block_state_provider")
                 || path.startsWith("tags/worldgen/biome")
                 || path.startsWith("tags/biome")
                 || path.startsWith("tags/worldgen/structure")
                 || path.startsWith("tags/worldgen/structure_set")
                 || path.startsWith("tags/worldgen/configured_carver")
+                || path.startsWith("tags/worldgen/carver")
                 || path.startsWith("tags/worldgen/placed_feature")
                 || path.startsWith("tags/worldgen/configured_feature")
+                || path.startsWith("tags/worldgen/feature")
                 || path.startsWith("tags/worldgen/processor_list")
                 || path.startsWith("tags/worldgen/template_pool")
+                || path.startsWith("tags/worldgen/material_rule")
+                || path.startsWith("tags/worldgen/material_condition")
+                || path.startsWith("tags/worldgen/block_state_provider")
                 || path.startsWith("structures/"));
     }
 
@@ -740,8 +754,16 @@ final class SeedMapperDatapackWorldgen {
                 || dataPath.startsWith("worldgen/world_preset")
                 || dataPath.startsWith("worldgen/placed_feature")
                 || dataPath.startsWith("worldgen/configured_feature")
+                || dataPath.startsWith("worldgen/feature")
+                || dataPath.startsWith("worldgen/material_rule")
+                || dataPath.startsWith("worldgen/material_condition")
+                || dataPath.startsWith("worldgen/block_state_provider")
                 || dataPath.startsWith("tags/worldgen/placed_feature/")
-                || dataPath.startsWith("tags/worldgen/configured_feature/");
+                || dataPath.startsWith("tags/worldgen/configured_feature/")
+                || dataPath.startsWith("tags/worldgen/feature/")
+                || dataPath.startsWith("tags/worldgen/material_rule/")
+                || dataPath.startsWith("tags/worldgen/material_condition/")
+                || dataPath.startsWith("tags/worldgen/block_state_provider/");
     }
 
     private static boolean shouldSanitizeBiomePath(String relativePath) {
@@ -831,13 +853,13 @@ final class SeedMapperDatapackWorldgen {
         }
 
         @Override
-        public Map<Identifier, Resource> listResources(String path, Predicate<Identifier> filter) {
-            return this.delegate.listResources(path, id -> !this.deny.test(id) && filter.test(id));
+        public Map<Identifier, Resource> listResources(String path, ResourceManager.Selector filter) {
+            return this.delegate.listResources(path, id -> !this.deny.test(id) && filter.isIncluded(id));
         }
 
         @Override
-        public Map<Identifier, List<Resource>> listResourceStacks(String path, Predicate<Identifier> filter) {
-            return this.delegate.listResourceStacks(path, id -> !this.deny.test(id) && filter.test(id));
+        public Map<Identifier, List<Resource>> listResourceStacks(String path, ResourceManager.Selector filter) {
+            return this.delegate.listResourceStacks(path, id -> !this.deny.test(id) && filter.isIncluded(id));
         }
 
         @Override
@@ -877,14 +899,10 @@ final class SeedMapperDatapackWorldgen {
     private static RandomState createRandomState(ChunkGenerator chunkGenerator, RegistryAccess access, int dimensionId, long seed) {
         if (chunkGenerator instanceof net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator noiseGenerator) {
             Holder<NoiseGeneratorSettings> holder = noiseGenerator.generatorSettings();
-            Optional<ResourceKey<NoiseGeneratorSettings>> key = holder.unwrapKey();
-            if (key.isPresent()) {
-                return RandomState.create(access, key.get(), seed);
-            }
-            HolderGetter<net.minecraft.world.level.levelgen.synth.NormalNoise.NoiseParameters> noiseParams = access.lookupOrThrow(Registries.NOISE);
-            return RandomState.create(holder.value(), noiseParams, seed);
+            return RandomState.create(access.lookupOrThrow(Registries.NOISE), seed, holder.value());
         }
-        return RandomState.create(access, noiseSettingsForDimension(dimensionId), seed);
+        return RandomState.create(access.lookupOrThrow(Registries.NOISE), seed,
+                access.lookupOrThrow(Registries.NOISE_SETTINGS).getOrThrow(noiseSettingsForDimension(dimensionId)).value());
     }
 
     private static WorldgenRandom createSelectionRandom(long seed, int chunkX, int chunkZ, StructurePlacement placement) {

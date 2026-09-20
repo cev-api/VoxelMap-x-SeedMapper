@@ -1,12 +1,12 @@
 package com.mamiyaotaru.voxelmap.rendering;
 
 import com.mamiyaotaru.voxelmap.VoxelConstants;
-import com.mojang.blaze3d.GpuFormat;
-import com.mojang.blaze3d.pipeline.BlendFunction;
-import com.mojang.blaze3d.pipeline.ColorTargetState;
-import com.mojang.blaze3d.pipeline.DepthStencilState;
-import com.mojang.blaze3d.pipeline.RenderPipeline;
-import com.mojang.blaze3d.platform.CompareOp;
+import com.mojang.renderpearl.api.GpuFormat;
+import com.mojang.renderpearl.api.pipeline.BlendFunction;
+import com.mojang.renderpearl.api.pipeline.ColorTargetState;
+import com.mojang.renderpearl.api.pipeline.CompareOp;
+import com.mojang.renderpearl.api.pipeline.DepthStencilState;
+import com.mojang.renderpearl.api.pipeline.RenderPipeline;
 import java.util.Optional;
 import net.minecraft.client.renderer.BindGroupLayouts;
 import net.minecraft.client.renderer.RenderPipelines;
@@ -14,20 +14,20 @@ import net.minecraft.resources.Identifier;
 
 public class VoxelMapPipelines {
 
-    public static final RenderPipeline GUI_TEXTURED_NO_DEPTH_TEST = RenderPipeline.builder(RenderPipelines.GUI_TEXTURED_SNIPPET)
-            .withLocation(Identifier.fromNamespaceAndPath(VoxelConstants.MOD_ID, "pipeline/gui_textured_no_depth_test"))
-            .withDepthStencilState(Optional.empty())
+    public static final RenderPipeline GUI_TEXTURED_GEQUAL_DEPTH = RenderPipeline.builder(RenderPipelines.GUI_TEXTURED_SNIPPET)
+            .withLocation(Identifier.fromNamespaceAndPath(VoxelConstants.MOD_ID, "pipeline/gui_textured_gequal_depth"))
+            .withDepthStencilState(new DepthStencilState(CompareOp.GREATER_THAN_OR_EQUAL, true))
             .build();
 
-    public static final RenderPipeline GUI_TEXTURED_LEQUAL_DEPTH_TEST = RenderPipeline.builder(RenderPipelines.GUI_TEXTURED_SNIPPET)
-            .withLocation(Identifier.fromNamespaceAndPath(VoxelConstants.MOD_ID, "pipeline/gui_textured_lequal_depth_test"))
-            .withDepthStencilState(new DepthStencilState(CompareOp.LESS_THAN_OR_EQUAL, true))
+    public static final RenderPipeline GUI_TEXTURED_ANY_DEPTH = RenderPipeline.builder(RenderPipelines.GUI_TEXTURED_SNIPPET)
+            .withLocation(Identifier.fromNamespaceAndPath(VoxelConstants.MOD_ID, "pipeline/gui_textured_any_depth"))
+            .withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, true))
             .build();
 
-    public static final RenderPipeline GUI_TEXTURED_MASKED_NO_DEPTH_TEST = RenderPipeline.builder(RenderPipelines.GUI_TEXTURED_SNIPPET)
-            .withLocation(Identifier.fromNamespaceAndPath(VoxelConstants.MOD_ID, "pipeline/gui_textured_masked_no_depth_test"))
-            .withDepthStencilState(Optional.empty())
-            .withColorTargetState(new ColorTargetState(Optional.empty(), GpuFormat.RGBA8_UNORM, ColorTargetState.WRITE_COLOR))
+    public static final RenderPipeline GUI_TEXTURED_ANY_DEPTH_MASKED = RenderPipeline.builder(RenderPipelines.GUI_TEXTURED_SNIPPET)
+            .withLocation(Identifier.fromNamespaceAndPath(VoxelConstants.MOD_ID, "pipeline/gui_textured_any_depth_masked"))
+            .withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, true))
+            .withColorTargetState(new ColorTargetState(Optional.of(BlendFunction.TRANSLUCENT), GpuFormat.RGBA8_UNORM, ColorTargetState.WRITE_COLOR))
             .build();
 
     public static final RenderPipeline WAYPOINT_TEXT_BACKGROUND = RenderPipeline.builder(RenderPipelines.GUI_SNIPPET)
@@ -38,13 +38,21 @@ public class VoxelMapPipelines {
 
     public static final RenderPipeline LINES_NO_DEPTH = RenderPipeline.builder(RenderPipelines.LINES_SNIPPET)
             .withLocation(Identifier.fromNamespaceAndPath(VoxelConstants.MOD_ID, "pipeline/seedmapper_lines_no_depth"))
+            // The overlay SubmitPass has one color attachment. LINES_SNIPPET is only
+            // a snippet and does not provide the attachment state used by the
+            // vanilla LINES pipeline, so repeat it here for the standalone pass.
+            .withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
             // ESP outlines must remain visible through world geometry.
-            .withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, true))
+            .withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
             .build();
 
     public static final RenderPipeline QUADS_NO_DEPTH = RenderPipeline.builder(RenderPipelines.DEBUG_FILLED_SNIPPET)
             .withLocation(Identifier.fromNamespaceAndPath(VoxelConstants.MOD_ID, "pipeline/seedmapper_quads_no_depth"))
-            .withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, true))
+            // This is submitted in the standalone world-overlay pass, which has
+            // one color attachment even though DEBUG_FILLED_SNIPPET is only a
+            // shader snippet and does not declare that attachment here.
+            .withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
+            .withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
             .build();
 
     public static final RenderPipeline BLOCK_GHOST_NO_DEPTH = RenderPipeline.builder(RenderPipelines.ENTITY_SNIPPET)
@@ -55,6 +63,16 @@ public class VoxelMapPipelines {
             .withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
             .withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
             .withCull(false)
+            .build();
+
+    public static final RenderPipeline TEXT_BACKGROUND_GEQUAL_DEPTH = RenderPipeline.builder(RenderPipelines.GUI_SNIPPET)
+            .withLocation(Identifier.fromNamespaceAndPath(VoxelConstants.MOD_ID, "pipeline/text_background_gequal_depth"))
+            .withDepthStencilState(new DepthStencilState(CompareOp.GREATER_THAN_OR_EQUAL, false))
+            .build();
+
+    public static final RenderPipeline TEXT_BACKGROUND_ANY_DEPTH = RenderPipeline.builder(RenderPipelines.GUI_SNIPPET)
+            .withLocation(Identifier.fromNamespaceAndPath(VoxelConstants.MOD_ID, "pipeline/text_background_any_depth"))
+            .withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
             .build();
 
     public static final RenderPipeline ENTITY_ICON = RenderPipeline.builder(RenderPipelines.ENTITY_SNIPPET)

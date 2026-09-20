@@ -33,6 +33,9 @@ import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperCompat;
 import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperCommandHandler;
 import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperImportedDatapackManager;
 import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperNative;
+import com.mamiyaotaru.voxelmap.rendering.RenderUtils;
+import com.mamiyaotaru.voxelmap.rendering.VoxelMapGuiGraphics;
+import com.mamiyaotaru.voxelmap.textures.ConfiguredDynamicTexture;
 import com.mamiyaotaru.voxelmap.textures.Sprite;
 import com.mamiyaotaru.voxelmap.textures.TextureAtlas;
 import com.mamiyaotaru.voxelmap.util.BackgroundImageInfo;
@@ -50,9 +53,8 @@ import com.mamiyaotaru.voxelmap.util.ImageUtils;
 import com.mamiyaotaru.voxelmap.rendering.VoxelMapGuiGraphics;
 import com.mamiyaotaru.voxelmap.util.TextUtils;
 import com.mamiyaotaru.voxelmap.util.Waypoint;
+import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.platform.cursor.CursorTypes;
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.textures.FilterMode;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Random;
@@ -70,7 +72,6 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.core.QuartPos;
 import net.minecraft.network.chat.Component;
@@ -86,7 +87,6 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.border.WorldBorder;
 import org.joml.Vector2f;
-import org.lwjgl.glfw.GLFW;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
@@ -323,6 +323,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     private boolean currentDragging;
     private boolean plotMode;
     private boolean plotStartSet;
+    private boolean plotClickHandled;
     private double plotStartX;
     private double plotStartZ;
     private PlotManager.Plot selectedPlot;
@@ -390,13 +391,17 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         float scale = skinImage.getWidth() / 8.0F;
         skinImage = ImageUtils.fillOutline(ImageUtils.pad(ImageUtils.scaleImage(skinImage, 2.0F / scale)), true, 1);
 
-        DynamicTexture texture = new DynamicTexture(() -> "Voxelmap player", ImageUtils.nativeImageFromBufferedImage(skinImage));
-        texture.sampler = RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR);
+        ConfiguredDynamicTexture texture = new ConfiguredDynamicTexture(() -> "Voxelmap player", ImageUtils.nativeImageFromBufferedImage(skinImage));
+        texture.setSampler(RenderUtils.getSampler(true, false));
         minecraft.getTextureManager().register(voxelmapSkinLocation, texture);
     }
 
     @Override
     public void init() {
+        String coordinateXValue = this.coordinateXInput == null ? "" : this.coordinateXInput.getValue();
+        String coordinateZValue = this.coordinateZInput == null ? "" : this.coordinateZInput.getValue();
+        String searchValue = this.waypointSearchInput == null ? "" : this.waypointSearchInput.getValue();
+
         this.oldNorth = mapOptions.oldNorth;
         this.centerAt(this.options.mapX, this.options.mapZ);
         if (!Double.isNaN(pendingCenterX) && !Double.isNaN(pendingCenterZ)) {
@@ -441,18 +446,26 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         this.coordinateZInput = new EditBox(this.getFont(), this.sideMargin + 74, 10, 68, 20, Component.literal("Z"));
         this.coordinateXInput.setMaxLength(12);
         this.coordinateZInput.setMaxLength(12);
+        this.coordinateXInput.setValue(coordinateXValue);
+        this.coordinateZInput.setValue(coordinateZValue);
         this.coordinateXInput.setHint(Component.literal("X"));
         this.coordinateZInput.setHint(Component.literal("Z"));
         this.coordinateXInput.setVisible(false);
         this.coordinateZInput.setVisible(false);
         this.coordinateXInput.active = false;
         this.coordinateZInput.active = false;
-        this.addRenderableWidget(this.coordinateXInput);
-        this.addRenderableWidget(this.coordinateZInput);
+        // These fields are drawn and routed explicitly while editing.  Registering
+        // them as normal children as well causes 26.3's Screen dispatcher to
+        // consume the click before this map can switch focus between X and Z.
+        this.coordinateLabelLeft = -1;
+        this.coordinateLabelRight = -1;
+        this.coordinateLabelTop = -1;
+        this.coordinateLabelBottom = -1;
         this.top = 32;
         this.bottom = this.getHeight() - 32;
         this.waypointSearchInput = new EditBox(this.getFont(), this.getWidth() - this.sideMargin - WAYPOINT_SEARCH_BOX_WIDTH, this.bottom - 22, WAYPOINT_SEARCH_BOX_WIDTH, 20, Component.translatable("worldmap.waypointSearch"));
         this.waypointSearchInput.setMaxLength(48);
+        this.waypointSearchInput.setValue(searchValue);
         this.waypointSearchInput.setHint(Component.translatable("worldmap.waypointSearch"));
         this.waypointSearchInput.setVisible(true);
         this.waypointSearchInput.active = true;
@@ -492,6 +505,11 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             this.mapCenterX = (float) x;
             this.mapCenterZ = (float) z;
         }
+        // Keep the persisted center in sync immediately.  The render tick also
+        // writes these values, but doing it here prevents a coordinate submit
+        // from being overwritten before the next frame is drawn.
+        this.options.mapX = (int) x;
+        this.options.mapZ = (int) z;
 
     }
 
@@ -509,14 +527,24 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                             : "worldmap.seedpreview.unavailable")));
         }
         if (this.buttonExploredChunks != null) {
+            this.buttonExploredChunks.active = this.radarOptions.showExploredChunks;
             this.buttonExploredChunks.setMessage(Component.translatable("worldmap.explored.button", I18n.get(this.options.showExploredChunks ? "options.on" : "options.off")));
         }
         if (this.buttonNewOldChunks != null) {
+            this.buttonNewOldChunks.active = this.radarOptions.showNewerNewChunks;
             this.buttonNewOldChunks.setMessage(Component.translatable("worldmap.newold.button", I18n.get(this.options.showNewOldChunks ? "options.on" : "options.off")));
         }
         if (this.buttonWorldMapEntities != null) {
+            this.buttonWorldMapEntities.active = hasWorldMapEntitySource();
             this.buttonWorldMapEntities.setMessage(Component.translatable("worldmap.entities.button", I18n.get(this.options.showWorldMapEntities ? "options.on" : "options.off")));
         }
+    }
+
+    private boolean hasWorldMapEntitySource() {
+        return this.seedMapperOptions.containerDetection
+                || this.seedMapperOptions.workstationDetection
+                || this.seedMapperOptions.redstoneDetection
+                || this.seedMapperOptions.spawnerDetection;
     }
 
     private String getWorldMapSeedFallbackText() {
@@ -589,18 +617,27 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     }
 
     private void toggleExploredChunks() {
+        if (!this.radarOptions.showExploredChunks) {
+            return;
+        }
         this.options.showExploredChunks = !this.options.showExploredChunks;
         refreshWorldMapControlLabels();
         MapSettingsManager.instance.saveAll();
     }
 
     private void toggleNewOldChunks() {
+        if (!this.radarOptions.showNewerNewChunks) {
+            return;
+        }
         this.options.showNewOldChunks = !this.options.showNewOldChunks;
         refreshWorldMapControlLabels();
         MapSettingsManager.instance.saveAll();
     }
 
     private void toggleWorldMapEntities() {
+        if (!hasWorldMapEntitySource()) {
+            return;
+        }
         this.options.showWorldMapEntities = !this.options.showWorldMapEntities;
         refreshWorldMapControlLabels();
         MapSettingsManager.instance.saveAll();
@@ -730,6 +767,22 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         int mouseX = (int) mouseButtonEvent.x();
         int mouseY = (int) mouseButtonEvent.y();
 
+        // 26.3 can deliver the release event without delivering the matching
+        // click callback to this screen.  Keep plot placement working from
+        // either event, but never place the same point twice when both arrive.
+        if (mouseButtonEvent.button() == InputConstants.MOUSE_BUTTON_LEFT
+                && !plotClickHandled
+                && plotMode
+                && isInMap(mouseX, mouseY)
+                && !this.hasOpenPopup()) {
+            handlePlotModeClick(mouseButtonEvent.x(), mouseButtonEvent.y());
+            plotClickHandled = true;
+            return true;
+        }
+        if (mouseButtonEvent.button() == InputConstants.MOUSE_BUTTON_LEFT) {
+            plotClickHandled = false;
+        }
+
         if (isInTopHeader(mouseX, mouseY) || isInSeedMapperStrip(mouseX, mouseY)) {
             return true;
         }
@@ -752,7 +805,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         }
 
         selectedWaypoint = getHoveredWaypoint();
-        if (mouseButtonEvent.button() == 1 && (selectedWaypoint != null || (mouseY > this.top && mouseY < this.bottom))) {
+        if (mouseButtonEvent.button() == InputConstants.MOUSE_BUTTON_RIGHT && (selectedWaypoint != null || (mouseY > this.top && mouseY < this.bottom))) {
             this.timeOfLastKBInput = 0L;
             int mouseDirectX = (int) minecraft.mouseHandler.xpos();
             int mouseDirectY = (int) minecraft.mouseHandler.ypos();
@@ -770,16 +823,61 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     public boolean mouseClicked(MouseButtonEvent mouseButtonEvent, boolean doubleClick) {
         int mouseX = (int) mouseButtonEvent.x();
         int mouseY = (int) mouseButtonEvent.y();
+
+        // Coordinate editing is a screen-level interaction rather than a map
+        // click. Handle it before the map, popup, and overlay handlers.
+        if (mouseButtonEvent.button() == InputConstants.MOUSE_BUTTON_LEFT && this.editingCoordinates) {
+            if (isInCoordinateXInput(mouseX, mouseY)) {
+                this.waypointSearchInput.setFocused(false);
+                this.coordinateZInput.setFocused(false);
+                this.coordinateXInput.setFocused(true);
+                this.setFocused(this.coordinateXInput);
+                return this.coordinateXInput.mouseClicked(mouseButtonEvent, doubleClick);
+            }
+            if (isInCoordinateZInput(mouseX, mouseY)) {
+                this.waypointSearchInput.setFocused(false);
+                this.coordinateXInput.setFocused(false);
+                this.coordinateZInput.setFocused(true);
+                this.setFocused(this.coordinateZInput);
+                return this.coordinateZInput.mouseClicked(mouseButtonEvent, doubleClick);
+            }
+        }
+
+        if (mouseButtonEvent.button() == InputConstants.MOUSE_BUTTON_LEFT
+                && mapOptions.worldmapAllowed
+                && options.showCoordinates
+                && !this.editingCoordinates
+                && isInCoordinateLabel(mouseX, mouseY)) {
+            openCoordinateInputs(this.coordinateHoverX, this.coordinateHoverZ);
+            return true;
+        }
+
+        // These controls are drawn over the map's normal interaction area.
+        // Resolve them before map clicks can start panning, plotting, or
+        // selecting an overlay underneath them.
+        if (mouseButtonEvent.button() == InputConstants.MOUSE_BUTTON_LEFT) {
+            if (mapOptions.worldmapAllowed && isInSeedHeader(mouseX, mouseY)) {
+                minecraft.gui.setScreen(new GuiMinimapOptions(this, "seedmapper"));
+                return true;
+            }
+            if (isInSeedMapperStrip(mouseX, mouseY)) {
+                if (handleSeedMapperTitleClick(mouseX, mouseY) || handleSeedMapperIconClick(mouseX, mouseY)) {
+                    return true;
+                }
+                return true;
+            }
+        }
+
         // Right-button drag is only used to pan the map while drawing a plot
         // line. In all other modes a right-click opens the context menu, which
         // must not be preceded by a map drag (that would hide SeedMapper
         // markers and clear their hitboxes before the release handler runs).
-        if (mouseButtonEvent.button() == 1 && isInMap(mouseX, mouseY) && this.popupOpen() && plotMode) {
+        if (mouseButtonEvent.button() == 1 && isInMap(mouseX, mouseY) && !this.hasOpenPopup() && plotMode) {
             rightMapDrag = true;
             rightMapDragMoved = false;
             currentDragging = true;
         }
-        if (mouseButtonEvent.button() == 0 && isInMap(mouseX, mouseY)) {
+        if (mouseButtonEvent.button() == 0 && isInMap(mouseX, mouseY) && !this.hasOpenPopup()) {
             double[] mapPoint = mapPointFromGui(mouseButtonEvent.x(), mouseButtonEvent.y());
             if (placingDuplicatePlot != null) {
                 double[] original = plotCoordinatesForView(placingDuplicatePlot);
@@ -794,24 +892,19 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 placingDuplicatePlot = null;
                 return true;
             }
+            if (plotMode) {
+                if (!plotClickHandled) {
+                    handlePlotModeClick(mouseButtonEvent.x(), mouseButtonEvent.y());
+                    plotClickHandled = true;
+                }
+                return true;
+            }
             PlotManager.Plot endpointPlot = findPlotAt(mapPoint[0], mapPoint[1]);
             int endpoint = findPlotEndpointAt(mapPoint[0], mapPoint[1]);
             if (endpoint != 0) {
                 editingPlot = endpointPlot;
                 selectedPlot = endpointPlot;
                 editingPlotEndpoint = endpoint;
-                return true;
-            }
-            if (plotMode && !plotStartSet) {
-                plotStartX = mapPoint[0];
-                plotStartZ = mapPoint[1];
-                plotStartSet = true;
-                return true;
-            } else if (plotMode) {
-                plotManager.add(new PlotManager.Plot(plotStartX, plotStartZ, mapPoint[0], mapPoint[1],
-                        getViewedDimensionIdentifier().toString(), false, 0, 0));
-                plotStartSet = false;
-                plotMode = false;
                 return true;
             }
         }
@@ -841,34 +934,8 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             }
         }
 
-        if (mouseButtonEvent.button() == 0 && this.editingCoordinates && this.popupOpen()) {
-            if (isInCoordinateXInput(mouseX, mouseY)) {
-                this.coordinateZInput.setFocused(false);
-                this.coordinateXInput.setFocused(true);
-                this.setFocused(this.coordinateXInput);
-                return super.mouseClicked(mouseButtonEvent, doubleClick);
-            }
-
-            if (isInCoordinateZInput(mouseX, mouseY)) {
-                this.coordinateXInput.setFocused(false);
-                this.coordinateZInput.setFocused(true);
-                this.setFocused(this.coordinateZInput);
-                return super.mouseClicked(mouseButtonEvent, doubleClick);
-            }
-
+        if (mouseButtonEvent.button() == 0 && this.editingCoordinates) {
             closeCoordinateInputs();
-        }
-
-        if (mouseButtonEvent.button() == 0
-                && mapOptions.worldmapAllowed
-                && options.showCoordinates
-                && !this.editingCoordinates
-                && mouseX >= this.coordinateLabelLeft
-                && mouseX <= this.coordinateLabelRight
-                && mouseY >= this.coordinateLabelTop
-                && mouseY <= this.coordinateLabelBottom) {
-            openCoordinateInputs(this.coordinateHoverX, this.coordinateHoverZ);
-            return true;
         }
 
         if (mapOptions.worldmapAllowed && isInSeedHeader(mouseX, mouseY)) {
@@ -887,7 +954,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         }
 
         // Popup must consume clicks before map/marker handlers to prevent click-through.
-        if (!this.popupOpen()) {
+        if (this.hasOpenPopup()) {
             return super.mouseClicked(mouseButtonEvent, doubleClick);
         }
 
@@ -911,16 +978,16 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         if (mouseButtonEvent.button() == 0 && handleSeedMapperMarkerLeftClick(mouseX, mouseY)) {
             return true;
         }
-        if (mouseButtonEvent.button() == 0) {
+        if (mouseButtonEvent.button() == InputConstants.MOUSE_BUTTON_LEFT) {
             currentDragging = true;
         }
-        return super.mouseClicked(mouseButtonEvent, doubleClick) || mouseButtonEvent.button() == 1;
+        return super.mouseClicked(mouseButtonEvent, doubleClick) || mouseButtonEvent.button() == InputConstants.MOUSE_BUTTON_RIGHT;
     }
 
     @Override
     public boolean keyPressed(KeyEvent keyEvent) {
         if (this.waypointSearchInput != null && this.waypointSearchInput.isFocused()) {
-            if (keyEvent.key() == GLFW.GLFW_KEY_ESCAPE) {
+            if (keyEvent.key() == com.mojang.blaze3d.platform.InputConstants.KEY_ESCAPE) {
                 this.waypointSearchInput.setFocused(false);
                 return true;
             }
@@ -950,12 +1017,12 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 this.coordinateXInput.setFocused(true);
                 this.setFocused(this.coordinateXInput);
             }
-            if (keyEvent.key() == GLFW.GLFW_KEY_ESCAPE) {
+            if (keyEvent.key() == com.mojang.blaze3d.platform.InputConstants.KEY_ESCAPE) {
                 closeCoordinateInputs();
                 return true;
             }
 
-            if (keyEvent.key() == GLFW.GLFW_KEY_TAB) {
+            if (keyEvent.key() == com.mojang.blaze3d.platform.InputConstants.KEY_TAB) {
                 if (this.coordinateXInput.isFocused()) {
                     this.coordinateXInput.setFocused(false);
                     this.coordinateZInput.setFocused(true);
@@ -973,12 +1040,10 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             this.coordinateZInput.setTextColor(isGood ? COORD_TEXT_COLOR_OK : COORD_TEXT_COLOR_ERROR);
             this.coordinateXInput.setTextColorUneditable(isGood ? COORD_TEXT_COLOR_OK : COORD_TEXT_COLOR_ERROR);
             this.coordinateZInput.setTextColorUneditable(isGood ? COORD_TEXT_COLOR_OK : COORD_TEXT_COLOR_ERROR);
-            if ((keyEvent.key() == 257 || keyEvent.key() == 335) && isGood) {
-                int x = Integer.parseInt(this.coordinateXInput.getValue().trim());
-                int z = Integer.parseInt(this.coordinateZInput.getValue().trim());
-                this.centerAt(x, z);
-                closeCoordinateInputs();
-                this.switchToKeyboardInput();
+            if (isCoordinateSubmitKey(keyEvent)) {
+                if (isGood) {
+                    commitCoordinateInputs();
+                }
                 return true;
             }
             EditBox focusedCoordinateInput = this.coordinateXInput.isFocused() ? this.coordinateXInput : this.coordinateZInput.isFocused() ? this.coordinateZInput : null;
@@ -995,7 +1060,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         }
 
         if (VoxelConstants.getVoxelMapInstance().getMapOptions().keyBindMenu.matches(keyEvent)) {
-            keyEvent = new KeyEvent(GLFW.GLFW_KEY_ESCAPE, -1, -1);
+            keyEvent = new KeyEvent(InputConstants.KEY_ESCAPE, -1, -1);
         }
 
         keySprintPressed = minecraft.options.keySprint.matches(keyEvent) || keySprintPressed;
@@ -1029,6 +1094,11 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             return handled;
         }
         if (this.editingCoordinates) {
+            if ((characterEvent.codepoint() == '\r' || characterEvent.codepoint() == '\n')
+                    && isAcceptableCoordinates()) {
+                commitCoordinateInputs();
+                return true;
+            }
             if (!this.coordinateXInput.isFocused() && !this.coordinateZInput.isFocused()) {
                 this.coordinateXInput.setFocused(true);
                 this.setFocused(this.coordinateXInput);
@@ -1062,7 +1132,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     private void switchToMouseInput() {
         this.timeOfLastKBInput = 0L;
         if (!this.mouseCursorShown) {
-            GLFW.glfwSetInputMode(minecraft.getWindow().handle(), 208897, 212993);
+            minecraft.mouseHandler.releaseMouse();
         }
 
         this.mouseCursorShown = true;
@@ -1071,7 +1141,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     private void switchToKeyboardInput() {
         this.timeOfLastKBInput = System.currentTimeMillis();
         this.mouseCursorShown = false;
-        GLFW.glfwSetInputMode(minecraft.getWindow().handle(), 208897, 212995);
+        minecraft.mouseHandler.grabMouse();
     }
 
     @Override
@@ -1443,6 +1513,10 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
         if (mapOptions.worldmapAllowed) {
             graphics.centeredText(this.getFont(), this.screenTitle, this.getWidth() / 2, 16, 0xFFFFFFFF);
+            if (plotMode) {
+                graphics.text(this.getFont(), plotStartSet ? "Plot: click the end point" : "Plot: click the start point",
+                        this.getWidth() / 2 - 58, 28, 0xFFFFF27A);
+            }
             int x = (int) Math.floor(cursorCoordX);
             int z = (int) Math.floor(cursorCoordZ);
             if (options.showCoordinates) {
@@ -1459,6 +1533,9 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                     this.coordinateLabelRight = zTextX + this.getFont().width(zText) + 2;
                     this.coordinateLabelTop = 15;
                     this.coordinateLabelBottom = 16 + this.getFont().lineHeight + 1;
+                } else {
+                    this.coordinateXInput.extractRenderState(graphics, mouseX, mouseY, delta);
+                    this.coordinateZInput.extractRenderState(graphics, mouseX, mouseY, delta);
                 }
             }
             if (options.seedMapShowBiomeUnderCursor) {
@@ -1522,7 +1599,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             List<ClientTooltipComponent> tooltip = seedMapperChestLootWidget.getPendingItemTooltip();
             if (tooltip != null) {
                 graphics.nextStratum();
-                graphics.tooltip(this.getFont(), tooltip, seedMapperChestLootWidget.getPendingTooltipX(), seedMapperChestLootWidget.getPendingTooltipY(), DefaultTooltipPositioner.INSTANCE, null);
+                graphics.tooltip(this.getFont(), tooltip, seedMapperChestLootWidget.getPendingTooltipX(), seedMapperChestLootWidget.getPendingTooltipY(), DefaultTooltipPositioner.INSTANCE, null, false);
             }
         }
         super.extractRenderState(graphics, mouseX, mouseY, delta);
@@ -2739,10 +2816,9 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             if (requestKey.terrainEnabled() && requestKey.dimension() == Cubiomes.DIM_OVERWORLD()) {
                 try (Arena arena = Arena.ofConfined()) {
                     MemorySegment params = TerrainNoise.allocate(arena);
-                    if (Cubiomes.setupTerrainNoise(params, requestKey.mcVersion(), requestKey.generatorFlags()) != 0
-                            && Cubiomes.initTerrainNoise(params, requestKey.seed(), requestKey.dimension()) != 0) {
-                        Cubiomes.samplePreliminarySurfaceLevel(params, 0, 0);
-                    }
+                    Cubiomes.setupTerrainNoise(params, requestKey.mcVersion(), requestKey.generatorFlags());
+                    Cubiomes.initTerrainNoise(params, requestKey.seed(), requestKey.dimension());
+                    Cubiomes.samplePreliminarySurfaceLevel(params, 0, 0);
                 }
             }
         }
@@ -2768,11 +2844,8 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                     MemorySegment terrainParams = null;
                     if (terrain) {
                         terrainParams = TerrainNoise.allocate(arena);
-                        if (Cubiomes.setupTerrainNoise(terrainParams, requestKey.mcVersion(), requestKey.generatorFlags()) == 0
-                                || Cubiomes.initTerrainNoise(terrainParams, requestKey.seed(), requestKey.dimension()) == 0) {
-                            terrainOk.set(false);
-                            terrainParams = null;
-                        }
+                        Cubiomes.setupTerrainNoise(terrainParams, requestKey.mcVersion(), requestKey.generatorFlags());
+                        Cubiomes.initTerrainNoise(terrainParams, requestKey.seed(), requestKey.dimension());
                     }
                     for (int y = y0; y < y1; y++) {
                         int blockZ = Mth.floor(requestKey.minZ() + (y + 0.5D) * spanZ / height);
@@ -3824,7 +3897,10 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         } else {
             centerAt(convertCurrentCoordinateToViewed(GameVariableAccessShim.xCoordDouble()), convertCurrentCoordinateToViewed(GameVariableAccessShim.zCoordDouble()));
         }
-        switchToKeyboardInput();
+        // Recenter and dimension buttons are GUI actions. Grabbing the mouse
+        // here makes 26.3 treat the action as a screen transition and closes
+        // the map on some clients.
+        switchToMouseInput();
     }
 
     private boolean isWaypointVisibleInViewedDimension(Waypoint waypoint) {
@@ -4112,14 +4188,14 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
     private boolean isCtrlDown() {
         long window = minecraft.getWindow().handle();
-        return GLFW.glfwGetKey(window, GLFW.GLFW_KEY_LEFT_CONTROL) == GLFW.GLFW_PRESS
-                || GLFW.glfwGetKey(window, GLFW.GLFW_KEY_RIGHT_CONTROL) == GLFW.GLFW_PRESS;
+        return InputConstants.isKeyDown(com.mojang.blaze3d.platform.InputConstants.KEY_LCONTROL)
+                || InputConstants.isKeyDown(com.mojang.blaze3d.platform.InputConstants.KEY_RCONTROL);
     }
 
     private boolean isShiftDown() {
         long window = minecraft.getWindow().handle();
-        return GLFW.glfwGetKey(window, GLFW.GLFW_KEY_LEFT_SHIFT) == GLFW.GLFW_PRESS
-                || GLFW.glfwGetKey(window, GLFW.GLFW_KEY_RIGHT_SHIFT) == GLFW.GLFW_PRESS;
+        return InputConstants.isKeyDown(com.mojang.blaze3d.platform.InputConstants.KEY_LSHIFT)
+                || InputConstants.isKeyDown(com.mojang.blaze3d.platform.InputConstants.KEY_RSHIFT);
     }
 
     private boolean isInTopHeader(int mouseX, int mouseY) {
@@ -4127,14 +4203,54 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     }
 
     private boolean isInSeedHeader(int mouseX, int mouseY) {
-        return seedHeaderLeft >= 0
-                && seedHeaderRight > seedHeaderLeft
-                && seedHeaderTop >= 0
-                && seedHeaderBottom > seedHeaderTop
-                && mouseX >= seedHeaderLeft
-                && mouseX <= seedHeaderRight
-                && mouseY >= seedHeaderTop
-                && mouseY <= seedHeaderBottom;
+        int left = seedHeaderLeft;
+        int right = seedHeaderRight;
+        int top = seedHeaderTop;
+        int bottom = seedHeaderBottom;
+        if (left < 0 || right <= left || top < 0 || bottom <= top) {
+            String seedTextValue = getWorldMapSeedText();
+            if (seedTextValue.isEmpty()) {
+                return false;
+            }
+            String seedText = "Seed: " + seedTextValue;
+            int seedX = this.width - this.sideMargin - this.getFont().width(seedText);
+            left = seedX - 2;
+            right = seedX + this.getFont().width(seedText) + 2;
+            top = 15;
+            bottom = 16 + this.getFont().lineHeight + 1;
+        }
+        return mouseX >= left && mouseX <= right && mouseY >= top && mouseY <= bottom;
+    }
+
+    private boolean isCoordinateSubmitKey(KeyEvent keyEvent) {
+        return keyEvent.key() == com.mojang.blaze3d.platform.InputConstants.KEY_RETURN
+                || keyEvent.key() == com.mojang.blaze3d.platform.InputConstants.KEY_NUMPADENTER;
+    }
+
+    private void commitCoordinateInputs() {
+        int x = Integer.parseInt(this.coordinateXInput.getValue().trim());
+        int z = Integer.parseInt(this.coordinateZInput.getValue().trim());
+        this.centerAt(x, z);
+        closeCoordinateInputs();
+        this.switchToMouseInput();
+    }
+
+    private boolean isInCoordinateLabel(int mouseX, int mouseY) {
+        int left = this.coordinateLabelLeft;
+        int right = this.coordinateLabelRight;
+        int top = this.coordinateLabelTop;
+        int bottom = this.coordinateLabelBottom;
+        if (right <= left || bottom <= top) {
+            String xText = "X: " + this.coordinateHoverX;
+            String zText = "Z: " + this.coordinateHoverZ;
+            int xTextX = this.sideMargin;
+            int zTextX = this.sideMargin + 64;
+            left = xTextX - 2;
+            right = zTextX + this.getFont().width(zText) + 2;
+            top = 15;
+            bottom = 16 + this.getFont().lineHeight + 1;
+        }
+        return mouseX >= left && mouseX <= right && mouseY >= top && mouseY <= bottom;
     }
 
     private boolean isInSeedMapperStrip(int mouseX, int mouseY) {
@@ -4179,6 +4295,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     private void openCoordinateInputs(int x, int z) {
         this.editingCoordinates = true;
         this.lastEditingCoordinates = false;
+        this.waypointSearchInput.setFocused(false);
         this.coordinateXInput.setVisible(true);
         this.coordinateZInput.setVisible(true);
         this.coordinateXInput.active = true;
@@ -4914,6 +5031,8 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             case 16 -> {
                 plotMode = true;
                 plotStartSet = false;
+                editingPlot = null;
+                placingDuplicatePlot = null;
                 selectedPlot = null;
             }
             case 17 -> {
@@ -5173,6 +5292,21 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             appendThickInterpolatedLine(x1, z1, x2, z2, previewThickness, 0xAAFFFFFF);
         }
         flushExploredQuads(graphics);
+    }
+
+    private void handlePlotModeClick(double guiX, double guiY) {
+        double[] mapPoint = mapPointFromGui(guiX, guiY);
+        if (!plotStartSet) {
+            plotStartX = mapPoint[0];
+            plotStartZ = mapPoint[1];
+            plotStartSet = true;
+            return;
+        }
+
+        plotManager.add(new PlotManager.Plot(plotStartX, plotStartZ, mapPoint[0], mapPoint[1],
+                getViewedDimensionIdentifier().toString(), false, 0, 0));
+        plotStartSet = false;
+        plotMode = false;
     }
 
     private double[] mapPointFromGui(double guiX, double guiY) {

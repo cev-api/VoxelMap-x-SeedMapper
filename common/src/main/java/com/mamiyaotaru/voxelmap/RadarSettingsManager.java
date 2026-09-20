@@ -30,7 +30,6 @@ public class RadarSettingsManager implements ISubSettingsManager {
     public boolean filtering = true;
     public boolean outlines = true;
     public boolean showFacing = true;
-    public boolean cpuRendering = false;
     public boolean showFullEntityNames = false;
     public boolean showEntityElevation = true;
     public boolean hideSneakingPlayers = true;
@@ -54,7 +53,6 @@ public class RadarSettingsManager implements ISubSettingsManager {
     float fontScale = 1.0F;
     public final HashSet<Identifier> hiddenMobs = new HashSet<>();
 
-    public boolean forceCpuRendering = false;
     public boolean radarAllowed = true;
     public boolean radarPlayersAllowed = true;
     public boolean radarMobsAllowed = true;
@@ -96,7 +94,6 @@ public class RadarSettingsManager implements ISubSettingsManager {
                     case "Newer New Chunks Block Opacity" -> newerNewChunksBlockOpacity = clampOpacity(Integer.parseInt(curLine[1]));
                     case "Newer New Chunks Window Radius Chunks" -> newerNewChunksWindowRadiusChunks = clampRange(Integer.parseInt(curLine[1]), 16, 256);
                     case "Newer New Chunks Refresh Distance Chunks" -> newerNewChunksRefreshDistanceChunks = clampRange(Integer.parseInt(curLine[1]), 8, 128);
-                    case "Radar CPU Rendering" -> cpuRendering = Boolean.parseBoolean(curLine[1]);
                     case "Show Full Entity Names" -> showFullEntityNames = Boolean.parseBoolean(curLine[1]);
                     case "Show Entity Elevation" -> showEntityElevation = Boolean.parseBoolean(curLine[1]);
                     case "Hide Sneaking Players" -> hideSneakingPlayers = Boolean.parseBoolean(curLine[1]);
@@ -153,7 +150,6 @@ public class RadarSettingsManager implements ISubSettingsManager {
         out.println("Newer New Chunks Block Opacity:" + newerNewChunksBlockOpacity);
         out.println("Newer New Chunks Window Radius Chunks:" + newerNewChunksWindowRadiusChunks);
         out.println("Newer New Chunks Refresh Distance Chunks:" + newerNewChunksRefreshDistanceChunks);
-        out.println("Radar CPU Rendering:" + cpuRendering);
         out.println("Show Full Entity Names:" + showFullEntityNames);
         out.println("Show Entity Elevation:" + showEntityElevation);
         out.println("Hide Sneaking Players:" + hideSneakingPlayers);
@@ -163,28 +159,6 @@ public class RadarSettingsManager implements ISubSettingsManager {
             out.print(mob.toString() + ",");
         }
         out.println();
-    }
-
-    @Override
-    public String getKeyText(EnumOptionsMinimap option) {
-        String s = I18n.get(option.getName()) + ": ";
-
-        switch (option.getType()) {
-            case BOOLEAN -> {
-                boolean flag = getBooleanValue(option);
-                return s + (flag ? I18n.get("options.on") : I18n.get("options.off"));
-            }
-            case LIST -> {
-                String state = getListValue(option);
-                return s + state;
-            }
-            case FLOAT -> {
-                float value = getFloatValue(option);
-                return s + (value <= 0.0F ? I18n.get("options.off") : (int) value + "%");
-            }
-        }
-
-        return s + MapSettingsManager.ERROR_STRING;
     }
 
     @Override
@@ -199,7 +173,6 @@ public class RadarSettingsManager implements ISubSettingsManager {
             case RADAR_FILTERING -> filtering;
             case RADAR_OUTLINES -> outlines;
             case SHOW_FACING -> showFacing;
-            case RADAR_CPU_RENDERING -> cpuRendering || forceCpuRendering;
             case SHOW_FULL_ENTITY_NAMES -> showFullEntityNames;
             case SHOW_ENTITY_ELEVATION -> showEntityElevation;
             case HIDE_SNEAKING_PLAYERS -> hideSneakingPlayers;
@@ -221,7 +194,6 @@ public class RadarSettingsManager implements ISubSettingsManager {
             case RADAR_FILTERING -> filtering = !filtering;
             case RADAR_OUTLINES -> outlines = !outlines;
             case SHOW_FACING -> showFacing = !showFacing;
-            case RADAR_CPU_RENDERING -> cpuRendering = !cpuRendering || forceCpuRendering;
             case SHOW_FULL_ENTITY_NAMES -> showFullEntityNames = !showFullEntityNames;
             case SHOW_ENTITY_ELEVATION -> showEntityElevation = !showEntityElevation;
             case HIDE_SNEAKING_PLAYERS -> hideSneakingPlayers = !hideSneakingPlayers;

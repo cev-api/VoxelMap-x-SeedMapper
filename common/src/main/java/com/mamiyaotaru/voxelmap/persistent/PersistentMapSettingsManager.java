@@ -1,6 +1,6 @@
 package com.mamiyaotaru.voxelmap.persistent;
-
 import com.mamiyaotaru.voxelmap.MapSettingsManager;
+
 import com.mamiyaotaru.voxelmap.VoxelConstants;
 import com.mamiyaotaru.voxelmap.gui.overridden.EnumOptionsMinimap;
 import com.mamiyaotaru.voxelmap.interfaces.ISubSettingsManager;
@@ -17,7 +17,6 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
-import net.minecraft.client.resources.language.I18n;
 
 public class PersistentMapSettingsManager implements ISubSettingsManager {
     public enum SeedMapPalette {

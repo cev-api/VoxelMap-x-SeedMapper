@@ -1,7 +1,7 @@
 package com.mamiyaotaru.voxelmap.chunkanalysis;
 
 import com.mamiyaotaru.voxelmap.VoxelConstants;
-import com.mamiyaotaru.voxelmap.rendering.AlwaysOnTopSubmitter;
+import net.minecraft.client.renderer.OrderedSubmitNodeCollector;
 import com.mamiyaotaru.voxelmap.rendering.VoxelMapRenderTypes;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.QuadInstance;
@@ -38,7 +38,7 @@ public final class ChunkAnalysisRenderer {
 
         Vec3 cameraPos = camera.position();
         double maxDistanceSquared = settings.renderDistance * (double) settings.renderDistance;
-        AlwaysOnTopSubmitter overlay = AlwaysOnTopSubmitter.order(collector, Integer.MAX_VALUE - 1);
+        OrderedSubmitNodeCollector overlay = collector.order(Integer.MAX_VALUE - 1);
         if (settings.ghostBlocks) {
             List<ChunkAnalysisDifference> expectedCandidates = source.stream()
                     .filter(difference -> difference.displayState() != null)

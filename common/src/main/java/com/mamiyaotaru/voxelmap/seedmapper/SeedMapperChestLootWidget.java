@@ -70,7 +70,7 @@ public class SeedMapperChestLootWidget {
         int titleWidth = font.width(title.getVisualOrderText());
         if (mouseX >= minX && mouseX <= minX + titleWidth && mouseY >= minY && mouseY <= minY + font.lineHeight) {
             List<ClientTooltipComponent> tooltips = this.extraChestInfo.get(this.chestIndex);
-            graphics.tooltip(font, tooltips, minX - 8, this.y - tooltips.size() * font.lineHeight - 8, DefaultTooltipPositioner.INSTANCE, null);
+            graphics.tooltip(font, tooltips, minX - 8, this.y - tooltips.size() * font.lineHeight - 8, DefaultTooltipPositioner.INSTANCE, null, false);
         }
 
         minY += 12;

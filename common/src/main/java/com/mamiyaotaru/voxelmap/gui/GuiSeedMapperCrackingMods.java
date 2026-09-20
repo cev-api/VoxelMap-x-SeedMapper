@@ -24,17 +24,17 @@ public class GuiSeedMapperCrackingMods extends GuiScreenMinimap {
         int y = this.height / 6 + 36;
         int rowGap = 28;
 
-        addRenderableWidget(new Button.Builder(Component.literal("Bedrock Cracker"), ConfirmLinkScreen.confirmLink(this, BEDROCK_CRACKER_URL))
+        addRenderableWidget(new Button.Builder(Component.literal("Bedrock Cracker"), ConfirmLinkScreen.confirmLink(this, java.net.URI.create(BEDROCK_CRACKER_URL)))
                 .bounds(left, y, buttonWidth, 20)
                 .build());
         y += rowGap;
 
-        addRenderableWidget(new Button.Builder(Component.literal("Nether Bedrock Cracker"), ConfirmLinkScreen.confirmLink(this, NETHER_BEDROCK_CRACKER_URL))
+        addRenderableWidget(new Button.Builder(Component.literal("Nether Bedrock Cracker"), ConfirmLinkScreen.confirmLink(this, java.net.URI.create(NETHER_BEDROCK_CRACKER_URL)))
                 .bounds(left, y, buttonWidth, 20)
                 .build());
         y += rowGap;
 
-        addRenderableWidget(new Button.Builder(Component.literal("SeedCrackerX"), ConfirmLinkScreen.confirmLink(this, SEEDCRACKERX_URL))
+        addRenderableWidget(new Button.Builder(Component.literal("SeedCrackerX"), ConfirmLinkScreen.confirmLink(this, java.net.URI.create(SEEDCRACKERX_URL)))
                 .bounds(left, y, buttonWidth, 20)
                 .build());
 

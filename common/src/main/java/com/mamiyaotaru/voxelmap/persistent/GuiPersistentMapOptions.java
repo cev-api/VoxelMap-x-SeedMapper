@@ -19,7 +19,6 @@ import net.minecraft.client.gui.screens.inventory.tooltip.TooltipRenderUtil;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.ARGB;
 import net.minecraft.util.Mth;
-import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
 
@@ -412,11 +411,11 @@ public class GuiPersistentMapOptions extends GuiScreenMinimap {
     @Override
     public boolean keyPressed(net.minecraft.client.input.KeyEvent keyEvent) {
         if (exploredChunkLineColorPickerOpen) {
-            if (keyEvent.key() == GLFW.GLFW_KEY_ESCAPE) {
+            if (keyEvent.key() == com.mojang.blaze3d.platform.InputConstants.KEY_ESCAPE) {
                 closeExploredChunkLineColorPicker();
                 return true;
             }
-            if (keyEvent.key() == GLFW.GLFW_KEY_ENTER || keyEvent.key() == GLFW.GLFW_KEY_KP_ENTER) {
+            if (keyEvent.key() == com.mojang.blaze3d.platform.InputConstants.KEY_RETURN || keyEvent.key() == com.mojang.blaze3d.platform.InputConstants.KEY_NUMPADENTER) {
                 applyExploredChunkLineColorPicker();
                 return true;
             }

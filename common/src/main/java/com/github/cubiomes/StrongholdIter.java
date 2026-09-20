@@ -43,7 +43,7 @@ public class StrongholdIter {
         Cubiomes.C_INT.withName("ringidx"),
         Cubiomes.C_DOUBLE.withName("angle"),
         Cubiomes.C_DOUBLE.withName("dist"),
-        Cubiomes.C_LONG_LONG.withName("rnds"),
+        Cubiomes.C_LONG.withName("rnds"),
         Cubiomes.C_INT.withName("mc"),
         MemoryLayout.paddingLayout(4)
     ).withName("StrongholdIter");

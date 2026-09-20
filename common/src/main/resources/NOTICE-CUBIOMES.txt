@@ -1,0 +1,15 @@
+VoxelMap bundles the Cubiomes native library and its Java bindings.
+
+The native library is based on Cubiomes by Cubitect and is distributed under
+the MIT License. The Java bindings and loot-library additions are distributed
+under the GNU Lesser General Public License, version 3, with the additional
+terms supplied by the library. The loot library header is by ScriptLine and is
+distributed under the MIT License.
+
+Project sources and license texts:
+https://github.com/Cubitect/cubiomes
+https://github.com/xpple/cubiomes
+
+The complete license texts are available in the Cubiomes Java artifact used
+to build this project (LICENSE, LICENSE_cubiomes.txt, and
+LICENSE_loot_library.h.txt).

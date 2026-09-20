@@ -10,8 +10,6 @@ import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperCommandHandler;
 import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperCommandTree;
 import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperCompat;
 import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperDatapackManager;
-import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperEspStyle;
-import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperEspTarget;
 import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperSettingsManager;
 import com.mamiyaotaru.voxelmap.util.AppChatMessages;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -20,7 +18,6 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.Component;
-import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -53,7 +50,6 @@ public class GuiSeedMapperOptions extends GuiScreenMinimap {
     private Button runCaveButton;
     private Button runTerrainButton;
     private Button clearEspButton;
-    private Button espFillButton;
     private Button espSettingsButton;
     private Button datapackEnabledButton;
     private Button datapackImportButton;
@@ -76,12 +72,15 @@ public class GuiSeedMapperOptions extends GuiScreenMinimap {
         int y = 64;
         int fullWidth = 310;
         int rowGap = 22;
+        String displayedSeed = settings.manualSeed == null || settings.manualSeed.isBlank()
+                ? VoxelConstants.getVoxelMapInstance().getWorldSeed()
+                : settings.manualSeed;
 
         seedInput = new GuiButtonText(font, left, y, fullWidth, 20,
-                Component.literal("Seed Input: " + settings.manualSeed),
+                Component.literal("Seed Input: " + displayedSeed),
                 button -> setActiveEditor(seedInput));
         seedInput.setMaxLength(256);
-        seedInput.setText(settings.manualSeed);
+        seedInput.setText(displayedSeed == null ? "" : displayedSeed.trim());
         addRenderableWidget(seedInput);
 
         y += rowGap;
@@ -189,7 +188,7 @@ public class GuiSeedMapperOptions extends GuiScreenMinimap {
             SeedMapperCommandHandler.handleChatCommand("seedmap highlight terrain " + settings.espDefaultChunks);
         }).bounds(left, y, 150, 20).build());
 
-        clearEspButton = addRenderableWidget(new Button.Builder(Component.literal("Clear ESP"), button ->
+        clearEspButton = addRenderableWidget(new Button.Builder(Component.literal("Clear"), button ->
                 SeedMapperCommandHandler.handleChatCommand("seedmap highlight clear"))
                 .bounds(right, y, 150, 20).build());
 
@@ -200,12 +199,6 @@ public class GuiSeedMapperOptions extends GuiScreenMinimap {
             MapSettingsManager.instance.saveAll();
             refreshLabels();
         }, value -> "ESP Chunks: " + (int) Math.round(value)));
-
-        espFillButton = addRenderableWidget(new Button.Builder(Component.literal("ESP Fill: " + toggleText(activeEspStyle().fillEnabled)), button -> {
-            activeEspStyle().fillEnabled = !activeEspStyle().fillEnabled;
-            MapSettingsManager.instance.saveAll();
-            refreshLabels();
-        }).bounds(right, y, 150, 20).build());
 
         y += rowGap;
 
@@ -312,9 +305,6 @@ public class GuiSeedMapperOptions extends GuiScreenMinimap {
         if (espChunksSlider != null) {
             espChunksSlider.setActualValue(settings.espDefaultChunks);
         }
-        if (espFillButton != null) {
-            espFillButton.setMessage(Component.literal("ESP Fill: " + toggleText(activeEspStyle().fillEnabled)));
-        }
         if (datapackEnabledButton != null) {
             datapackEnabledButton.setMessage(toggleLabel("Datapack Structures", settings.datapackEnabled));
         }
@@ -385,10 +375,6 @@ public class GuiSeedMapperOptions extends GuiScreenMinimap {
         SeedMapperCommandHandler.handleChatCommand("seedmap highlight ore " + target + " " + settings.espDefaultChunks);
     }
 
-    private SeedMapperEspStyle activeEspStyle() {
-        return settings.getEspStyle(SeedMapperEspTarget.BLOCK_HIGHLIGHT);
-    }
-
     private void setActiveEditor(GuiButtonText target) {
         if (seedInput != null) {
             seedInput.setEditing(seedInput == target);
@@ -410,7 +396,7 @@ public class GuiSeedMapperOptions extends GuiScreenMinimap {
 
     @Override
     public boolean keyPressed(KeyEvent keyEvent) {
-        if (keyEvent.key() == GLFW.GLFW_KEY_ENTER || keyEvent.key() == GLFW.GLFW_KEY_KP_ENTER) {
+        if (keyEvent.key() == com.mojang.blaze3d.platform.InputConstants.KEY_RETURN || keyEvent.key() == com.mojang.blaze3d.platform.InputConstants.KEY_NUMPADENTER) {
             applyTextValues();
             setActiveEditor(null);
             refreshLabels();

@@ -10,7 +10,6 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.Component;
-import org.lwjgl.glfw.GLFW;
 
 public class GuiSeedMapperEditSavedSeed extends GuiScreenMinimap {
     private final SeedMapperSettingsManager settings;
@@ -68,7 +67,7 @@ public class GuiSeedMapperEditSavedSeed extends GuiScreenMinimap {
 
     @Override
     public boolean keyPressed(KeyEvent keyEvent) {
-        if (keyEvent.key() == GLFW.GLFW_KEY_ENTER || keyEvent.key() == GLFW.GLFW_KEY_KP_ENTER) {
+        if (keyEvent.key() == com.mojang.blaze3d.platform.InputConstants.KEY_RETURN || keyEvent.key() == com.mojang.blaze3d.platform.InputConstants.KEY_NUMPADENTER) {
             saveAndClose();
             return true;
         }

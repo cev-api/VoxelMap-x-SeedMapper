@@ -13,6 +13,7 @@ import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperCommandHandler;
 import com.mamiyaotaru.voxelmap.persistent.ThreadManager;
 import com.mamiyaotaru.voxelmap.persistent.VoxelMapDataStore;
 import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperSettingsManager;
+import com.mamiyaotaru.voxelmap.rendering.RenderUtils;
 import com.mamiyaotaru.voxelmap.util.BiomeRepository;
 import com.mamiyaotaru.voxelmap.util.DimensionManager;
 import com.mamiyaotaru.voxelmap.util.GameVariableAccessShim;
@@ -81,6 +82,8 @@ public class VoxelMap implements PreparableReloadListener {
     VoxelMap() {}
 
     private void lateInit(boolean showUnderMenus, boolean isFair) {
+        RenderUtils.init();
+
         mapOptions = new MapSettingsManager();
         radarOptions = new RadarSettingsManager();
         persistentMapOptions = new PersistentMapSettingsManager();
@@ -88,7 +91,6 @@ public class VoxelMap implements PreparableReloadListener {
         chunkAnalysisOptions = new ChunkAnalysisSettingsManager();
 
         mapOptions.showUnderMenus = showUnderMenus;
-        radarOptions.forceCpuRendering = VoxelConstants.hasVulkanMod();
         radarOptions.radarAllowed = !isFair;
         radarOptions.radarMobsAllowed = !isFair;
         radarOptions.radarPlayersAllowed = !isFair;
@@ -408,9 +410,49 @@ public class VoxelMap implements PreparableReloadListener {
         });
     }
 
+    public synchronized void setServerWorldIdentity(String identity) {
+        runOnWorldSet(() -> {
+            if (waypointManager.willChangeWorldIdentity(identity, world)) {
+                persistentMap.purgeCachedRegions();
+                exploredChunksManager.flushStorage();
+                newerNewChunksManager.flushStorage();
+                com.mamiyaotaru.voxelmap.seedmapper.SeedMapperContainerDetection.flushPersistence();
+            }
+
+            if (waypointManager.setServerWorldIdentity(identity, world)) {
+                worldName = waypointManager.getCurrentWorldName();
+                plotManager.load(worldName, waypointManager.getCurrentSubworldDescriptor(false),
+                        world == null ? "unknown" : world.dimension().identifier().toString());
+                persistentMap.newWorld(world);
+                map.newWorld(world);
+            }
+        });
+    }
+
     public String getWorldSeed() {
         if (!initialized) return "";
-        return waypointManager.getWorldSeed().isEmpty() ? VoxelConstants.getWorldByKey(Level.OVERWORLD).map(value -> Long.toString(((ServerLevel) value).getSeed())).orElse("") : waypointManager.getWorldSeed();
+
+        // The integrated server owns the authoritative seed. Its overworld can
+        // briefly be unavailable while the client is entering a world, so use
+        // the server's world-generation settings before falling back to the
+        // loaded ServerLevel.
+        var integratedServer = VoxelConstants.getMinecraft().getSingleplayerServer();
+        if (integratedServer != null) {
+            try {
+                return Long.toString(integratedServer.getWorldGenSettings().options().seed());
+            } catch (RuntimeException ignored) {
+                // World generation settings can be unavailable during the
+                // client/server transition. Continue to the persisted seed.
+            }
+        }
+
+        String storedSeed = waypointManager.getWorldSeed();
+        if (storedSeed != null && !storedSeed.isBlank()) {
+            return storedSeed;
+        }
+        return VoxelConstants.getWorldByKey(Level.OVERWORLD)
+                .map(value -> Long.toString(((ServerLevel) value).getSeed()))
+                .orElse("");
     }
 
     public void setWorldSeed(String newSeed) {
@@ -428,6 +470,10 @@ public class VoxelMap implements PreparableReloadListener {
 
     public void clearServerSettings() {
         execute(() -> {
+            if (waypointManager != null) {
+                waypointManager.clearServerWorldIdentity();
+            }
+
             radarOptions.radarAllowed = true;
             radarOptions.radarPlayersAllowed = true;
             radarOptions.radarMobsAllowed = true;

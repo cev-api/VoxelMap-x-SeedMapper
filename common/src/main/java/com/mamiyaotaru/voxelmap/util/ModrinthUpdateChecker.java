@@ -150,24 +150,6 @@ public class ModrinthUpdateChecker {
                         (obj.has("changelog") && !obj.get("changelog").isJsonNull()) ? obj.get("changelog").getAsString() : null
                 )).collect(Collectors.toList());
 
-        if (compatible.isEmpty()) {
-            compatible = versions.asList().stream()
-                    .map(JsonElement::getAsJsonObject)
-                    .filter(version -> isVersionCompatible(version, false, true))
-                    .map(obj -> new VersionInfo(
-                            getRawVersion(obj.get("version_number").getAsString()),
-                            (obj.has("changelog") && !obj.get("changelog").isJsonNull()) ? obj.get("changelog").getAsString() : null
-                    )).collect(Collectors.toList());
-        }
-
-        if (compatible.isEmpty()) {
-            compatible = versions.asList().stream()
-                    .map(JsonElement::getAsJsonObject)
-                    .map(obj -> new VersionInfo(
-                            getRawVersion(obj.get("version_number").getAsString()),
-                            (obj.has("changelog") && !obj.get("changelog").isJsonNull()) ? obj.get("changelog").getAsString() : null
-                    )).collect(Collectors.toList());
-        }
 
         if (compatible.isEmpty()) return null;
 
@@ -207,6 +189,15 @@ public class ModrinthUpdateChecker {
         version = version.replaceAll("^\\D+", "");
         String[] split = version.split("\\+");
         return split[0];
+    }
+
+    /**
+     * Whether a compatible, newer release is available.
+     */
+    static boolean shouldNotifyAboutUpdate(String installedModVersion, UpdateResult result) {
+        return result != null && result.latestVersion() != null
+                && compareVersions(result.latestVersion(), getRawVersion(installedModVersion)) > 0
+                && !result.updates().isEmpty();
     }
 
     /**
@@ -267,8 +258,7 @@ public class ModrinthUpdateChecker {
                 return;
             }
 
-            String installedRaw = getRawVersion(modVersion);
-            if (compareVersions(installedRaw, result.latestVersion()) >= 0) {
+            if (!shouldNotifyAboutUpdate(modVersion, result)) {
                 VoxelConstants.getLogger().info("Voxelmap is up to date.");
                 return;
             }

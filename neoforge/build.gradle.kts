@@ -52,6 +52,10 @@ tasks.jar {
     from(commonMain.output.resourcesDir)
     from(serverCommonMain.output.classesDirs)
     from(serverCommonMain.output.resourcesDir)
+    // VoxelConfig is a plain library; package its classes for NeoForge as for Fabric.
+    from(zipTree(project(":common").tasks.named("shadowJar").map { (it as Jar).archiveFile })) {
+        include("de/voxelmap/voxelconfig/**")
+    }
 
     from(rootDir.resolve("LICENSE.md"))
 

@@ -49,7 +49,7 @@ public class Piece {
         Cubiomes.C_INT.withName("chestCount"),
         MemoryLayout.sequenceLayout(4, Pos.layout()).withName("chestPoses"),
         MemoryLayout.paddingLayout(4),
-        MemoryLayout.sequenceLayout(4, Cubiomes.C_LONG_LONG).withName("lootSeeds"),
+        MemoryLayout.sequenceLayout(4, Cubiomes.C_LONG).withName("lootSeeds"),
         MemoryLayout.sequenceLayout(4, Cubiomes.C_POINTER).withName("lootTables"),
         Cubiomes.C_INT.withName("additionalData"),
         MemoryLayout.paddingLayout(4),

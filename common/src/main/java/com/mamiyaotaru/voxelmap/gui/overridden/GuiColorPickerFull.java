@@ -2,6 +2,7 @@ package com.mamiyaotaru.voxelmap.gui.overridden;
 
 import com.mamiyaotaru.voxelmap.VoxelConstants;
 import com.mamiyaotaru.voxelmap.rendering.VoxelMapGuiGraphics;
+import com.mojang.blaze3d.platform.InputConstants;
 import java.awt.Color;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -42,7 +43,7 @@ public class GuiColorPickerFull extends AbstractColorPicker {
 
     @Override
     public boolean mouseClicked(MouseButtonEvent mouseButtonEvent, boolean doubleClick) {
-        if (mouseButtonEvent.button() != 0) {
+        if (mouseButtonEvent.button() != InputConstants.MOUSE_BUTTON_LEFT) {
             return false;
         }
 
@@ -59,7 +60,7 @@ public class GuiColorPickerFull extends AbstractColorPicker {
 
     @Override
     public boolean mouseDragged(MouseButtonEvent mouseButtonEvent, double deltaX, double deltaY) {
-        if (mouseButtonEvent.button() == 0 && isPicking()) {
+        if (mouseButtonEvent.button() == InputConstants.MOUSE_BUTTON_LEFT && isPicking()) {
             pickColorAt(mouseButtonEvent.x(), mouseButtonEvent.y());
             return true;
         }
@@ -69,7 +70,7 @@ public class GuiColorPickerFull extends AbstractColorPicker {
 
     @Override
     public boolean mouseReleased(MouseButtonEvent mouseButtonEvent) {
-        if (mouseButtonEvent.button() == 0 && isPicking()) {
+        if (mouseButtonEvent.button() == InputConstants.MOUSE_BUTTON_LEFT && isPicking()) {
             pickingHue = false;
             pickingSat = false;
             pickingValue = false;
@@ -132,7 +133,6 @@ public class GuiColorPickerFull extends AbstractColorPicker {
 
         if (pickingValue) {
             // calculate v
-            double dx = getValueSliderX() - mouseX;
             double dy = getValueSliderY() - mouseY;
 
             v = (float) Mth.clamp((dy + wheelRadius) / (wheelRadius * 2.0), 0.0, 1.0);
@@ -140,7 +140,6 @@ public class GuiColorPickerFull extends AbstractColorPicker {
 
         if (pickingSat) {
             // calculate s
-            double dx = getSatSliderX() - mouseX;
             double dy = getSatSliderY() - mouseY;
 
             s = (float) Mth.clamp((dy + wheelRadius) / (wheelRadius * 2.0), 0.0, 1.0);

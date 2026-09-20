@@ -32,7 +32,7 @@ public final class searchAll48$check {
 
     private static final FunctionDescriptor $DESC = FunctionDescriptor.of(
         Cubiomes.C_INT,
-        Cubiomes.C_LONG_LONG,
+        Cubiomes.C_LONG,
         Cubiomes.C_POINTER
     );
 

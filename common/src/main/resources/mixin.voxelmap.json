@@ -25,7 +25,6 @@
     "MixinFossilFeatureChunkAnalysis",
     "MixinPaleMossDecoratorChunkAnalysis",
     "MixinTemplateFeatureChunkAnalysis",
-    "NoiseBasedChunkGeneratorAccessor",
     "MixinWorldOpenFlows",
     "MixinWorldRenderer",
     "MixinSectionUpdateTracker"

@@ -3,7 +3,7 @@ package com.mamiyaotaru.voxelmap.seedmapper;
 import com.mamiyaotaru.voxelmap.rendering.VoxelMapRenderTypes;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.mamiyaotaru.voxelmap.rendering.AlwaysOnTopSubmitter;
+import net.minecraft.client.renderer.OrderedSubmitNodeCollector;
 import net.minecraft.client.Camera;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.core.BlockPos;
@@ -150,7 +150,7 @@ public final class SeedMapperEspManager {
 
     private static void renderGeometry(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, Camera camera, RenderGeometry geometry) {
         Vec3 cameraPos = camera.position();
-        AlwaysOnTopSubmitter overlay = AlwaysOnTopSubmitter.order(submitNodeCollector, Integer.MAX_VALUE);
+        OrderedSubmitNodeCollector overlay = submitNodeCollector.order(Integer.MAX_VALUE);
         if (!geometry.fillFaces().isEmpty()) {
             List<FillFace> sortedFillFaces = new ArrayList<>(geometry.fillFaces());
             // With an always-pass depth writer, render far faces first so the nearest fill surface

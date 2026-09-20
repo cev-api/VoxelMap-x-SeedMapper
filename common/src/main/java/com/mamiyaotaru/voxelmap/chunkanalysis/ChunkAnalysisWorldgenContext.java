@@ -1,6 +1,5 @@
 package com.mamiyaotaru.voxelmap.chunkanalysis;
 
-import com.mamiyaotaru.voxelmap.mixins.NoiseBasedChunkGeneratorAccessor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
@@ -62,8 +61,6 @@ import net.minecraft.world.level.levelgen.WorldGenerationContext;
 import net.minecraft.world.level.levelgen.WorldOptions;
 import net.minecraft.world.level.levelgen.WorldgenRandom;
 import net.minecraft.world.level.levelgen.blending.Blender;
-import net.minecraft.world.level.levelgen.carver.CarvingContext;
-import net.minecraft.world.level.levelgen.carver.ConfiguredWorldCarver;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.StructureStart;
@@ -119,12 +116,12 @@ final class ChunkAnalysisWorldgenContext implements AutoCloseable {
     static CompletableFuture<ChunkAnalysisWorldgenContext> load(Executor executor) {
         Minecraft minecraft = Minecraft.getInstance();
         CloseableResourceManager resources = new MultiPackResourceManager(
-                PackType.SERVER_DATA, List.of(minecraft.getVanillaPackResources()));
+                PackType.SERVER_DATA, List.of(minecraft.getVanillaPackResources().fullResources()));
         RegistryAccess.Frozen staticAccess = RegistryLayer.createRegistryAccess().getLayer(RegistryLayer.STATIC);
         List<Registry.PendingTags<?>> staticTags = TagLoader.loadTagsForExistingRegistries(resources, staticAccess);
         List<HolderLookup.RegistryLookup<?>> worldgenContext = TagLoader.buildUpdatedLookups(staticAccess, staticTags);
 
-        return RegistryDataLoader.load(resources, worldgenContext, RegistryDataLoader.WORLDGEN_REGISTRIES, executor)
+        return RegistryDataLoader.load(resources, worldgenContext, RegistryDataLoader.WORLD_REGISTRIES, executor)
                 .thenCompose(worldgen -> {
                     List<HolderLookup.RegistryLookup<?>> dimensionContext = new ArrayList<>(worldgenContext);
                     dimensionContext.addAll(worldgen.listRegistries().toList());
@@ -173,8 +170,8 @@ final class ChunkAnalysisWorldgenContext implements AutoCloseable {
         DimensionType dimensionType = stem.type().value();
         LevelHeightAccessor height = LevelHeightAccessor.create(dimensionType.minY(), dimensionType.height());
         PalettedContainerFactory containers = PalettedContainerFactory.create(registries);
-        RandomState randomState = RandomState.create(generator.generatorSettings().value(),
-                registries.lookupOrThrow(Registries.NOISE), seed);
+        RandomState randomState = RandomState.create(registries.lookupOrThrow(Registries.NOISE),
+                seed, generator.generatorSettings().value());
         ChunkGeneratorStructureState structureState = generator.createState(
                 registries.lookupOrThrow(Registries.STRUCTURE_SET), randomState, seed);
 
@@ -224,12 +221,9 @@ final class ChunkAnalysisWorldgenContext implements AutoCloseable {
                 .toArray(CompletableFuture[]::new)).join();
         biomeChunks.forEach(chunk -> chunk.setPersistedStatus(ChunkStatus.BIOMES));
 
-        CompletableFuture.allOf(terrainChunks.stream()
-                .map(chunk -> generator.fillFromNoise(Blender.empty(), randomState, structureManager, chunk))
-                .toArray(CompletableFuture[]::new)).join();
-        terrainChunks.forEach(chunk -> chunk.setPersistedStatus(ChunkStatus.NOISE));
-
-        forEachChunk(center, generatedRadius, chunks, chunk -> {
+        // 26.3 combines density fill, material surface rules and carvers into TERRAIN.
+        // Use the vanilla pipeline, including its uncached carver-biome resolver.
+        for (ProtoChunk chunk : terrainChunks) {
             memory.beginGeneration(chunk);
             Set<Holder<Biome>> possibleBiomes = new HashSet<>();
             ChunkPos pos = chunk.getPos();
@@ -238,16 +232,10 @@ final class ChunkAnalysisWorldgenContext implements AutoCloseable {
                     chunks.get(ChunkPos.pack(x, z)).collectBiomesInPalette(possibleBiomes);
                 }
             }
-            generator.buildSurface(chunk, new WorldGenerationContext(generator, height), randomState,
-                    structureManager, memory.biomeManager, Blender.empty(), possibleBiomes);
-            chunk.setPersistedStatus(ChunkStatus.SURFACE);
-        });
-
-        forEachChunk(center, generatedRadius, chunks, chunk -> {
-            memory.beginGeneration(chunk);
-            applyCarvers(generator, memory, structureManager, randomState, chunk, seed);
-            chunk.setPersistedStatus(ChunkStatus.CARVERS);
-        });
+            generator.buildTerrain(chunk, Blender.empty(), randomState, structureManager,
+                    memory.biomeManager, null, possibleBiomes).join();
+            chunk.setPersistedStatus(ChunkStatus.TERRAIN);
+        }
 
         if (includeFeatures) {
             memory.recordFeatureWrites = true;
@@ -281,38 +269,6 @@ final class ChunkAnalysisWorldgenContext implements AutoCloseable {
         }
     }
 
-    private static void applyCarvers(NoiseBasedChunkGenerator generator, MemoryLevel memory,
-                                     StructureManager structureManager, RandomState randomState,
-                                     ChunkAccess chunk, long seed) {
-        NoiseBasedChunkGeneratorAccessor accessor = (NoiseBasedChunkGeneratorAccessor) (Object) generator;
-        BiomeManager carverBiomes = memory.biomeManager.withDifferentSource(
-                (x, y, z) -> generator.getBiomeSource().getNoiseBiome(x, y, z, randomState.sampler()));
-        WorldgenRandom random = new WorldgenRandom(new LegacyRandomSource(0L));
-        NoiseChunk noiseChunk = chunk.getOrCreateNoiseChunk(
-                value -> accessor.voxelmap$createNoiseChunk(value, structureManager, Blender.empty(), randomState));
-        CarvingContext context = new CarvingContext(generator, memory.registries,
-                chunk.getHeightAccessorForGeneration(), noiseChunk, randomState,
-                generator.generatorSettings().value().surfaceRule());
-        CarvingMask mask = ((ProtoChunk) chunk).getOrCreateCarvingMask();
-        ChunkPos center = chunk.getPos();
-        for (int dx = -8; dx <= 8; dx++) {
-            for (int dz = -8; dz <= 8; dz++) {
-                ChunkPos source = new ChunkPos(center.x() + dx, center.z() + dz);
-                ChunkAccess sourceChunk = memory.chunks.get(source.pack());
-                BiomeGenerationSettings settings = sourceChunk.carverBiome(() -> generator.getBiomeGenerationSettings(
-                        generator.getBiomeSource().getNoiseBiome(QuartPos.fromBlock(source.getMinBlockX()), 0,
-                                QuartPos.fromBlock(source.getMinBlockZ()), randomState.sampler())));
-                int index = 0;
-                for (Holder<ConfiguredWorldCarver<?>> holder : settings.getCarvers()) {
-                    ConfiguredWorldCarver<?> carver = holder.value();
-                    random.setLargeFeatureSeed(seed + index++, source.x(), source.z());
-                    if (carver.isStartChunk(random)) {
-                        carver.carve(context, chunk, carverBiomes::getBiome, random, noiseChunk.aquifer(), source, mask);
-                    }
-                }
-            }
-        }
-    }
 
     private static void forEachChunk(ChunkPos center, int radius, Map<Long, ProtoChunk> chunks,
                                      java.util.function.Consumer<ProtoChunk> consumer) {
@@ -429,7 +385,7 @@ final class ChunkAnalysisWorldgenContext implements AutoCloseable {
         }
 
         private Holder<Biome> noiseBiome(int x, int y, int z) {
-            return generator.getBiomeSource().getNoiseBiome(x, y, z, randomState.sampler());
+            return generator.getBiomeSource().createUncachedResolver(randomState).getNoiseBiome(x, y, z);
         }
 
         private ProtoChunk chunkAt(BlockPos pos) {
@@ -507,8 +463,8 @@ final class ChunkAnalysisWorldgenContext implements AutoCloseable {
                 case "getHeight" -> args == null || args.length == 0 ? dimensionType.height() : heightFromArguments(args);
                 case "getMaxY" -> dimensionType.minY() + dimensionType.height() - 1;
                 case "getBiomeManager" -> biomeManager;
-                case "getUncachedNoiseBiome", "getNoiseBiome" -> generator.getBiomeSource()
-                        .getNoiseBiome((int) args[0], (int) args[1], (int) args[2], randomState.sampler());
+                case "getUncachedNoiseBiome", "getNoiseBiome" -> generator.getBiomeSource().createUncachedResolver(randomState)
+                        .getNoiseBiome((int) args[0], (int) args[1], (int) args[2]);
                 case "enabledFeatures" -> FeatureFlags.DEFAULT_FLAGS;
                 case "environmentAttributes" -> EnvironmentAttributeReader.EMPTY;
                 case "getWorldBorder" -> border;

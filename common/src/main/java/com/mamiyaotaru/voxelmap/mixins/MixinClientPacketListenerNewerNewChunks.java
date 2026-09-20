@@ -22,8 +22,8 @@ public abstract class MixinClientPacketListenerNewerNewChunks {
         }
 
         VoxelConstants.getVoxelMapInstance().getNewerNewChunksManager()
-                .onChunkDataPacket(packet.getX(), packet.getZ());
-        com.mamiyaotaru.voxelmap.seedmapper.SeedMapperContainerDetection.onChunkLoaded(packet.getX(), packet.getZ());
+                .onChunkDataPacket(packet.x(), packet.z());
+        com.mamiyaotaru.voxelmap.seedmapper.SeedMapperContainerDetection.onChunkLoaded(packet.x(), packet.z());
     }
 
     @Inject(method = "handleBlockUpdate", at = @At("RETURN"))

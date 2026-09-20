@@ -28,7 +28,8 @@ public final class SeedMapperCompat {
             new MinecraftVersion("1.21.9", "1.21.9", Cubiomes.MC_1_21_9()),
             new MinecraftVersion("1.21.11", "1.21.11", Cubiomes.MC_1_21_11()),
             new MinecraftVersion("26.1", "26.1", Cubiomes.MC_26_1()),
-            new MinecraftVersion("26.2", "26.2", Cubiomes.MC_26_2())
+            new MinecraftVersion("26.2", "26.2", Cubiomes.MC_26_2()),
+            new MinecraftVersion("26.3", "26.3", Cubiomes.MC_26_3())
     );
 
     private SeedMapperCompat() {
@@ -53,6 +54,7 @@ public final class SeedMapperCompat {
         if (version.startsWith("1.21")) return Cubiomes.MC_1_21();
         if (version.startsWith("26.1")) return Cubiomes.MC_26_1();
         if (version.startsWith("26.2")) return Cubiomes.MC_26_2();
+        if (version.startsWith("26.3")) return Cubiomes.MC_26_3();
         return Cubiomes.MC_NEWEST();
     }
 

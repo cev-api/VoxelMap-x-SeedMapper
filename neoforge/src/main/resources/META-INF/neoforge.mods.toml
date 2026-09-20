@@ -4,10 +4,10 @@ license = "All Rights Reserved"
 issueTrackerURL = "https://github.com/cev-api/VoxelMap-x-SeedMapper/issues"
 
 [[mods]]
-modId = "voxelmap-cevapi"
+modId = "voxelmap"
 version = "${version}"
 displayName = "VoxelMap x SeedMapper by CevAPI"
-logoFile = "icon.png"
+iconFile = "icon.png"
 authors = "CevAPI, Lahwran, Zaneris, MamiyaOtaru, fantahund, Brokkonaut, TheAlgorithm476, Algamja11"
 description = "Minimap, World Map & Seed Map"
 displayURL = "https://github.com/cev-api/VoxelMap-x-SeedMapper"
@@ -15,14 +15,14 @@ displayURL = "https://github.com/cev-api/VoxelMap-x-SeedMapper"
 [[dependencies.voxelmap]]
 modId = "neoforge"
 type = "required"
-versionRange = "[26.2.0.0-beta,)"
+versionRange = "[26.3.0.0-beta,)"
 ordering = "NONE"
 side = "BOTH"
 
 [[dependencies.voxelmap]]
 modId = "minecraft"
 type = "required"
-versionRange = "[26.2,26.3)"
+versionRange = "[26.3,26.4)"
 ordering = "NONE"
 side = "BOTH"
 
