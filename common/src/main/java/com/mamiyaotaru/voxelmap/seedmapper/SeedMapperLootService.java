@@ -50,9 +50,24 @@ public final class SeedMapperLootService {
             Cubiomes.Bastion(),
             Cubiomes.Outpost(),
             Cubiomes.Shipwreck(),
-            Cubiomes.Stronghold()
+            Cubiomes.Stronghold(),
+            Cubiomes.Ancient_City(),
+            Cubiomes.Trial_Chambers(),
+            Cubiomes.Trail_Ruins()
     );
     private static final Map<SeedMapperFeature, List<String>> FEATURE_TABLES = new LinkedHashMap<>();
+
+    /**
+     * True when this build registers loot tables for the feature.
+     *
+     * <p>This is deliberately separate from {@link SeedMapperFeature#lootable()},
+     * which only decides whether the locator's "lootable structures only" filter
+     * hides a feature. Ancient City, Trial Chambers and Trail Ruins have
+     * predictable loot but are still shown normally on the map.</p>
+     */
+    public static boolean hasPredictableLoot(SeedMapperFeature feature) {
+        return feature != null && FEATURE_TABLES.containsKey(feature);
+    }
     private static final List<String> COMMON_ENCHANT_SUGGESTIONS = List.of(
             "mending", "unbreaking", "efficiency", "fortune", "silk_touch", "sharpness", "smite", "bane_of_arthropods",
             "sweeping_edge", "knockback", "fire_aspect", "looting", "power", "punch", "flame", "infinity",
@@ -107,6 +122,11 @@ public final class SeedMapperLootService {
     }
 
     public static List<LootEntry> collectLootEntries(long seed, int mcVersion, int dimension, int generatorFlags, List<LootTarget> targets) {
+        return SeedMapperNative.withStructureSalts(currentStructureSalts(),
+                () -> collectLootEntriesWithActiveStructureSalts(seed, mcVersion, dimension, generatorFlags, targets));
+    }
+
+    private static List<LootEntry> collectLootEntriesWithActiveStructureSalts(long seed, int mcVersion, int dimension, int generatorFlags, List<LootTarget> targets) {
         if (targets == null || targets.isEmpty()) {
             return List.of();
         }
@@ -234,7 +254,12 @@ public final class SeedMapperLootService {
     }
 
     public static List<SeedMapperChestLootData> buildStructureChestLoot(long seed, int dimension, int mcVersion, int generatorFlags, SeedMapperFeature feature, int blockX, int blockZ) {
-        if (feature == null || !feature.lootable() || feature.structureId() < 0) {
+        return SeedMapperNative.withStructureSalts(currentStructureSalts(),
+                () -> buildStructureChestLootWithActiveStructureSalts(seed, dimension, mcVersion, generatorFlags, feature, blockX, blockZ));
+    }
+
+    private static List<SeedMapperChestLootData> buildStructureChestLootWithActiveStructureSalts(long seed, int dimension, int mcVersion, int generatorFlags, SeedMapperFeature feature, int blockX, int blockZ) {
+        if (feature == null || !hasPredictableLoot(feature) || feature.structureId() < 0) {
             return List.of();
         }
         if (feature.dimension() != Integer.MIN_VALUE && feature.dimension() != dimension) {
@@ -393,7 +418,7 @@ public final class SeedMapperLootService {
 
     private static String resolveStructureDisplayName(int structureId, String fallbackName) {
         for (SeedMapperFeature feature : SeedMapperFeature.values()) {
-            if (feature.structureId() == structureId && feature.lootable()) {
+            if (feature.structureId() == structureId && hasPredictableLoot(feature)) {
                 return feature.id();
             }
         }
@@ -407,6 +432,14 @@ public final class SeedMapperLootService {
 
     public static Map<SeedMapperFeature, List<String>> featureTables() {
         return FEATURE_TABLES;
+    }
+
+    private static Map<Integer, Integer> currentStructureSalts() {
+        try {
+            return VoxelConstants.getVoxelMapInstance().getSeedMapperOptions().getResolvedCustomStructureSalts();
+        } catch (Throwable ignored) {
+            return Map.of();
+        }
     }
 
     public static List<String> getLootSearchSuggestions(int dimension, int mcVersion, long seed) {
@@ -444,7 +477,7 @@ public final class SeedMapperLootService {
 
             ArrayList<LootTarget> targets = new ArrayList<>();
             for (SeedMapperMarker marker : markers) {
-                if (marker == null || marker.feature() == null || !marker.feature().lootable() || marker.feature().structureId() < 0) {
+                if (marker == null || marker.feature() == null || !hasPredictableLoot(marker.feature()) || marker.feature().structureId() < 0) {
                     continue;
                 }
                 if (!LOOT_SUPPORTED_STRUCTURES.contains(marker.feature().structureId())) {

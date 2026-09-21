@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -84,5 +85,20 @@ public class NativeLootCompatibilityTest {
         }
 
         assertTrue(hasFortune1Book);
+    }
+
+    @Test
+    public void testVaultPrediction1_21Plus() {
+        List<SeedMapperVaultService.VaultPrediction> normal =
+                SeedMapperVaultService.predict(12345L, Cubiomes.MC_26_3(), 0, false, 1);
+        List<SeedMapperVaultService.VaultPrediction> ominous =
+                SeedMapperVaultService.predict(12345L, Cubiomes.MC_26_3(), 0, true, 1);
+
+        assertFalse(normal.isEmpty());
+        assertFalse(ominous.isEmpty());
+        assertEquals(1, normal.getFirst().offset());
+        assertEquals(1, ominous.getFirst().offset());
+        assertFalse(normal.getFirst().items().isEmpty());
+        assertFalse(ominous.getFirst().items().isEmpty());
     }
 }

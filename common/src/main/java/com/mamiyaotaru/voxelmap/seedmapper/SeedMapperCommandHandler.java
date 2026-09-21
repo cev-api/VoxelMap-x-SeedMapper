@@ -18,6 +18,7 @@ import com.mamiyaotaru.voxelmap.chunksync.ChunkSyncCommandHandler;
 import com.mamiyaotaru.voxelmap.chunkanalysis.ChunkAnalysisService;
 import com.mamiyaotaru.voxelmap.MapSettingsManager;
 import com.mamiyaotaru.voxelmap.VoxelConstants;
+import com.mamiyaotaru.voxelmap.gui.GuiSeedMapperMap;
 import com.mamiyaotaru.voxelmap.integration.BaritoneHelper;
 import com.mamiyaotaru.voxelmap.integration.BaritoneOreMiner;
 import com.mamiyaotaru.voxelmap.integration.VeinProvider;
@@ -89,6 +90,8 @@ public final class SeedMapperCommandHandler {
     private static Consumer<String> statusSink;
     private static final ThreadLocal<SourceOverrides> SOURCE_OVERRIDES = new ThreadLocal<>();
     private static final int MAX_HIGHLIGHT_CHUNK_RANGE = 8;
+    private static final long MAX_TERRAIN_BUFFER_BYTES = 64L * 1024L * 1024L;
+    private static final int MAX_TERRAIN_HIGHLIGHTS = 100_000;
     private static final int[] ORE_TYPES = new int[] {
             Cubiomes.AndesiteOre(), Cubiomes.BlackstoneOre(), Cubiomes.BuriedDiamondOre(), Cubiomes.BuriedLapisOre(),
             Cubiomes.ClayOre(), Cubiomes.CoalOre(), Cubiomes.CopperOre(), Cubiomes.DeepslateOre(), Cubiomes.DeltasGoldOre(),
@@ -100,7 +103,7 @@ public final class SeedMapperCommandHandler {
             Cubiomes.MiddleIronOre(), Cubiomes.NetherGoldOre(), Cubiomes.NetherGravelOre(), Cubiomes.NetherQuartzOre(),
             Cubiomes.RedstoneOre(), Cubiomes.SmallDebrisOre(), Cubiomes.SmallIronOre(), Cubiomes.SoulSandOre(),
             Cubiomes.TuffOre(), Cubiomes.UpperAndesiteOre(), Cubiomes.UpperCoalOre(), Cubiomes.UpperDioriteOre(),
-            Cubiomes.UpperGraniteOre(), Cubiomes.UpperIronOre()
+            Cubiomes.UpperGraniteOre(), Cubiomes.UpperIronOre(), Cubiomes.InfestedOre()
     };
 
     private SeedMapperCommandHandler() {
@@ -132,10 +135,12 @@ public final class SeedMapperCommandHandler {
             case "version" -> { handleVersion(args); yield true; }
             case "seed" -> {
                 if (args.length < 3) send("Usage: /seedmap seed <seed>");
-                else applySeed(args[2]);
+                else applySeed(String.join(" ", Arrays.copyOfRange(args, 2, args.length)));
                 yield true;
             }
+            case "map" -> { GuiSeedMapperMap.openFromCommand(); yield true; }
             case "locate" -> { handleLocate(args); yield true; }
+            case "vault" -> { handleVault(args); yield true; }
             case "highlight", "esp" -> { handleHighlight(args); yield true; }
             case "mine" -> { handleMine(args); yield true; }
             case "export" -> { handleExport(args); yield true; }
@@ -295,6 +300,7 @@ public final class SeedMapperCommandHandler {
         }
         switch (args[2].toLowerCase(Locale.ROOT)) {
             case "structure", "feature" -> locateStructure(args);
+            case "treasurecluster", "treasure_cluster", "buriedtreasurecluster", "buried_treasure_cluster" -> locateBuriedTreasureCluster();
             case "biome" -> locateBiome(args);
             case "orevein", "ore_vein" -> locateOreVein(args);
             case "slime", "slimechunk", "slime_chunk" -> locateSlimeChunk();
@@ -305,7 +311,7 @@ public final class SeedMapperCommandHandler {
 
     private static void handleHighlight(String[] args) {
         if (args.length < 3) {
-            send("Usage: /seedmap highlight <ore|orevein|terrain|canyon|cave|clear> ...");
+            send("Usage: /seedmap highlight <ore|orevein|terrain|surface|canyon|cave|clear> ...");
             return;
         }
         String highlightType = args[2].toLowerCase(Locale.ROOT);
@@ -320,9 +326,10 @@ public final class SeedMapperCommandHandler {
             case "ore", "block" -> highlightOre(args);
             case "orevein", "ore_vein" -> highlightOreVeinEsp(args);
             case "terrain" -> highlightTerrainEsp(args);
+            case "surface" -> highlightSurfaceEsp(args);
             case "canyon", "ravine" -> highlightCanyonEsp(args);
             case "cave", "caves" -> highlightCaveEsp(args);
-            default -> send("Unknown highlight type. Use ore, orevein, terrain, canyon, cave, or clear.");
+            default -> send("Unknown highlight type. Use ore, orevein, terrain, surface, canyon, cave, or clear.");
         }
     }
 
@@ -594,17 +601,19 @@ public final class SeedMapperCommandHandler {
         int mc = SeedMapperCompat.getMcVersion();
         int dimension = getCurrentCubiomesDimension();
         ArrayList<String> names = new ArrayList<>();
-        for (int id = 0; id < 256; id++) {
-            try {
-                MemorySegment biomeName = Cubiomes.biome2str(mc, id);
-                if (biomeName == null || biomeName.address() == 0) continue;
-                String name = biomeName.getString(0);
-                if (name == null || name.isBlank()) continue;
-                String normalized = name.toLowerCase(Locale.ROOT);
-                if (isBiomeAvailableInDimension(normalized, dimension)) {
-                    names.add(normalized);
+        synchronized (SeedMapperNative.cubiomesLock()) {
+            for (int id = 0; id < 256; id++) {
+                try {
+                    MemorySegment biomeName = Cubiomes.biome2str(mc, id);
+                    if (biomeName == null || biomeName.address() == 0) continue;
+                    String name = biomeName.getString(0);
+                    if (name == null || name.isBlank()) continue;
+                    String normalized = name.toLowerCase(Locale.ROOT);
+                    if (isBiomeAvailableInDimension(normalized, dimension)) {
+                        names.add(normalized);
+                    }
+                } catch (Throwable ignored) {
                 }
-            } catch (Throwable ignored) {
             }
         }
         return names.stream().distinct().sorted(Comparator.naturalOrder()).toList();
@@ -653,39 +662,41 @@ public final class SeedMapperCommandHandler {
         int px = commandX();
         int pz = commandZ();
         int mcVersion = SeedMapperCompat.getMcVersion();
-        try (Arena arena = Arena.ofConfined()) {
-            SeedMapperNative.ensureLoaded();
-            MemorySegment generator = Generator.allocate(arena);
-            Cubiomes.setupGenerator(generator, mcVersion, 0);
-            Cubiomes.applySeed(generator, Cubiomes.DIM_OVERWORLD(), seed);
+        synchronized (SeedMapperNative.cubiomesLock()) {
+            try (Arena arena = Arena.ofConfined()) {
+                SeedMapperNative.ensureLoaded();
+                MemorySegment generator = Generator.allocate(arena);
+                Cubiomes.setupGenerator(generator, mcVersion, 0);
+                Cubiomes.applySeed(generator, Cubiomes.DIM_OVERWORLD(), seed);
 
-            MemorySegment strongholdIter = StrongholdIter.allocate(arena);
-            Cubiomes.initFirstStronghold(arena, strongholdIter, mcVersion, seed);
+                MemorySegment strongholdIter = StrongholdIter.allocate(arena);
+                Cubiomes.initFirstStronghold(arena, strongholdIter, mcVersion, seed);
 
-            int count = mcVersion <= Cubiomes.MC_1_8() ? 3 : 128;
-            long bestDist = Long.MAX_VALUE;
-            int bestX = 0;
-            int bestZ = 0;
-            boolean found = false;
-            for (int i = 0; i < count; i++) {
-                if (Cubiomes.nextStronghold(strongholdIter, generator) == 0) {
-                    break;
+                int count = mcVersion <= Cubiomes.MC_1_8() ? 3 : 128;
+                long bestDist = Long.MAX_VALUE;
+                int bestX = 0;
+                int bestZ = 0;
+                boolean found = false;
+                for (int i = 0; i < count; i++) {
+                    if (Cubiomes.nextStronghold(strongholdIter, generator) == 0) {
+                        break;
+                    }
+                    MemorySegment pos = StrongholdIter.pos(strongholdIter);
+                    int x = Pos.x(pos);
+                    int z = Pos.z(pos);
+                    long dx = x - (long) px;
+                    long dz = z - (long) pz;
+                    long dist = dx * dx + dz * dz;
+                    if (dist < bestDist) {
+                        bestDist = dist;
+                        bestX = x;
+                        bestZ = z;
+                        found = true;
+                    }
                 }
-                MemorySegment pos = StrongholdIter.pos(strongholdIter);
-                int x = Pos.x(pos);
-                int z = Pos.z(pos);
-                long dx = x - (long) px;
-                long dz = z - (long) pz;
-                long dist = dx * dx + dz * dz;
-                if (dist < bestDist) {
-                    bestDist = dist;
-                    bestX = x;
-                    bestZ = z;
-                    found = true;
-                }
+                if (!found) return null;
+                return new LocateResult(SeedMapperFeature.STRONGHOLD.id(), bestX, bestZ);
             }
-            if (!found) return null;
-            return new LocateResult(SeedMapperFeature.STRONGHOLD.id(), bestX, bestZ);
         }
     }
 
@@ -711,25 +722,27 @@ public final class SeedMapperCommandHandler {
         int px = GameVariableAccessShim.xCoord();
         int pz = GameVariableAccessShim.zCoord();
         int flags = 0;
-        try (Arena arena = Arena.ofConfined()) {
-            SeedMapperNative.ensureLoaded();
-            MemorySegment generator = Generator.allocate(arena);
-            Cubiomes.setupGenerator(generator, SeedMapperCompat.getMcVersion(), flags);
-            Cubiomes.applySeed(generator, dimension, seed);
+        synchronized (SeedMapperNative.cubiomesLock()) {
+            try (Arena arena = Arena.ofConfined()) {
+                SeedMapperNative.ensureLoaded();
+                MemorySegment generator = Generator.allocate(arena);
+                Cubiomes.setupGenerator(generator, SeedMapperCompat.getMcVersion(), flags);
+                Cubiomes.applySeed(generator, dimension, seed);
 
-            int step = 64;
-            int[] quartYs = biomeSearchQuartYs(SeedMapperCompat.getMcVersion());
-            for (int radius = 0; radius <= maxRadius; radius += step) {
-                for (int dx = -radius; dx <= radius; dx += step) {
-                    int dz = radius - Math.abs(dx);
-                    int[] candidates = dz == 0 ? new int[]{0} : new int[]{dz, -dz};
-                    for (int zOff : candidates) {
-                        int x = px + dx;
-                        int z = pz + zOff;
-                        for (int quartY : quartYs) {
-                            int biome = Cubiomes.getBiomeAt(generator, 4, x >> 2, quartY, z >> 2);
-                            if (biome == wantedBiomeId) {
-                                return new LocateResult(biomeQuery, x, z);
+                int step = 64;
+                int[] quartYs = biomeSearchQuartYs(SeedMapperCompat.getMcVersion());
+                for (int radius = 0; radius <= maxRadius; radius += step) {
+                    for (int dx = -radius; dx <= radius; dx += step) {
+                        int dz = radius - Math.abs(dx);
+                        int[] candidates = dz == 0 ? new int[]{0} : new int[]{dz, -dz};
+                        for (int zOff : candidates) {
+                            int x = px + dx;
+                            int z = pz + zOff;
+                            for (int quartY : quartYs) {
+                                int biome = Cubiomes.getBiomeAt(generator, 4, x >> 2, quartY, z >> 2);
+                                if (biome == wantedBiomeId) {
+                                    return new LocateResult(biomeQuery, x, z);
+                                }
                             }
                         }
                     }
@@ -919,27 +932,29 @@ public final class SeedMapperCommandHandler {
         int px = GameVariableAccessShim.xCoord();
         int pz = GameVariableAccessShim.zCoord();
         int flags = 0;
-        try (Arena arena = Arena.ofConfined()) {
-            SeedMapperNative.ensureLoaded();
-            MemorySegment generator = Generator.allocate(arena);
-            Cubiomes.setupGenerator(generator, SeedMapperCompat.getMcVersion(), flags);
-            Cubiomes.applySeed(generator, dimension, seed);
+        synchronized (SeedMapperNative.cubiomesLock()) {
+            try (Arena arena = Arena.ofConfined()) {
+                SeedMapperNative.ensureLoaded();
+                MemorySegment generator = Generator.allocate(arena);
+                Cubiomes.setupGenerator(generator, SeedMapperCompat.getMcVersion(), flags);
+                Cubiomes.applySeed(generator, dimension, seed);
 
-            int step = 64;
-            int[] quartYs = biomeSearchQuartYs(SeedMapperCompat.getMcVersion());
-            for (int radius = 0; radius <= 8192; radius += step) {
-                for (int dx = -radius; dx <= radius; dx += step) {
-                    int dz = radius - Math.abs(dx);
-                    int[] candidates = dz == 0 ? new int[]{0} : new int[]{dz, -dz};
-                    for (int zOff : candidates) {
-                        int x = px + dx;
-                        int z = pz + zOff;
-                        for (int quartY : quartYs) {
-                            int biome = Cubiomes.getBiomeAt(generator, 4, x >> 2, quartY, z >> 2);
-                            if (biome == wantedBiomeId) {
-                                highlightLocation("biome:" + biomeQuery, x, z);
-                                send("Nearest biome match at X=" + x + " Z=" + z);
-                                return;
+                int step = 64;
+                int[] quartYs = biomeSearchQuartYs(SeedMapperCompat.getMcVersion());
+                for (int radius = 0; radius <= 8192; radius += step) {
+                    for (int dx = -radius; dx <= radius; dx += step) {
+                        int dz = radius - Math.abs(dx);
+                        int[] candidates = dz == 0 ? new int[]{0} : new int[]{dz, -dz};
+                        for (int zOff : candidates) {
+                            int x = px + dx;
+                            int z = pz + zOff;
+                            for (int quartY : quartYs) {
+                                int biome = Cubiomes.getBiomeAt(generator, 4, x >> 2, quartY, z >> 2);
+                                if (biome == wantedBiomeId) {
+                                    highlightLocation("biome:" + biomeQuery, x, z);
+                                    send("Nearest biome match at X=" + x + " Z=" + z);
+                                    return;
+                                }
                             }
                         }
                     }
@@ -994,6 +1009,7 @@ public final class SeedMapperCommandHandler {
         int flags = 0;
 
         List<BlockPos> matches = new ArrayList<>();
+        synchronized (SeedMapperNative.cubiomesLock()) {
         try (Arena arena = Arena.ofConfined()) {
             SeedMapperNative.ensureLoaded();
             MemorySegment generator = Generator.allocate(arena);
@@ -1028,6 +1044,12 @@ public final class SeedMapperCommandHandler {
                     if (Cubiomes.getOreConfig(oreType, mcVersion, biomes.getFirst(), oreConfig) == 0) continue;
 
                     int oreBlock = OreConfig.oreBlock(oreConfig);
+                    // generateOres returns every configured ore type. Keep
+                    // only the requested configuration before inspecting the
+                    // client chunk, otherwise a position can be accepted by
+                    // the block-state check and later be attributed to a
+                    // different generation pass.
+                    if (oreBlock != targetBlock) continue;
                     int numReplaceBlocks = OreConfig.numReplaceBlocks(oreConfig) & 0xFF;
                     MemorySegment replaceBlocks = OreConfig.replaceBlocks(oreConfig);
                     MemorySegment pos3List = Cubiomes.generateOres(arena, generator, surfaceNoise, oreConfig, chunkX, chunkZ);
@@ -1037,6 +1059,7 @@ public final class SeedMapperCommandHandler {
                         for (int i = 0; i < size; i++) {
                             MemorySegment pos3 = Pos3.asSlice(pos3s, i);
                             BlockPos pos = new BlockPos(Pos3.x(pos3), Pos3.y(pos3), Pos3.z(pos3));
+                            if (pos.getX() >> 4 != chunkX || pos.getZ() >> 4 != chunkZ) continue;
                             // Cubiomes returns ore placement attempts.  The
                             // client chunk is authoritative for whether that
                             // attempt actually became an ore block; this also
@@ -1062,10 +1085,9 @@ public final class SeedMapperCommandHandler {
                     }
                 }
 
-                for (Map.Entry<BlockPos, Integer> entry : generatedOres.entrySet()) {
-                    if (entry.getValue() == targetBlock) matches.add(entry.getKey());
-                }
+                matches.addAll(generatedOres.keySet());
             });
+        }
         }
 
         if (matches.isEmpty()) {
@@ -1073,6 +1095,7 @@ public final class SeedMapperCommandHandler {
             return;
         }
 
+        SeedMapperEspManager.clear(SeedMapperEspTarget.BLOCK_HIGHLIGHT);
         SeedMapperEspManager.drawBoxes(SeedMapperEspTarget.BLOCK_HIGHLIGHT, matches, colorForBlock(targetBlock));
         send("Highlighted " + matches.size() + " ore blocks.");
     }
@@ -1205,6 +1228,7 @@ public final class SeedMapperCommandHandler {
             return;
         }
 
+        SeedMapperEspManager.clear(SeedMapperEspTarget.ORE_VEIN);
         blocks.entrySet().stream()
                 .collect(Collectors.groupingBy(Map.Entry::getValue, Collectors.mapping(Map.Entry::getKey, Collectors.toList())))
                 .forEach((block, positions) -> SeedMapperEspManager.drawBoxes(SeedMapperEspTarget.ORE_VEIN, positions, colorForBlock(block)));
@@ -1258,8 +1282,8 @@ public final class SeedMapperCommandHandler {
         }
 
         int dimension = getCurrentCubiomesDimension();
-        if (dimension != Cubiomes.DIM_OVERWORLD()) {
-            send("Terrain ESP only works in the overworld.");
+        if (dimension == Integer.MIN_VALUE) {
+            send("Unsupported dimension.");
             return;
         }
 
@@ -1282,29 +1306,45 @@ public final class SeedMapperCommandHandler {
         int minZ = minChunkZ << 4;
 
         Set<BlockPos> blocks = new HashSet<>();
+        synchronized (SeedMapperNative.cubiomesLock()) {
         try (Arena arena = Arena.ofConfined()) {
             MemorySegment params = TerrainNoise.allocate(arena);
             Cubiomes.setupTerrainNoise(params, version, generatorFlags);
             Cubiomes.initTerrainNoise(params, seed, dimension);
-            int worldMinY = version >= Cubiomes.MC_1_18() ? -64 : 0;
-            int columnCount = version >= Cubiomes.MC_1_18() ? 48 : 32;
-            MemorySegment heights = arena.allocate(Cubiomes.C_INT, (long) blockW * blockH);
+            int worldMinY = dimension == Cubiomes.DIM_OVERWORLD() && version >= Cubiomes.MC_1_18() ? -64 : 0;
+            int worldMaxY = dimension == Cubiomes.DIM_OVERWORLD()
+                    ? (version >= Cubiomes.MC_1_18() ? 320 : 256)
+                    : 128;
+            int cellHeight = dimension == Cubiomes.DIM_END() ? 4 : 8;
+            int colYMin = 0;
+            int colYMax = Math.ceilDiv(worldMaxY - worldMinY, cellHeight);
+            long terrainBytes = (long) blockW * blockH * Math.max(1, worldMaxY - worldMinY);
+            if (terrainBytes > MAX_TERRAIN_BUFFER_BYTES) {
+                send("Terrain ESP request is too large; use 0-2 chunks to avoid a render or memory crash.");
+                return;
+            }
+            int terrainHeight = colYMax * cellHeight;
+            MemorySegment blocksBuffer = arena.allocate(MemoryLayout.sequenceLayout(terrainHeight, Cubiomes.C_CHAR), (long) blockW * blockH);
             Cubiomes.generateRegion(params, minChunkX, minChunkZ, chunkW, chunkH,
-                    MemorySegment.NULL, 0, columnCount, heights, 1);
+                    blocksBuffer, colYMin, colYMax, MemorySegment.NULL, 0);
 
+            outer:
             for (int relX = 0; relX < blockW; relX++) {
                 int x = minX + relX;
                 for (int relZ = 0; relZ < blockH; relZ++) {
                     int z = minZ + relZ;
-                    int columnIndex = relX * blockH + relZ;
-                    int stored = heights.getAtIndex(Cubiomes.C_INT, columnIndex);
-                    if (stored <= worldMinY) {
-                        continue;
+                    int columnIndex = (relX * blockH + relZ) * terrainHeight;
+                    for (int relY = 0; relY < terrainHeight; relY++) {
+                        if (blocks.size() >= MAX_TERRAIN_HIGHLIGHTS) {
+                            break outer;
+                        }
+                        if (blocksBuffer.getAtIndex(Cubiomes.C_CHAR, columnIndex + relY) == 1) {
+                            blocks.add(new BlockPos(x, worldMinY + relY, z));
+                        }
                     }
-                    int surfaceY = stored - 1;
-                    blocks.add(new BlockPos(x, surfaceY, z));
                 }
             }
+        }
         }
 
         if (blocks.isEmpty()) {
@@ -1315,6 +1355,121 @@ public final class SeedMapperCommandHandler {
         SeedMapperEspManager.clear();
         SeedMapperEspManager.drawBoxes(SeedMapperEspTarget.TERRAIN, blocks, 0xFF0000);
         send("Highlighted " + blocks.size() + " terrain samples.");
+    }
+
+    private static void locateBuriedTreasureCluster() {
+        long seed = resolveSeed();
+        if (seed == Long.MIN_VALUE) return;
+        int dimension = getCurrentCubiomesDimension();
+        if (dimension != Cubiomes.DIM_OVERWORLD()) {
+            send("Buried-treasure clusters can only generate in the overworld.");
+            return;
+        }
+        SeedMapperSettingsManager settings = VoxelConstants.getVoxelMapInstance().getSeedMapperOptions();
+        int generatorFlags = settings.largeBiomes ? Cubiomes.LARGE_BIOMES() : 0;
+        List<SeedMapperBuriedTreasureClusterService.ClusterResult> clusters = SeedMapperBuriedTreasureClusterService.find(
+                seed, SeedMapperCompat.getMcVersion(), generatorFlags, settings);
+        if (clusters.isEmpty()) {
+            send("No buried-treasure clusters were found in the world border.");
+            return;
+        }
+        SeedMapperClusterManager.set(currentWorldKey(), seed, SeedMapperCompat.getMcVersion(), generatorFlags,
+                settings.getCustomStructureSaltHash(), clusters);
+        send("Found " + clusters.size() + " buried-treasure cluster origins:");
+        for (SeedMapperBuriedTreasureClusterService.ClusterResult result : clusters) {
+            net.minecraft.world.level.ChunkPos cluster = result.origin();
+            int x = cluster.x() << 4;
+            int z = cluster.z() << 4;
+            send("Cluster (" + result.treasureCount() + " treasures) at X=" + x + " Z=" + z);
+        }
+        SeedMapperBuriedTreasureClusterService.ClusterResult nearest = clusters.stream()
+                .min(Comparator.comparingLong(result -> {
+                    net.minecraft.world.level.ChunkPos cluster = result.origin();
+                    long dx = ((long) cluster.x() << 4) - commandX();
+                    long dz = ((long) cluster.z() << 4) - commandZ();
+                    return dx * dx + dz * dz;
+                }))
+                .orElse(clusters.getFirst());
+        highlightLocation("buried_treasure_cluster", nearest.origin().x() << 4, nearest.origin().z() << 4);
+    }
+
+    private static void highlightSurfaceEsp(String[] args) {
+        int chunkRange = parseHighlightChunkRange(args, 3);
+        if (chunkRange < 0) return;
+        Level level = GameVariableAccessShim.getWorld();
+        if (level == null) {
+            send("No world loaded.");
+            return;
+        }
+        int dimension = getCurrentCubiomesDimension();
+        if (dimension == Integer.MIN_VALUE) {
+            send("Unsupported dimension.");
+            return;
+        }
+        long seed = resolveSeed();
+        if (seed == Long.MIN_VALUE) return;
+
+        int version = SeedMapperCompat.getMcVersion();
+        int generatorFlags = VoxelConstants.getVoxelMapInstance().getSeedMapperOptions().largeBiomes
+                ? Cubiomes.LARGE_BIOMES() : 0;
+        int playerChunkX = floorDiv(GameVariableAccessShim.xCoord(), 16);
+        int playerChunkZ = floorDiv(GameVariableAccessShim.zCoord(), 16);
+        int minChunkX = playerChunkX - chunkRange;
+        int minChunkZ = playerChunkZ - chunkRange;
+        int chunkW = chunkRange * 2 + 1;
+        int chunkH = chunkRange * 2 + 1;
+        int blockW = chunkW << 4;
+        int blockH = chunkH << 4;
+        int worldMinY = dimension == Cubiomes.DIM_OVERWORLD() && version >= Cubiomes.MC_1_18() ? -64 : 0;
+        int worldMaxY = dimension == Cubiomes.DIM_OVERWORLD()
+                ? (version >= Cubiomes.MC_1_18() ? 320 : 256)
+                : 128;
+        int cellHeight = dimension == Cubiomes.DIM_END() ? 4 : 8;
+        int colYMax = Math.ceilDiv(worldMaxY - worldMinY, cellHeight);
+        long terrainBytes = (long) blockW * blockH * Math.max(1, worldMaxY - worldMinY);
+        if (terrainBytes > MAX_TERRAIN_BUFFER_BYTES) {
+            send("Surface ESP request is too large; use 0-2 chunks to avoid a render or memory crash.");
+            return;
+        }
+        int terrainHeight = colYMax * cellHeight;
+        Set<BlockPos> blocks = new HashSet<>();
+
+        synchronized (SeedMapperNative.cubiomesLock()) {
+        try (Arena arena = Arena.ofConfined()) {
+            SeedMapperNative.ensureLoaded();
+            MemorySegment params = TerrainNoise.allocate(arena);
+            Cubiomes.setupTerrainNoise(params, version, generatorFlags);
+            Cubiomes.initTerrainNoise(params, seed, dimension);
+            MemorySegment blocksBuffer = arena.allocate(
+                    MemoryLayout.sequenceLayout(terrainHeight, Cubiomes.C_CHAR), (long) blockW * blockH);
+            Cubiomes.generateRegion(params, minChunkX, minChunkZ, chunkW, chunkH,
+                    blocksBuffer, 0, colYMax, MemorySegment.NULL, 0);
+            // Unlike terrain ESP, which highlights every solid predicted block,
+            // surface ESP keeps only the topmost solid cell of each column.
+            for (int relX = 0; relX < blockW; relX++) {
+                for (int relZ = 0; relZ < blockH; relZ++) {
+                    int columnIndex = (relX * blockH + relZ) * terrainHeight;
+                    for (int relY = terrainHeight - 1; relY >= 0; relY--) {
+                        if (blocksBuffer.getAtIndex(Cubiomes.C_CHAR, columnIndex + relY) == 1) {
+                            int y = worldMinY + relY;
+                            if (y >= worldMinY && y < worldMaxY) {
+                                blocks.add(new BlockPos((minChunkX << 4) + relX, y, (minChunkZ << 4) + relZ));
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        }
+
+        if (blocks.isEmpty()) {
+            send("No surface samples found in the requested area.");
+            return;
+        }
+        SeedMapperEspManager.clear(SeedMapperEspTarget.TERRAIN);
+        SeedMapperEspManager.drawBoxes(SeedMapperEspTarget.TERRAIN, blocks, 0xFF2020);
+        send("Highlighted " + blocks.size() + " surface samples.");
     }
 
     private static void highlightCanyonEsp(String[] args) {
@@ -1339,6 +1494,7 @@ public final class SeedMapperCommandHandler {
         int playerChunkZ = floorDiv(GameVariableAccessShim.zCoord(), 16);
         Set<BlockPos> blocks = new HashSet<>();
 
+        synchronized (SeedMapperNative.cubiomesLock()) {
         try (Arena arena = Arena.ofConfined()) {
             MemorySegment ccc = CanyonCarverConfig.allocate(arena);
             if (Cubiomes.getCanyonCarverConfig(0, version, ccc) == 0) {
@@ -1363,6 +1519,7 @@ public final class SeedMapperCommandHandler {
                 addPos3List(blocks, pos3List);
                 Cubiomes.freePos3List(pos3List);
             });
+        }
         }
 
         if (blocks.isEmpty()) {
@@ -1397,6 +1554,7 @@ public final class SeedMapperCommandHandler {
         int playerChunkZ = floorDiv(GameVariableAccessShim.zCoord(), 16);
         Set<BlockPos> blocks = new HashSet<>();
 
+        synchronized (SeedMapperNative.cubiomesLock()) {
         try (Arena arena = Arena.ofConfined()) {
             MemorySegment ccc = CaveCarverConfig.allocate(arena);
             if (Cubiomes.getCaveCarverConfig(0, version, -1, ccc) == 0) {
@@ -1422,6 +1580,7 @@ public final class SeedMapperCommandHandler {
                 Cubiomes.freePos3List(pos3List);
             });
         }
+        }
 
         if (blocks.isEmpty()) {
             send("No cave samples found in loaded chunks.");
@@ -1433,12 +1592,53 @@ public final class SeedMapperCommandHandler {
         send("Highlighted " + blocks.size() + " cave samples.");
     }
 
-    private static void applySeed(String seedText) {
+    private static void applySeed(String seedExpression) {
+        String[] tokens = seedExpression == null ? new String[0] : seedExpression.trim().split("\\s+");
+        if (tokens.length == 0 || tokens[0].isBlank()) {
+            send("Usage: /seedmap seed <seed> [--structureSalt <structure>=<salt> ...]");
+            return;
+        }
+
+        Map<String, Integer> customSalts = new HashMap<>();
+        for (int index = 1; index < tokens.length; index++) {
+            if (!tokens[index].equalsIgnoreCase("--structureSalt")
+                    && !tokens[index].equalsIgnoreCase("--structure-salt")) {
+                send("Unknown seed option: " + tokens[index] + ". Use --structureSalt <structure>=<salt>.");
+                return;
+            }
+            if (++index >= tokens.length) {
+                send("Missing value for --structureSalt. Use <structure>=<salt>.");
+                return;
+            }
+            String assignment = tokens[index];
+            int separator = assignment.indexOf('=');
+            if (separator <= 0 || separator == assignment.length() - 1) {
+                send("Invalid structure salt: " + assignment + ". Use <structure>=<salt>.");
+                return;
+            }
+            String structure = assignment.substring(0, separator);
+            try {
+                int salt = Integer.parseInt(assignment.substring(separator + 1));
+                if (SeedMapperStructureConfig.resolveId(structure) == null) {
+                    send("Unknown structure: " + structure + ". Use /seedmap help for supported structure names.");
+                    return;
+                }
+                customSalts.put(structure, salt);
+            } catch (NumberFormatException exception) {
+                send("Invalid structure salt: " + assignment + ". The salt must be an integer.");
+                return;
+            }
+        }
+
+        String seedText = tokens[0];
         VoxelConstants.getVoxelMapInstance().setWorldSeed(seedText);
         SeedMapperSettingsManager settings = VoxelConstants.getVoxelMapInstance().getSeedMapperOptions();
         settings.manualSeed = seedText;
+        settings.setCustomStructureSalts(customSalts);
         settings.putSavedSeed(settings.getCurrentServerKey(), seedText);
-        send("Seed set to " + seedText + " for this server/world.");
+        MapSettingsManager.instance.saveAll();
+        String suffix = customSalts.isEmpty() ? "" : " with " + customSalts.size() + " custom structure salt(s)";
+        send("Seed set to " + seedText + suffix + " for this server/world.");
     }
 
     private static void exportSeedMap() {
@@ -1597,7 +1797,7 @@ public final class SeedMapperCommandHandler {
     private static List<SeedMapperLootService.LootEntry> collectLootEntriesForMarkers(long seed, int dimension, List<SeedMapperMarker> markers) {
         List<SeedMapperLootService.LootTarget> targets = new ArrayList<>();
         for (SeedMapperMarker marker : markers) {
-            if (marker == null || marker.feature() == null || !marker.feature().lootable() || marker.feature().structureId() < 0) {
+            if (marker == null || marker.feature() == null || !SeedMapperLootService.hasPredictableLoot(marker.feature()) || marker.feature().structureId() < 0) {
                 continue;
             }
             targets.add(new SeedMapperLootService.LootTarget(marker.feature().structureId(), new BlockPos(marker.blockX(), 0, marker.blockZ())));
@@ -1651,6 +1851,9 @@ public final class SeedMapperCommandHandler {
             case "granite" -> Cubiomes.GRANITE();
             case "gravel" -> Cubiomes.GRAVEL();
             case "iron_ore", "deepslate_iron_ore" -> Cubiomes.IRON_ORE();
+            case "infested_stone", "infested_cobblestone", "infested_stone_bricks",
+                    "infested_mossy_stone_bricks", "infested_cracked_stone_bricks",
+                    "infested_chiseled_stone_bricks", "infested_deepslate" -> Cubiomes.INFESTED_STONE();
             case "lapis_ore", "deepslate_lapis_ore" -> Cubiomes.LAPIS_ORE();
             case "magma_block" -> Cubiomes.MAGMA_BLOCK();
             case "nether_gold_ore" -> Cubiomes.NETHER_GOLD_ORE();
@@ -1710,6 +1913,7 @@ public final class SeedMapperCommandHandler {
         if (block == Cubiomes.IRON_ORE() || block == Cubiomes.RAW_IRON_BLOCK()) return 0xD8AF93;
         if (block == Cubiomes.COPPER_ORE() || block == Cubiomes.RAW_COPPER_BLOCK()) return 0xC7744A;
         if (block == Cubiomes.COAL_ORE()) return 0x303030;
+        if (block == Cubiomes.INFESTED_STONE()) return 0xA070D0;
         if (block == Cubiomes.LAPIS_ORE()) return 0x3158D9;
         if (block == Cubiomes.REDSTONE_ORE()) return 0xC42020;
         if (block == Cubiomes.ANCIENT_DEBRIS()) return 0x5B3E2B;
@@ -1724,6 +1928,37 @@ public final class SeedMapperCommandHandler {
                 || state.is(Blocks.WATER)
                 || state.getFluidState().is(Fluids.LAVA)
                 || state.getFluidState().is(Fluids.WATER);
+    }
+
+    private static void handleVault(String[] args) {
+        if (args.length < 3 || !args[2].equalsIgnoreCase("predict")) {
+            send("Usage: /seedmap vault predict [offset] [ominous] [amount]");
+            return;
+        }
+        int offset = 0;
+        boolean ominous = false;
+        int amount = 1;
+        try {
+            if (args.length > 3) offset = Math.max(0, Integer.parseInt(args[3]));
+            if (args.length > 4) ominous = Boolean.parseBoolean(args[4]);
+            if (args.length > 5) amount = Math.max(1, Math.min(16, Integer.parseInt(args[5])));
+        } catch (NumberFormatException exception) {
+            send("Usage: /seedmap vault predict [offset] [ominous] [amount]");
+            return;
+        }
+        long seed = resolveSeed();
+        if (seed == Long.MIN_VALUE) return;
+        List<SeedMapperVaultService.VaultPrediction> predictions = SeedMapperVaultService.predict(
+                seed, SeedMapperCompat.getMcVersion(), offset, ominous, amount);
+        if (predictions.isEmpty()) {
+            send("Vault prediction is unavailable for this Minecraft version or seed.");
+            return;
+        }
+        for (SeedMapperVaultService.VaultPrediction prediction : predictions) {
+            send("Vault reward #" + prediction.offset() + (prediction.ominous() ? " (ominous)" : "")
+                    + ": " + String.join(", ", prediction.items()));
+            send("Vault state: " + prediction.state());
+        }
     }
 
     private static boolean isTargetOreState(BlockState state, int targetBlock) {
@@ -1742,6 +1977,15 @@ public final class SeedMapperCommandHandler {
         if (targetBlock == Cubiomes.GRANITE()) return state.is(Blocks.GRANITE);
         if (targetBlock == Cubiomes.GRAVEL()) return state.is(Blocks.GRAVEL);
         if (targetBlock == Cubiomes.IRON_ORE()) return state.is(Blocks.IRON_ORE) || state.is(Blocks.DEEPSLATE_IRON_ORE);
+        if (targetBlock == Cubiomes.INFESTED_STONE()) {
+            return state.is(Blocks.INFESTED_STONE)
+                    || state.is(Blocks.INFESTED_COBBLESTONE)
+                    || state.is(Blocks.INFESTED_STONE_BRICKS)
+                    || state.is(Blocks.INFESTED_MOSSY_STONE_BRICKS)
+                    || state.is(Blocks.INFESTED_CRACKED_STONE_BRICKS)
+                    || state.is(Blocks.INFESTED_CHISELED_STONE_BRICKS)
+                    || state.is(Blocks.INFESTED_DEEPSLATE);
+        }
         if (targetBlock == Cubiomes.LAPIS_ORE()) return state.is(Blocks.LAPIS_ORE) || state.is(Blocks.DEEPSLATE_LAPIS_ORE);
         if (targetBlock == Cubiomes.MAGMA_BLOCK()) return state.is(Blocks.MAGMA_BLOCK);
         if (targetBlock == Cubiomes.NETHER_GOLD_ORE()) return state.is(Blocks.NETHER_GOLD_ORE);
@@ -1782,7 +2026,7 @@ public final class SeedMapperCommandHandler {
 
     private static LootMatch findNearestLootMarker(String rawQuery, int requiredCount, int maxRadius) {
         List<SeedMapperMarker> markers = queryMarkers(maxRadius, true).stream()
-                .filter(marker -> marker.feature().lootable())
+                .filter(marker -> SeedMapperLootService.hasPredictableLoot(marker.feature()))
                 .sorted(Comparator.comparingLong(marker -> {
                     long dx = marker.blockX() - (long) commandX();
                     long dz = marker.blockZ() - (long) commandZ();
@@ -2068,15 +2312,17 @@ public final class SeedMapperCommandHandler {
 
     private static int resolveBiomeId(String query) {
         int mc = SeedMapperCompat.getMcVersion();
-        for (int id = 0; id < 256; id++) {
-            try {
-                MemorySegment biomeName = Cubiomes.biome2str(mc, id);
-                if (biomeName == null || biomeName.address() == 0) continue;
-                String name = biomeName.getString(0);
-                if (name == null || name.isBlank()) continue;
-                String normalized = name.toLowerCase(Locale.ROOT);
-                if (normalized.equals(query) || normalized.endsWith("/" + query) || normalized.endsWith("_" + query) || normalized.contains(query)) return id;
-            } catch (Throwable ignored) {}
+        synchronized (SeedMapperNative.cubiomesLock()) {
+            for (int id = 0; id < 256; id++) {
+                try {
+                    MemorySegment biomeName = Cubiomes.biome2str(mc, id);
+                    if (biomeName == null || biomeName.address() == 0) continue;
+                    String name = biomeName.getString(0);
+                    if (name == null || name.isBlank()) continue;
+                    String normalized = name.toLowerCase(Locale.ROOT);
+                    if (normalized.equals(query) || normalized.endsWith("/" + query) || normalized.endsWith("_" + query) || normalized.contains(query)) return id;
+                } catch (Throwable ignored) {}
+            }
         }
         return -1;
     }
@@ -2110,16 +2356,19 @@ public final class SeedMapperCommandHandler {
 
     private static void sendHelp() {
         List<String> lines = new ArrayList<>();
-        lines.add("/seedmap seed <seed>");
+        lines.add("/seedmap seed <seed> [--structureSalt <structure>=<salt> ...]");
         lines.add("/seedmap version [auto|supported version]");
         lines.add("/seedmap locate structure <feature_id>");
+        lines.add("/seedmap locate treasurecluster");
         lines.add("/seedmap locate biome <biome_name>");
         lines.add("/seedmap locate orevein <iron|copper>");
         lines.add("/seedmap locate slime");
         lines.add("/seedmap locate loot <text>");
+        lines.add("/seedmap vault predict [offset] [ominous] [amount]");
         lines.add("/seedmap highlight ore <block> [chunks]");
         lines.add("/seedmap highlight orevein [chunks]");
         lines.add("/seedmap highlight terrain [chunks]");
+        lines.add("/seedmap highlight surface [chunks]");
         lines.add("/seedmap highlight canyon [chunks]");
         lines.add("/seedmap highlight cave [chunks]");
         lines.add("/seedmap highlight clear");

@@ -1,5 +1,6 @@
 package com.mamiyaotaru.voxelmap.seedmapper;
 
+import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -18,10 +19,10 @@ import java.util.function.Function;
 
 public final class SeedMapperCommandTree {
     private static final List<String> ORE_VEIN_TYPES = List.of("iron", "copper");
-    private static final List<String> ESP_TYPES = List.of("terrain", "canyon", "cave");
+    private static final List<String> ESP_TYPES = List.of("terrain", "surface", "canyon", "cave");
     private static final List<String> SOURCE_WRAPPERS = List.of("run", "seeded", "positioned", "in", "versioned", "flagged", "as", "rotated");
-    private static final List<String> ROOT_COMMANDS = List.of("help", "seed", "version", "locate", "highlight", "mine", "export", "chunksync", "chunkanalysis", "updatechecker");
-    private static final List<String> LOCATE_TYPES = List.of("structure", "feature", "biome", "orevein", "slime", "slimechunk", "slime_chunk", "loot");
+    private static final List<String> ROOT_COMMANDS = List.of("help", "seed", "version", "map", "locate", "highlight", "vault", "mine", "export", "chunksync", "chunkanalysis", "updatechecker");
+    private static final List<String> LOCATE_TYPES = List.of("structure", "feature", "treasurecluster", "buried_treasure_cluster", "biome", "orevein", "slime", "slimechunk", "slime_chunk", "loot");
     private static final List<String> LOOT_QUERY_TERMS = List.of(
             "sentry_armor_trim_smithing_template", "vex_armor_trim_smithing_template",
             "wild_armor_trim_smithing_template", "ward_armor_trim_smithing_template",
@@ -38,7 +39,10 @@ public final class SeedMapperCommandTree {
             "gold_ore", "deepslate_gold_ore", "emerald_ore", "deepslate_emerald_ore",
             "redstone_ore", "deepslate_redstone_ore", "lapis_ore", "deepslate_lapis_ore",
             "coal_ore", "deepslate_coal_ore", "copper_ore", "deepslate_copper_ore",
-            "nether_quartz_ore", "nether_gold_ore", "ancient_debris"
+            "nether_quartz_ore", "nether_gold_ore", "ancient_debris",
+            "infested_stone", "infested_cobblestone", "infested_stone_bricks",
+            "infested_mossy_stone_bricks", "infested_cracked_stone_bricks", "infested_chiseled_stone_bricks",
+            "infested_deepslate"
     );
     private static final List<String> COMMON_BIOMES = List.of(
             "plains", "forest", "desert", "savanna", "taiga", "jungle", "badlands",
@@ -77,11 +81,15 @@ public final class SeedMapperCommandTree {
                 .then(LiteralArgumentBuilder.<S>literal("seed")
                         .then(RequiredArgumentBuilder.<S, String>argument("seed", StringArgumentType.greedyString())
                                 .executes(context -> run(context, runner, "seed " + StringArgumentType.getString(context, "seed")))))
+                .then(LiteralArgumentBuilder.<S>literal("map")
+                        .executes(context -> runRaw(context, runner, "map")))
                 .then(LiteralArgumentBuilder.<S>literal("locate")
                         .then(LiteralArgumentBuilder.<S>literal("structure")
                                 .then(RequiredArgumentBuilder.<S, String>argument("feature_id", StringArgumentType.word())
                                         .suggests((context, builder) -> SharedSuggestionProvider.suggest(getStructureSuggestions(), builder))
                                         .executes(context -> run(context, runner, "locate structure " + StringArgumentType.getString(context, "feature_id")))))
+                        .then(LiteralArgumentBuilder.<S>literal("treasurecluster")
+                                .executes(context -> runRaw(context, runner, "locate treasurecluster")))
                         .then(LiteralArgumentBuilder.<S>literal("biome")
                                 .then(RequiredArgumentBuilder.<S, String>argument("biome_name", StringArgumentType.word())
                                         .suggests((context, builder) -> SharedSuggestionProvider.suggest(COMMON_BIOMES, builder))
@@ -95,6 +103,15 @@ public final class SeedMapperCommandTree {
                         .then(LiteralArgumentBuilder.<S>literal("loot")
                                 .then(RequiredArgumentBuilder.<S, String>argument("text", StringArgumentType.greedyString())
                                         .executes(context -> run(context, runner, "locate loot " + StringArgumentType.getString(context, "text"))))))
+                .then(LiteralArgumentBuilder.<S>literal("vault")
+                        .then(LiteralArgumentBuilder.<S>literal("predict")
+                                .executes(context -> runRaw(context, runner, "vault predict"))
+                                .then(RequiredArgumentBuilder.<S, Integer>argument("offset", IntegerArgumentType.integer(0))
+                                        .executes(context -> run(context, runner, "vault predict " + IntegerArgumentType.getInteger(context, "offset")))
+                                        .then(RequiredArgumentBuilder.<S, Boolean>argument("ominous", BoolArgumentType.bool())
+                                                .executes(context -> run(context, runner, "vault predict " + IntegerArgumentType.getInteger(context, "offset") + " " + BoolArgumentType.getBool(context, "ominous")))
+                                                .then(RequiredArgumentBuilder.<S, Integer>argument("amount", IntegerArgumentType.integer(1, 16))
+                                                        .executes(context -> run(context, runner, "vault predict " + IntegerArgumentType.getInteger(context, "offset") + " " + BoolArgumentType.getBool(context, "ominous") + " " + IntegerArgumentType.getInteger(context, "amount"))))))))
                 .then(LiteralArgumentBuilder.<S>literal("highlight")
                         .then(LiteralArgumentBuilder.<S>literal("clear").executes(context -> runRaw(context, runner, "highlight clear")))
                         .then(LiteralArgumentBuilder.<S>literal("ore")

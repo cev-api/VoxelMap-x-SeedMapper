@@ -8,6 +8,8 @@ import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperLocatorService;
 import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperLootService;
 import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperMarker;
 import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperSettingsManager;
+import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperVaultLootWidget;
+import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperVaultService;
 import com.mamiyaotaru.voxelmap.util.DimensionContainer;
 import com.mamiyaotaru.voxelmap.util.GameVariableAccessShim;
 import com.mamiyaotaru.voxelmap.util.Waypoint;
@@ -103,6 +105,7 @@ public final class GuiSeedMapperLootViewer extends Screen {
     private EditBox searchField;
     private Button scrollUpButton;
     private Button scrollDownButton;
+    private SeedMapperVaultLootWidget vaultWidget;
     private double scrollOffset = 0.0;
     private double maxScrollOffset = 0.0;
     private boolean draggingScrollbar = false;
@@ -169,7 +172,7 @@ public final class GuiSeedMapperLootViewer extends Screen {
 
         ArrayList<SeedMapperLootService.LootTarget> targets = new ArrayList<>();
         for (SeedMapperMarker marker : markers) {
-            if (marker == null || marker.feature() == null || !marker.feature().lootable() || marker.feature().structureId() < 0) {
+            if (marker == null || marker.feature() == null || !SeedMapperLootService.hasPredictableLoot(marker.feature()) || marker.feature().structureId() < 0) {
                 continue;
             }
             targets.add(new SeedMapperLootService.LootTarget(marker.feature().structureId(), new BlockPos(marker.blockX(), 0, marker.blockZ())));
@@ -208,6 +211,9 @@ public final class GuiSeedMapperLootViewer extends Screen {
             rebuildRowButtons();
         }).bounds(mid + 80, controlsY, 70, 20).build());
 
+        this.addRenderableWidget(Button.builder(Component.literal("Vault Loot"), b -> openVaultWidget())
+            .bounds(mid + 154, controlsY, 90, 20).build());
+
         this.addRenderableWidget(Button.builder(Component.literal("Back"), b -> closeToPreviousScreen())
             .bounds(mid - 150, this.height - 28, 300, 20).build());
 
@@ -244,6 +250,28 @@ public final class GuiSeedMapperLootViewer extends Screen {
         totalMatchingItems = countTotalItems(filteredEntries);
         clampScroll();
         rebuildRowButtons();
+    }
+
+    private void openVaultWidget() {
+        Level level = GameVariableAccessShim.getWorld();
+        if (level == null) {
+            this.vaultWidget = new SeedMapperVaultLootWidget(this.width / 2 - SeedMapperVaultLootWidget.WIDTH / 2,
+                this.height / 2 - SeedMapperVaultLootWidget.HEIGHT / 2, List.of(), List.of());
+            return;
+        }
+        SeedMapperSettingsManager settings = VoxelConstants.getVoxelMapInstance().getSeedMapperOptions();
+        try {
+            long seed = settings.resolveSeed(VoxelConstants.getVoxelMapInstance().getWorldSeed());
+            int mcVersion = SeedMapperCompat.getMcVersion();
+            this.vaultWidget = new SeedMapperVaultLootWidget(
+                this.width / 2 - SeedMapperVaultLootWidget.WIDTH / 2,
+                this.height / 2 - SeedMapperVaultLootWidget.HEIGHT / 2,
+                SeedMapperVaultService.predict(seed, mcVersion, 0, false, 8),
+                SeedMapperVaultService.predict(seed, mcVersion, 0, true, 8));
+        } catch (IllegalArgumentException ignored) {
+            this.vaultWidget = new SeedMapperVaultLootWidget(this.width / 2 - SeedMapperVaultLootWidget.WIDTH / 2,
+                this.height / 2 - SeedMapperVaultLootWidget.HEIGHT / 2, List.of(), List.of());
+        }
     }
 
     private boolean entryMatches(SeedMapperLootService.LootEntry entry, String query) {
@@ -785,6 +813,12 @@ public final class GuiSeedMapperLootViewer extends Screen {
         double mouseX = context.x();
         double mouseY = context.y();
         int button = context.button();
+        if (this.vaultWidget != null && this.vaultWidget.mouseClicked(context)) {
+            if (this.vaultWidget.shouldClose()) {
+                this.vaultWidget = null;
+            }
+            return true;
+        }
         if (button == 0 && maxScrollOffset > 0) {
             if (isOverScrollbarThumb(mouseX, mouseY)) {
                 draggingScrollbar = true;
@@ -999,6 +1033,9 @@ public final class GuiSeedMapperLootViewer extends Screen {
             context.tooltip(this.font, itemTooltip, itemTooltipX, itemTooltipY, DefaultTooltipPositioner.INSTANCE, null, false);
         }
         super.extractRenderState(context, mouseX, mouseY, delta);
+        if (this.vaultWidget != null) {
+            this.vaultWidget.extractRenderState(context, mouseX, mouseY, this.font);
+        }
     }
 
     private static Component buildItemLineComponent(SeedMapperLootService.LootItem item) {

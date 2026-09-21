@@ -49,6 +49,8 @@ public class SeedMapperSettingsManager implements ISubSettingsManager {
     /** Maximum entity/marker icons rendered on the world map; zero means unlimited. */
     public int worldMapEntityLimit = 2600;
     public boolean worldMapSeedPreview = false;
+    /** Quart-aligned biome sampling height used by the world-map seed preview. */
+    public int seedMapBiomeY = 64;
     public int minimapDistantMarkerRange = 2048;
     public boolean elytraDetection = false;
     public boolean containerDetection = false;
@@ -71,6 +73,9 @@ public class SeedMapperSettingsManager implements ISubSettingsManager {
     private final Map<String, String> datapackSavedUrls = new HashMap<>();
     private final Map<String, String> datapackSavedCachePaths = new HashMap<>();
     private final Map<String, String> savedSeeds = new HashMap<>();
+    private final Map<String, Integer> legacyCustomStructureSalts = new HashMap<>();
+    private final Map<String, Integer> customStructureSalts = new HashMap<>();
+    private final Map<String, Map<String, Integer>> customStructureSaltsByServer = new HashMap<>();
     private final Map<String, Set<String>> datapackStructureDisabled = new HashMap<>();
     private final Map<String, String> elytraDetectionStates = new HashMap<>();
 
@@ -116,6 +121,7 @@ public class SeedMapperSettingsManager implements ISubSettingsManager {
                         worldMapEntityLimit = value >= 10000 ? 0 : Mth.clamp(value, 200, 10000);
                     }
                     case "SeedMapper WorldMap Seed Preview" -> worldMapSeedPreview = Boolean.parseBoolean(curLine[1]);
+                    case "SeedMapper Seed Map Biome Y" -> seedMapBiomeY = clampBiomeY(Integer.parseInt(curLine[1]));
                     case "SeedMapper Minimap Distant Marker Range" -> minimapDistantMarkerRange = Mth.clamp(Integer.parseInt(curLine[1]), 128, 32768);
                     case "SeedMapper Elytra Detection" -> elytraDetection = Boolean.parseBoolean(curLine[1]);
                     case "SeedMapper Container Detection" -> containerDetection = Boolean.parseBoolean(curLine[1]);
@@ -133,6 +139,12 @@ public class SeedMapperSettingsManager implements ISubSettingsManager {
                     case "SeedMapper Datapack Saved URLs" -> loadMap(curLine[1], datapackSavedUrls);
                     case "SeedMapper Datapack Saved Cache Paths" -> loadMap(curLine[1], datapackSavedCachePaths);
                     case "SeedMapper Saved Seeds" -> loadMap(curLine[1], savedSeeds);
+                    case "SeedMapper Custom Structure Salts" -> {
+                        loadIntMap(curLine[1], legacyCustomStructureSalts);
+                        customStructureSalts.clear();
+                        customStructureSalts.putAll(legacyCustomStructureSalts);
+                    }
+                    case "SeedMapper Custom Structure Salts By Server" -> loadIntMapByKey(curLine[1], customStructureSaltsByServer);
                     case "SeedMapper Datapack Structure Disabled" -> loadWorldSetMap(curLine[1], datapackStructureDisabled);
                     case "SeedMapper Completed" -> {
                         completedFeatureEntries.clear();
@@ -216,6 +228,7 @@ public class SeedMapperSettingsManager implements ISubSettingsManager {
         out.println("SeedMapper WorldMap Marker Limit:" + worldMapMarkerLimit);
         out.println("SeedMapper WorldMap Entity Limit:" + worldMapEntityLimit);
         out.println("SeedMapper WorldMap Seed Preview:" + worldMapSeedPreview);
+        out.println("SeedMapper Seed Map Biome Y:" + seedMapBiomeY);
         out.println("SeedMapper Minimap Distant Marker Range:" + minimapDistantMarkerRange);
         out.println("SeedMapper Elytra Detection:" + elytraDetection);
         out.println("SeedMapper Container Detection:" + containerDetection);
@@ -233,6 +246,8 @@ public class SeedMapperSettingsManager implements ISubSettingsManager {
         out.println("SeedMapper Datapack Saved URLs:" + saveMap(datapackSavedUrls));
         out.println("SeedMapper Datapack Saved Cache Paths:" + saveMap(datapackSavedCachePaths));
         out.println("SeedMapper Saved Seeds:" + saveMap(savedSeeds));
+        out.println("SeedMapper Custom Structure Salts:" + saveIntMap(legacyCustomStructureSalts));
+        out.println("SeedMapper Custom Structure Salts By Server:" + saveIntMapByKey(customStructureSaltsByServer));
         out.println("SeedMapper Datapack Structure Disabled:" + saveWorldSetMap(datapackStructureDisabled));
         out.println("SeedMapper Completed:" + String.join(",", completedFeatureEntries));
         out.println("SeedMapper Datapack Located:" + String.join(",", datapackLocatedEntries));
@@ -271,6 +286,96 @@ public class SeedMapperSettingsManager implements ISubSettingsManager {
         } catch (NumberFormatException ignored) {
             return value.hashCode();
         }
+    }
+
+    public Map<String, Integer> getCustomStructureSaltsSnapshot() {
+        return new HashMap<>(activeCustomStructureSalts());
+    }
+
+    public Map<Integer, Integer> getResolvedCustomStructureSalts() {
+        return SeedMapperStructureConfig.resolveSalts(activeCustomStructureSalts());
+    }
+
+    public int getCustomStructureSaltHash() {
+        return SeedMapperStructureConfig.hashSalts(activeCustomStructureSalts());
+    }
+
+    public void setSeedMapBiomeY(int y) {
+        seedMapBiomeY = clampBiomeY(y);
+    }
+
+    private static int clampBiomeY(int y) {
+        return Math.max(-64, Math.min(320, y)) & -4;
+    }
+
+    public void setCustomStructureSalt(String structure, int salt) {
+        Integer structureId = SeedMapperStructureConfig.resolveId(structure);
+        if (structureId == null) {
+            throw new IllegalArgumentException("Unknown structure: " + structure);
+        }
+        String normalized = SeedMapperStructureConfig.normalize(structure);
+        customStructureSalts.put(normalized, salt);
+        String serverKey = getCurrentServerKey();
+        if (!serverKey.isBlank() && !serverKey.equals("unknown")) {
+            customStructureSaltsByServer.computeIfAbsent(serverKey, ignored -> new HashMap<>()).put(normalized, salt);
+        }
+    }
+
+    public void setCustomStructureSalts(Map<String, Integer> salts) {
+        customStructureSalts.clear();
+        if (salts != null) {
+            for (Map.Entry<String, Integer> entry : salts.entrySet()) {
+                if (entry.getValue() == null || SeedMapperStructureConfig.resolveId(entry.getKey()) == null) {
+                    continue;
+                }
+                customStructureSalts.put(SeedMapperStructureConfig.normalize(entry.getKey()), entry.getValue());
+            }
+        }
+        String serverKey = getCurrentServerKey();
+        if (!serverKey.isBlank() && !serverKey.equals("unknown")) {
+            if (customStructureSalts.isEmpty()) {
+                customStructureSaltsByServer.remove(serverKey);
+            } else {
+                customStructureSaltsByServer.put(serverKey, new HashMap<>(customStructureSalts));
+            }
+        } else {
+            legacyCustomStructureSalts.clear();
+            legacyCustomStructureSalts.putAll(customStructureSalts);
+        }
+    }
+
+    public void clearCustomStructureSalts() {
+        customStructureSalts.clear();
+        String serverKey = getCurrentServerKey();
+        if (!serverKey.isBlank() && !serverKey.equals("unknown")) {
+            customStructureSaltsByServer.remove(serverKey);
+        } else {
+            legacyCustomStructureSalts.clear();
+        }
+    }
+
+    /** Loads the structure configuration associated with the current server/world. */
+    public void loadCustomStructureSaltsForCurrentServer() {
+        String serverKey = getCurrentServerKey();
+        Map<String, Integer> scoped = customStructureSaltsByServer.get(serverKey);
+        if (scoped == null) {
+            customStructureSalts.clear();
+            customStructureSalts.putAll(legacyCustomStructureSalts);
+            return;
+        }
+        customStructureSalts.clear();
+        customStructureSalts.putAll(scoped);
+    }
+
+    private Map<String, Integer> activeCustomStructureSalts() {
+        String serverKey;
+        try {
+            serverKey = getCurrentServerKey();
+        } catch (RuntimeException ignored) {
+            serverKey = "unknown";
+        }
+        Map<String, Integer> scoped = customStructureSaltsByServer.get(serverKey);
+        return scoped == null ? customStructureSalts : scoped;
     }
 
     public SeedMapperEspStyle getEspStyle(SeedMapperEspTarget target) {
@@ -581,11 +686,65 @@ public class SeedMapperSettingsManager implements ISubSettingsManager {
         }
     }
 
+    private static void loadIntMap(String raw, Map<String, Integer> target) {
+        target.clear();
+        if (raw == null || raw.isBlank()) {
+            return;
+        }
+        for (String entry : raw.split(",")) {
+            int separator = entry.indexOf('=');
+            if (separator <= 0 || separator >= entry.length() - 1) {
+                continue;
+            }
+            try {
+                String key = SeedMapperStructureConfig.normalize(unescape(entry.substring(0, separator)));
+                int value = Integer.parseInt(unescape(entry.substring(separator + 1)));
+                if (SeedMapperStructureConfig.resolveId(key) != null) {
+                    target.put(key, value);
+                }
+            } catch (NumberFormatException ignored) {
+            }
+        }
+    }
+
     private static String saveMap(Map<String, String> values) {
         return values.entrySet().stream()
                 .map(entry -> escape(entry.getKey()) + "=" + escape(entry.getValue()))
                 .reduce((left, right) -> left + ";;" + right)
                 .orElse("");
+    }
+
+    private static String saveIntMap(Map<String, Integer> values) {
+        return values.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .map(entry -> escape(entry.getKey()) + "=" + escape(Integer.toString(entry.getValue())))
+                .collect(java.util.stream.Collectors.joining(","));
+    }
+
+    private static void loadIntMapByKey(String raw, Map<String, Map<String, Integer>> target) {
+        target.clear();
+        if (raw == null || raw.isBlank()) {
+            return;
+        }
+        for (String entry : raw.split(";;")) {
+            int separator = entry.indexOf('=');
+            if (separator <= 0 || separator >= entry.length() - 1) {
+                continue;
+            }
+            String key = unescape(entry.substring(0, separator));
+            Map<String, Integer> values = new HashMap<>();
+            loadIntMap(entry.substring(separator + 1), values);
+            if (!key.isBlank() && !values.isEmpty()) {
+                target.put(key, values);
+            }
+        }
+    }
+
+    private static String saveIntMapByKey(Map<String, Map<String, Integer>> values) {
+        return values.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .map(entry -> escape(entry.getKey()) + "=" + saveIntMap(entry.getValue()))
+                .collect(java.util.stream.Collectors.joining(";;"));
     }
 
     private static void loadWorldSetMap(String raw, Map<String, Set<String>> target) {

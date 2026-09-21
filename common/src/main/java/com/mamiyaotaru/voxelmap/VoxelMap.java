@@ -489,6 +489,7 @@ public class VoxelMap implements PreparableReloadListener {
 
     public void onJoinServer() {
         if (seedMapperOptions != null) {
+            seedMapperOptions.loadCustomStructureSaltsForCurrentServer();
             seedMapperOptions.loadSavedSeedForCurrentServer();
             if (seedMapperOptions.datapackAutoload) {
                 String serverKey = seedMapperOptions.getCurrentServerKey();
@@ -511,6 +512,7 @@ public class VoxelMap implements PreparableReloadListener {
     }
 
     public void onDisconnect() {
+        com.mamiyaotaru.voxelmap.seedmapper.SeedMapperClusterManager.clear();
         com.mamiyaotaru.voxelmap.seedmapper.SeedMapperContainerDetection.flushPersistence();
         com.mamiyaotaru.voxelmap.chunkanalysis.ChunkAnalysisService.get().cancel();
         com.mamiyaotaru.voxelmap.chunkanalysis.ChunkAnalysisService.get().clear();

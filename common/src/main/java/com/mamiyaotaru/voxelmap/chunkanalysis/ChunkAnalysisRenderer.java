@@ -38,8 +38,8 @@ public final class ChunkAnalysisRenderer {
 
         Vec3 cameraPos = camera.position();
         double maxDistanceSquared = settings.renderDistance * (double) settings.renderDistance;
-        OrderedSubmitNodeCollector overlay = collector.order(Integer.MAX_VALUE - 1);
         if (settings.ghostBlocks) {
+            OrderedSubmitNodeCollector ghostCollector = collector.order(VoxelMapRenderTypes.OVERLAY_ORDER_ANALYSIS_GHOSTS);
             List<ChunkAnalysisDifference> expectedCandidates = source.stream()
                     .filter(difference -> difference.displayState() != null)
                     .toList();
@@ -47,11 +47,12 @@ public final class ChunkAnalysisRenderer {
                     maxDistanceSquared, settings.renderLimit);
             float opacity = (float) settings.ghostOpacity;
             if (!visible.isEmpty()) {
-                overlay.submitCustomGeometry(poseStack, VoxelMapRenderTypes.CHUNK_ANALYSIS_BLOCK_GHOST,
+                ghostCollector.submitCustomGeometry(poseStack, VoxelMapRenderTypes.CHUNK_ANALYSIS_BLOCK_GHOST,
                         (pose, buffer) -> drawBlockGhosts(buffer, pose, visible, cameraPos, opacity));
             }
         }
         if (settings.espFill) {
+            OrderedSubmitNodeCollector fillCollector = collector.order(VoxelMapRenderTypes.OVERLAY_ORDER_ESP_FILL);
             // When ghosts are active, keep solid fill off expected-state differences so it
             // cannot cover their textures. Blue/unexpected positions still need ESP fill
             // because the expected state there is air and therefore has no ghost model.
@@ -63,7 +64,7 @@ public final class ChunkAnalysisRenderer {
                     maxDistanceSquared, settings.renderLimit);
             float opacity = (float) settings.fillOpacity;
             if (!visible.isEmpty()) {
-                overlay.submitCustomGeometry(poseStack, VoxelMapRenderTypes.SEEDMAPPER_ESP_QUADS_NO_DEPTH,
+                fillCollector.submitCustomGeometry(poseStack, VoxelMapRenderTypes.SEEDMAPPER_ESP_QUADS_NO_DEPTH,
                         (pose, buffer) -> drawEspFills(buffer, pose, visible, cameraPos, opacity));
             }
         }

@@ -2,9 +2,11 @@ package com.mamiyaotaru.voxelmap.seedmapper;
 
 import com.github.cubiomes.Cubiomes;
 import com.github.cubiomes.Generator;
+import com.github.cubiomes.StructureConfig;
 import com.github.cubiomes.TerrainNoise;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -39,5 +41,52 @@ class NativeCompatibilityTest {
                 assertTrue(height >= -64 && height <= 320, "height=" + height);
             }
         }
+    }
+
+    @Test
+    void terrainAbiSupportsNetherAndEndHeightOnlySampling() {
+        for (int dimension : new int[]{Cubiomes.DIM_NETHER(), Cubiomes.DIM_END()}) {
+            try (Arena arena = Arena.ofConfined()) {
+                MemorySegment terrain = TerrainNoise.allocate(arena);
+                MemorySegment heights = arena.allocate(Cubiomes.C_INT, 256);
+                Cubiomes.setupTerrainNoise(terrain, Cubiomes.MC_26_3(), 0);
+                Cubiomes.initTerrainNoise(terrain, 12345L, dimension);
+                Cubiomes.generateRegion(terrain, 0, 0, 1, 1,
+                        MemorySegment.NULL, 0, dimension == Cubiomes.DIM_END() ? 32 : 16, heights, 1);
+                for (int i = 0; i < 256; i++) {
+                    int height = heights.getAtIndex(Cubiomes.C_INT, i);
+                    assertTrue(height >= 0 && height <= 128, "dimension=" + dimension + ", height=" + height);
+                }
+            }
+        }
+    }
+
+    @Test
+    void customStructureProviderOverridesOnlyTheActiveSalt() {
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment config = StructureConfig.allocate(arena);
+            assertNotEquals(0, Cubiomes.getStructureConfig(
+                    Cubiomes.Trial_Chambers(), Cubiomes.MC_26_3(), config));
+            int defaultSalt = StructureConfig.salt(config);
+            int customSalt = defaultSalt ^ 0x13579BDF;
+
+            SeedMapperNative.withStructureSalts(
+                    Map.of(Cubiomes.Trial_Chambers(), customSalt),
+                    () -> {
+                        assertNotEquals(0, Cubiomes.getStructureConfig(
+                                Cubiomes.Trial_Chambers(), Cubiomes.MC_26_3(), config));
+                        assertEquals(customSalt, StructureConfig.salt(config));
+                    });
+
+            assertNotEquals(0, Cubiomes.getStructureConfig(
+                    Cubiomes.Trial_Chambers(), Cubiomes.MC_26_3(), config));
+            assertEquals(defaultSalt, StructureConfig.salt(config));
+        }
+    }
+
+    @Test
+    void only26_3FeaturesStayHiddenOn26_2() {
+        assertFalse(SeedMapperFeature.ABANDONED_CAMP.availableInVersion(Cubiomes.MC_26_2()));
+        assertTrue(SeedMapperFeature.ABANDONED_CAMP.availableInVersion(Cubiomes.MC_26_3()));
     }
 }

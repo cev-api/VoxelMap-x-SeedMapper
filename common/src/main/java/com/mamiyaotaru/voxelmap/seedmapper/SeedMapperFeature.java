@@ -18,15 +18,22 @@ public enum SeedMapperFeature {
     RUINED_PORTAL_N("ruined_portal_n", "seedmapper.feature.ruined_portal", com.github.cubiomes.Cubiomes.Ruined_Portal_N(), com.github.cubiomes.Cubiomes.DIM_NETHER(), "images/seedmapper/cubiomes_viewer_icons/ruined_portal_n.png", true),
     ANCIENT_CITY("ancient_city", "seedmapper.feature.ancient_city", com.github.cubiomes.Cubiomes.Ancient_City(), com.github.cubiomes.Cubiomes.DIM_OVERWORLD(), "images/seedmapper/cubiomes_viewer_icons/ancient_city.png", false),
     TREASURE("buried_treasure", "seedmapper.feature.buried_treasure", com.github.cubiomes.Cubiomes.Treasure(), com.github.cubiomes.Cubiomes.DIM_OVERWORLD(), "images/seedmapper/cubiomes_viewer_icons/buried_treasure.png", true),
+    TREASURE_CLUSTER("buried_treasure_cluster", "seedmapper.feature.buried_treasure_cluster", -1, com.github.cubiomes.Cubiomes.DIM_OVERWORLD(), "images/seedmapper/cubiomes_viewer_icons/buried_treasure.png", false),
+    MINESHAFT("mineshaft", "seedmapper.feature.mineshaft", com.github.cubiomes.Cubiomes.Mineshaft(), com.github.cubiomes.Cubiomes.DIM_OVERWORLD(), "images/seedmapper/cubiomes_viewer_icons/mineshaft.png", false),
+    DESERT_WELL("desert_well", "seedmapper.feature.desert_well", com.github.cubiomes.Cubiomes.Desert_Well(), com.github.cubiomes.Cubiomes.DIM_OVERWORLD(), "images/seedmapper/cubiomes_viewer_icons/desert_well.png", false),
+    GEODE("geode", "seedmapper.feature.geode", com.github.cubiomes.Cubiomes.Geode(), com.github.cubiomes.Cubiomes.DIM_OVERWORLD(), "images/seedmapper/cubiomes_viewer_icons/geode.png", false),
+    COPPER_ORE_VEIN("copper_ore_vein", "seedmapper.feature.copper_ore_vein", -1, com.github.cubiomes.Cubiomes.DIM_OVERWORLD(), "images/seedmapper/feature_icons/copper_ore_vein.png", false),
+    IRON_ORE_VEIN("iron_ore_vein", "seedmapper.feature.iron_ore_vein", -1, com.github.cubiomes.Cubiomes.DIM_OVERWORLD(), "images/seedmapper/feature_icons/iron_ore_vein.png", false),
+    CANYON("canyon", "seedmapper.feature.canyon", -1, com.github.cubiomes.Cubiomes.DIM_OVERWORLD(), "images/seedmapper/feature_icons/canyon.png", false),
     FORTRESS("fortress", "seedmapper.feature.fortress", com.github.cubiomes.Cubiomes.Fortress(), com.github.cubiomes.Cubiomes.DIM_NETHER(), "images/seedmapper/cubiomes_viewer_icons/fortress.png", true),
     BASTION("bastion_remnant", "seedmapper.feature.bastion", com.github.cubiomes.Cubiomes.Bastion(), com.github.cubiomes.Cubiomes.DIM_NETHER(), "images/seedmapper/cubiomes_viewer_icons/bastion_remnant.png", true),
+    NETHER_FOSSIL("nether_fossil", "seedmapper.feature.nether_fossil", com.github.cubiomes.Cubiomes.Nether_Fossil(), com.github.cubiomes.Cubiomes.DIM_NETHER(), "images/seedmapper/feature_icons/nether_fossil.png", false),
     END_CITY("end_city", "seedmapper.feature.end_city", com.github.cubiomes.Cubiomes.End_City(), com.github.cubiomes.Cubiomes.DIM_END(), "images/seedmapper/cubiomes_viewer_icons/end_city.png", true),
     ELYTRA("end_city_ship", "seedmapper.feature.elytra", com.github.cubiomes.Cubiomes.End_City(), com.github.cubiomes.Cubiomes.DIM_END(), "images/seedmapper/cubiomes_viewer_icons/elytra.png", false),
     END_GATEWAY("end_gateway", "seedmapper.feature.end_gateway", com.github.cubiomes.Cubiomes.End_Gateway(), com.github.cubiomes.Cubiomes.DIM_END(), "images/seedmapper/cubiomes_viewer_icons/end_gateway.png", false),
     TRAIL_RUINS("trail_ruins", "seedmapper.feature.trail_ruins", com.github.cubiomes.Cubiomes.Trail_Ruins(), com.github.cubiomes.Cubiomes.DIM_OVERWORLD(), "images/seedmapper/cubiomes_viewer_icons/trail_ruins.png", false),
     TRIAL_CHAMBERS("trial_chambers", "seedmapper.feature.trial_chambers", com.github.cubiomes.Cubiomes.Trial_Chambers(), com.github.cubiomes.Cubiomes.DIM_OVERWORLD(), "images/seedmapper/cubiomes_viewer_icons/trial_chambers.png", false),
-    IRON_ORE_VEIN("iron_ore_vein", "seedmapper.feature.iron_ore_vein", -1, com.github.cubiomes.Cubiomes.DIM_OVERWORLD(), "images/seedmapper/feature_icons/iron_ore_vein.png", false),
-    COPPER_ORE_VEIN("copper_ore_vein", "seedmapper.feature.copper_ore_vein", -1, com.github.cubiomes.Cubiomes.DIM_OVERWORLD(), "images/seedmapper/feature_icons/copper_ore_vein.png", false),
+    ABANDONED_CAMP("abandoned_camp", "seedmapper.feature.abandoned_camp", com.github.cubiomes.Cubiomes.Abandoned_Camp(), com.github.cubiomes.Cubiomes.DIM_OVERWORLD(), "images/seedmapper/feature_icons/abandoned_camp.png", false, com.github.cubiomes.Cubiomes.MC_26_3()),
     SLIME_CHUNK("slime_chunk", "seedmapper.feature.slime_chunk", -1, com.github.cubiomes.Cubiomes.DIM_OVERWORLD(), "images/seedmapper/feature_icons/slime_chunk.png", false),
     SULFUR_CAVES("sulfur_caves", "seedmapper.feature.sulfur_caves", -1, com.github.cubiomes.Cubiomes.DIM_OVERWORLD(), "images/seedmapper/feature_icons/sulfur_caves.png", false),
     DATAPACK_STRUCTURE("datapack_structure", "seedmapper.feature.datapack_structure", -1, Integer.MIN_VALUE, "images/seedmapper/feature_icons/waypoint.png", false),
@@ -41,14 +48,20 @@ public enum SeedMapperFeature {
     private final int dimension;
     private final Identifier icon;
     private final boolean lootable;
+    private final int availableSince;
 
     SeedMapperFeature(String id, String translationKey, int structureId, int dimension, String iconPath, boolean lootable) {
+        this(id, translationKey, structureId, dimension, iconPath, lootable, Integer.MIN_VALUE);
+    }
+
+    SeedMapperFeature(String id, String translationKey, int structureId, int dimension, String iconPath, boolean lootable, int availableSince) {
         this.id = id;
         this.translationKey = translationKey;
         this.structureId = structureId;
         this.dimension = dimension;
         this.icon = parseIcon(iconPath);
         this.lootable = lootable;
+        this.availableSince = availableSince;
     }
 
     private static Identifier parseIcon(String iconPath) {
@@ -96,5 +109,9 @@ public enum SeedMapperFeature {
 
     public boolean lootable() {
         return lootable;
+    }
+
+    public boolean availableInVersion(int mcVersion) {
+        return this.availableSince == Integer.MIN_VALUE || mcVersion >= this.availableSince;
     }
 }

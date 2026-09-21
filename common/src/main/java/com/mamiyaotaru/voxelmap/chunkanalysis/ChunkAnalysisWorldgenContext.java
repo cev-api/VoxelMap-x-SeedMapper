@@ -1,5 +1,6 @@
 package com.mamiyaotaru.voxelmap.chunkanalysis;
 
+import com.mojang.logging.LogUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
@@ -87,6 +88,7 @@ import java.util.BitSet;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -95,9 +97,11 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
+import org.slf4j.Logger;
 
 /** Vanilla world generation resources and a bounded, non-saving chunk world. */
 final class ChunkAnalysisWorldgenContext implements AutoCloseable {
+    private static final Logger LOGGER = LogUtils.getLogger();
     private static final int STRUCTURE_REFERENCE_RADIUS = 8;
 
     private final CloseableResourceManager resources;
@@ -119,6 +123,12 @@ final class ChunkAnalysisWorldgenContext implements AutoCloseable {
                 PackType.SERVER_DATA, List.of(minecraft.getVanillaPackResources().fullResources()));
         RegistryAccess.Frozen staticAccess = RegistryLayer.createRegistryAccess().getLayer(RegistryLayer.STATIC);
         List<Registry.PendingTags<?>> staticTags = TagLoader.loadTagsForExistingRegistries(resources, staticAccess);
+        // The static tags must be applied, not just collected. buildUpdatedLookups only
+        // decides which lookups to hand to the loader; it does not bind anything, and
+        // Registry.PendingTags.lookup() is the registry itself. Without this call the
+        // block registry reaches feature placement unbound, and any feature reading a
+        // block tag such as minecraft:wall_corals throws when the contents are accessed.
+        staticTags.forEach(Registry.PendingTags::apply);
         List<HolderLookup.RegistryLookup<?>> worldgenContext = TagLoader.buildUpdatedLookups(staticAccess, staticTags);
 
         return RegistryDataLoader.load(resources, worldgenContext, RegistryDataLoader.WORLD_REGISTRIES, executor)
@@ -131,12 +141,12 @@ final class ChunkAnalysisWorldgenContext implements AutoCloseable {
                                 staticAccess.registries().forEach(entry -> all.add(entry.value()));
                                 worldgen.registries().forEach(entry -> all.add(entry.value()));
                                 dimensions.registries().forEach(entry -> all.add(entry.value()));
-                                RegistryAccess.Frozen combined = new RegistryAccess.ImmutableRegistryAccess(all).freeze();
-                                Set<ResourceKey<? extends Registry<?>>> loadedRegistryKeys = new HashSet<>();
-                                worldgen.registries().forEach(entry -> loadedRegistryKeys.add(entry.key()));
-                                dimensions.registries().forEach(entry -> loadedRegistryKeys.add(entry.key()));
+                                RegistryAccess.Frozen combined = new RegistryAccess.ImmutableRegistryAccess(dedupeRegistries(all)).freeze();
+                                // Bind tags for every registry in the combined access. Filtering
+                                // this down to the worldgen/dimension registries leaves static
+                                // registries such as minecraft:block unbound, which throws as
+                                // soon as a tag is read during feature placement.
                                 TagLoader.loadTagsForExistingRegistries(resources, combined)
-                                        .stream().filter(tags -> loadedRegistryKeys.contains(tags.key()))
                                         .forEach(Registry.PendingTags::apply);
                                 try {
                                     Path temp = Files.createTempDirectory("voxelmap-chunk-analysis-");
@@ -153,6 +163,24 @@ final class ChunkAnalysisWorldgenContext implements AutoCloseable {
                 }).whenComplete((ignored, failure) -> {
                     if (failure != null) resources.close();
                 });
+    }
+
+    /**
+     * Keeps the first registry seen for each key.
+     *
+     * <p>{@code ImmutableRegistryAccess} collects into a map and throws on a duplicate
+     * key, so any overlap between the static, worldgen and dimension sources is dropped
+     * here instead of aborting the scan.</p>
+     */
+    private static List<Registry<?>> dedupeRegistries(List<Registry<?>> registries) {
+        Map<ResourceKey<? extends Registry<?>>, Registry<?>> byKey = new LinkedHashMap<>();
+        for (Registry<?> registry : registries) {
+            Registry<?> existing = byKey.putIfAbsent(registry.key(), registry);
+            if (existing != null && existing != registry) {
+                LOGGER.debug("ChunkAnalysis ignored a duplicate registry for {}", registry.key().identifier());
+            }
+        }
+        return new ArrayList<>(byKey.values());
     }
 
     GeneratedArea generate(long seed, ResourceKey<Level> dimension, ChunkPos center, int radius, boolean includeFeatures) {

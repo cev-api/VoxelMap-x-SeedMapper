@@ -38,20 +38,21 @@ public class VoxelMapPipelines {
 
     public static final RenderPipeline LINES_NO_DEPTH = RenderPipeline.builder(RenderPipelines.LINES_SNIPPET)
             .withLocation(Identifier.fromNamespaceAndPath(VoxelConstants.MOD_ID, "pipeline/seedmapper_lines_no_depth"))
-            // The overlay SubmitPass has one color attachment. LINES_SNIPPET is only
-            // a snippet and does not provide the attachment state used by the
-            // vanilla LINES pipeline, so repeat it here for the standalone pass.
+            // LINES_SNIPPET is only a snippet and does not provide the attachment
+            // state used by the vanilla LINES pipeline, so declare it here.
             .withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
-            // ESP outlines must remain visible through world geometry.
+            // ESP outlines must remain visible through world geometry. Together
+            // with the lack of depth writes this keeps them unoccluded, which is
+            // why these render types must not opt into the OIT pipeline set.
             .withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
             .build();
 
     public static final RenderPipeline QUADS_NO_DEPTH = RenderPipeline.builder(RenderPipelines.DEBUG_FILLED_SNIPPET)
             .withLocation(Identifier.fromNamespaceAndPath(VoxelConstants.MOD_ID, "pipeline/seedmapper_quads_no_depth"))
-            // This is submitted in the standalone world-overlay pass, which has
-            // one color attachment even though DEBUG_FILLED_SNIPPET is only a
-            // shader snippet and does not declare that attachment here.
-            .withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
+            // DEBUG_FILLED_SNIPPET already declares the single translucent color
+            // target used by the standalone world-overlay pass. Adding another
+            // target here makes the pipeline expect two attachments and crashes
+            // when ESP fill is rendered.
             .withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
             .build();
 

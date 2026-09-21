@@ -11,7 +11,6 @@ import com.mamiyaotaru.voxelmap.WaypointManager;
 import com.mamiyaotaru.voxelmap.chunksync.ChunkSharePlayerSettings;
 import com.mamiyaotaru.voxelmap.gui.GuiAddWaypoint;
 import com.mamiyaotaru.voxelmap.gui.GuiMinimapOptions;
-import com.mamiyaotaru.voxelmap.gui.GuiSeedMapperOptions;
 import com.mamiyaotaru.voxelmap.gui.GuiSubworldsSelect;
 import com.mamiyaotaru.voxelmap.gui.GuiWaypoints;
 import com.mamiyaotaru.voxelmap.gui.IGuiWaypoints;
@@ -31,6 +30,10 @@ import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperContainerMarker;
 import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperSettingsManager;
 import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperCompat;
 import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperCommandHandler;
+import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperClusterManager;
+import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperBuriedTreasureClusterService;
+import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperVaultService;
+import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperVaultLootWidget;
 import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperImportedDatapackManager;
 import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperNative;
 import com.mamiyaotaru.voxelmap.rendering.RenderUtils;
@@ -253,7 +256,6 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     private long seedMapperLoadingStickyUntilMs = 0L;
     private static final int SEED_PREVIEW_MIN_TEXTURE_WIDTH = 256;
     private static final int SEED_PREVIEW_MIN_TEXTURE_HEIGHT = 128;
-    private static final int SEED_PREVIEW_SAMPLE_BLOCK_Y = 64;
     private static final int SEED_PREVIEW_CONTOUR_INTERVAL = 16;
     private static final long SEED_PREVIEW_REQUEST_INTERVAL_MOVING_MS = 125L;
     private static final long SEED_PREVIEW_REQUEST_INTERVAL_STILL_MS = 50L;
@@ -289,6 +291,14 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 t.setDaemon(true);
                 return t;
             });
+    // Buried-treasure cluster search walks the whole world border. Keep it off
+    // the preview workers so a cluster query cannot stall map band sampling.
+    private static final ExecutorService clusterSearchExecutor =
+            Executors.newSingleThreadExecutor(r -> {
+                Thread t = new Thread(r, "Voxelmap Treasure Clusters");
+                t.setDaemon(true);
+                return t;
+            });
     private final Map<Integer, Integer> seedPreviewBiomeColorCache = new HashMap<>();
     private final Map<Integer, Boolean> seedPreviewOceanicCache = new HashMap<>();
     private long exploredLinesLastQueryMs = 0L;
@@ -319,11 +329,18 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     private int newOldChunkLastCells = 0;
     private long newOldChunkLastRebuildTimeMs = 0L;
     private SeedMapperChestLootWidget seedMapperChestLootWidget;
+    private SeedMapperVaultLootWidget seedMapperVaultLootWidget;
     private Set<SeedMapperFeature> seedMapperAllFeaturesSaved;
     private boolean currentDragging;
     private boolean plotMode;
     private boolean plotStartSet;
+    private boolean ignoreNextPlotRelease;
+    private double ignoredPlotReleaseX = Double.NaN;
+    private double ignoredPlotReleaseY = Double.NaN;
     private boolean plotClickHandled;
+    private long lastPlotInputMs;
+    private double lastPlotInputX = Double.NaN;
+    private double lastPlotInputY = Double.NaN;
     private double plotStartX;
     private double plotStartZ;
     private PlotManager.Plot selectedPlot;
@@ -585,6 +602,12 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         buildWorldName();
         loadPlotsForViewedDimension();
         MapSettingsManager.instance.saveAll();
+        // A button callback must remain on this screen.  Some 26.3 input
+        // paths route the callback through the parent screen after a child
+        // widget has consumed the click; restore this screen if that happens.
+        if (minecraft.gui.screen() != this) {
+            minecraft.gui.setScreen(this);
+        }
     }
 
     private void loadPlotsForViewedDimension() {
@@ -736,21 +759,36 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         float mouseDirectX = (float) minecraft.mouseHandler.xpos();
         float mouseDirectY = (float) minecraft.mouseHandler.ypos();
         if (amount != 0.0) {
-            if (amount > 0.0) {
-                this.zoomGoal *= 1.26F;
-            } else if (amount < 0.0) {
-                this.zoomGoal /= 1.26F;
-            }
-
-            this.zoomStart = this.zoom;
-            this.zoomGoal = this.bindZoom(this.zoomGoal);
-            this.timeOfZoom = System.currentTimeMillis();
-            this.zoomDirectX = mouseDirectX;
-            this.zoomDirectY = mouseDirectY;
-            this.captureZoomAnchor();
+            updateZoomForDirection(amount > 0.0 ? 1.0F : -1.0F, mouseDirectX, mouseDirectY);
         }
 
         return true;
+    }
+
+    /** Called by the SDL pinch-event bridge used by touchpads and trackpads. */
+    public void pinchUpdated(float scale) {
+        if (scale == 1.0F || Float.isNaN(scale) || Float.isInfinite(scale)) {
+            return;
+        }
+        this.timeOfLastMouseInput = System.currentTimeMillis();
+        this.switchToMouseInput();
+        updateZoomForDirection(scale > 1.0F ? 1.0F : -1.0F,
+                (float) minecraft.mouseHandler.xpos(),
+                (float) minecraft.mouseHandler.ypos());
+    }
+
+    private void updateZoomForDirection(float direction, float mouseDirectX, float mouseDirectY) {
+        if (direction > 0.0F) {
+            this.zoomGoal *= 1.26F;
+        } else {
+            this.zoomGoal /= 1.26F;
+        }
+        this.zoomStart = this.zoom;
+        this.zoomGoal = this.bindZoom(this.zoomGoal);
+        this.timeOfZoom = System.currentTimeMillis();
+        this.zoomDirectX = mouseDirectX;
+        this.zoomDirectY = mouseDirectY;
+        this.captureZoomAnchor();
     }
 
     @Override
@@ -767,6 +805,27 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         int mouseX = (int) mouseButtonEvent.x();
         int mouseY = (int) mouseButtonEvent.y();
 
+        // Selecting Plot from the context menu closes the popup during the
+        // click callback, but 26.3 still sends that popup's matching release
+        // event to this screen. That release is not a map placement.
+        if (mouseButtonEvent.button() == InputConstants.MOUSE_BUTTON_LEFT && ignoreNextPlotRelease) {
+            boolean samePopupRelease = !Double.isNaN(ignoredPlotReleaseX)
+                    && !Double.isNaN(ignoredPlotReleaseY)
+                    && Math.abs(mouseButtonEvent.x() - ignoredPlotReleaseX) <= 4.0D
+                    && Math.abs(mouseButtonEvent.y() - ignoredPlotReleaseY) <= 4.0D;
+            boolean outsideMap = !isInMap(mouseX, mouseY);
+            ignoreNextPlotRelease = false;
+            ignoredPlotReleaseX = Double.NaN;
+            ignoredPlotReleaseY = Double.NaN;
+            // Consume the popup menu's matching release. If 26.3 did not
+            // deliver a matching click callback, allow a map release through
+            // so it can still place the plot endpoint.
+            if (samePopupRelease || outsideMap) {
+                plotClickHandled = false;
+                return true;
+            }
+        }
+
         // 26.3 can deliver the release event without delivering the matching
         // click callback to this screen.  Keep plot placement working from
         // either event, but never place the same point twice when both arrive.
@@ -775,8 +834,12 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 && plotMode
                 && isInMap(mouseX, mouseY)
                 && !this.hasOpenPopup()) {
-            handlePlotModeClick(mouseButtonEvent.x(), mouseButtonEvent.y());
-            plotClickHandled = true;
+            if (!plotClickHandled) {
+                handlePlotInput(mouseButtonEvent.x(), mouseButtonEvent.y());
+            }
+            // Clear this for the next physical click. Keeping it set until a
+            // later release makes release-only input paths skip the endpoint.
+            plotClickHandled = false;
             return true;
         }
         if (mouseButtonEvent.button() == InputConstants.MOUSE_BUTTON_LEFT) {
@@ -893,10 +956,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 return true;
             }
             if (plotMode) {
-                if (!plotClickHandled) {
-                    handlePlotModeClick(mouseButtonEvent.x(), mouseButtonEvent.y());
-                    plotClickHandled = true;
-                }
+                handlePlotInput(mouseButtonEvent.x(), mouseButtonEvent.y());
                 return true;
             }
             PlotManager.Plot endpointPlot = findPlotAt(mapPoint[0], mapPoint[1]);
@@ -920,6 +980,21 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             this.lastMapLeftClickMs = now;
             this.lastMapLeftClickX = mouseX;
             this.lastMapLeftClickY = mouseY;
+        }
+
+        if (seedMapperVaultLootWidget != null) {
+            if (seedMapperVaultLootWidget.mouseClicked(mouseButtonEvent)) {
+                if (seedMapperVaultLootWidget.shouldClose()) {
+                    seedMapperVaultLootWidget = null;
+                }
+                return true;
+            }
+            if (seedMapperVaultLootWidget.isMouseOver(mouseButtonEvent.x(), mouseButtonEvent.y())) {
+                return true;
+            }
+            if (mouseButtonEvent.button() == 0) {
+                seedMapperVaultLootWidget = null;
+            }
         }
 
         if (seedMapperChestLootWidget != null) {
@@ -1601,6 +1676,10 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 graphics.nextStratum();
                 graphics.tooltip(this.getFont(), tooltip, seedMapperChestLootWidget.getPendingTooltipX(), seedMapperChestLootWidget.getPendingTooltipY(), DefaultTooltipPositioner.INSTANCE, null, false);
             }
+        }
+        if (seedMapperVaultLootWidget != null) {
+            graphics.nextStratum();
+            seedMapperVaultLootWidget.extractRenderState(graphics, mouseX, mouseY, this.getFont());
         }
         super.extractRenderState(graphics, mouseX, mouseY, delta);
         if (mapOptions.worldmapAllowed) {
@@ -2658,6 +2737,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 requestTextureHeight,
                 SeedMapperCompat.getMcVersion(),
                 this.options.seedMapStyle.needsTerrain() && this.zoom >= this.options.getSeedMapTerrainMinZoom(),
+                this.seedMapperOptions.seedMapBiomeY,
                 this.options.getSeedMapPreviewSettingsHash()
         );
         synchronized (this.seedPreviewLock) {
@@ -2782,7 +2862,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         try {
             SeedMapperNative.ensureLoaded();
             warmupCubiomes(requestKey);
-            boolean terrain = requestKey.terrainEnabled() && requestKey.dimension() == Cubiomes.DIM_OVERWORLD();
+            boolean terrain = requestKey.terrainEnabled();
             int[] biomeIds = new int[width * height];
             int[] heights = terrain ? new int[width * height] : null;
             AtomicBoolean terrainOk = new AtomicBoolean(true);
@@ -2811,7 +2891,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 MemorySegment generator = Generator.allocate(arena);
                 Cubiomes.setupGenerator(generator, requestKey.mcVersion(), requestKey.generatorFlags());
                 Cubiomes.applySeed(generator, requestKey.dimension(), requestKey.seed());
-                Cubiomes.getBiomeAt(generator, 4, 0, getSeedPreviewSampleQuartY(requestKey.dimension()), 0);
+                Cubiomes.getBiomeAt(generator, 4, 0, getSeedPreviewSampleQuartY(requestKey.dimension(), requestKey.biomeY()), 0);
             }
             if (requestKey.terrainEnabled() && requestKey.dimension() == Cubiomes.DIM_OVERWORLD()) {
                 try (Arena arena = Arena.ofConfined()) {
@@ -2827,7 +2907,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     private void sampleSeedPreviewBands(SeedPreviewQueryCacheKey requestKey, int[] biomeIds, int[] heights, AtomicBoolean terrainOk) {
         int width = requestKey.textureWidth();
         int height = requestKey.textureHeight();
-        int sampleY = getSeedPreviewSampleQuartY(requestKey.dimension());
+        int sampleY = getSeedPreviewSampleQuartY(requestKey.dimension(), requestKey.biomeY());
         double spanX = Math.max(1.0D, requestKey.maxX() - requestKey.minX());
         double spanZ = Math.max(1.0D, requestKey.maxZ() - requestKey.minZ());
         boolean terrain = heights != null;
@@ -2837,6 +2917,11 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             final int y0 = b * height / bands;
             final int y1 = (b + 1) * height / bands;
             futures.add(seedPreviewSampler.submit(() -> {
+                // Cubiomes uses a process-wide structure-salt callback.  Keep
+                // the complete generator/sample lifetime under the same lock
+                // as locator and ESP work so concurrent map bands cannot race
+                // the callback or native generator state.
+                synchronized (SeedMapperNative.cubiomesLock()) {
                 try (Arena arena = Arena.ofConfined()) {
                     MemorySegment generator = Generator.allocate(arena);
                     Cubiomes.setupGenerator(generator, requestKey.mcVersion(), requestKey.generatorFlags());
@@ -2847,6 +2932,13 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                         Cubiomes.setupTerrainNoise(terrainParams, requestKey.mcVersion(), requestKey.generatorFlags());
                         Cubiomes.initTerrainNoise(terrainParams, requestKey.seed(), requestKey.dimension());
                     }
+                    MemorySegment generatedHeights = null;
+                    int generatedChunkX = Integer.MIN_VALUE;
+                    int generatedChunkZ = Integer.MIN_VALUE;
+                    int generatedColYMax = requestKey.dimension() == Cubiomes.DIM_END() ? 32 : 16;
+                    if (terrain && requestKey.dimension() != Cubiomes.DIM_OVERWORLD()) {
+                        generatedHeights = arena.allocate(Cubiomes.C_INT, 16L * 16L);
+                    }
                     for (int y = y0; y < y1; y++) {
                         int blockZ = Mth.floor(requestKey.minZ() + (y + 0.5D) * spanZ / height);
                         int quartZ = blockZ >> 2;
@@ -2855,14 +2947,38 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                             int blockX = Mth.floor(requestKey.minX() + (x + 0.5D) * spanX / width);
                             biomeIds[rowOffset + x] = Cubiomes.getBiomeAt(generator, 4, blockX >> 2, sampleY, quartZ);
                             if (terrainParams != null) {
-                                heights[rowOffset + x] = Cubiomes.samplePreliminarySurfaceLevel(terrainParams, blockX, blockZ);
+                                if (requestKey.dimension() == Cubiomes.DIM_OVERWORLD()) {
+                                    heights[rowOffset + x] = Cubiomes.samplePreliminarySurfaceLevel(terrainParams, blockX, blockZ);
+                                } else {
+                                    int chunkX = Math.floorDiv(blockX, 16);
+                                    int chunkZ = Math.floorDiv(blockZ, 16);
+                                    if (chunkX != generatedChunkX || chunkZ != generatedChunkZ) {
+                                        generateSurfaceHeightChunk(terrainParams, chunkX, chunkZ,
+                                                generatedColYMax, generatedHeights);
+                                        generatedChunkX = chunkX;
+                                        generatedChunkZ = chunkZ;
+                                    }
+                                    int localX = Math.floorMod(blockX, 16);
+                                    int localZ = Math.floorMod(blockZ, 16);
+                                    heights[rowOffset + x] = generatedHeights.getAtIndex(
+                                            Cubiomes.C_INT, localX * 16L + localZ);
+                                }
                             }
                         }
                     }
                 }
+                }
             }));
         }
         awaitSeedPreviewBands(futures);
+    }
+
+    private void generateSurfaceHeightChunk(MemorySegment terrainParams, int chunkX, int chunkZ,
+                                            int colYMax, MemorySegment generatedHeights) {
+        synchronized (SeedMapperNative.cubiomesLock()) {
+            Cubiomes.generateRegion(terrainParams, chunkX, chunkZ, 1, 1,
+                    MemorySegment.NULL, 0, colYMax, generatedHeights, 1);
+        }
     }
 
     private void awaitSeedPreviewBands(List<Future<?>> futures) {
@@ -3101,6 +3217,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                         seedMapperOptions.showLootableOnly,
                         enabledFeatureSetHash(),
                         seedMapperOptions.getDatapackMarkerHash(),
+                        seedMapperOptions.getCustomStructureSaltHash(),
                         seedMapperOptions.lootSearch == null ? "" : seedMapperOptions.lootSearch,
                         currentSeedMapperWorldKey()
                 );
@@ -3147,6 +3264,32 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 }
             } catch (IllegalArgumentException ignored) {
                 // No valid seed set: keep drawing non-seed portal markers below.
+            }
+        }
+
+        if (seedMapperOptions.enabled && enabledSeedMapperFeatures.contains(SeedMapperFeature.TREASURE_CLUSTER)) {
+            try {
+                long seed = resolveWorldMapSeed();
+                int clusterMcVersion = SeedMapperCompat.getMcVersion();
+                int clusterFlags = getSeedMapperGeneratorFlags();
+                int clusterSaltHash = seedMapperOptions.getCustomStructureSaltHash();
+                String clusterWorldKey = currentSeedMapperWorldKey();
+                // The cluster search covers the whole world border, so run it once
+                // per seed in the background instead of requiring a chat command.
+                if (!SeedMapperClusterManager.hasStateFor(clusterWorldKey, seed, clusterMcVersion, clusterFlags, clusterSaltHash)
+                        && SeedMapperClusterManager.beginPending(clusterWorldKey, seed, clusterMcVersion, clusterFlags, clusterSaltHash)) {
+                    clusterSearchExecutor.submit(() -> {
+                        List<SeedMapperBuriedTreasureClusterService.ClusterResult> clusters =
+                                SeedMapperBuriedTreasureClusterService.find(seed, clusterMcVersion, clusterFlags, seedMapperOptions);
+                        SeedMapperClusterManager.finishPending(
+                                clusterWorldKey, seed, clusterMcVersion, clusterFlags, clusterSaltHash, clusters);
+                    });
+                }
+                markers.addAll(SeedMapperClusterManager.getMarkersInBounds(
+                        clusterWorldKey, seed, clusterMcVersion, clusterFlags, clusterSaltHash,
+                        dimension, minX, maxX, minZ, maxZ));
+            } catch (IllegalArgumentException ignored) {
+                // No valid seed set; normal map markers still render.
             }
         }
 
@@ -3456,6 +3599,9 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             if (feature == SeedMapperFeature.DATAPACK_STRUCTURE
                     || feature == SeedMapperFeature.END_PORTAL
                     || feature == SeedMapperFeature.END_BEACON) {
+                continue;
+            }
+            if (!feature.availableInVersion(SeedMapperCompat.getMcVersion())) {
                 continue;
             }
             if (featureMatchesDimension(feature, currentDimension) && isSeedMapperFeatureVisible(feature)) {
@@ -3817,7 +3963,26 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 && seedMapperOptions.isElytraMissing(worldKey, marker.blockX(), marker.blockZ())) {
             drawMissingElytraSlash(graphics, Math.round(x - iconWidth / 2.0F), Math.round(y - iconHeight / 2.0F), iconWidth, iconHeight);
         }
+        if (marker.feature() == SeedMapperFeature.TREASURE_CLUSTER) {
+            int count = parseClusterTreasureCount(marker.label());
+            if (count > 0) {
+                drawWaypointClusterBadge(graphics, x, y, count);
+            }
+        }
         graphics.pose().popMatrix();
+    }
+
+    private int parseClusterTreasureCount(String label) {
+        if (label == null || label.isBlank()) {
+            return 0;
+        }
+        int separator = label.indexOf(' ');
+        String number = separator < 0 ? label : label.substring(0, separator);
+        try {
+            return Integer.parseInt(number);
+        } catch (NumberFormatException ignored) {
+            return 0;
+        }
     }
 
     private void drawMissingElytraSlash(GuiGraphicsExtractor graphics, int x, int y, int width, int height) {
@@ -3989,7 +4154,13 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     }
 
     private int getSeedPreviewSampleQuartY(int dimension) {
-        return dimension == Cubiomes.DIM_END() ? 0 : QuartPos.fromBlock(SEED_PREVIEW_SAMPLE_BLOCK_Y);
+        return getSeedPreviewSampleQuartY(dimension, this.seedMapperOptions.seedMapBiomeY);
+    }
+
+    private int getSeedPreviewSampleQuartY(int dimension, int biomeY) {
+        return dimension == Cubiomes.DIM_END()
+                ? 0
+                : QuartPos.fromBlock(biomeY);
     }
 
     private int getSeedMapperGeneratorFlags() {
@@ -4119,7 +4290,15 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             }
 
             SeedMapperMarker marker = hitbox.marker();
-            if (!marker.feature().lootable()) {
+            boolean vaultFeature = marker.feature() == SeedMapperFeature.TRIAL_CHAMBERS;
+            if (!SeedMapperLootService.hasPredictableLoot(marker.feature())) {
+                // Trial Chambers are not a chest-loot-table structure in the locator
+                // filter, but their vaults are predictable, so a direct click opens
+                // the vault preview instead.
+                if (vaultFeature) {
+                    openVaultLootWidgetAt(mouseX + 10, mouseY + 10);
+                    return true;
+                }
                 return false;
             }
 
@@ -4152,6 +4331,31 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             return true;
         }
         return false;
+    }
+
+    /** Opens the vault-reward preview for the current world seed at the hovered map position. */
+    private void openVaultLootWidgetAt(int guiX, int guiY) {
+        long seed;
+        try {
+            seed = resolveWorldMapSeed();
+        } catch (IllegalArgumentException ignored) {
+            return;
+        }
+        int mcVersion = SeedMapperCompat.getMcVersion();
+        List<SeedMapperVaultService.VaultPrediction> normalPredictions = SeedMapperVaultService.predict(
+                seed, mcVersion, 0, false, 8);
+        List<SeedMapperVaultService.VaultPrediction> ominousPredictions = SeedMapperVaultService.predict(
+                seed, mcVersion, 0, true, 8);
+        if (normalPredictions.isEmpty() && ominousPredictions.isEmpty()) {
+            minecraft.gui.hud.getChat().addClientSystemMessage(
+                    AppChatMessages.prefixed("SeedMapper", "Vault prediction unavailable for this version or seed."));
+            return;
+        }
+        seedMapperChestLootWidget = null;
+        int widgetX = Mth.clamp(guiX, 4, this.width - SeedMapperVaultLootWidget.WIDTH - 4);
+        int widgetY = Mth.clamp(guiY, this.top + 4, this.bottom - SeedMapperVaultLootWidget.HEIGHT - 4);
+        seedMapperVaultLootWidget = new SeedMapperVaultLootWidget(
+                widgetX, widgetY, normalPredictions, ominousPredictions);
     }
 
     private void drawCompletedTick(GuiGraphicsExtractor graphics, int x, int y, int width, int height) {
@@ -4224,15 +4428,24 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
     private boolean isCoordinateSubmitKey(KeyEvent keyEvent) {
         return keyEvent.key() == com.mojang.blaze3d.platform.InputConstants.KEY_RETURN
-                || keyEvent.key() == com.mojang.blaze3d.platform.InputConstants.KEY_NUMPADENTER;
+                || keyEvent.key() == com.mojang.blaze3d.platform.InputConstants.KEY_NUMPADENTER
+                // Keep this compatible with the 26.2/26.3 GLFW mappings even
+                // when a loader exposes the key constants differently.
+                || keyEvent.key() == 257
+                || keyEvent.key() == 335;
     }
 
     private void commitCoordinateInputs() {
-        int x = Integer.parseInt(this.coordinateXInput.getValue().trim());
-        int z = Integer.parseInt(this.coordinateZInput.getValue().trim());
-        this.centerAt(x, z);
-        closeCoordinateInputs();
-        this.switchToMouseInput();
+        try {
+            int x = Integer.parseInt(this.coordinateXInput.getValue().trim());
+            int z = Integer.parseInt(this.coordinateZInput.getValue().trim());
+            this.centerAt(x, z);
+            closeCoordinateInputs();
+            this.switchToMouseInput();
+        } catch (NumberFormatException ignored) {
+            // The caller validates first, but keep an unexpected input event
+            // from closing the map or throwing out of the GUI event loop.
+        }
     }
 
     private boolean isInCoordinateLabel(int mouseX, int mouseY) {
@@ -4836,7 +5049,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         }
     }
 
-    private record SeedPreviewQueryCacheKey(long seed, Identifier dimensionIdentifier, int dimension, int minX, int maxX, int minZ, int maxZ, int generatorFlags, int textureWidth, int textureHeight, int mcVersion, boolean terrainEnabled, int settingsHash) {
+    private record SeedPreviewQueryCacheKey(long seed, Identifier dimensionIdentifier, int dimension, int minX, int maxX, int minZ, int maxZ, int generatorFlags, int textureWidth, int textureHeight, int mcVersion, boolean terrainEnabled, int biomeY, int settingsHash) {
     }
 
     private record FeatureIconHitbox(SeedMapperFeature feature, String datapackStructureId, int x, int y, int size) {
@@ -4852,7 +5065,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         }
     }
 
-    private record SeedMapperQueryCacheKey(long seed, int dimension, int generatorFlags, int minX, int maxX, int minZ, int maxZ, boolean lootOnly, int enabledFeatureHash, int datapackHash, String lootSearch, String datapackWorldKey) {
+    private record SeedMapperQueryCacheKey(long seed, int dimension, int generatorFlags, int minX, int maxX, int minZ, int maxZ, boolean lootOnly, int enabledFeatureHash, int datapackHash, int customSaltHash, String lootSearch, String datapackWorldKey) {
     }
 
     private record ExploredLinesQueryCacheKey(int minChunkX, int maxChunkX, int minChunkZ, int maxChunkZ, int snap, Identifier viewedDimension) {
@@ -4986,8 +5199,11 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         addTransportMenuEntry(entries);
         entries.add(new Popup.PopupEntry(I18n.get("minimap.waypoints.share"), 2, true, true));
         entries.add(new Popup.PopupEntry(completed ? "Mark Incomplete" : "Mark Complete", 8, true, true));
-        if (selectedSeedMapperMarker.feature().lootable()) {
+        if (SeedMapperLootService.hasPredictableLoot(selectedSeedMapperMarker.feature())) {
             entries.add(new Popup.PopupEntry("Open Loot", 9, true, true));
+        }
+        if (selectedSeedMapperMarker.feature() == SeedMapperFeature.TRIAL_CHAMBERS) {
+            entries.add(new Popup.PopupEntry("Predict Vault Loot", 22, true, true));
         }
         if (BaritoneHelper.isPresent()
                 && (selectedSeedMapperMarker.feature() == SeedMapperFeature.IRON_ORE_VEIN
@@ -5031,6 +5247,13 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             case 16 -> {
                 plotMode = true;
                 plotStartSet = false;
+                plotClickHandled = false;
+                lastPlotInputMs = 0L;
+                lastPlotInputX = Double.NaN;
+                lastPlotInputY = Double.NaN;
+                ignoreNextPlotRelease = true;
+                ignoredPlotReleaseX = popup.getLastClickX();
+                ignoredPlotReleaseY = popup.getLastClickY();
                 editingPlot = null;
                 placingDuplicatePlot = null;
                 selectedPlot = null;
@@ -5181,6 +5404,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             }
             case 9 -> {
                 if (selectedSeedMapperMarker != null) {
+                    seedMapperVaultLootWidget = null;
                     long seed;
                     try {
                         seed = resolveWorldMapSeed();
@@ -5211,6 +5435,10 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             case 11 -> pendingDeleteWaypoint = null;
             case 12 -> {
                 recenterForViewedDimension();
+                clearPopups();
+                if (minecraft.gui.screen() != this) {
+                    minecraft.gui.setScreen(this);
+                }
             }
             case 13 -> {
                 if (BaritoneHelper.pathTo(x, z)) {
@@ -5222,6 +5450,14 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                     int oreType = selectedSeedMapperMarker.feature() == SeedMapperFeature.IRON_ORE_VEIN ? -1
                             : selectedSeedMapperMarker.feature() == SeedMapperFeature.COPPER_ORE_VEIN ? 1 : 0;
                     SeedMapperCommandHandler.mineOreVeinsAround(selectedSeedMapperMarker.blockX(), selectedSeedMapperMarker.blockZ(), 2, oreType);
+                }
+            }
+            case 22 -> {
+                if (selectedSeedMapperMarker != null && selectedSeedMapperMarker.feature() == SeedMapperFeature.TRIAL_CHAMBERS) {
+                    int directX = popup.getClickedDirectX();
+                    int directY = popup.getClickedDirectY();
+                    openVaultLootWidgetAt((int) (directX / this.guiToDirectMouse) + 10,
+                            (int) (directY / this.guiToDirectMouse) + 10);
                 }
             }
             case 15 -> openTransportPopup(popup);
@@ -5278,6 +5514,12 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             appendThickInterpolatedLine(x1, z1, x2, z2, thickness, color);
         }
         if (plotStartSet) {
+            float endpointSize = Math.min(128.0F, Math.max(2.0F, 6.0F / Math.max(0.0001F, this.mapToGui)));
+            float endpointHalf = endpointSize / 2.0F;
+            appendExploredQuad((float) plotStartX - endpointHalf - 1.0F, (float) plotStartZ - endpointHalf - 1.0F,
+                    (float) plotStartX + endpointHalf + 1.0F, (float) plotStartZ + endpointHalf + 1.0F, 0xFF000000);
+            appendExploredQuad((float) plotStartX - endpointHalf, (float) plotStartZ - endpointHalf,
+                    (float) plotStartX + endpointHalf, (float) plotStartZ + endpointHalf, 0xFFFFF27A);
             appendThickInterpolatedLine((float) plotStartX, (float) plotStartZ, cursorX, cursorZ, previewThickness, 0xFFFFF27A);
         }
         if (placingDuplicatePlot != null && isPlotVisibleInViewedDimension(placingDuplicatePlot)) {
@@ -5307,6 +5549,21 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 getViewedDimensionIdentifier().toString(), false, 0, 0));
         plotStartSet = false;
         plotMode = false;
+    }
+
+    private void handlePlotInput(double guiX, double guiY) {
+        long now = System.currentTimeMillis();
+        if (now - lastPlotInputMs <= 250L
+                && Math.abs(guiX - lastPlotInputX) <= 3.0D
+                && Math.abs(guiY - lastPlotInputY) <= 3.0D) {
+            plotClickHandled = true;
+            return;
+        }
+        lastPlotInputMs = now;
+        lastPlotInputX = guiX;
+        lastPlotInputY = guiY;
+        handlePlotModeClick(guiX, guiY);
+        plotClickHandled = true;
     }
 
     private double[] mapPointFromGui(double guiX, double guiY) {

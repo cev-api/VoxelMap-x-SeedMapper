@@ -9,6 +9,19 @@ import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.util.Util;
 
 public class VoxelMapRenderTypes {
+    /**
+     * Submission orders for the world-space overlay layers. Higher orders are
+     * rendered later, so they end up on top of the lower ones. The ESP and
+     * chunk-analysis layers deliberately stay below the waypoint labels: the
+     * no-depth pipelines now draw over all terrain, and without this split
+     * their translucent fills would wash out the labels.
+     */
+    public static final int OVERLAY_ORDER_ESP_FILL = Integer.MAX_VALUE - 4;
+    public static final int OVERLAY_ORDER_ESP_LINES = Integer.MAX_VALUE - 3;
+    public static final int OVERLAY_ORDER_ANALYSIS_GHOSTS = Integer.MAX_VALUE - 2;
+    public static final int OVERLAY_ORDER_WAYPOINT_ICONS = Integer.MAX_VALUE - 1;
+    public static final int OVERLAY_ORDER_WAYPOINT_TEXT = Integer.MAX_VALUE;
+
     public static final RenderType WAYPOINT_TEXT_BACKGROUND = RenderType.create(
             "voxelmap_overlay_background", RenderSetup.builder(VoxelMapPipelines.WAYPOINT_TEXT_BACKGROUND).createRenderSetup());
     public static final Function<Identifier, RenderType> GUI_TEXTURED_GEQUAL_DEPTH = Util.memoize(
@@ -88,5 +101,4 @@ public class VoxelMapRenderTypes {
                     .setLayeringTransform(LayeringTransform.VIEW_OFFSET_Z_LAYERING)
                     .createRenderSetup()
     );
-
 }

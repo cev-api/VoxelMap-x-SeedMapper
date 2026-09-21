@@ -1,19 +1,23 @@
 package com.mamiyaotaru.voxelmap.seedmapper;
 
 import com.github.cubiomes.Cubiomes;
+import com.github.cubiomes.CanyonCarverConfig;
 import com.github.cubiomes.Generator;
 import com.github.cubiomes.Piece;
 import com.github.cubiomes.Pos;
 import com.github.cubiomes.Pos3;
 import com.github.cubiomes.StrongholdIter;
 import com.github.cubiomes.StructureConfig;
+import com.github.cubiomes.StructureVariant;
 import com.github.cubiomes.SurfaceNoise;
+import com.github.cubiomes.TerrainNoise;
 import net.minecraft.util.Mth;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +29,8 @@ public final class SeedMapperLocatorService {
     private static final SeedMapperLocatorService INSTANCE = new SeedMapperLocatorService();
     private static final int MAX_CACHE_ENTRIES = 48;
     private static final int MAX_STRUCTURE_PIECES = Math.max(Cubiomes.END_CITY_PIECES_MAX(), 1024);
+    private static final long MAX_STRUCTURE_REGION_CELLS = 250_000L;
+    private static final int MAX_OUTPUT_MARKERS = 100_000;
 
     private volatile long lastComputeMs = 0L;
     private final ExecutorService worker = Executors.newSingleThreadExecutor(runnable -> {
@@ -33,12 +39,12 @@ public final class SeedMapperLocatorService {
         return thread;
     });
     private final Object requestLock = new Object();
-    private final LinkedHashMap<QueryKey, List<SeedMapperMarker>> queryCache = new LinkedHashMap<>(64, 0.75F, true) {
+    private final RenewableSoftReference<LinkedHashMap<QueryKey, List<SeedMapperMarker>>> queryCache = new RenewableSoftReference<>(() -> new LinkedHashMap<>(64, 0.75F, true) {
         @Override
         protected boolean removeEldestEntry(Map.Entry<QueryKey, List<SeedMapperMarker>> eldest) {
             return size() > MAX_CACHE_ENTRIES;
         }
-    };
+    });
     private volatile QueryKey lastCompletedQuery;
     private volatile QueryKey runningQuery;
     private volatile QueryKey queuedQuery;
@@ -57,7 +63,7 @@ public final class SeedMapperLocatorService {
     public QueryResult queryWithStatus(long seed, int dimension, int mcVersion, int generatorFlags, int minX, int maxX, int minZ, int maxZ, SeedMapperSettingsManager settings, String datapackWorldKey) {
         QueryKey key = buildQueryKey(seed, dimension, mcVersion, generatorFlags, minX, maxX, minZ, maxZ, settings, datapackWorldKey);
         synchronized (requestLock) {
-            List<SeedMapperMarker> exact = queryCache.get(key);
+            List<SeedMapperMarker> exact = cachedResultLocked(key);
             if (exact != null) {
                 return new QueryResult(exact, true);
             }
@@ -111,7 +117,7 @@ public final class SeedMapperLocatorService {
     }
 
     private void queueQueryLocked(QueryKey key) {
-        if (queryCache.containsKey(key) || key.equals(runningQuery) || key.equals(queuedQuery)) {
+        if (cachedResultLocked(key) != null || key.equals(runningQuery) || key.equals(queuedQuery)) {
             return;
         }
         queuedQuery = key;
@@ -138,7 +144,7 @@ public final class SeedMapperLocatorService {
             synchronized (requestLock) {
                 cacheResultLocked(next, result);
                 runningQuery = null;
-                if (queuedQuery != null && !queryCache.containsKey(queuedQuery)) {
+                if (queuedQuery != null && cachedResultLocked(queuedQuery) == null) {
                     scheduleNextLocked();
                 }
             }
@@ -146,8 +152,16 @@ public final class SeedMapperLocatorService {
     }
 
     private void cacheResultLocked(QueryKey key, List<SeedMapperMarker> result) {
-        queryCache.put(key, result);
+        queryCache.get().put(key, result);
         lastCompletedQuery = key;
+    }
+
+    private List<SeedMapperMarker> cachedResultLocked(QueryKey key) {
+        List<SeedMapperMarker> result = queryCache.get().get(key);
+        if (result == null) {
+            return null;
+        }
+        return result;
     }
 
     private List<SeedMapperMarker> findFallbackLocked(QueryKey key) {
@@ -155,7 +169,7 @@ public final class SeedMapperLocatorService {
         List<SeedMapperMarker> bestMarkers = List.of();
         double bestScore = -1.0D;
 
-        for (Map.Entry<QueryKey, List<SeedMapperMarker>> entry : queryCache.entrySet()) {
+        for (Map.Entry<QueryKey, List<SeedMapperMarker>> entry : queryCache.get().entrySet()) {
             QueryKey candidate = entry.getKey();
             if (!candidate.compatibleForFallback(key)) {
                 continue;
@@ -183,7 +197,7 @@ public final class SeedMapperLocatorService {
         }
 
         if (lastCompletedQuery != null && lastCompletedQuery.compatibleForFallback(key)) {
-            List<SeedMapperMarker> latest = queryCache.get(lastCompletedQuery);
+            List<SeedMapperMarker> latest = cachedResultLocked(lastCompletedQuery);
             if (latest != null && area(lastCompletedQuery) <= requestArea * 2L) {
                 return latest;
             }
@@ -233,21 +247,25 @@ public final class SeedMapperLocatorService {
 
         long featureMask = 0L;
         for (SeedMapperFeature feature : SeedMapperFeature.values()) {
+            if (!feature.availableInVersion(mcVersion)) {
+                continue;
+            }
             boolean included = includeAllFeatures
                     ? feature.availableInDimension(dimension)
                     : includeHiddenLootableFeatures
-                        ? feature.lootable() && SeedMapperLootService.LOOT_SUPPORTED_STRUCTURES.contains(feature.structureId())
+                        ? SeedMapperLootService.hasPredictableLoot(feature)
                         : settings.isFeatureEnabled(feature);
             if (included) {
                 featureMask |= (1L << feature.ordinal());
             }
         }
-        return new QueryKey(seed, dimension, mcVersion, generatorFlags, minX, maxX, minZ, maxZ, includeHiddenLootableFeatures || settings.showLootableOnly, featureMask, settings.getDatapackMarkerHash(), settings, datapackWorldKey);
+        return new QueryKey(seed, dimension, mcVersion, generatorFlags, minX, maxX, minZ, maxZ, includeHiddenLootableFeatures || settings.showLootableOnly, featureMask, settings.getDatapackMarkerHash(), settings.getCustomStructureSaltHash(), settings, datapackWorldKey);
     }
 
     private List<SeedMapperMarker> computeMarkers(QueryKey key, boolean fastMode) {
         SeedMapperNative.ensureLoaded();
         synchronized (SeedMapperNative.cubiomesLock()) {
+            return SeedMapperNative.withStructureSalts(key.settings.getResolvedCustomStructureSalts(), () -> {
             try (Arena arena = Arena.ofConfined()) {
             MemorySegment generator = Generator.allocate(arena);
             Cubiomes.setupGenerator(generator, key.mcVersion, key.generatorFlags);
@@ -255,6 +273,9 @@ public final class SeedMapperLocatorService {
 
             MemorySegment surfaceNoise = SurfaceNoise.allocate(arena);
             Cubiomes.initSurfaceNoise(surfaceNoise, key.dimension, key.seed);
+            MemorySegment terrainNoise = TerrainNoise.allocate(arena);
+            Cubiomes.setupTerrainNoise(terrainNoise, key.mcVersion, key.generatorFlags);
+            Cubiomes.initTerrainNoise(terrainNoise, key.seed, key.dimension);
 
             MemorySegment structureConfig = StructureConfig.allocate(arena);
             MemorySegment structurePos = Pos.allocate(arena);
@@ -266,6 +287,9 @@ public final class SeedMapperLocatorService {
             }
             if ((key.featureMask & (1L << SeedMapperFeature.COPPER_ORE_VEIN.ordinal())) != 0L) {
                 addOreVeinSamples(arena, key, markers, true, fastMode);
+            }
+            if ((key.featureMask & (1L << SeedMapperFeature.CANYON.ordinal())) != 0L) {
+                addCanyonSamples(arena, key, generator, markers, fastMode);
             }
             if ((key.featureMask & (1L << SeedMapperFeature.SLIME_CHUNK.ordinal())) != 0L) {
                 addSlimeChunkSamples(key, markers, fastMode);
@@ -304,10 +328,13 @@ public final class SeedMapperLocatorService {
                 if ((key.featureMask & (1L << feature.ordinal())) == 0L) {
                     continue;
                 }
+                if (!feature.availableInVersion(key.mcVersion)) {
+                    continue;
+                }
                 if (feature.structureId() < 0 || !feature.availableInDimension(key.dimension)) {
                     continue;
                 }
-                if (key.showLootableOnly && !feature.lootable()) {
+                if (key.showLootableOnly && !SeedMapperLootService.hasPredictableLoot(feature)) {
                     continue;
                 }
 
@@ -325,8 +352,20 @@ public final class SeedMapperLocatorService {
                 int minRegionZ = Mth.floor((double) key.minZ / (double) regionSize) - 1;
                 int maxRegionZ = Mth.floor((double) key.maxZ / (double) regionSize) + 1;
 
+                long regionWidth = (long) maxRegionX - minRegionX + 1L;
+                long regionHeight = (long) maxRegionZ - minRegionZ + 1L;
+                if (regionWidth <= 0L || regionHeight <= 0L
+                        || regionWidth > MAX_STRUCTURE_REGION_CELLS / Math.max(1L, regionHeight)) {
+                    // Far-zoomed maps can otherwise request billions of
+                    // structure regions. Zooming in requests them normally.
+                    continue;
+                }
+
                 for (int regionX = minRegionX; regionX <= maxRegionX; regionX++) {
                     for (int regionZ = minRegionZ; regionZ <= maxRegionZ; regionZ++) {
+                        if (markers.size() >= MAX_OUTPUT_MARKERS) {
+                            return Collections.unmodifiableList(markers);
+                        }
                         if (Cubiomes.getStructurePos(feature.structureId(), key.mcVersion, key.seed, regionX, regionZ, structurePos) == 0) {
                             continue;
                         }
@@ -349,6 +388,15 @@ public final class SeedMapperLocatorService {
                             continue;
                         }
 
+                        if (feature == SeedMapperFeature.NETHER_FOSSIL) {
+                            MemorySegment variant = StructureVariant.allocate(arena);
+                            if (Cubiomes.getVariant(variant, feature.structureId(), key.mcVersion, key.seed, blockX, blockZ, -1) == 0
+                                    || Cubiomes.isViableNetherFossilTerrain(blockX >> 4, blockZ >> 4, variant,
+                                    TerrainNoise.base3dNoise(terrainNoise), key.mcVersion) == 0) {
+                                continue;
+                            }
+                        }
+
                         if (feature == SeedMapperFeature.ELYTRA) {
                             addElytraShipMarkers(arena, key, blockX, blockZ, markers);
                         } else {
@@ -365,6 +413,7 @@ public final class SeedMapperLocatorService {
 
                 return Collections.unmodifiableList(markers);
             }
+            });
         }
     }
 
@@ -380,7 +429,7 @@ public final class SeedMapperLocatorService {
         if ((key.featureMask & (1L << SeedMapperFeature.STRONGHOLD.ordinal())) == 0L) {
             return;
         }
-        if (key.showLootableOnly && !SeedMapperFeature.STRONGHOLD.lootable()) {
+        if (key.showLootableOnly && !SeedMapperLootService.hasPredictableLoot(SeedMapperFeature.STRONGHOLD)) {
             return;
         }
 
@@ -474,6 +523,60 @@ public final class SeedMapperLocatorService {
                     out.add(new SeedMapperMarker(feature, x, z));
                     if (++found >= maxMarkers) {
                         return;
+                    }
+                }
+            }
+        }
+    }
+
+    private static void addCanyonSamples(Arena arena, QueryKey key, MemorySegment generator, List<SeedMapperMarker> out, boolean fastMode) {
+        if (key.dimension != Cubiomes.DIM_OVERWORLD() || key.showLootableOnly) {
+            return;
+        }
+
+        int span = Math.max(Math.abs(key.maxX - key.minX), Math.abs(key.maxZ - key.minZ));
+        int chunkStep = fastMode ? (span > 4096 ? 8 : 4) : (span > 8192 ? 8 : (span > 4096 ? 4 : 1));
+        int minChunkX = Math.floorDiv(key.minX, 16);
+        int maxChunkX = Math.floorDiv(key.maxX, 16);
+        int minChunkZ = Math.floorDiv(key.minZ, 16);
+        int maxChunkZ = Math.floorDiv(key.maxZ, 16);
+        int maxSamples = fastMode ? 12000 : 50000;
+        int found = 0;
+        int samples = 0;
+        HashSet<Long> emitted = new HashSet<>();
+        int[] carvers = {Cubiomes.CANYON_CARVER(), Cubiomes.UNDERWATER_CANYON_CARVER()};
+        MemorySegment[] configs = new MemorySegment[carvers.length];
+        for (int i = 0; i < carvers.length; i++) {
+            MemorySegment config = CanyonCarverConfig.allocate(arena);
+            if (Cubiomes.getCanyonCarverConfig(carvers[i], key.mcVersion, config) != 0) {
+                configs[i] = config;
+            }
+        }
+        MemorySegment randomState = arena.allocate(Cubiomes.C_LONG_LONG);
+
+        for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX += chunkStep) {
+            for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ += chunkStep) {
+                if (++samples > maxSamples || out.size() >= MAX_OUTPUT_MARKERS) {
+                    return;
+                }
+
+                int biome = key.mcVersion > Cubiomes.MC_1_17_1()
+                        ? -1
+                        : Cubiomes.getBiomeAt(generator, 4, chunkX << 2, 0, chunkZ << 2);
+                for (int i = 0; i < carvers.length; i++) {
+                    MemorySegment config = configs[i];
+                    if (config == null || Cubiomes.isViableCanyonBiome(carvers[i], biome) == 0) {
+                        continue;
+                    }
+                    if (Cubiomes.checkCanyonStart(key.seed, chunkX, chunkZ, config, randomState) != 0) {
+                        long chunkKey = (((long) chunkX) << 32) ^ (chunkZ & 0xFFFFFFFFL);
+                        if (emitted.add(chunkKey)) {
+                            out.add(new SeedMapperMarker(SeedMapperFeature.CANYON, chunkX * 16 + 8, chunkZ * 16 + 8));
+                            if (++found >= (fastMode ? 1400 : 8000)) {
+                                return;
+                            }
+                        }
+                        break;
                     }
                 }
             }
@@ -625,7 +728,7 @@ public final class SeedMapperLocatorService {
     public record QueryResult(List<SeedMapperMarker> markers, boolean exact) {
     }
 
-    private record QueryKey(long seed, int dimension, int mcVersion, int generatorFlags, int minX, int maxX, int minZ, int maxZ, boolean showLootableOnly, long featureMask, int datapackMarkerHash, SeedMapperSettingsManager settings, String datapackWorldKey) {
+    private record QueryKey(long seed, int dimension, int mcVersion, int generatorFlags, int minX, int maxX, int minZ, int maxZ, boolean showLootableOnly, long featureMask, int datapackMarkerHash, int customStructureSaltHash, SeedMapperSettingsManager settings, String datapackWorldKey) {
         private boolean compatibleForFallback(QueryKey other) {
             return seed == other.seed
                     && dimension == other.dimension
@@ -634,6 +737,7 @@ public final class SeedMapperLocatorService {
                     && showLootableOnly == other.showLootableOnly
                     && featureMask == other.featureMask
                     && datapackMarkerHash == other.datapackMarkerHash
+                    && customStructureSaltHash == other.customStructureSaltHash
                     && settings == other.settings
                     && java.util.Objects.equals(datapackWorldKey, other.datapackWorldKey);
         }

@@ -27,6 +27,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.User;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.multiplayer.ServerData;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.core.BlockPos;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.client.server.IntegratedServer;
@@ -53,6 +54,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.io.Reader;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -84,7 +86,7 @@ import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.dimension.BuiltinDimensionTypes;
 import net.minecraft.world.level.storage.LevelResource;
-import org.joml.Matrix4fStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 
 public class WaypointManager implements IReloadListener {
     public final MapSettingsManager options;
@@ -968,11 +970,14 @@ public class WaypointManager implements IReloadListener {
 
         try (BufferedReader reader = Files.newBufferedReader(file.toPath(), StandardCharsets.UTF_8)) {
             JsonElement rootElement = JsonParser.parseReader(reader);
-            if (!rootElement.isJsonObject()) {
-                return new ImportCounts(0, 0);
+            JsonArray waypointArray;
+            if (rootElement.isJsonObject()) {
+                waypointArray = rootElement.getAsJsonObject().getAsJsonArray("waypoints");
+            } else if (rootElement.isJsonArray()) {
+                waypointArray = rootElement.getAsJsonArray();
+            } else {
+                waypointArray = null;
             }
-
-            JsonArray waypointArray = rootElement.getAsJsonObject().getAsJsonArray("waypoints");
             if (waypointArray == null) {
                 return new ImportCounts(0, 0);
             }
@@ -984,23 +989,20 @@ public class WaypointManager implements IReloadListener {
                 }
 
                 JsonObject object = element.getAsJsonObject();
-                JsonObject pos = object.getAsJsonObject("pos");
-                if (pos == null) {
-                    ++skipped;
-                    continue;
-                }
+                JsonObject pos = getObject(object, "pos", "position", "coordinates");
 
                 try {
                     String name = getString(object, "name", "Wurst Waypoint");
                     String icon = wurstIcon(getString(object, "icon", ""));
                     int color = getInt(object, "color", -1);
                     float[] rgb = rgbFromPackedColor(color);
-                    boolean enabled = getBoolean(object, "visible", true);
+                    boolean enabled = getBoolean(object, "visible", getBoolean(object, "enabled", true));
                     boolean beacon = getBoolean(object, "beacon", false);
-                    int x = getInt(pos, "x", 0);
-                    int y = getInt(pos, "y", 0);
-                    int z = getInt(pos, "z", 0);
-                    TreeSet<DimensionContainer> dimensions = dimensionsForWurstName(getString(object, "dimension", ""));
+                    int x = getInt(pos, "x", getInt(object, "x", 0));
+                    int y = getInt(pos, "y", getInt(object, "y", 0));
+                    int z = getInt(pos, "z", getInt(object, "z", 0));
+                    String dimensionName = getString(object, "dimension", getString(object, "world", ""));
+                    TreeSet<DimensionContainer> dimensions = dimensionsForWurstName(dimensionName);
                     Waypoint waypoint = new Waypoint(name, x, z, y, enabled, rgb[0], rgb[1], rgb[2], icon, getCurrentSubworldDescriptor(false), dimensions);
                     waypoint.showBeacon = beacon;
                     if (addImportedWaypoint(waypoint)) {
@@ -1093,19 +1095,47 @@ public class WaypointManager implements IReloadListener {
         HashSet<String> serverKeys = new HashSet<>();
         addWurstServerKeys(serverKeys, getCurrentWorldName());
         addWurstServerKeys(serverKeys, getServerName());
-
-        File[] children = root.listFiles((dir, name) -> name.toLowerCase(Locale.ROOT).endsWith(".json"));
-        if (children == null) {
-            return List.of();
+        // Wurst resolves remote files from ServerData.ip directly.  Keep this
+        // separate from VoxelMap's display/world identity because a server can
+        // advertise a custom name, switch identities, or be represented by a
+        // Realm/LAN label while Wurst still writes host_port.json.
+        ServerData currentServer = minecraft.getCurrentServer();
+        if (currentServer != null) {
+            addWurstServerKeys(serverKeys, currentServer.ip);
+            addWurstServerKeys(serverKeys, currentServer.name);
         }
 
         List<File> matches = new ArrayList<>();
-        for (File child : children) {
-            String filename = child.getName();
-            filename = filename.substring(0, filename.length() - ".json".length());
-            if (serverKeys.contains(normalizeWurstServerKey(filename))) {
-                matches.add(child);
-            }
+        try (java.util.stream.Stream<Path> files = Files.walk(root.toPath(), 4)) {
+            files.filter(Files::isRegularFile)
+                    .filter(path -> path.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".json"))
+                    .forEach(path -> {
+                        String filename = path.getFileName().toString();
+                        filename = filename.substring(0, filename.length() - ".json".length());
+                        if (serverKeys.contains(normalizeWurstServerKey(filename))) {
+                            matches.add(path.toFile());
+                        }
+                    });
+        } catch (IOException exception) {
+            VoxelConstants.getLogger().warn("Failed scanning Wurst waypoint folder " + root.getPath(), exception);
+        }
+        if (!matches.isEmpty()) {
+            return matches;
+        }
+
+        // Wurst forks have also used a nested server directory with a generic
+        // waypoints.json filename.  If filename matching found nothing, only
+        // accept JSON files that actually have Wurst's waypoint-array shape.
+        try (java.util.stream.Stream<Path> files = Files.walk(root.toPath(), 4)) {
+            files.filter(Files::isRegularFile)
+                    .filter(path -> path.getFileName().toString().equalsIgnoreCase("waypoints.json"))
+                    .forEach(path -> {
+                        if (isWurstWaypointFile(path)) {
+                            matches.add(path.toFile());
+                        }
+                    });
+        } catch (IOException exception) {
+            VoxelConstants.getLogger().warn("Failed scanning nested Wurst waypoint folder " + root.getPath(), exception);
         }
         return matches;
     }
@@ -1119,12 +1149,28 @@ public class WaypointManager implements IReloadListener {
         keys.add(normalizeWurstServerKey(trimmed));
         keys.add(normalizeServerCandidate(trimmed));
 
-        // A server entered without an explicit port is stored by Wurst with
-        // the default Minecraft port in the filename.
         String lower = trimmed.toLowerCase(Locale.ROOT);
-        boolean hasExplicitPort = lower.matches(".*:[0-9]+$");
-        if (!hasExplicitPort) {
+        int portSeparator = lower.lastIndexOf(':');
+        boolean hasExplicitPort = portSeparator > 0 && lower.substring(portSeparator + 1).chars().allMatch(Character::isDigit);
+        if (hasExplicitPort) {
+            // Wurst versions differ between host.json, host_25565.json and
+            // host25565.json. Keep the host-only key as well as the full key.
+            keys.add(normalizeWurstServerKey(trimmed.substring(0, portSeparator)));
+        } else {
             keys.add(normalizeWurstServerKey(trimmed + "_25565"));
+        }
+    }
+
+    private boolean isWurstWaypointFile(Path path) {
+        try (Reader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
+            JsonElement rootElement = JsonParser.parseReader(reader);
+            if (rootElement.isJsonArray()) {
+                return true;
+            }
+            return rootElement.isJsonObject()
+                    && rootElement.getAsJsonObject().getAsJsonArray("waypoints") != null;
+        } catch (IOException | RuntimeException ignored) {
+            return false;
         }
     }
 
@@ -1242,18 +1288,54 @@ public class WaypointManager implements IReloadListener {
     }
 
     private String getString(JsonObject object, String key, String fallback) {
+        if (object == null) {
+            return fallback;
+        }
         JsonElement element = object.get(key);
         return element == null || element.isJsonNull() ? fallback : element.getAsString();
     }
 
     private int getInt(JsonObject object, String key, int fallback) {
+        if (object == null) {
+            return fallback;
+        }
         JsonElement element = object.get(key);
-        return element == null || element.isJsonNull() ? fallback : element.getAsInt();
+        if (element == null || element.isJsonNull()) {
+            return fallback;
+        }
+        try {
+            return element.getAsInt();
+        } catch (RuntimeException ignored) {
+            return fallback;
+        }
     }
 
     private boolean getBoolean(JsonObject object, String key, boolean fallback) {
+        if (object == null) {
+            return fallback;
+        }
         JsonElement element = object.get(key);
-        return element == null || element.isJsonNull() ? fallback : element.getAsBoolean();
+        if (element == null || element.isJsonNull()) {
+            return fallback;
+        }
+        try {
+            return element.getAsBoolean();
+        } catch (RuntimeException ignored) {
+            return fallback;
+        }
+    }
+
+    private JsonObject getObject(JsonObject object, String... keys) {
+        if (object == null) {
+            return null;
+        }
+        for (String key : keys) {
+            JsonElement element = object.get(key);
+            if (element != null && element.isJsonObject()) {
+                return element.getAsJsonObject();
+            }
+        }
+        return null;
     }
 
     public void deleteWaypoint(Waypoint point) {
@@ -1439,16 +1521,16 @@ public class WaypointManager implements IReloadListener {
         return false;
     }
 
-    public void renderWaypoints(Matrix4fStack matrixStack, Camera camera, float partialTick) {
+    public void renderWaypoints(float partialTick, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, Camera camera) {
         if (options.waypointsAllowed && this.waypointContainer != null) {
-            this.waypointContainer.renderWaypoints(matrixStack, camera, partialTick);
+            this.waypointContainer.renderWaypoints(partialTick, poseStack, submitNodeCollector, camera);
         }
 
         if (!options.waypointsAllowed && !options.highlightTracerEnabled) {
             return;
         }
 
-        this.waypointContainer.renderWaypoints(matrixStack, camera, partialTick);
+        this.waypointContainer.renderWaypoints(partialTick, poseStack, submitNodeCollector, camera);
     }
 
     private void loadBackgroundMapImage() {

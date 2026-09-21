@@ -17,6 +17,8 @@ public class Popup {
     private final int h;
     private final int clickedDirectX;
     private final int clickedDirectY;
+    private double lastClickX = Double.NaN;
+    private double lastClickY = Double.NaN;
     private boolean shouldClose;
     private final PopupGuiScreen parentGui;
     private final int padding = 6;
@@ -71,9 +73,20 @@ public class Popup {
         return clickedDirectY;
     }
 
+    /** Coordinates of the most recent click handled by this popup. */
+    public double getLastClickX() {
+        return lastClickX;
+    }
+
+    public double getLastClickY() {
+        return lastClickY;
+    }
+
     public boolean clickedMe(double mouseX, double mouseY) {
         boolean clicked = mouseX > this.x && mouseX < (this.x + this.w) && mouseY > this.y && mouseY < (this.y + this.h);
         if (clicked) {
+            this.lastClickX = mouseX;
+            this.lastClickY = mouseY;
             for (int t = 0; t < this.entries.length; ++t) {
                 if (this.entries[t].enabled) {
                     boolean entryClicked = mouseX >= this.x && mouseX <= (this.x + this.w) && mouseY >= (this.y + t * 20) && mouseY < (this.y + (t + 1) * 20);

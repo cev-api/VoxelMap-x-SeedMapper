@@ -15,11 +15,13 @@ import net.minecraft.world.level.levelgen.densityfunction.DensityFunction;
 import net.minecraft.world.level.levelgen.densityfunction.DensitySampler;
 import net.minecraft.world.level.levelgen.densityfunction.SamplerContext;
 
+import java.lang.ref.SoftReference;
+
 /** Samples the registered functions and random sequence used by vanilla OreVeinRule. */
 public final class OreVeinPredictor {
     private static HolderLookup.Provider holders;
     private static long cachedSeed = Long.MIN_VALUE;
-    private static State cachedState;
+    private static SoftReference<State> cachedState = new SoftReference<>(null);
 
     public record State(DensitySampler.Bound copperDensity, DensitySampler.Bound ironDensity,
                         DensitySampler.Bound richness, DensitySampler.Bound gap,
@@ -28,7 +30,8 @@ public final class OreVeinPredictor {
     private OreVeinPredictor() {}
 
     public static synchronized State prepare(long seed) {
-        if (cachedState != null && cachedSeed == seed) return cachedState;
+        State cached = cachedState.get();
+        if (cached != null && cachedSeed == seed) return cached;
         try {
             if (holders == null) holders = VanillaRegistries.createWorldLookup();
             NoiseGeneratorSettings settings = holders.lookupOrThrow(Registries.NOISE_SETTINGS)
@@ -37,7 +40,7 @@ public final class OreVeinPredictor {
             State state = new State(sampler(randomState, "copper_density"), sampler(randomState, "iron_density"),
                     sampler(randomState, "richness"), sampler(randomState, "gap"),
                     randomState.getOrCreateRandomFactory(Identifier.withDefaultNamespace("ore")));
-            cachedState = state;
+            cachedState = new SoftReference<>(state);
             cachedSeed = seed;
             return state;
         } catch (RuntimeException exception) {

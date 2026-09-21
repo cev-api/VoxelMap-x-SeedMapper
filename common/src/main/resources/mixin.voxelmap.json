@@ -24,6 +24,8 @@
     "MixinEndCityPieceChunkAnalysis",
     "MixinFossilFeatureChunkAnalysis",
     "MixinPaleMossDecoratorChunkAnalysis",
+    "MixinRandomizableContainerLootTable",
+    "MixinSdlEventHandlerPinch",
     "MixinTemplateFeatureChunkAnalysis",
     "MixinWorldOpenFlows",
     "MixinWorldRenderer",

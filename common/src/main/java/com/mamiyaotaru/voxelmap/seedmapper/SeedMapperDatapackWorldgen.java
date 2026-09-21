@@ -70,13 +70,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 final class SeedMapperDatapackWorldgen {
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static final Map<CacheKey, LoadedDatapack> CACHE = new HashMap<>();
+    private static final long MAX_QUERY_CELLS = 250_000L;
+    private static final int MAX_QUERY_MARKERS = 100_000;
+    private static final RenewableSoftReference<ConcurrentHashMap<CacheKey, LoadedDatapack>> CACHE =
+            new RenewableSoftReference<>(ConcurrentHashMap::new);
     private static final Method STRUCTURE_PLACEMENT_SALT = resolvePlacementSaltMethod();
 
     private SeedMapperDatapackWorldgen() {
@@ -96,6 +100,12 @@ final class SeedMapperDatapackWorldgen {
         int maxChunkX = Mth.floor((double) maxX / 16.0D);
         int minChunkZ = Mth.floor((double) minZ / 16.0D);
         int maxChunkZ = Mth.floor((double) maxZ / 16.0D);
+        long chunkWidth = (long) maxChunkX - minChunkX + 1L;
+        long chunkHeight = (long) maxChunkZ - minChunkZ + 1L;
+        if (chunkWidth <= 0L || chunkHeight <= 0L
+                || chunkWidth > MAX_QUERY_CELLS / Math.max(1L, chunkHeight)) {
+            return List.of();
+        }
         Set<String> disabled = disabledIds == null ? Set.of() : disabledIds;
         Predicate<StructureSetEntry> entryFilter = entry -> entry != null && entry.custom() && !disabled.contains(entry.id());
         ArrayList<SeedMapperMarker> markers = new ArrayList<>();
@@ -111,9 +121,18 @@ final class SeedMapperDatapackWorldgen {
                 int maxRegionX = Math.floorDiv(maxChunkX, spacing) + 1;
                 int minRegionZ = Math.floorDiv(minChunkZ, spacing) - 1;
                 int maxRegionZ = Math.floorDiv(maxChunkZ, spacing) + 1;
-                for (int regionX = minRegionX; regionX <= maxRegionX; regionX++) {
-                    for (int regionZ = minRegionZ; regionZ <= maxRegionZ; regionZ++) {
-                        RandomSpreadCandidate candidate = set.sampleRandomSpread(seed, regionX, regionZ);
+                long regionWidth = (long) maxRegionX - minRegionX + 1L;
+                long regionHeight = (long) maxRegionZ - minRegionZ + 1L;
+                if (regionWidth <= 0L || regionHeight <= 0L
+                        || regionWidth > MAX_QUERY_CELLS / Math.max(1L, regionHeight)) {
+                    continue;
+                }
+                for (long regionX = minRegionX; regionX <= maxRegionX; regionX++) {
+                    for (long regionZ = minRegionZ; regionZ <= maxRegionZ; regionZ++) {
+                        if (markers.size() >= MAX_QUERY_MARKERS) {
+                            return Collections.unmodifiableList(markers);
+                        }
+                        RandomSpreadCandidate candidate = set.sampleRandomSpread(seed, (int) regionX, (int) regionZ);
                         if (candidate == null) {
                             continue;
                         }
@@ -125,16 +144,22 @@ final class SeedMapperDatapackWorldgen {
 
             if (placement instanceof ConcentricRingsStructurePlacement ringPlacement) {
                 for (ChunkPos chunkPos : context.structureState().getRingPositionsFor(ringPlacement)) {
+                    if (markers.size() >= MAX_QUERY_MARKERS) {
+                        return Collections.unmodifiableList(markers);
+                    }
                     WorldgenRandom random = createSelectionRandom(seed, chunkPos.x(), chunkPos.z(), placement);
                     addIfValid(loaded.worldgen(), set, context, placement, chunkPos, random, entryFilter, markers, minX, maxX, minZ, maxZ);
                 }
                 continue;
             }
 
-            for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
-                for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
-                    ChunkPos chunkPos = new ChunkPos(chunkX, chunkZ);
-                    WorldgenRandom random = createSelectionRandom(seed, chunkX, chunkZ, placement);
+            for (long chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
+                for (long chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
+                    if (markers.size() >= MAX_QUERY_MARKERS) {
+                        return Collections.unmodifiableList(markers);
+                    }
+                    ChunkPos chunkPos = new ChunkPos((int) chunkX, (int) chunkZ);
+                    WorldgenRandom random = createSelectionRandom(seed, (int) chunkX, (int) chunkZ, placement);
                     addIfValid(loaded.worldgen(), set, context, placement, chunkPos, random, entryFilter, markers, minX, maxX, minZ, maxZ);
                 }
             }
@@ -203,16 +228,13 @@ final class SeedMapperDatapackWorldgen {
             return null;
         }
         CacheKey key = new CacheKey(root.toString(), seed);
-        synchronized (CACHE) {
-            if (CACHE.containsKey(key)) {
-                return CACHE.get(key);
-            }
+        LoadedDatapack cached = CACHE.get().get(key);
+        if (cached != null) {
+            return cached;
         }
         LoadedDatapack loaded = load(root, seed);
         if (loaded != null) {
-            synchronized (CACHE) {
-                CACHE.put(key, loaded);
-            }
+            CACHE.get().put(key, loaded);
         }
         return loaded;
     }
@@ -221,17 +243,22 @@ final class SeedMapperDatapackWorldgen {
         if (datapackRootPath == null || datapackRootPath.isBlank()) {
             return;
         }
-        synchronized (CACHE) {
-            List<CacheKey> matches = CACHE.keySet().stream()
-                    .filter(key -> key.path().equals(datapackRootPath))
+        String normalizedPath;
+        try {
+            normalizedPath = Path.of(datapackRootPath).toAbsolutePath().normalize().toString();
+        } catch (RuntimeException ignored) {
+            return;
+        }
+        ConcurrentHashMap<CacheKey, LoadedDatapack> cache = CACHE.get();
+        List<CacheKey> matches = cache.keySet().stream()
+                    .filter(key -> key.path().equals(normalizedPath))
                     .collect(Collectors.toList());
-            for (CacheKey key : matches) {
-                LoadedDatapack removed = CACHE.remove(key);
-                if (removed != null) {
-                    try {
-                        removed.worldgen().close();
-                    } catch (Exception ignored) {
-                    }
+        for (CacheKey key : matches) {
+            LoadedDatapack removed = cache.remove(key);
+            if (removed != null) {
+                try {
+                    removed.worldgen().close();
+                } catch (Exception ignored) {
                 }
             }
         }
@@ -267,7 +294,10 @@ final class SeedMapperDatapackWorldgen {
         private final List<CustomStructureSet> customStructureSets;
         private final Map<Integer, DimensionContext> dimensionContexts = new HashMap<>();
         private final Map<Integer, List<CustomStructureSet>> dimensionStructureSets = new HashMap<>();
-        private final Map<String, Map<Long, StructureResult>> structureCache = new HashMap<>();
+        // A loaded datapack can be queried by multiple world-map workers at
+        // once. The previous HashMap-of-HashMaps made cache population race
+        // with reads and could return stale or partially updated data.
+        private final Map<String, Map<Long, StructureResult>> structureCache = new ConcurrentHashMap<>();
 
         private DatapackWorldgen(CloseableResourceManager resourceManager, RegistryAccess.Frozen registryAccess, StructureTemplateManager templateManager,
                                  LevelStorageSource.LevelStorageAccess storageAccess, long seed, List<CustomStructureSet> customStructureSets) {
@@ -298,7 +328,7 @@ final class SeedMapperDatapackWorldgen {
             return this.customStructureSets;
         }
 
-        private List<CustomStructureSet> getStructureSetsForDimension(int dimensionId) {
+        private synchronized List<CustomStructureSet> getStructureSetsForDimension(int dimensionId) {
             if (this.dimensionStructureSets.containsKey(dimensionId)) {
                 List<CustomStructureSet> cached = this.dimensionStructureSets.get(dimensionId);
                 return cached != null ? cached : Collections.emptyList();
@@ -333,7 +363,7 @@ final class SeedMapperDatapackWorldgen {
             return result;
         }
 
-        private DimensionContext getDimensionContext(int dimensionId) {
+        private synchronized DimensionContext getDimensionContext(int dimensionId) {
             if (this.dimensionContexts.containsKey(dimensionId)) {
                 DimensionContext cached = this.dimensionContexts.get(dimensionId);
                 if (cached != null) {
@@ -379,7 +409,7 @@ final class SeedMapperDatapackWorldgen {
         private StructureResult resolveStructure(CustomStructureSet set, DimensionContext context, ChunkPos chunkPos, WorldgenRandom selectionRandom, Predicate<StructureSetEntry> entryFilter) {
             Predicate<StructureSetEntry> filter = entryFilter == null ? entry -> true : entryFilter;
             String cacheKey = set.id() + ":" + context.dimensionId();
-            Map<Long, StructureResult> cache = this.structureCache.computeIfAbsent(cacheKey, ignored -> new HashMap<>());
+            Map<Long, StructureResult> cache = this.structureCache.computeIfAbsent(cacheKey, ignored -> new ConcurrentHashMap<>());
             long chunkKey = chunkPos.pack();
             StructureResult cached = cache.get(chunkKey);
             if (cached != null && (cached.entry() == null || filter.test(cached.entry()))) {

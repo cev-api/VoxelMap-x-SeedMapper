@@ -19,6 +19,7 @@ import com.mamiyaotaru.voxelmap.gui.GuiSeedMapperDatapackOptions;
 import com.mamiyaotaru.voxelmap.gui.GuiSeedMapperEspProfiles;
 import com.mamiyaotaru.voxelmap.gui.GuiSeedMapperLocator;
 import com.mamiyaotaru.voxelmap.gui.GuiSeedMapperLootViewer;
+import com.mamiyaotaru.voxelmap.gui.GuiSeedMapperMap;
 import com.mamiyaotaru.voxelmap.gui.GuiSeedMapperMarkerOptions;
 import com.mamiyaotaru.voxelmap.gui.GuiSeedMapperSavedSeeds;
 import com.mamiyaotaru.voxelmap.gui.overridden.EnumOptionsMinimap;
@@ -59,7 +60,7 @@ public final class VoxelMapSettings {
         return List.of(
                 general(map),
                 minimap(voxelMap, map, seed, host),
-                worldMap(map, world, host),
+                worldMap(map, world, seed, host),
                 waypoints(map),
                 radar(radar, map, seed, openEntityTypeDialog, host),
                 chunks(map, radar, world, host),
@@ -412,7 +413,7 @@ public final class VoxelMapSettings {
                 () -> map.waypointsAllowed && map.waypointCompass, requires("options.voxelmap.requires.compass"), 1);
     }
 
-    private static SettingsCategory worldMap(MapSettingsManager map, PersistentMapSettingsManager world, Supplier<Screen> host) {
+    private static SettingsCategory worldMap(MapSettingsManager map, PersistentMapSettingsManager world, SeedMapperSettingsManager seed, Supplier<Screen> host) {
         return new SettingsCategory("worldmap", "options.voxelmap.category.worldmap", List.of(
                 group("options.voxelmap.group.worldmapDisplay",
                         persistentToggle("worldmap.coordinates", "options.worldmap.showCoordinates", world, EnumOptionsMinimap.SHOW_WORLDMAP_COORDS, () -> true, Component::empty, 0),
@@ -454,6 +455,14 @@ public final class VoxelMapSettings {
                                 seedMapStyleChoices()),
                         persistentToggle("worldmap.seedmapMoving", "options.worldmap.seedmapUpdateWhileMoving", world, EnumOptionsMinimap.WORLDMAP_SEEDMAP_UPDATE_WHILE_MOVING, () -> true, Component::empty, 0),
                         persistentToggle("worldmap.seedmapBiome", "options.worldmap.seedmapBiomeUnderCursor", world, EnumOptionsMinimap.WORLDMAP_SEEDMAP_BIOME_UNDER_CURSOR, () -> true, Component::empty, 0),
+                        SettingsOption.slider("worldmap.seedmapBiomeY", "options.worldmap.seedmapBiomeY", tooltip("worldmap.seedmapBiomeY"),
+                                () -> (double) seed.seedMapBiomeY,
+                                value -> {
+                                    seed.setSeedMapBiomeY((int) Math.round(value));
+                                    MapSettingsManager.instance.saveAll();
+                                },
+                                -64, 320, 4, value -> Component.translatable("options.voxelmap.value.yLevel", value.intValue()),
+                                () -> true, Component::empty, 0),
                         persistentSlider("worldmap.seedmapContour", "options.worldmap.seedmapContourStrength", world, EnumOptionsMinimap.WORLDMAP_SEEDMAP_CONTOUR_STRENGTH,
                                 PersistentMapSettingsManager.MIN_SEEDMAP_CONTOUR_STRENGTH, PersistentMapSettingsManager.MAX_SEEDMAP_CONTOUR_STRENGTH, 0.01,
                                 value -> Component.literal(String.format(Locale.ROOT, "%.2f", value))),
@@ -728,6 +737,24 @@ public final class VoxelMapSettings {
                                     MapSettingsManager.instance.saveAll();
                                 },
                                 0.5, 1.25, 0.01, value -> Component.literal(String.format(Locale.ROOT, "%.2fx", value)), () -> true, Component::empty, 0)),
+                group("options.voxelmap.group.seedmapperStructures",
+                        SettingsOption.text("seedmapper.structureSalts", "options.voxelmap.seedmapper.structureSalts",
+                                tooltip("seedmapper.structureSalts"),
+                                () -> formatStructureSalts(seed.getCustomStructureSaltsSnapshot()),
+                                value -> {
+                                    seed.setCustomStructureSalts(parseStructureSalts(value));
+                                    MapSettingsManager.instance.saveAll();
+                                },
+                                () -> true, Component::empty),
+                        SettingsOption.action("seedmapper.clearStructureSalts", "options.voxelmap.seedmapper.clearStructureSalts", null,
+                                Component.translatable("options.voxelmap.action.clear"),
+                                () -> {
+                                    seed.clearCustomStructureSalts();
+                                    MapSettingsManager.instance.saveAll();
+                                }),
+                        espAction("seedmapper.findTreasureClusters", "options.voxelmap.seedmapper.findTreasureClusters", tooltip("seedmapper.findTreasureClusters"), host,
+                                () -> SeedMapperCommandHandler.handleChatCommand("seedmap locate treasurecluster")),
+                        openScreen("seedmapper.standaloneMap", "options.voxelmap.seedmapper.standaloneMap", host, GuiSeedMapperMap::new)),
                 group("options.voxelmap.group.seedmapperLocate",
                         openScreen("seedmapper.locateStructure", "options.voxelmap.seedmapper.locateStructure", host, parent -> new GuiSeedMapperLocator(parent, GuiSeedMapperLocator.Mode.STRUCTURE)),
                         openScreen("seedmapper.locateBiome", "options.voxelmap.seedmapper.locateBiome", host, parent -> new GuiSeedMapperLocator(parent, GuiSeedMapperLocator.Mode.BIOME)),
@@ -764,8 +791,10 @@ public final class VoxelMapSettings {
                                 () -> SeedMapperCommandHandler.handleChatCommand("seedmap highlight canyon " + seed.espDefaultChunks)),
                         espAction("seedmapper.runCave", "options.voxelmap.seedmapper.runCave", host,
                                 () -> SeedMapperCommandHandler.handleChatCommand("seedmap highlight cave " + seed.espDefaultChunks)),
-                        espAction("seedmapper.runTerrain", "options.voxelmap.seedmapper.runTerrain", host,
+                        espAction("seedmapper.runTerrain", "options.voxelmap.seedmapper.runTerrain", tooltip("seedmapper.runTerrain"), host,
                                 () -> SeedMapperCommandHandler.handleChatCommand("seedmap highlight terrain " + seed.espDefaultChunks)),
+                        espAction("seedmapper.runSurface", "options.voxelmap.seedmapper.runSurface", tooltip("seedmapper.runSurface"), host,
+                                () -> SeedMapperCommandHandler.handleChatCommand("seedmap highlight surface " + seed.espDefaultChunks)),
                         SettingsOption.action("seedmapper.clearEsp", "options.voxelmap.seedmapper.clearEsp", null,
                                 Component.literal("Clear"),
                                 () -> {
@@ -940,7 +969,11 @@ public final class VoxelMapSettings {
     }
 
     private static SettingsOption<Void> espAction(String id, String key, Supplier<Screen> host, Runnable action) {
-        return SettingsOption.action(id, key, null, Component.translatable("options.voxelmap.action.run"), () -> {
+        return espAction(id, key, null, host, action);
+    }
+
+    private static SettingsOption<Void> espAction(String id, String key, String tooltipKey, Supplier<Screen> host, Runnable action) {
+        return SettingsOption.action(id, key, tooltipKey, Component.translatable("options.voxelmap.action.run"), () -> {
             commitText(host);
             action.run();
         });
@@ -1081,6 +1114,41 @@ public final class VoxelMapSettings {
 
     private static <T> SettingsOption.Choice<T> value(T value, String key) {
         return new SettingsOption.Choice<>(value, Component.translatable(key));
+    }
+
+    /** Renders the custom structure salts as "structure=salt, structure=salt". */
+    private static String formatStructureSalts(java.util.Map<String, Integer> salts) {
+        if (salts == null || salts.isEmpty()) {
+            return "";
+        }
+        return salts.entrySet().stream()
+                .sorted(java.util.Map.Entry.comparingByKey())
+                .map(entry -> entry.getKey() + "=" + entry.getValue())
+                .collect(java.util.stream.Collectors.joining(", "));
+    }
+
+    private static java.util.Map<String, Integer> parseStructureSalts(String raw) {
+        java.util.Map<String, Integer> parsed = new java.util.LinkedHashMap<>();
+        if (raw == null || raw.isBlank()) {
+            return parsed;
+        }
+        for (String entry : raw.split("[,;\\n]")) {
+            String trimmed = entry.trim();
+            if (trimmed.isEmpty()) {
+                continue;
+            }
+            int separator = trimmed.indexOf('=');
+            if (separator <= 0 || separator >= trimmed.length() - 1) {
+                continue;
+            }
+            String structure = trimmed.substring(0, separator).trim();
+            try {
+                parsed.put(structure, Integer.parseInt(trimmed.substring(separator + 1).trim()));
+            } catch (NumberFormatException ignored) {
+                // Skip malformed entries; the field keeps the other salts intact.
+            }
+        }
+        return parsed;
     }
 
     private static String tooltip(String id) {

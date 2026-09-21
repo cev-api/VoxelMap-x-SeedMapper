@@ -20,28 +20,45 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class SeedMapperImportedDatapackManager {
-    private static final Map<String, ImportedDatapack> CACHE = new HashMap<>();
+    private static final RenewableSoftReference<ConcurrentHashMap<String, ImportedDatapack>> CACHE =
+            new RenewableSoftReference<>(ConcurrentHashMap::new);
     private static final Identifier POTION_TEXTURE = Identifier.fromNamespaceAndPath("minecraft", "textures/item/potion.png");
     private static final Identifier POTION_OVERLAY_TEXTURE = Identifier.fromNamespaceAndPath("minecraft", "textures/item/potion_overlay.png");
 
     private SeedMapperImportedDatapackManager() {
     }
 
-    static synchronized ImportedDatapack getImportedDatapack(String datapackRootPath) {
+    static ImportedDatapack getImportedDatapack(String datapackRootPath) {
         if (datapackRootPath == null || datapackRootPath.isBlank()) {
             return ImportedDatapack.EMPTY;
         }
 
-        return CACHE.computeIfAbsent(datapackRootPath, SeedMapperImportedDatapackManager::loadImportedDatapack);
+        String normalizedPath = normalizeRootPath(datapackRootPath);
+        if (normalizedPath == null) {
+            return ImportedDatapack.EMPTY;
+        }
+        return CACHE.get().computeIfAbsent(normalizedPath, SeedMapperImportedDatapackManager::loadImportedDatapack);
     }
 
-    public static synchronized void invalidateCache(String datapackRootPath) {
+    public static void invalidateCache(String datapackRootPath) {
         if (datapackRootPath == null || datapackRootPath.isBlank()) {
             return;
         }
-        CACHE.remove(datapackRootPath);
+        String normalizedPath = normalizeRootPath(datapackRootPath);
+        if (normalizedPath != null) {
+            CACHE.get().remove(normalizedPath);
+        }
+    }
+
+    private static String normalizeRootPath(String datapackRootPath) {
+        try {
+            return Path.of(datapackRootPath).toAbsolutePath().normalize().toString();
+        } catch (RuntimeException ignored) {
+            return null;
+        }
     }
 
     private static ImportedDatapack loadImportedDatapack(String datapackRootPath) {

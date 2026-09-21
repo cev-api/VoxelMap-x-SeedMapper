@@ -28,6 +28,13 @@ public final class SeedMapperEspManager {
     private static final float LINE_WIDTH = 2.0F;
     private static final float GLOW_LINE_WIDTH = 8.0F;
     private static final float GLOW_ALPHA = 0.18F;
+    // A terrain query can legitimately return millions of sampled blocks.  Do
+    // not let one command turn those samples into an unbounded render mesh.
+    // The limit is deliberately shared by every ESP target so a sequence of
+    // commands cannot accumulate an unsafe amount of geometry either.
+    private static final int MAX_HIGHLIGHT_BOXES = 100_000;
+    private static final int MAX_RENDER_LINES = 1_000_000;
+    private static final int MAX_RENDER_FILL_FACES = 250_000;
     private static final Set<HighlightBox> HIGHLIGHTS = ConcurrentHashMap.newKeySet();
     private static final long DEFAULT_TIMEOUT_MS = 5L * 60L * 1000L;
     private static volatile long timeoutMs = DEFAULT_TIMEOUT_MS;
@@ -47,9 +54,19 @@ public final class SeedMapperEspManager {
         geometryDirty = true;
     }
 
+    public static void clear(SeedMapperEspTarget target) {
+        if (target != null && HIGHLIGHTS.removeIf(box -> box.target() == target)) {
+            geometryDirty = true;
+        }
+    }
+
     public static void drawBoxes(SeedMapperEspTarget target, Iterable<BlockPos> blocks, int fallbackColor) {
         long now = System.currentTimeMillis();
+        int remaining = Math.max(0, MAX_HIGHLIGHT_BOXES - HIGHLIGHTS.size());
         for (BlockPos pos : blocks) {
+            if (remaining-- <= 0) {
+                break;
+            }
             HIGHLIGHTS.add(new HighlightBox(pos.immutable(), fallbackColor & 0x00FFFFFF, target, now));
         }
         geometryDirty = true;
@@ -130,7 +147,7 @@ public final class SeedMapperEspManager {
             }
         }
 
-        List<Line> lines = new ArrayList<>();
+        List<Line> lines = new ArrayList<>(Math.min(MAX_RENDER_LINES, styledBlocks.size() * 4));
         for (Map.Entry<EdgeStyle, Map<EdgeKey, EdgeAccumulator>> styleEntry : styleEdgeMaps.entrySet()) {
             EdgeStyle style = styleEntry.getKey();
             styleEntry.getValue().forEach((key, accumulator) -> {
@@ -142,24 +159,32 @@ public final class SeedMapperEspManager {
                     case AXIS_Z -> start.add(0.0D, 0.0D, 1.0D);
                     default -> start;
                 };
-                lines.add(new Line(start, end, style.color(), style.alpha()));
+                if (lines.size() < MAX_RENDER_LINES) {
+                    lines.add(new Line(start, end, style.color(), style.alpha()));
+                }
             });
+        }
+        if (fillFaces.size() > MAX_RENDER_FILL_FACES) {
+            fillFaces = new ArrayList<>(fillFaces.subList(0, MAX_RENDER_FILL_FACES));
         }
         return new RenderGeometry(lines, fillFaces);
     }
 
     private static void renderGeometry(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, Camera camera, RenderGeometry geometry) {
         Vec3 cameraPos = camera.position();
-        OrderedSubmitNodeCollector overlay = submitNodeCollector.order(Integer.MAX_VALUE);
         if (!geometry.fillFaces().isEmpty()) {
+            OrderedSubmitNodeCollector fillCollector = submitNodeCollector.order(VoxelMapRenderTypes.OVERLAY_ORDER_ESP_FILL);
             List<FillFace> sortedFillFaces = new ArrayList<>(geometry.fillFaces());
             // With an always-pass depth writer, render far faces first so the nearest fill surface
             // remains in the overlay depth buffer for the outline pass.
             sortedFillFaces.sort(Comparator.comparingDouble(face -> -face.distanceToSqr(cameraPos)));
-            overlay.submitCustomGeometry(poseStack, VoxelMapRenderTypes.SEEDMAPPER_ESP_QUADS_NO_DEPTH, (pose, fillBuffer) -> {
+            fillCollector.submitCustomGeometry(poseStack, VoxelMapRenderTypes.SEEDMAPPER_ESP_QUADS_NO_DEPTH, (pose, fillBuffer) -> {
                 for (FillFace face : sortedFillFaces) drawQuadFill(fillBuffer, pose, face, cameraPos);
             });
         }
+        // Outlines go into their own, later order bucket so they always draw
+        // over their own translucent fill instead of competing with it.
+        OrderedSubmitNodeCollector overlay = submitNodeCollector.order(VoxelMapRenderTypes.OVERLAY_ORDER_ESP_LINES);
         overlay.submitCustomGeometry(poseStack, VoxelMapRenderTypes.SEEDMAPPER_ESP_LINES_NO_DEPTH, (pose, glowBuffer) -> {
             for (Line line : geometry.lines()) drawLine(glowBuffer, pose, line, cameraPos, GLOW_LINE_WIDTH, line.alpha() * GLOW_ALPHA);
         });

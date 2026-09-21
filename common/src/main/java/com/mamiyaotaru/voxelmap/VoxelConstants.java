@@ -10,12 +10,11 @@ import com.mamiyaotaru.voxelmap.util.BiomeRepository;
 import com.mamiyaotaru.voxelmap.util.CommandUtils;
 import com.mamiyaotaru.voxelmap.util.MessageUtils;
 import com.mamiyaotaru.voxelmap.util.ModrinthUpdateChecker;
-import com.mojang.blaze3d.systems.RenderSystem;
+import com.mamiyaotaru.voxelmap.rendering.SubmitPass;
 import com.mojang.blaze3d.vertex.PoseStack;
 import java.util.Locale;
-import com.mamiyaotaru.voxelmap.rendering.SubmitPass;
-import java.util.OptionalDouble;
 import java.util.Optional;
+import java.util.OptionalDouble;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -33,7 +32,6 @@ import net.minecraft.world.level.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-import org.joml.Matrix4fStack;
 
 public final class VoxelConstants {
     private static final Logger LOGGER = LogManager.getLogger("VoxelMap");
@@ -161,13 +159,28 @@ public final class VoxelConstants {
         }
     }
 
-    public static void onRenderWaypoints(Matrix4fStack matrixStack, Camera camera, float partialTick) {
+    /**
+     * Draws the world-space VoxelMap overlays (waypoint signs/beams, SeedMapper ESP and
+     * ChunkAnalysis) in a dedicated pass on the main render target.
+     *
+     * <p>These overlays must not be occluded by terrain. Submitting them into the level's
+     * own {@code SubmitNodeCollector} does not achieve that: 26.3 routes any custom
+     * geometry with blending into its translucent phase, which is composited against the
+     * opaque depth buffer, so the overlays disappeared whenever the player was standing
+     * above them. Owning the pass keeps the ALWAYS_PASS / no-depth-write pipelines in
+     * effect and bypasses that compositing.</p>
+     *
+     * <p>The pose supplied by the caller carries the camera view rotation while the
+     * overlay code supplies camera-relative coordinates.</p>
+     */
+    public static void onRenderWaypoints(float partialTick, PoseStack poseStack, Camera camera) {
         try {
-            VoxelConstants.getVoxelMapInstance().getWaypointManager().renderWaypoints(matrixStack, camera, partialTick);
-            PoseStack poseStack = new PoseStack();
-            poseStack.last().pose().set(matrixStack);
             var target = getMinecraft().gameRenderer.mainRenderTarget();
-            try (SubmitPass pass = new SubmitPass("VoxelMap fork overlays", target.getColorTextureView(), Optional.empty(), target.getDepthTextureView(), OptionalDouble.empty())) {
+            try (SubmitPass pass = new SubmitPass("VoxelMap world overlay",
+                    target.getColorTextureView(), Optional.empty(),
+                    target.getDepthTextureView(), OptionalDouble.empty())) {
+                VoxelConstants.getVoxelMapInstance().getWaypointManager()
+                        .renderWaypoints(partialTick, poseStack, pass.collector(), camera);
                 SeedMapperEspRenderer.render(partialTick, poseStack, pass.collector(), camera);
                 ChunkAnalysisRenderer.render(poseStack, pass.collector(), camera);
             }
