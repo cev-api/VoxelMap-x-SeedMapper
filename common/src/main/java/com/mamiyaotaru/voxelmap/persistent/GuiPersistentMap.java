@@ -330,6 +330,9 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     private long newOldChunkLastRebuildTimeMs = 0L;
     private SeedMapperChestLootWidget seedMapperChestLootWidget;
     private SeedMapperVaultLootWidget seedMapperVaultLootWidget;
+    private long seedMapperLootWidgetOpenedAtMs;
+    private int seedMapperLootWidgetOpenedX;
+    private int seedMapperLootWidgetOpenedY;
     private Set<SeedMapperFeature> seedMapperAllFeaturesSaved;
     private boolean currentDragging;
     private boolean plotMode;
@@ -795,7 +798,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     public boolean mouseReleased(MouseButtonEvent mouseButtonEvent) {
         boolean wasRightMapDrag = rightMapDrag && rightMapDragMoved;
         currentDragging = false;
-        if (mouseButtonEvent.button() == 1) {
+        if (mouseButtonEvent.button() == InputConstants.MOUSE_BUTTON_RIGHT) {
             rightMapDrag = false;
             rightMapDragMoved = false;
             if (wasRightMapDrag) {
@@ -849,7 +852,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         if (isInTopHeader(mouseX, mouseY) || isInSeedMapperStrip(mouseX, mouseY)) {
             return true;
         }
-        if (mouseButtonEvent.button() == 0 && editingPlot != null) {
+        if (mouseButtonEvent.button() == InputConstants.MOUSE_BUTTON_LEFT && editingPlot != null) {
             double[] mapPoint = mapPointFromGui(mouseButtonEvent.x(), mouseButtonEvent.y());
             PlotManager.Plot plot = editingPlot;
             double[] viewPlot = plotCoordinatesForView(plot);
@@ -863,7 +866,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             return true;
         }
 
-        if (mouseButtonEvent.button() == 1 && handleSeedMapperMarkerRightClick(mouseX, mouseY)) {
+        if (mouseButtonEvent.button() == InputConstants.MOUSE_BUTTON_RIGHT && handleSeedMapperMarkerRightClick(mouseX, mouseY)) {
             return true;
         }
 
@@ -886,6 +889,18 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     public boolean mouseClicked(MouseButtonEvent mouseButtonEvent, boolean doubleClick) {
         int mouseX = (int) mouseButtonEvent.x();
         int mouseY = (int) mouseButtonEvent.y();
+
+        // An exception thrown in a GUI input callback is swallowed by the event loop and is
+        // invisible in game, so surface it instead of silently dropping the click.
+        try {
+            return this.mouseClickedImpl(mouseButtonEvent, doubleClick, mouseX, mouseY);
+        } catch (Throwable error) {
+            VoxelConstants.getLogger().error("World map click failed", error);
+            return true;
+        }
+    }
+
+    private boolean mouseClickedImpl(MouseButtonEvent mouseButtonEvent, boolean doubleClick, int mouseX, int mouseY) {
 
         // Coordinate editing is a screen-level interaction rather than a map
         // click. Handle it before the map, popup, and overlay handlers.
@@ -935,43 +950,30 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         // line. In all other modes a right-click opens the context menu, which
         // must not be preceded by a map drag (that would hide SeedMapper
         // markers and clear their hitboxes before the release handler runs).
-        if (mouseButtonEvent.button() == 1 && isInMap(mouseX, mouseY) && !this.hasOpenPopup() && plotMode) {
+        if (mouseButtonEvent.button() == InputConstants.MOUSE_BUTTON_RIGHT && isInMap(mouseX, mouseY) && !this.hasOpenPopup() && plotMode) {
             rightMapDrag = true;
             rightMapDragMoved = false;
             currentDragging = true;
         }
-        if (mouseButtonEvent.button() == 0 && isInMap(mouseX, mouseY) && !this.hasOpenPopup()) {
-            double[] mapPoint = mapPointFromGui(mouseButtonEvent.x(), mouseButtonEvent.y());
-            if (placingDuplicatePlot != null) {
-                double[] original = plotCoordinatesForView(placingDuplicatePlot);
-                double centerX = (original[0] + original[2]) / 2.0D;
-                double centerZ = (original[1] + original[3]) / 2.0D;
-                double sourceScale = original[4];
-                double dx = (mapPoint[0] - centerX) / sourceScale;
-                double dz = (mapPoint[1] - centerZ) / sourceScale;
-                plotManager.add(new PlotManager.Plot(placingDuplicatePlot.x1() + dx, placingDuplicatePlot.z1() + dz,
-                        placingDuplicatePlot.x2() + dx, placingDuplicatePlot.z2() + dz, placingDuplicatePlot.dimension(),
-                        placingDuplicatePlot.showOppositeDimension(), placingDuplicatePlot.thickness(), placingDuplicatePlot.color()));
-                placingDuplicatePlot = null;
-                return true;
-            }
-            if (plotMode) {
-                handlePlotInput(mouseButtonEvent.x(), mouseButtonEvent.y());
-                return true;
-            }
-            PlotManager.Plot endpointPlot = findPlotAt(mapPoint[0], mapPoint[1]);
-            int endpoint = findPlotEndpointAt(mapPoint[0], mapPoint[1]);
-            if (endpoint != 0) {
-                editingPlot = endpointPlot;
-                selectedPlot = endpointPlot;
-                editingPlotEndpoint = endpoint;
-                return true;
+        if (mouseButtonEvent.button() == InputConstants.MOUSE_BUTTON_LEFT && isInMap(mouseX, mouseY) && !this.hasOpenPopup()) {
+            // A SeedMapper marker that can open loot takes priority over plot-line editing.
+            // The icon is a far more specific target than a plot line, and plot mode (which
+            // never clears when clicks repeat within its 250 ms / 3 px guard) would otherwise
+            // swallow every click before the marker handler is ever reached.
+            if (!isLootableMarkerAt(mouseX, mouseY)) {
+                try {
+                    if (handlePlotMapClick(mouseButtonEvent)) {
+                        return true;
+                    }
+                } catch (Throwable error) {
+                    VoxelConstants.getLogger().error("Plot hit-test failed for a map click", error);
+                }
             }
         }
-        if (mouseButtonEvent.button() == 0 && handlePlayerLayerStatusClick(mouseX, mouseY)) {
+        if (mouseButtonEvent.button() == InputConstants.MOUSE_BUTTON_LEFT && handlePlayerLayerStatusClick(mouseX, mouseY)) {
             return true;
         }
-        if (mouseButtonEvent.button() == 0) {
+        if (mouseButtonEvent.button() == InputConstants.MOUSE_BUTTON_LEFT) {
             long now = System.currentTimeMillis();
             boolean closeInTime = now - this.lastMapLeftClickMs <= 300L;
             boolean closeInSpace = Math.abs(mouseX - this.lastMapLeftClickX) <= 10
@@ -992,7 +994,8 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             if (seedMapperVaultLootWidget.isMouseOver(mouseButtonEvent.x(), mouseButtonEvent.y())) {
                 return true;
             }
-            if (mouseButtonEvent.button() == 0) {
+            if (mouseButtonEvent.button() == InputConstants.MOUSE_BUTTON_LEFT
+                    && !isDuplicateOfLootWidgetOpen(mouseX, mouseY)) {
                 seedMapperVaultLootWidget = null;
             }
         }
@@ -1004,24 +1007,25 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             if (seedMapperChestLootWidget.isMouseOver(mouseButtonEvent.x(), mouseButtonEvent.y())) {
                 return true;
             }
-            if (mouseButtonEvent.button() == 0) {
+            if (mouseButtonEvent.button() == InputConstants.MOUSE_BUTTON_LEFT
+                    && !isDuplicateOfLootWidgetOpen(mouseX, mouseY)) {
                 seedMapperChestLootWidget = null;
             }
         }
 
-        if (mouseButtonEvent.button() == 0 && this.editingCoordinates) {
+        if (mouseButtonEvent.button() == InputConstants.MOUSE_BUTTON_LEFT && this.editingCoordinates) {
             closeCoordinateInputs();
         }
 
         if (mapOptions.worldmapAllowed && isInSeedHeader(mouseX, mouseY)) {
-            if (mouseButtonEvent.button() == 0) {
+            if (mouseButtonEvent.button() == InputConstants.MOUSE_BUTTON_LEFT) {
                 minecraft.gui.setScreen(new GuiMinimapOptions(this, "seedmapper"));
             }
             return true;
         }
 
         if (this.waypointSearchInput != null && isInWaypointSearchInput(mouseX, mouseY)) {
-            if (mouseButtonEvent.button() == 0) {
+            if (mouseButtonEvent.button() == InputConstants.MOUSE_BUTTON_LEFT) {
                 this.waypointSearchInput.setFocused(true);
                 this.setFocused(this.waypointSearchInput);
             }
@@ -1034,10 +1038,10 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         }
 
         if (isInSeedMapperStrip(mouseX, mouseY)) {
-            if (mouseButtonEvent.button() == 0 && handleSeedMapperTitleClick(mouseX, mouseY)) {
+            if (mouseButtonEvent.button() == InputConstants.MOUSE_BUTTON_LEFT && handleSeedMapperTitleClick(mouseX, mouseY)) {
                 return true;
             }
-            if (mouseButtonEvent.button() == 0 && handleSeedMapperIconClick(mouseX, mouseY)) {
+            if (mouseButtonEvent.button() == InputConstants.MOUSE_BUTTON_LEFT && handleSeedMapperIconClick(mouseX, mouseY)) {
                 return true;
             }
             return true;
@@ -1047,16 +1051,85 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             return true;
         }
 
-        if (mouseButtonEvent.button() == 0 && handleSeedMapperIconClick(mouseX, mouseY)) {
+        if (mouseButtonEvent.button() == InputConstants.MOUSE_BUTTON_LEFT && handleSeedMapperIconClick(mouseX, mouseY)) {
             return true;
         }
-        if (mouseButtonEvent.button() == 0 && handleSeedMapperMarkerLeftClick(mouseX, mouseY)) {
-            return true;
+        if (mouseButtonEvent.button() == InputConstants.MOUSE_BUTTON_LEFT) {
+            boolean markerHandled;
+            try {
+                markerHandled = handleSeedMapperMarkerLeftClick(mouseX, mouseY);
+            } catch (Throwable error) {
+                // An exception here would otherwise vanish into the GUI event loop and
+                // look exactly like "clicking a structure does nothing".
+                VoxelConstants.getLogger().error("SeedMapper marker click failed", error);
+                markerHandled = true;
+            }
+            if (markerHandled) {
+                return true;
+            }
         }
         if (mouseButtonEvent.button() == InputConstants.MOUSE_BUTTON_LEFT) {
             currentDragging = true;
         }
         return super.mouseClicked(mouseButtonEvent, doubleClick) || mouseButtonEvent.button() == InputConstants.MOUSE_BUTTON_RIGHT;
+    }
+
+    /** True when the cursor is over a marker that can open a loot view. */
+    private boolean isLootableMarkerAt(int mouseX, int mouseY) {
+        for (SeedMapperMarkerHitbox hitbox : seedMapperMarkerHitboxes) {
+            if (!hitbox.contains(mouseX, mouseY)) {
+                continue;
+            }
+            SeedMapperFeature feature = hitbox.marker().feature();
+            if (feature == SeedMapperFeature.TRIAL_CHAMBERS || SeedMapperLootService.hasPredictableLoot(feature)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 26.3 delivers {@code mouseClicked} several times for one physical press (with a few px of
+     * jitter). The first delivery opens the loot widget; later deliveries of the same press land
+     * outside it and would otherwise close it again. Treat a click near the open position within a
+     * short window as the same press.
+     */
+    private boolean isDuplicateOfLootWidgetOpen(int mouseX, int mouseY) {
+        long now = System.currentTimeMillis();
+        return now - seedMapperLootWidgetOpenedAtMs <= 500L
+                && Math.abs(mouseX - seedMapperLootWidgetOpenedX) <= 12
+                && Math.abs(mouseY - seedMapperLootWidgetOpenedY) <= 12;
+    }
+
+    /** Applies a left click to the plot-line layer. Returns true when the click was consumed. */
+    private boolean handlePlotMapClick(MouseButtonEvent mouseButtonEvent) {
+        double[] mapPoint = mapPointFromGui(mouseButtonEvent.x(), mouseButtonEvent.y());
+        if (placingDuplicatePlot != null) {
+            double[] original = plotCoordinatesForView(placingDuplicatePlot);
+            double centerX = (original[0] + original[2]) / 2.0D;
+            double centerZ = (original[1] + original[3]) / 2.0D;
+            double sourceScale = original[4];
+            double dx = (mapPoint[0] - centerX) / sourceScale;
+            double dz = (mapPoint[1] - centerZ) / sourceScale;
+            plotManager.add(new PlotManager.Plot(placingDuplicatePlot.x1() + dx, placingDuplicatePlot.z1() + dz,
+                    placingDuplicatePlot.x2() + dx, placingDuplicatePlot.z2() + dz, placingDuplicatePlot.dimension(),
+                    placingDuplicatePlot.showOppositeDimension(), placingDuplicatePlot.thickness(), placingDuplicatePlot.color()));
+            placingDuplicatePlot = null;
+            return true;
+        }
+        if (plotMode) {
+            handlePlotInput(mouseButtonEvent.x(), mouseButtonEvent.y());
+            return true;
+        }
+        PlotManager.Plot endpointPlot = findPlotAt(mapPoint[0], mapPoint[1]);
+        int endpoint = findPlotEndpointAt(mapPoint[0], mapPoint[1]);
+        if (endpoint != 0) {
+            editingPlot = endpointPlot;
+            selectedPlot = endpointPlot;
+            editingPlotEndpoint = endpoint;
+            return true;
+        }
+        return false;
     }
 
     @Override
@@ -4293,44 +4366,67 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             }
 
             SeedMapperMarker marker = hitbox.marker();
-            boolean vaultFeature = marker.feature() == SeedMapperFeature.TRIAL_CHAMBERS;
+            // Trial Chambers are checked before the chest-loot path: they are also
+            // registered in FEATURE_TABLES, so gating the vault preview on the absence of
+            // chest loot made this branch unreachable. A direct click opens the vault
+            // preview; the chest loot stays available from the context menu.
+            if (marker.feature() == SeedMapperFeature.TRIAL_CHAMBERS) {
+                seedMapperLootWidgetOpenedAtMs = System.currentTimeMillis();
+                seedMapperLootWidgetOpenedX = mouseX;
+                seedMapperLootWidgetOpenedY = mouseY;
+                openVaultLootWidgetAt(mouseX + 10, mouseY + 10);
+                return true;
+            }
             if (!SeedMapperLootService.hasPredictableLoot(marker.feature())) {
-                // Trial Chambers are not a chest-loot-table structure in the locator
-                // filter, but their vaults are predictable, so a direct click opens
-                // the vault preview instead.
-                if (vaultFeature) {
-                    openVaultLootWidgetAt(mouseX + 10, mouseY + 10);
-                    return true;
-                }
-                return false;
+                // Nothing actionable for this feature. Keep scanning instead of
+                // returning: markers can overlap, and the actionable one underneath
+                // the cursor should still receive the click.
+                continue;
             }
 
             long seed;
             try {
                 seed = resolveWorldMapSeed();
             } catch (IllegalArgumentException ignored) {
+                minecraft.gui.hud.getChat().addClientSystemMessage(AppChatMessages.prefixed("SeedMapper",
+                        "No seed is set for this world, so structure loot cannot be predicted."));
                 return true;
             }
 
             int dimension = getCurrentCubiomesDimension();
             int generatorFlags = getSeedMapperGeneratorFlags();
-            List<SeedMapperChestLootData> chestData = SeedMapperLootService.buildStructureChestLoot(
-                    seed,
-                    dimension,
-                    SeedMapperCompat.getMcVersion(),
-                    generatorFlags,
-                    marker.feature(),
-                    marker.blockX(),
-                    marker.blockZ()
-            );
+            List<SeedMapperChestLootData> chestData;
+            try {
+                chestData = SeedMapperLootService.buildStructureChestLoot(
+                        seed,
+                        dimension,
+                        SeedMapperCompat.getMcVersion(),
+                        generatorFlags,
+                        marker.feature(),
+                        marker.blockX(),
+                        marker.blockZ()
+                );
+            } catch (Throwable error) {
+                // The cubiomes native library can fail to load or reject a call on an
+                // unsupported platform. Report it in game rather than letting the
+                // exception disappear into the GUI event loop with no visible effect.
+                VoxelConstants.getLogger().error("SeedMapper loot lookup failed for {}", marker.feature().id(), error);
+                minecraft.gui.hud.getChat().addClientSystemMessage(AppChatMessages.prefixed("SeedMapper",
+                        "Loot lookup failed for " + marker.feature().id() + ": " + error));
+                return true;
+            }
             if (chestData.isEmpty()) {
-                minecraft.gui.hud.getChat().addClientSystemMessage(AppChatMessages.prefixed("SeedMapper", "No chest loot data available for this structure."));
+                minecraft.gui.hud.getChat().addClientSystemMessage(AppChatMessages.prefixed("SeedMapper",
+                        "No chest loot data available for " + marker.feature().id() + "."));
                 return true;
             }
 
             int widgetX = Mth.clamp(mouseX + 10, 4, this.width - SeedMapperChestLootWidget.WIDTH - 4);
             int widgetY = Mth.clamp(mouseY + 10, this.top + 4, this.bottom - SeedMapperChestLootWidget.HEIGHT - 4);
             seedMapperChestLootWidget = new SeedMapperChestLootWidget(widgetX, widgetY, chestData);
+            seedMapperLootWidgetOpenedAtMs = System.currentTimeMillis();
+            seedMapperLootWidgetOpenedX = mouseX;
+            seedMapperLootWidgetOpenedY = mouseY;
             return true;
         }
         return false;
@@ -4342,6 +4438,8 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         try {
             seed = resolveWorldMapSeed();
         } catch (IllegalArgumentException ignored) {
+            minecraft.gui.hud.getChat().addClientSystemMessage(AppChatMessages.prefixed("SeedMapper",
+                    "No seed is set for this world, so vault rewards cannot be predicted."));
             return;
         }
         int mcVersion = SeedMapperCompat.getMcVersion();

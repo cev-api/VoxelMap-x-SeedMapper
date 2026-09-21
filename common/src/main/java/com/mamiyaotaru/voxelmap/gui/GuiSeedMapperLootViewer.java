@@ -860,7 +860,7 @@ public final class GuiSeedMapperLootViewer extends Screen {
 
     @Override
     public boolean mouseReleased(net.minecraft.client.input.MouseButtonEvent context) {
-        if (context.button() == 0 && draggingScrollbar) {
+        if (context.button() == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT && draggingScrollbar) {
             draggingScrollbar = false;
             return true;
         }

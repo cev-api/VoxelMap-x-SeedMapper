@@ -133,7 +133,7 @@ public class GuiSeedMapperSavedSeeds extends GuiScreenMinimap {
 
         double mouseX = mouseButtonEvent.x();
         double mouseY = mouseButtonEvent.y();
-        if (mouseButtonEvent.button() == 0 && mouseX >= listX() && mouseX < listX() + listWidth() && mouseY >= listY() && mouseY < listY() + listHeight()) {
+        if (mouseButtonEvent.button() == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT && mouseX >= listX() && mouseX < listX() + listWidth() && mouseY >= listY() && mouseY < listY() + listHeight()) {
             int clickedRow = (int) ((mouseY - listY()) / rowHeight());
             int entryIndex = scrollOffset + clickedRow;
             if (entryIndex >= 0 && entryIndex < entries.size()) {
