@@ -2880,7 +2880,10 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 }
             }
         } catch (RuntimeException ex) {
-            VoxelConstants.getLogger().warn("Failed generating SeedMapper world-map preview", ex);
+            // Returning the zero-filled buffer renders a blank map, so the cause has to be
+            // logged loudly and surfaced to the player rather than only warned about.
+            VoxelConstants.getLogger().error("Failed generating SeedMapper world-map preview", ex);
+            SeedMapperNative.reportFailureOnce();
         }
         return pixels;
     }
