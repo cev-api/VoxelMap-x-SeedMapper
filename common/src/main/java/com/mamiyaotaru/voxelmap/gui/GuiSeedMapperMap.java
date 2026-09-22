@@ -443,8 +443,7 @@ public final class GuiSeedMapperMap extends GuiScreenMinimap {
         if (event.key() == InputConstants.KEY_LSHIFT || event.key() == InputConstants.KEY_RSHIFT) {
             shiftHeld = true;
         }
-        if (event.key() == InputConstants.KEY_RETURN || event.key() == InputConstants.KEY_NUMPADENTER
-                || event.key() == 257 || event.key() == 335) {
+        if (event.key() == InputConstants.KEY_RETURN || event.key() == InputConstants.KEY_NUMPADENTER) {
             if ((xInput != null && xInput.isFocused()) || (zInput != null && zInput.isFocused())) {
                 commitCenter();
                 return true;

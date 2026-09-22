@@ -97,7 +97,8 @@ public class GuiSubworldEdit extends GuiScreenMinimap implements BooleanConsumer
         boolean acceptable = this.isNameAcceptable();
         this.doneButton.active = this.isNameAcceptable();
         this.deleteButton.active = this.originalSubworldName.equals(this.subworldNameField.getValue());
-        if ((keyCode == 257 || keyCode == 335) && acceptable) {
+        if ((keyCode == com.mojang.blaze3d.platform.InputConstants.KEY_RETURN
+                || keyCode == com.mojang.blaze3d.platform.InputConstants.KEY_NUMPADENTER) && acceptable) {
             this.changeNameClicked();
         }
 

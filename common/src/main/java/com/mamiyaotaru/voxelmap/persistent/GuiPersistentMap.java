@@ -4529,11 +4529,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
     private boolean isCoordinateSubmitKey(KeyEvent keyEvent) {
         return keyEvent.key() == com.mojang.blaze3d.platform.InputConstants.KEY_RETURN
-                || keyEvent.key() == com.mojang.blaze3d.platform.InputConstants.KEY_NUMPADENTER
-                // Keep this compatible with the 26.2/26.3 GLFW mappings even
-                // when a loader exposes the key constants differently.
-                || keyEvent.key() == 257
-                || keyEvent.key() == 335;
+                || keyEvent.key() == com.mojang.blaze3d.platform.InputConstants.KEY_NUMPADENTER;
     }
 
     private void commitCoordinateInputs() {

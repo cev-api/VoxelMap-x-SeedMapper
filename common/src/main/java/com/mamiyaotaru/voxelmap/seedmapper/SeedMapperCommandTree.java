@@ -19,7 +19,26 @@ import java.util.function.Function;
 
 public final class SeedMapperCommandTree {
     private static final List<String> ORE_VEIN_TYPES = List.of("iron", "copper");
-    private static final List<String> ESP_TYPES = List.of("terrain", "surface", "canyon", "cave");
+    /**
+     * Every accepted spelling of a highlight mode, mapped to the canonical form handed to the
+     * handler. These are all literals: a single free-form {@code mode} word argument overlaps the
+     * clear/ore/orevein literals, which makes Brigadier report an ambiguity for those tokens and
+     * makes tab completion unreliable.
+     */
+    private static final List<HighlightMode> HIGHLIGHT_MODES = List.of(
+            new HighlightMode("clear", "clear"),
+            new HighlightMode("off", "clear"),
+            new HighlightMode("ore", "ore"),
+            new HighlightMode("block", "ore"),
+            new HighlightMode("orevein", "orevein"),
+            new HighlightMode("ore_vein", "orevein"),
+            new HighlightMode("terrain", "terrain"),
+            new HighlightMode("surface", "surface"),
+            new HighlightMode("canyon", "canyon"),
+            new HighlightMode("ravine", "canyon"),
+            new HighlightMode("cave", "cave"),
+            new HighlightMode("caves", "cave")
+    );
     private static final List<String> SOURCE_WRAPPERS = List.of("run", "seeded", "positioned", "in", "versioned", "flagged", "as", "rotated");
     private static final List<String> ROOT_COMMANDS = List.of("help", "seed", "version", "map", "locate", "highlight", "vault", "mine", "export", "chunksync", "chunkanalysis", "updatechecker");
     private static final List<String> LOCATE_TYPES = List.of("structure", "feature", "treasurecluster", "buried_treasure_cluster", "biome", "orevein", "slime", "slimechunk", "slime_chunk", "loot");
@@ -112,25 +131,7 @@ public final class SeedMapperCommandTree {
                                                 .executes(context -> run(context, runner, "vault predict " + IntegerArgumentType.getInteger(context, "offset") + " " + BoolArgumentType.getBool(context, "ominous")))
                                                 .then(RequiredArgumentBuilder.<S, Integer>argument("amount", IntegerArgumentType.integer(1, 16))
                                                         .executes(context -> run(context, runner, "vault predict " + IntegerArgumentType.getInteger(context, "offset") + " " + BoolArgumentType.getBool(context, "ominous") + " " + IntegerArgumentType.getInteger(context, "amount"))))))))
-                .then(LiteralArgumentBuilder.<S>literal("highlight")
-                        .then(LiteralArgumentBuilder.<S>literal("clear").executes(context -> runRaw(context, runner, "highlight clear")))
-                        .then(LiteralArgumentBuilder.<S>literal("ore")
-                                .then(RequiredArgumentBuilder.<S, String>argument("block", StringArgumentType.word())
-                                        .suggests((context, builder) -> SharedSuggestionProvider.suggest(COMMON_ORE_BLOCKS, builder))
-                                        .executes(context -> run(context, runner, "highlight ore " + StringArgumentType.getString(context, "block")))
-                                        .then(RequiredArgumentBuilder.<S, Integer>argument("chunks", IntegerArgumentType.integer(0, 8))
-                                                .executes(context -> run(context, runner,
-                                                        "highlight ore " + StringArgumentType.getString(context, "block") + " " + IntegerArgumentType.getInteger(context, "chunks"))))))
-                        .then(LiteralArgumentBuilder.<S>literal("orevein")
-                                .executes(context -> runRaw(context, runner, "highlight orevein"))
-                                .then(RequiredArgumentBuilder.<S, Integer>argument("chunks", IntegerArgumentType.integer(0, 8))
-                                        .executes(context -> run(context, runner, "highlight orevein " + IntegerArgumentType.getInteger(context, "chunks")))))
-                        .then(RequiredArgumentBuilder.<S, String>argument("mode", StringArgumentType.word())
-                                .suggests((context, builder) -> SharedSuggestionProvider.suggest(ESP_TYPES, builder))
-                                .executes(context -> run(context, runner, "highlight " + StringArgumentType.getString(context, "mode")))
-                                .then(RequiredArgumentBuilder.<S, Integer>argument("chunks", IntegerArgumentType.integer(0, 8))
-                                        .executes(context -> run(context, runner,
-                                                "highlight " + StringArgumentType.getString(context, "mode") + " " + IntegerArgumentType.getInteger(context, "chunks"))))))
+                .then(buildHighlightNode(runner))
                 .then(LiteralArgumentBuilder.<S>literal("export").executes(context -> runRaw(context, runner, "export")))
                 .then(LiteralArgumentBuilder.<S>literal("mine")
                         .then(LiteralArgumentBuilder.<S>literal("orevein")
@@ -229,9 +230,7 @@ public final class SeedMapperCommandTree {
         }
 
         if ("highlight".equals(first) && command.size() <= 2) {
-            ArrayList<String> highlight = new ArrayList<>(List.of("clear", "ore", "orevein"));
-            highlight.addAll(ESP_TYPES);
-            return suggestToken(builder, current, highlight);
+            return suggestToken(builder, current, HIGHLIGHT_MODES.stream().map(HighlightMode::literal).toList());
         }
 
         if ("seed".equals(first) || "help".equals(first) || "export".equals(first)) {
@@ -338,6 +337,38 @@ public final class SeedMapperCommandTree {
     }
 
     private record ParseState(boolean inCommand, boolean awaitingWrapperValue, List<String> commandTokens) {}
+
+    private record HighlightMode(String literal, String canonical) {}
+
+    /**
+     * Builds the {@code highlight} subcommand. Every mode is a literal with an optional chunk
+     * radius, so no argument overlaps a literal and the command parses unambiguously.
+     */
+    private static <S> LiteralArgumentBuilder<S> buildHighlightNode(Function<String, Integer> runner) {
+        LiteralArgumentBuilder<S> highlight = LiteralArgumentBuilder.<S>literal("highlight");
+        for (HighlightMode mode : HIGHLIGHT_MODES) {
+            String canonical = mode.canonical();
+            LiteralArgumentBuilder<S> node = LiteralArgumentBuilder.<S>literal(mode.literal());
+            if ("clear".equals(canonical)) {
+                highlight.then(node.executes(context -> run(context, runner, "highlight clear")));
+            } else if ("ore".equals(canonical)) {
+                highlight.then(node.then(RequiredArgumentBuilder.<S, String>argument("block", StringArgumentType.word())
+                        .suggests((context, builder) -> SharedSuggestionProvider.suggest(COMMON_ORE_BLOCKS, builder))
+                        .executes(context -> run(context, runner, "highlight ore " + StringArgumentType.getString(context, "block")))
+                        .then(RequiredArgumentBuilder.<S, Integer>argument("chunks", IntegerArgumentType.integer(0, 8))
+                                .executes(context -> run(context, runner,
+                                        "highlight ore " + StringArgumentType.getString(context, "block") + " "
+                                                + IntegerArgumentType.getInteger(context, "chunks"))))));
+            } else {
+                highlight.then(node
+                        .executes(context -> run(context, runner, "highlight " + canonical))
+                        .then(RequiredArgumentBuilder.<S, Integer>argument("chunks", IntegerArgumentType.integer(0, 8))
+                                .executes(context -> run(context, runner,
+                                        "highlight " + canonical + " " + IntegerArgumentType.getInteger(context, "chunks")))));
+            }
+        }
+        return highlight;
+    }
 
     private static <S> int runRaw(CommandContext<S> context, Function<String, Integer> runner, String subcommand) {
         return run(context, runner, subcommand);

@@ -819,7 +819,7 @@ public final class GuiSeedMapperLootViewer extends Screen {
             }
             return true;
         }
-        if (button == 0 && maxScrollOffset > 0) {
+        if (button == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT && maxScrollOffset > 0) {
             if (isOverScrollbarThumb(mouseX, mouseY)) {
                 draggingScrollbar = true;
                 scrollbarDragStartY = mouseY;
@@ -844,7 +844,7 @@ public final class GuiSeedMapperLootViewer extends Screen {
     public boolean mouseDragged(net.minecraft.client.input.MouseButtonEvent context, double deltaX, double deltaY) {
         double mouseY = context.y();
         int button = context.button();
-        if (draggingScrollbar && button == 0 && maxScrollOffset > 0) {
+        if (draggingScrollbar && button == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT && maxScrollOffset > 0) {
             double trackRange = (scrollTrackBottom - scrollTrackTop) - scrollThumbHeight;
             if (trackRange > 0) {
                 double delta = mouseY - scrollbarDragStartY;
