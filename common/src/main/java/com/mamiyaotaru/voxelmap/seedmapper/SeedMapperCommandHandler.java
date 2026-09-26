@@ -185,6 +185,37 @@ public final class SeedMapperCommandHandler {
                 }
                 service.scanVoids(radius);
             }
+            case "audit", "interesting", "interesting_only" -> {
+                int radius = VoxelConstants.getVoxelMapInstance().getChunkAnalysisOptions().scanRadius;
+                if (args.length > 3) {
+                    try { radius = Integer.parseInt(args[3]); }
+                    catch (NumberFormatException exception) { send("Usage: /seedmap chunkanalysis audit [radius 0-8]"); return; }
+                }
+                service.scanAudit(radius);
+            }
+            case "unexpected", "all_unexpected" -> {
+                int radius = VoxelConstants.getVoxelMapInstance().getChunkAnalysisOptions().scanRadius;
+                if (args.length > 3) {
+                    try { radius = Integer.parseInt(args[3]); }
+                    catch (NumberFormatException exception) { send("Usage: /seedmap chunkanalysis unexpected [radius 0-8]"); return; }
+                }
+                service.scanUnexpected(radius);
+            }
+            case "continuous" -> {
+                var settings = VoxelConstants.getVoxelMapInstance().getChunkAnalysisOptions();
+                if (args.length < 4) {
+                    send("ChunkAnalysis continuous mode: " + settings.continuousMode + " (off, voids, audit, both).");
+                    return;
+                }
+                String mode = args[3].toLowerCase(Locale.ROOT);
+                if (!mode.equals("off") && !mode.equals("voids") && !mode.equals("audit") && !mode.equals("both")) {
+                    send("Usage: /seedmap chunkanalysis continuous <off|voids|audit|both>");
+                    return;
+                }
+                settings.continuousMode = mode;
+                MapSettingsManager.instance.saveAll();
+                send("ChunkAnalysis continuous mode: " + mode + ".");
+            }
             case "clear", "off" -> {
                 service.clear();
                 send("ChunkAnalysis overlay cleared.");
@@ -199,7 +230,7 @@ public final class SeedMapperCommandHandler {
                 MapSettingsManager.instance.saveAll();
                 send("ChunkAnalysis ghost blocks: " + (enabled ? "ON" : "OFF") + ".");
             }
-            default -> send("Usage: /seedmap chunkanalysis <scan [radius]|voids [radius]|clear|status|ghost [on|off]>");
+            default -> send("Usage: /seedmap chunkanalysis <scan [radius]|voids [radius]|audit [radius]|unexpected [radius]|continuous <off|voids|audit|both>|clear|status|ghost [on|off]>");
         }
     }
 
@@ -1060,11 +1091,13 @@ public final class SeedMapperCommandHandler {
                             MemorySegment pos3 = Pos3.asSlice(pos3s, i);
                             BlockPos pos = new BlockPos(Pos3.x(pos3), Pos3.y(pos3), Pos3.z(pos3));
                             if (pos.getX() >> 4 != chunkX || pos.getZ() >> 4 != chunkZ) continue;
-                            // Cubiomes returns ore placement attempts.  The
-                            // client chunk is authoritative for whether that
-                            // attempt actually became an ore block; this also
-                            // rejects exposed attempts in air or water.
-                            if (!isTargetOreState(chunk.getBlockState(pos), targetBlock)) continue;
+                            // Cubiomes returns ore placement attempts. With verification enabled,
+                            // the client chunk is authoritative for whether an attempt became an
+                            // ore block and rejects exposed attempts in air or water. When disabled,
+                            // this intentionally remains a seed-predicted placement and may contain
+                            // false positives because final replacement/exposure is not knowable here.
+                            if (VoxelConstants.getVoxelMapInstance().getSeedMapperOptions().verifyOreAgainstWorld
+                                    && !isTargetOreState(chunk.getBlockState(pos), targetBlock)) continue;
 
                             Integer previous = generatedOres.get(pos);
                             if (previous != null) {
@@ -1097,7 +1130,8 @@ public final class SeedMapperCommandHandler {
 
         SeedMapperEspManager.clear(SeedMapperEspTarget.BLOCK_HIGHLIGHT);
         SeedMapperEspManager.drawBoxes(SeedMapperEspTarget.BLOCK_HIGHLIGHT, matches, colorForBlock(targetBlock));
-        send("Highlighted " + matches.size() + " ore blocks.");
+        send("Highlighted " + matches.size() + (VoxelConstants.getVoxelMapInstance().getSeedMapperOptions().verifyOreAgainstWorld
+                ? " ore blocks." : " seed-predicted ore placements (world verification disabled; false positives are possible)."));
     }
     private static Map<BlockPos, Integer> computeOreVeinBlocks(int chunkRange) {
         return computeOreVeinBlocks(floorDiv(GameVariableAccessShim.xCoord(), 16), floorDiv(GameVariableAccessShim.zCoord(), 16), chunkRange);
@@ -2372,7 +2406,7 @@ public final class SeedMapperCommandHandler {
         lines.add("/seedmap highlight canyon [chunks]");
         lines.add("/seedmap highlight cave [chunks]");
         lines.add("/seedmap highlight clear");
-        lines.add("/seedmap chunkanalysis <scan [radius]|clear|status|ghost [on|off]>");
+        lines.add("/seedmap chunkanalysis <scan [radius]|voids [radius]|audit [radius]|unexpected [radius]|continuous <off|voids|audit|both>|clear|status|ghost [on|off]>");
         lines.add("/seedmap mine orevein [chunks]");
         lines.add("/seedmap mine stop");
         lines.add("/seedmap export [visible|radius <blocks>|area <x> <z> <radius>]");

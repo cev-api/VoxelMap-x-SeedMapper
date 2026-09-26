@@ -20,11 +20,16 @@ public record ChunkAnalysisSnapshot(
         int comparedBlocks,
         int skippedChunks,
         int unreliableChunks,
-        long generationMillis
+        long generationMillis,
+        ChunkAnalysisService.ScanMode mode,
+        long auditContainers,
+        long auditRedstone,
+        long auditWorkstations
 ) {
     public static ChunkAnalysisSnapshot empty() {
         return new ChunkAnalysisSnapshot(0L, Level.OVERWORLD, new ChunkPos(0, 0), 0,
-                List.of(), 0L, 0L, 0L, 0L, 0, 0, 0, 0, 0L);
+                List.of(), 0L, 0L, 0L, 0L, 0, 0, 0, 0, 0L,
+                ChunkAnalysisService.ScanMode.FULL, 0L, 0L, 0L);
     }
 
     public long count(ChunkAnalysisDifference.Kind kind) {
@@ -33,6 +38,7 @@ public record ChunkAnalysisSnapshot(
             case EXCAVATION -> excavationBlockCount;
             case UNEXPECTED -> unexpectedCount;
             case CHANGED -> changedCount;
+            case UNEXPECTED_INTERESTING -> unexpectedCount;
         };
     }
 }

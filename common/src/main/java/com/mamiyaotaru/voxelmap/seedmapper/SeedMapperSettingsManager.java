@@ -44,6 +44,8 @@ public class SeedMapperSettingsManager implements ISubSettingsManager {
 
     public boolean espEnabled = false;
     public int espDefaultChunks = 4;
+    /** Keeps the existing ore ESP validation enabled unless explicitly disabled. */
+    public boolean verifyOreAgainstWorld = true;
     public double espTimeoutMinutes = 5.0D;
     public int worldMapMarkerLimit = 5000;
     /** Maximum entity/marker icons rendered on the world map; zero means unlimited. */
@@ -114,6 +116,7 @@ public class SeedMapperSettingsManager implements ISubSettingsManager {
                     case "SeedMapper Datapack Random Color Cycle" -> datapackRandomColorCycle = Math.max(0, Integer.parseInt(curLine[1]));
                     case "SeedMapper ESP Enabled" -> espEnabled = Boolean.parseBoolean(curLine[1]);
                     case "SeedMapper ESP Default Chunks" -> espDefaultChunks = Mth.clamp(Integer.parseInt(curLine[1]), 0, 8);
+                    case "SeedMapper Verify Ore Against World" -> verifyOreAgainstWorld = Boolean.parseBoolean(curLine[1]);
                     case "SeedMapper ESP Timeout Minutes" -> espTimeoutMinutes = Math.max(0.0D, Double.parseDouble(curLine[1]));
                     case "SeedMapper WorldMap Marker Limit" -> worldMapMarkerLimit = Mth.clamp(Integer.parseInt(curLine[1]), 200, 20000);
                     case "SeedMapper WorldMap Entity Limit" -> {
@@ -224,6 +227,7 @@ public class SeedMapperSettingsManager implements ISubSettingsManager {
         out.println("SeedMapper Datapack Random Color Cycle:" + datapackRandomColorCycle);
         out.println("SeedMapper ESP Enabled:" + espEnabled);
         out.println("SeedMapper ESP Default Chunks:" + espDefaultChunks);
+        out.println("SeedMapper Verify Ore Against World:" + verifyOreAgainstWorld);
         out.println("SeedMapper ESP Timeout Minutes:" + espTimeoutMinutes);
         out.println("SeedMapper WorldMap Marker Limit:" + worldMapMarkerLimit);
         out.println("SeedMapper WorldMap Entity Limit:" + worldMapEntityLimit);

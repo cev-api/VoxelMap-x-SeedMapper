@@ -274,8 +274,8 @@ public final class SeedMapperContainerDetection {
     }
 
     private static boolean isTerrainMarker(BlockState state) {
-        SeedMapperMarkerOption option = SeedMapperMarkerOption.fromBlock(state.getBlock());
-        return option != null && (option.category() == SeedMapperMarkerOption.Category.WORKSTATIONS || option.category() == SeedMapperMarkerOption.Category.REDSTONE);
+        SeedMapperMarkerOption.Category category = SeedMapperMarkerOption.categoryFor(state);
+        return category == SeedMapperMarkerOption.Category.WORKSTATIONS || category == SeedMapperMarkerOption.Category.REDSTONE;
     }
 
     private static String persistenceScope(Minecraft minecraft, SeedMapperSettingsManager settings) {

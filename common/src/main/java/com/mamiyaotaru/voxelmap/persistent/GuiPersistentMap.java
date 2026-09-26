@@ -2461,6 +2461,11 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
     private void drawBottomStatusTexts(GuiGraphicsExtractor graphics) {
         int y = this.bottom - 14;
+        String worldMapStatus = WorldMapLoadStatus.current();
+        if (worldMapStatus != null) {
+            drawStatusText(graphics, worldMapStatus, this.sideMargin + 2, y, 0xFFE0E0E0, 0xFF000000);
+            y -= 12;
+        }
         if (seedMapperQueryLoading) {
             drawStatusText(graphics, "Loading SeedMapper: " + (seedMapperLoadingSummary == null || seedMapperLoadingSummary.isBlank() ? "structures" : seedMapperLoadingSummary), this.sideMargin + 2, y, 0xFFE0E0E0, 0xFF000000);
             y -= 12;

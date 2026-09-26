@@ -9,6 +9,7 @@ import net.minecraft.core.QuartPos;
 import net.minecraft.core.Registry;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.SectionPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.RegistryDataLoader;
 import net.minecraft.resources.Identifier;
@@ -141,6 +142,10 @@ final class ChunkAnalysisWorldgenContext implements AutoCloseable {
                                 staticAccess.registries().forEach(entry -> all.add(entry.value()));
                                 worldgen.registries().forEach(entry -> all.add(entry.value()));
                                 dimensions.registries().forEach(entry -> all.add(entry.value()));
+                                // Structure templates contain entity NBT. Include the built-in
+                                // entity registry so vanilla does not warn once per villager/cat
+                                // while loading those templates in the isolated world.
+                                all.add(BuiltInRegistries.ENTITY_TYPE);
                                 RegistryAccess.Frozen combined = new RegistryAccess.ImmutableRegistryAccess(dedupeRegistries(all)).freeze();
                                 // Bind tags for every registry in the combined access. Filtering
                                 // this down to the worldgen/dimension registries leaves static
@@ -204,7 +209,12 @@ final class ChunkAnalysisWorldgenContext implements AutoCloseable {
                 registries.lookupOrThrow(Registries.STRUCTURE_SET), randomState, seed);
 
         int generatedRadius = radius + 1;
-        int supportRadius = generatedRadius + STRUCTURE_REFERENCE_RADIUS;
+        // Void scans do not inspect structures or feature blocks. Avoid building the
+        // expensive 8-chunk structure-reference border for that fast path; terrain
+        // still gets a one-chunk neighbor border for carvers and biome lookup.
+        int supportRadius = includeFeatures
+                ? generatedRadius + STRUCTURE_REFERENCE_RADIUS
+                : generatedRadius + 1;
         Map<Long, ProtoChunk> chunks = new HashMap<>();
         for (int z = center.z() - supportRadius; z <= center.z() + supportRadius; z++) {
             for (int x = center.x() - supportRadius; x <= center.x() + supportRadius; x++) {
@@ -222,24 +232,28 @@ final class ChunkAnalysisWorldgenContext implements AutoCloseable {
         ChunkAnalysisRuntime.enter(seed, generator, templates);
         try {
 
-        // Structure starts need the full reference dependency border.
-        forEachChunk(center, supportRadius, chunks, chunk -> {
-            generator.createStructures(registries, structureState, structureManager, chunk, templates, dimension);
-            chunk.setPersistedStatus(ChunkStatus.STRUCTURE_STARTS);
-        });
         List<BoundingBox> structurePieceBounds = new ArrayList<>();
         Set<StructureStart> structureStarts = new HashSet<>();
-        chunks.values().forEach(chunk -> chunk.getAllStarts().values().forEach(start -> {
-            if (start.isValid() && structureStarts.add(start)) {
-                start.getPieces().forEach(piece -> structurePieceBounds.add(piece.getBoundingBox()));
-            }
-        }));
+        if (includeFeatures) {
+            // Structure starts need the full reference dependency border.
+            forEachChunk(center, supportRadius, chunks, chunk -> {
+                generator.createStructures(registries, structureState, structureManager, chunk, templates, dimension);
+                chunk.setPersistedStatus(ChunkStatus.STRUCTURE_STARTS);
+            });
+            chunks.values().forEach(chunk -> chunk.getAllStarts().values().forEach(start -> {
+                if (start.isValid() && structureStarts.add(start)) {
+                    start.getPieces().forEach(piece -> structurePieceBounds.add(piece.getBoundingBox()));
+                }
+            }));
+        }
 
         List<ProtoChunk> terrainChunks = chunksInRadius(center, generatedRadius, chunks);
-        terrainChunks.forEach(chunk -> {
-            generator.createReferences(level, structureManager, chunk);
-            chunk.setPersistedStatus(ChunkStatus.STRUCTURE_REFERENCES);
-        });
+        if (includeFeatures) {
+            terrainChunks.forEach(chunk -> {
+                generator.createReferences(level, structureManager, chunk);
+                chunk.setPersistedStatus(ChunkStatus.STRUCTURE_REFERENCES);
+            });
+        }
 
         // Match the vanilla status pyramid: references precede biomes, while every carver
         // source chunk still needs a populated biome palette.

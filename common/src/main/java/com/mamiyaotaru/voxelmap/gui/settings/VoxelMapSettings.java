@@ -13,6 +13,7 @@ import com.mamiyaotaru.voxelmap.chunksync.ChunkSyncCommandHandler;
 import com.mamiyaotaru.voxelmap.chunkanalysis.ChunkAnalysisService;
 import com.mamiyaotaru.voxelmap.chunkanalysis.ChunkAnalysisSettingsManager;
 import com.mamiyaotaru.voxelmap.gui.GuiChunkSyncLayers;
+import com.mamiyaotaru.voxelmap.gui.GuiChunkAnalysisColors;
 import com.mamiyaotaru.voxelmap.gui.GuiColorEditScreen;
 import com.mamiyaotaru.voxelmap.gui.GuiSeedMapperCrackingMods;
 import com.mamiyaotaru.voxelmap.gui.GuiSeedMapperDatapackOptions;
@@ -66,7 +67,7 @@ public final class VoxelMapSettings {
                 chunks(map, radar, world, host),
                 sharing(host),
                 seedmapper(seed, host),
-                chunkAnalysis(analysis),
+                chunkAnalysis(analysis, host),
                 new SettingsCategory("controls", "options.voxelmap.category.controls", List.of()),
                 advanced(voxelMap, map, radar, host));
     }
@@ -777,6 +778,11 @@ public final class VoxelMapSettings {
                                     MapSettingsManager.instance.saveAll();
                                 },
                                 0, 8, 1, value -> Component.literal(String.valueOf((int) Math.round(value))), () -> true, Component::empty, 0),
+                         SettingsOption.toggle("seedmapper.verifyOre", "options.voxelmap.seedmapper.verifyOre", tooltip("seedmapper.verifyOre"),
+                                 () -> seed.verifyOreAgainstWorld, value -> {
+                                     seed.verifyOreAgainstWorld = value;
+                                     MapSettingsManager.instance.saveAll();
+                                 }),
                         espAction("seedmapper.runEsp", "options.voxelmap.seedmapper.runEsp", host, () -> {
                             String target = seed.espTarget == null ? "" : seed.espTarget.trim();
                             if (target.isBlank()) {
@@ -846,7 +852,7 @@ public final class VoxelMapSettings {
                                 }))));
     }
 
-    private static SettingsCategory chunkAnalysis(ChunkAnalysisSettingsManager settings) {
+    private static SettingsCategory chunkAnalysis(ChunkAnalysisSettingsManager settings, Supplier<Screen> host) {
         return new SettingsCategory("chunkanalysis", "options.voxelmap.category.chunkanalysis", List.of(
                 group("options.voxelmap.group.chunkanalysisScan",
                         SettingsOption.slider("chunkanalysis.radius", "options.voxelmap.chunkanalysis.radius", null,
@@ -868,15 +874,47 @@ public final class VoxelMapSettings {
                                 Component.translatable("options.voxelmap.action.run"),
                                 () -> ChunkAnalysisService.get().scanVoids(settings.scanRadius),
                                 () -> !ChunkAnalysisService.get().isRunning(), Component::empty),
+                        SettingsOption.action("chunkanalysis.audit", "options.voxelmap.chunkanalysis.audit", null,
+                                Component.translatable("options.voxelmap.action.run"),
+                                () -> ChunkAnalysisService.get().scanAudit(settings.scanRadius),
+                                () -> !ChunkAnalysisService.get().isRunning(), Component::empty),
+                        SettingsOption.action("chunkanalysis.unexpected", "options.voxelmap.chunkanalysis.unexpected", null,
+                                Component.translatable("options.voxelmap.action.run"),
+                                () -> ChunkAnalysisService.get().scanUnexpected(settings.scanRadius),
+                                () -> !ChunkAnalysisService.get().isRunning(), Component::empty),
+                        SettingsOption.choice("chunkanalysis.continuous", "options.voxelmap.chunkanalysis.continuous", tooltip("chunkanalysis.continuous"),
+                                () -> settings.continuousMode,
+                                value -> {
+                                    settings.continuousMode = value;
+                                    MapSettingsManager.instance.saveAll();
+                                }, List.of(value("off", "options.voxelmap.chunkanalysis.continuous.off"),
+                                        value("voids", "options.voxelmap.chunkanalysis.continuous.voids"),
+                                        value("audit", "options.voxelmap.chunkanalysis.continuous.audit"),
+                                        value("both", "options.voxelmap.chunkanalysis.continuous.both"))),
+                        SettingsOption.slider("chunkanalysis.continuousRadius", "options.voxelmap.chunkanalysis.continuousRadius", tooltip("chunkanalysis.continuousRadius"),
+                                () -> (double) settings.continuousRadius,
+                                value -> {
+                                    settings.continuousRadius = (int) Math.round(value);
+                                    MapSettingsManager.instance.saveAll();
+                                }, 0, ChunkAnalysisService.MAX_CONTINUOUS_RADIUS, 1,
+                                value -> Component.literal((int) Math.round(value) + " chunks"),
+                                () -> !"off".equals(settings.continuousMode), Component::empty, 1),
                         SettingsOption.action("chunkanalysis.clear", "options.voxelmap.chunkanalysis.clear", null,
                                 Component.translatable("options.voxelmap.action.clear"), ChunkAnalysisService.get()::clear)),
                 group("options.voxelmap.group.chunkanalysisDisplay",
+                        analysisToggle("chunkanalysis.flashDetections", "options.voxelmap.chunkanalysis.flashDetections",
+                                () -> settings.flashDetections, value -> settings.flashDetections = value),
+                        analysisToggle("chunkanalysis.chatFeedback", "options.voxelmap.chunkanalysis.chatFeedback",
+                                () -> settings.chatFeedback, value -> settings.chatFeedback = value),
                         analysisToggle("chunkanalysis.highConfidence", "options.voxelmap.chunkanalysis.highConfidence",
                                 () -> settings.highConfidenceOnly, value -> settings.highConfidenceOnly = value),
+                        analysisToggle("chunkanalysis.structureOnly", "options.voxelmap.chunkanalysis.structureOnly",
+                                () -> settings.structureOnly, value -> settings.structureOnly = value),
                         analysisToggle("chunkanalysis.ghostBlocks", "options.voxelmap.chunkanalysis.ghostBlocks",
                                 () -> settings.ghostBlocks, value -> settings.ghostBlocks = value),
                         analysisToggle("chunkanalysis.espFill", "options.voxelmap.chunkanalysis.espFill",
                                 () -> settings.espFill, value -> settings.espFill = value),
+                        openScreen("chunkanalysis.colors", "options.voxelmap.chunkanalysis.colors", host, GuiChunkAnalysisColors::new),
                         SettingsOption.slider("chunkanalysis.ghostOpacity", "options.voxelmap.chunkanalysis.ghostOpacity", null,
                                 () -> settings.ghostOpacity, value -> {
                                     settings.ghostOpacity = value;

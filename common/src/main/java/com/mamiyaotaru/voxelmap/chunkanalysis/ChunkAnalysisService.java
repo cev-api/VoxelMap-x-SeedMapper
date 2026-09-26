@@ -2,6 +2,7 @@ package com.mamiyaotaru.voxelmap.chunkanalysis;
 
 import com.mamiyaotaru.voxelmap.VoxelConstants;
 import com.mamiyaotaru.voxelmap.util.AppChatMessages;
+import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperMarkerOption;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
@@ -16,6 +17,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.chunk.ProtoChunk;
 import net.minecraft.world.level.levelgen.Heightmap;
 
@@ -31,9 +33,15 @@ import java.util.concurrent.atomic.AtomicLong;
 public final class ChunkAnalysisService {
     public static final int DEFAULT_RADIUS = 4; // 9x9 chunks
     public static final int MAX_RADIUS = 8;
+    public static final int MAX_CONTINUOUS_RADIUS = MAX_RADIUS;
     private static final int MAX_RENDER_DIFFERENCES_STORED = 100_000;
-    private static final int MAX_VOID_CANDIDATES = 250_000;
-    private static final long COMPARISON_TICK_BUDGET_NANOS = 6_000_000L;
+    // Void detection keeps several hash maps over these candidates. Keep the quick scan bounded
+    // so a badly mismatched cave baseline cannot exhaust the client heap.
+    private static final int MAX_VOID_CANDIDATES = 50_000;
+    // Spend a larger slice of each client tick on comparison so large scans finish much sooner.
+    // World generation remains off-thread; this only affects the loaded-chunk comparison pass.
+    private static final long COMPARISON_TICK_BUDGET_NANOS = 24_000_000L;
+    private static final long CONTINUOUS_COMPARISON_TICK_BUDGET_NANOS = 40_000_000L;
     private static final ChunkAnalysisService INSTANCE = new ChunkAnalysisService();
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor(new ThreadFactory() {
@@ -50,6 +58,18 @@ public final class ChunkAnalysisService {
     private volatile ComparisonJob comparisonJob;
     private volatile String status = "idle";
     private volatile long overlayExpiresAtMillis;
+    private ClientLevel continuousLevel;
+    private int continuousChunkX = Integer.MIN_VALUE;
+    private int continuousChunkZ = Integer.MIN_VALUE;
+    private String activeContinuousMode;
+    private long lastContinuousPruneTick;
+    private ChunkAnalysisWorldgenContext.GeneratedArea continuousGeneratedArea;
+    private int continuousGeneratedCenterX = Integer.MIN_VALUE;
+    private int continuousGeneratedCenterZ = Integer.MIN_VALUE;
+    private int continuousGeneratedRadius = -1;
+    private long continuousGeneratedSeed;
+    private ResourceKey<Level> continuousGeneratedDimension;
+    private ScanMode continuousGeneratedMode;
 
     private ChunkAnalysisService() { }
 
@@ -59,14 +79,26 @@ public final class ChunkAnalysisService {
     public String status() { return status; }
 
     public boolean scan(int radius) {
-        return scan(radius, ScanMode.FULL);
+        return scan(radius, ScanMode.FULL, false);
     }
 
     public boolean scanVoids(int radius) {
-        return scan(radius, ScanMode.VOIDS_ONLY);
+        return scan(radius, ScanMode.VOIDS_ONLY, false);
     }
 
-    private boolean scan(int radius, ScanMode mode) {
+    public boolean scanAudit(int radius) {
+        return scan(radius, ScanMode.INTERESTING_ONLY, false);
+    }
+
+    public boolean scanUnexpected(int radius) {
+        return scan(radius, ScanMode.ALL_UNEXPECTED, false);
+    }
+
+    private boolean scan(int radius, ScanMode mode, boolean continuousRequest) {
+        return scan(radius, mode, continuousRequest, Integer.MIN_VALUE, Integer.MIN_VALUE);
+    }
+
+    private boolean scan(int radius, ScanMode mode, boolean continuousRequest, int previousChunkX, int previousChunkZ) {
         Minecraft minecraft = Minecraft.getInstance();
         ClientLevel level = minecraft.level;
         if (level == null || minecraft.player == null) {
@@ -93,6 +125,13 @@ public final class ChunkAnalysisService {
 
         ChunkPos center = minecraft.player.chunkPosition();
         ResourceKey<Level> dimension = level.dimension();
+        if (continuousRequest && canReuseContinuousArea(center, checkedRadius, seed, dimension, mode)) {
+            status = "comparing loaded chunks (0%)";
+            List<ChunkPos> chunks = continuousChunkSelection(center, checkedRadius, previousChunkX, previousChunkZ);
+            comparisonJob = new ComparisonJob(level, seed, dimension, center, checkedRadius,
+                    continuousGeneratedArea, System.nanoTime(), mode, chunks);
+            return true;
+        }
         status = "loading vanilla worldgen";
         message("ChunkAnalysis: preparing " + (mode == ScanMode.VOIDS_ONLY ? "fast terrain/carver baseline" : "vanilla worldgen")
                 + " for " + (checkedRadius * 2 + 1) + "x" + (checkedRadius * 2 + 1) + " chunks...");
@@ -106,13 +145,27 @@ public final class ChunkAnalysisService {
         }
 
         long started = System.nanoTime();
+        // Give continuous mode one chunk of cached overlap. This keeps a large scan
+        // radius useful without rebuilding the entire radius on every boundary crossing.
+        int generationRadius = continuousRequest ? checkedRadius + 1 : checkedRadius;
         loaded.thenApplyAsync(worldgen -> {
             status = "generating memory chunks";
-            return worldgen.generate(seed, dimension, center, checkedRadius, mode == ScanMode.FULL);
+            // Only the void fast path omits feature generation. Audit and literal scans need
+            // the same structure/feature baseline as the normal comparison.
+            return worldgen.generate(seed, dimension, center, generationRadius, mode != ScanMode.VOIDS_ONLY);
         }, executor).thenAccept(area -> minecraft.execute(() -> {
             if (runId != scanEpoch.get() || minecraft.level != level) return;
+            if (continuousRequest) {
+                continuousGeneratedArea = area;
+                continuousGeneratedCenterX = center.x();
+                continuousGeneratedCenterZ = center.z();
+                continuousGeneratedRadius = generationRadius;
+                continuousGeneratedSeed = seed;
+                continuousGeneratedDimension = dimension;
+                continuousGeneratedMode = mode;
+            }
             status = "comparing loaded chunks (0%)";
-            comparisonJob = new ComparisonJob(level, seed, dimension, center, checkedRadius, area, started, mode);
+            comparisonJob = new ComparisonJob(level, seed, dimension, center, checkedRadius, area, started, mode, null);
         })).exceptionally(failure -> {
             if (runId != scanEpoch.get()) return null;
             VoxelConstants.getLogger().error("ChunkAnalysis scan failed", failure);
@@ -137,6 +190,54 @@ public final class ChunkAnalysisService {
         status = "idle";
     }
 
+    private boolean canReuseContinuousArea(ChunkPos center, int radius, long seed,
+                                           ResourceKey<Level> dimension, ScanMode mode) {
+        if (continuousGeneratedArea == null || continuousGeneratedMode != mode
+                || continuousGeneratedSeed != seed || continuousGeneratedDimension != dimension) {
+            return false;
+        }
+        return Math.abs(center.x() - continuousGeneratedCenterX) + radius <= continuousGeneratedRadius
+                && Math.abs(center.z() - continuousGeneratedCenterZ) + radius <= continuousGeneratedRadius;
+    }
+
+    /** Recheck only the newly entered edge chunks when the cached continuous area still covers us. */
+    private static List<ChunkPos> continuousChunkSelection(ChunkPos center, int radius, int previousX, int previousZ) {
+        int width = radius * 2 + 1;
+        if (previousX == Integer.MIN_VALUE || previousZ == Integer.MIN_VALUE) {
+            return fullChunkSelection(center, radius);
+        }
+        List<ChunkPos> chunks = new ArrayList<>();
+        for (int z = center.z() - radius; z <= center.z() + radius; z++) {
+            for (int x = center.x() - radius; x <= center.x() + radius; x++) {
+                if (x < previousX - radius || x > previousX + radius
+                        || z < previousZ - radius || z > previousZ + radius) {
+                    chunks.add(new ChunkPos(x, z));
+                }
+            }
+        }
+        return chunks.isEmpty() ? fullChunkSelection(center, radius) : chunks;
+    }
+
+    private static List<ChunkPos> fullChunkSelection(ChunkPos center, int radius) {
+        int width = radius * 2 + 1;
+        List<ChunkPos> chunks = new ArrayList<>(width * width);
+        for (int z = center.z() - radius; z <= center.z() + radius; z++) {
+            for (int x = center.x() - radius; x <= center.x() + radius; x++) {
+                chunks.add(new ChunkPos(x, z));
+            }
+        }
+        return chunks;
+    }
+
+    private void clearContinuousGeneratedArea() {
+        continuousGeneratedArea = null;
+        continuousGeneratedCenterX = Integer.MIN_VALUE;
+        continuousGeneratedCenterZ = Integer.MIN_VALUE;
+        continuousGeneratedRadius = -1;
+        continuousGeneratedDimension = null;
+        continuousGeneratedMode = null;
+    }
+
     /** Called on the client tick; compares chunks until the small frame-time budget is exhausted. */
     public void tick() {
         long expiresAt = overlayExpiresAtMillis;
@@ -144,27 +245,51 @@ public final class ChunkAnalysisService {
             clear();
         }
         ComparisonJob job = comparisonJob;
-        if (job == null) return;
+        if (job == null) {
+            pruneContinuousOverlay();
+            tickContinuous();
+            return;
+        }
         if (Minecraft.getInstance().level != job.level) {
             comparisonJob = null;
             running.set(false);
             status = "cancelled: world changed";
             return;
         }
-        long deadline = System.nanoTime() + COMPARISON_TICK_BUDGET_NANOS;
+        ChunkAnalysisSettingsManager tickSettings = VoxelConstants.getVoxelMapInstance().getChunkAnalysisOptions();
+        boolean continuousComparison = tickSettings != null && !"off".equals(tickSettings.continuousMode);
+        long comparisonBudget = continuousComparison ? CONTINUOUS_COMPARISON_TICK_BUDGET_NANOS : COMPARISON_TICK_BUDGET_NANOS;
+        long deadline = System.nanoTime() + comparisonBudget;
         boolean complete;
         do {
             complete = job.compareNextChunk();
         } while (!complete && System.nanoTime() < deadline);
         if (complete) {
-            snapshot = job.finish();
+            ChunkAnalysisSnapshot completed;
+            try {
+                completed = job.finish();
+            } catch (RuntimeException failure) {
+                comparisonJob = null;
+                running.set(false);
+                status = "failed: " + rootMessage(failure);
+                VoxelConstants.getLogger().error("ChunkAnalysis comparison failed", failure);
+                message("ChunkAnalysis failed: " + rootMessage(failure));
+                return;
+            }
             ChunkAnalysisSettingsManager settings = VoxelConstants.getVoxelMapInstance().getChunkAnalysisOptions();
-            int autoClearMinutes = settings == null ? 3 : settings.autoClearMinutes;
-            overlayExpiresAtMillis = System.currentTimeMillis() + autoClearMinutes * 60_000L;
+            boolean continuous = settings != null && !"off".equals(settings.continuousMode);
+            snapshot = continuous ? mergeContinuousSnapshot(snapshot, completed, job.level) : completed;
+            if (continuous) {
+                overlayExpiresAtMillis = 0L;
+            } else {
+                int autoClearMinutes = settings == null ? 3 : settings.autoClearMinutes;
+                overlayExpiresAtMillis = System.currentTimeMillis() + autoClearMinutes * 60_000L;
+            }
             comparisonJob = null;
             status = "complete";
             running.set(false);
             message(summary(snapshot));
+            tickContinuous();
         } else {
             status = "comparing loaded chunks (" + job.percent() + "%)";
         }
@@ -177,7 +302,7 @@ public final class ChunkAnalysisService {
         String renderNote = total > Math.min(value.differences().size(), visibleLimit)
                 ? "; overlay sampled to protect frame time"
                 : "";
-        return "ChunkAnalysis complete in " + value.generationMillis() + "ms: "
+        String result = "ChunkAnalysis complete in " + value.generationMillis() + "ms: "
                 + value.count(ChunkAnalysisDifference.Kind.MISSING_EXPECTED) + " missing (red), "
                 + value.count(ChunkAnalysisDifference.Kind.UNEXPECTED) + " unexpected (blue), "
                 + value.count(ChunkAnalysisDifference.Kind.CHANGED) + " changed (yellow)"
@@ -186,6 +311,23 @@ public final class ChunkAnalysisService {
                 + (value.skippedChunks() == 0 ? "" : "; " + value.skippedChunks() + " unloaded chunks skipped")
                 + (value.unreliableChunks() == 0 ? "" : "; " + value.unreliableChunks() + " baseline-incompatible chunks filtered")
                 + renderNote + ".";
+        if (value.mode() == ScanMode.INTERESTING_ONLY) {
+            return "Structure audit complete: " + value.unexpectedCount() + " unexpected blocks: "
+                    + value.auditContainers() + " containers, " + value.auditRedstone() + " redstone, "
+                    + value.auditWorkstations() + " workstations."
+                    + (value.skippedChunks() == 0 ? "" : " " + value.skippedChunks() + " unloaded chunks skipped.");
+        }
+        if (value.mode() == ScanMode.BOTH) {
+            return "Combined scan complete: " + value.unexpectedCount() + " interesting blocks and "
+                    + value.excavationBlockCount() + " excavation blocks."
+                    + (value.skippedChunks() == 0 ? "" : " " + value.skippedChunks() + " unloaded chunks skipped.");
+        }
+        if (value.mode() == ScanMode.ALL_UNEXPECTED) {
+            return "All unexpected blocks complete: " + value.unexpectedCount()
+                    + " block-type differences found."
+                    + (value.skippedChunks() == 0 ? "" : " " + value.skippedChunks() + " unloaded chunks skipped.");
+        }
+        return result;
     }
 
     public void shutdown() {
@@ -197,6 +339,92 @@ public final class ChunkAnalysisService {
         executor.shutdownNow();
     }
 
+    private void tickContinuous() {
+        ChunkAnalysisSettingsManager settings = VoxelConstants.getVoxelMapInstance().getChunkAnalysisOptions();
+        if (settings == null || "off".equals(settings.continuousMode)) {
+            if (activeContinuousMode != null) {
+                overlayExpiresAtMillis = System.currentTimeMillis() + (settings == null ? 3 : settings.autoClearMinutes) * 60_000L;
+            }
+            activeContinuousMode = null;
+            continuousLevel = null;
+            continuousChunkX = Integer.MIN_VALUE;
+            continuousChunkZ = Integer.MIN_VALUE;
+            clearContinuousGeneratedArea();
+            return;
+        }
+        if (!settings.continuousMode.equals(activeContinuousMode)) {
+            snapshot = ChunkAnalysisSnapshot.empty();
+            overlayExpiresAtMillis = 0L;
+            activeContinuousMode = settings.continuousMode;
+            clearContinuousGeneratedArea();
+        }
+        Minecraft minecraft = Minecraft.getInstance();
+        ClientLevel level = minecraft.level;
+        if (level == null || minecraft.player == null || running.get()) return;
+        int chunkX = minecraft.player.chunkPosition().x();
+        int chunkZ = minecraft.player.chunkPosition().z();
+        if (level != continuousLevel) {
+            snapshot = ChunkAnalysisSnapshot.empty();
+            overlayExpiresAtMillis = 0L;
+            continuousLevel = level;
+            continuousChunkX = chunkX;
+            continuousChunkZ = chunkZ;
+            clearContinuousGeneratedArea();
+            return;
+        }
+        if (chunkX == continuousChunkX && chunkZ == continuousChunkZ) return;
+        int previousChunkX = continuousChunkX;
+        int previousChunkZ = continuousChunkZ;
+        continuousChunkX = chunkX;
+        continuousChunkZ = chunkZ;
+        if ("both".equals(settings.continuousMode)) {
+            scan(settings.continuousRadius, ScanMode.BOTH, true, previousChunkX, previousChunkZ);
+        } else if ("voids".equals(settings.continuousMode)) {
+            scan(settings.continuousRadius, ScanMode.VOIDS_ONLY, true, previousChunkX, previousChunkZ);
+        } else if ("audit".equals(settings.continuousMode)) {
+            scan(settings.continuousRadius, ScanMode.INTERESTING_ONLY, true, previousChunkX, previousChunkZ);
+        }
+    }
+
+    private void pruneContinuousOverlay() {
+        ChunkAnalysisSettingsManager settings = VoxelConstants.getVoxelMapInstance().getChunkAnalysisOptions();
+        if (settings == null || "off".equals(settings.continuousMode) || snapshot.differences().isEmpty()) return;
+        long tick = VoxelConstants.getElapsedTicks();
+        if (tick - lastContinuousPruneTick < 10L) return;
+        lastContinuousPruneTick = tick;
+        ClientLevel level = Minecraft.getInstance().level;
+        if (level == null) return;
+        List<ChunkAnalysisDifference> visible = snapshot.differences().stream()
+                .filter(difference -> level.getChunkSource().getChunkNow(
+                        difference.pos().getX() >> 4, difference.pos().getZ() >> 4) != null)
+                .toList();
+        if (visible.size() == snapshot.differences().size()) return;
+        snapshot = new ChunkAnalysisSnapshot(snapshot.seed(), snapshot.dimension(), snapshot.center(), snapshot.radius(),
+                visible, snapshot.missingCount(), snapshot.unexpectedCount(), snapshot.changedCount(),
+                snapshot.excavationBlockCount(), snapshot.excavationCount(), snapshot.comparedBlocks(),
+                snapshot.skippedChunks(), snapshot.unreliableChunks(), snapshot.generationMillis(), snapshot.mode(),
+                snapshot.auditContainers(), snapshot.auditRedstone(), snapshot.auditWorkstations());
+    }
+
+    private static ChunkAnalysisSnapshot mergeContinuousSnapshot(ChunkAnalysisSnapshot previous,
+                                                                  ChunkAnalysisSnapshot completed, ClientLevel level) {
+        java.util.LinkedHashMap<ContinuousDifferenceKey, ChunkAnalysisDifference> merged = new java.util.LinkedHashMap<>();
+        previous.differences().forEach(difference -> {
+            if (level.getChunkSource().getChunkNow(difference.pos().getX() >> 4, difference.pos().getZ() >> 4) != null) {
+                merged.put(new ContinuousDifferenceKey(difference.pos().asLong(), difference.kind()), difference);
+            }
+        });
+        completed.differences().forEach(difference ->
+                merged.put(new ContinuousDifferenceKey(difference.pos().asLong(), difference.kind()), difference));
+        return new ChunkAnalysisSnapshot(completed.seed(), completed.dimension(), completed.center(), completed.radius(),
+                List.copyOf(merged.values()), completed.missingCount(), completed.unexpectedCount(), completed.changedCount(),
+                completed.excavationBlockCount(), completed.excavationCount(), completed.comparedBlocks(),
+                completed.skippedChunks(), completed.unreliableChunks(), completed.generationMillis(), completed.mode(),
+                completed.auditContainers(), completed.auditRedstone(), completed.auditWorkstations());
+    }
+
+    private record ContinuousDifferenceKey(long pos, ChunkAnalysisDifference.Kind kind) { }
+
     private static String rootMessage(Throwable failure) {
         Throwable current = failure;
         while (current.getCause() != null) current = current.getCause();
@@ -205,6 +433,8 @@ public final class ChunkAnalysisService {
     }
 
     private static void message(String text) {
+        ChunkAnalysisSettingsManager settings = VoxelConstants.getVoxelMapInstance().getChunkAnalysisOptions();
+        if (settings != null && !settings.chatFeedback) return;
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.gui != null) minecraft.gui.hud.getChat()
                 .addClientSystemMessage(AppChatMessages.prefixed("ChunkAnalysis", text));
@@ -221,7 +451,7 @@ public final class ChunkAnalysisService {
         private final ScanMode mode;
         private final boolean highConfidenceOnly;
         private final boolean voidScan;
-        private final int width;
+        private final List<ChunkPos> chunks;
         private final int totalChunks;
         private final List<ChunkAnalysisDifference> differences = new ArrayList<>();
         private final List<ChunkAnalysisVoidDetector.Candidate> voidCandidates = new ArrayList<>();
@@ -232,11 +462,20 @@ public final class ChunkAnalysisService {
         private long missing;
         private long unexpected;
         private long changed;
+        private long auditContainers;
+        private long auditRedstone;
+        private long auditWorkstations;
         private long excavationBlocks;
         private int excavations;
 
         private ComparisonJob(ClientLevel level, long seed, ResourceKey<Level> dimension, ChunkPos center,
                               int radius, ChunkAnalysisWorldgenContext.GeneratedArea area, long started, ScanMode mode) {
+            this(level, seed, dimension, center, radius, area, started, mode, null);
+        }
+
+        private ComparisonJob(ClientLevel level, long seed, ResourceKey<Level> dimension, ChunkPos center,
+                              int radius, ChunkAnalysisWorldgenContext.GeneratedArea area, long started, ScanMode mode,
+                              List<ChunkPos> selectedChunks) {
             this.level = level;
             this.seed = seed;
             this.dimension = dimension;
@@ -247,15 +486,16 @@ public final class ChunkAnalysisService {
             this.mode = mode;
             ChunkAnalysisSettingsManager settings = VoxelConstants.getVoxelMapInstance().getChunkAnalysisOptions();
             this.highConfidenceOnly = settings == null || settings.highConfidenceOnly;
-            this.voidScan = mode == ScanMode.VOIDS_ONLY;
-            this.width = radius * 2 + 1;
-            this.totalChunks = width * width;
+            this.voidScan = mode == ScanMode.VOIDS_ONLY || mode == ScanMode.BOTH;
+            this.chunks = selectedChunks == null ? fullChunkSelection(center, radius) : selectedChunks;
+            this.totalChunks = chunks.size();
         }
 
         private boolean compareNextChunk() {
             if (nextChunk >= totalChunks) return true;
-            int chunkX = center.x() - radius + nextChunk % width;
-            int chunkZ = center.z() - radius + nextChunk / width;
+            ChunkPos selectedChunk = chunks.get(nextChunk);
+            int chunkX = selectedChunk.x();
+            int chunkZ = selectedChunk.z();
             nextChunk++;
             LevelChunk actualChunk = level.getChunkSource().getChunkNow(chunkX, chunkZ);
             if (actualChunk == null) {
@@ -263,9 +503,27 @@ public final class ChunkAnalysisService {
                 return nextChunk >= totalChunks;
             }
             ProtoChunk expectedChunk = area.get(new ChunkPos(chunkX, chunkZ));
-            if (highConfidenceOnly && !biomeBaselineMatches(expectedChunk, actualChunk)) {
-                unreliable++;
+            boolean targetedMode = mode == ScanMode.INTERESTING_ONLY || mode == ScanMode.ALL_UNEXPECTED;
+            if (!targetedMode && highConfidenceOnly && !biomeBaselineMatches(expectedChunk, actualChunk)) {
+                if (mode == ScanMode.BOTH) {
+                    // Keep the targeted audit useful even when the terrain baseline is
+                    // incompatible; only the void half needs this confidence filter.
+                    compareInterestingChunk(actualChunk, expectedChunk);
+                } else {
+                    unreliable++;
+                }
                 return nextChunk >= totalChunks;
+            }
+            if (mode == ScanMode.INTERESTING_ONLY) {
+                compareInterestingChunk(actualChunk, expectedChunk);
+                return nextChunk >= totalChunks;
+            }
+            if (mode == ScanMode.ALL_UNEXPECTED) {
+                compareAllUnexpectedChunk(actualChunk, expectedChunk);
+                return nextChunk >= totalChunks;
+            }
+            if (mode == ScanMode.BOTH) {
+                compareInterestingChunk(actualChunk, expectedChunk);
             }
             int chunkStorageStart = differences.size();
             int chunkStorageLimit = Math.max(1, MAX_RENDER_DIFFERENCES_STORED / totalChunks);
@@ -274,11 +532,28 @@ public final class ChunkAnalysisService {
             int rawMissingTerrain = 0;
             int rawUnexpectedTerrain = 0;
             List<ChunkAnalysisVoidDetector.Candidate> chunkVoidCandidates = voidScan ? new ArrayList<>() : List.of();
+            int chunkVoidCandidateLimit = voidScan
+                    ? Math.max(1, (MAX_VOID_CANDIDATES + totalChunks - 1) / totalChunks)
+                    : 0;
+            int chunkVoidCandidateCount = 0;
             RandomSource sampleRandom = RandomSource.create(ChunkPos.pack(chunkX, chunkZ) ^ seed);
             int minX = chunkX << 4;
             int minZ = chunkZ << 4;
             BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+            LevelChunkSection[] actualSections = actualChunk.getSections();
+            LevelChunkSection[] expectedSections = expectedChunk.getSections();
             for (int y = area.minY(); y < area.minY() + area.height(); y++) {
+                if (voidScan && Math.floorMod(y - area.minY(), 16) == 0) {
+                    int sectionIndex = Math.floorDiv(y - area.minY(), 16);
+                    LevelChunkSection actualSection = sectionIndex < actualSections.length ? actualSections[sectionIndex] : null;
+                    LevelChunkSection expectedSection = sectionIndex < expectedSections.length ? expectedSections[sectionIndex] : null;
+                    if (actualSection == null || expectedSection == null
+                            || !actualSection.getStates().maybeHas(BlockState::isAir)
+                            || !expectedSection.getStates().maybeHas(state -> !state.isAir())) {
+                        y += 15;
+                        continue;
+                    }
+                }
                 for (int localZ = 0; localZ < 16; localZ++) {
                     for (int localX = 0; localX < 16; localX++) {
                         pos.set(minX + localX, y, minZ + localZ);
@@ -296,13 +571,21 @@ public final class ChunkAnalysisService {
                         boolean featureWritten = area.wasFeatureWritten(pos);
                         if (!featureWritten && !expected.isAir() && actual.isAir() && isNaturalTerrain(expected)) {
                             rawMissingTerrain++;
-                            if (voidScan && voidCandidates.size() + chunkVoidCandidates.size() < MAX_VOID_CANDIDATES) {
-                                chunkVoidCandidates.add(new ChunkAnalysisVoidDetector.Candidate(pos.immutable(), expected, false));
+                            if (voidScan) {
+                                ChunkAnalysisVoidDetector.Candidate candidate =
+                                        new ChunkAnalysisVoidDetector.Candidate(pos.immutable(), expected, false);
+                                int candidateIndex = chunkVoidCandidateCount++;
+                                if (chunkVoidCandidates.size() < chunkVoidCandidateLimit) {
+                                    chunkVoidCandidates.add(candidate);
+                                } else {
+                                    int replacement = sampleRandom.nextInt(candidateIndex + 1);
+                                    if (replacement < chunkVoidCandidateLimit) chunkVoidCandidates.set(replacement, candidate);
+                                }
                             }
                         } else if (!featureWritten && expected.isAir() && !actual.isAir() && isNaturalTerrain(actual)) {
                             rawUnexpectedTerrain++;
                         }
-                        if (mode == ScanMode.VOIDS_ONLY) continue;
+                        if (mode == ScanMode.VOIDS_ONLY || mode == ScanMode.BOTH) continue;
                         if (!isSeedComparable(expected, actual, expectedChunk, pos, dimension,
                                 featureWritten, highConfidenceOnly)) continue;
                         chunkDifferenceCount++;
@@ -342,6 +625,93 @@ public final class ChunkAnalysisService {
                 voidCandidates.addAll(chunkVoidCandidates);
             }
             return nextChunk >= totalChunks;
+        }
+
+        private void compareInterestingChunk(LevelChunk actualChunk, ProtoChunk expectedChunk) {
+            ChunkAnalysisSettingsManager settings = VoxelConstants.getVoxelMapInstance().getChunkAnalysisOptions();
+            boolean structureOnly = settings == null || settings.structureOnly;
+            int chunkStorageStart = differences.size();
+            int chunkStorageLimit = Math.max(1, MAX_RENDER_DIFFERENCES_STORED / totalChunks);
+            int chunkDifferenceCount = 0;
+            int minX = actualChunk.getPos().getMinBlockX();
+            int minZ = actualChunk.getPos().getMinBlockZ();
+            RandomSource sampleRandom = RandomSource.create(ChunkPos.pack(actualChunk.getPos().x(), actualChunk.getPos().z()) ^ seed);
+            BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+            LevelChunkSection[] sections = actualChunk.getSections();
+            int minSectionY = actualChunk.getMinY() >> 4;
+            for (int sectionIndex = 0; sectionIndex < sections.length; sectionIndex++) {
+                LevelChunkSection section = sections[sectionIndex];
+                if (section == null || section.hasOnlyAir()
+                        || !section.getStates().maybeHas(ComparisonJob::isInterestingBlock)) continue;
+                int baseY = (minSectionY + sectionIndex) << 4;
+                for (int localY = 0; localY < 16; localY++) {
+                    for (int localZ = 0; localZ < 16; localZ++) {
+                        for (int localX = 0; localX < 16; localX++) {
+                            BlockState actual = section.getBlockState(localX, localY, localZ);
+                            if (!isInterestingBlock(actual)) continue;
+                            pos.set(minX + localX, baseY + localY, minZ + localZ);
+                            SeedMapperMarkerOption.Category category = SeedMapperMarkerOption.categoryFor(actual);
+                            // Structure processors can write outside the final piece box. Feature-write
+                            // metadata is the safe fallback for those generated structure blocks; the
+                            // meaning of GeneratedArea.isInsideStructurePiece remains unchanged.
+                            if (structureOnly && !area.isInsideStructurePiece(pos) && !area.wasFeatureWritten(pos)) continue;
+                            compared++;
+                            BlockState expected = expectedChunk.getBlockState(pos);
+                            if (expected.getBlock() == actual.getBlock()) continue;
+                            unexpected++;
+                            switch (category) {
+                                case CONTAINERS -> auditContainers++;
+                                case REDSTONE -> auditRedstone++;
+                                case WORKSTATIONS -> auditWorkstations++;
+                                default -> { }
+                            }
+                            chunkDifferenceCount++;
+                            ChunkAnalysisDifference.InterestingCategory interestingCategory = switch (category) {
+                                case CONTAINERS -> ChunkAnalysisDifference.InterestingCategory.INVENTORIES;
+                                case REDSTONE -> ChunkAnalysisDifference.InterestingCategory.REDSTONE;
+                                case WORKSTATIONS -> ChunkAnalysisDifference.InterestingCategory.WORKSTATIONS;
+                                case SPAWNERS -> null;
+                            };
+                            ChunkAnalysisDifference difference = new ChunkAnalysisDifference(pos.immutable(),
+                                    ChunkAnalysisDifference.Kind.UNEXPECTED_INTERESTING, actual, interestingCategory);
+                            if (chunkDifferenceCount <= chunkStorageLimit) differences.add(difference);
+                            else {
+                                int replacement = sampleRandom.nextInt(chunkDifferenceCount);
+                                if (replacement < chunkStorageLimit)
+                                    differences.set(chunkStorageStart + sampleRandom.nextInt(chunkStorageLimit), difference);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        private static boolean isInterestingBlock(BlockState state) {
+            SeedMapperMarkerOption.Category category = SeedMapperMarkerOption.categoryFor(state);
+            return category == SeedMapperMarkerOption.Category.CONTAINERS
+                    || category == SeedMapperMarkerOption.Category.REDSTONE
+                    || category == SeedMapperMarkerOption.Category.WORKSTATIONS;
+        }
+
+        private void compareAllUnexpectedChunk(LevelChunk actualChunk, ProtoChunk expectedChunk) {
+            int minX = actualChunk.getPos().getMinBlockX();
+            int minZ = actualChunk.getPos().getMinBlockZ();
+            BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+            for (int y = area.minY(); y < area.minY() + area.height(); y++) {
+                for (int localZ = 0; localZ < 16; localZ++) {
+                    for (int localX = 0; localX < 16; localX++) {
+                        pos.set(minX + localX, y, minZ + localZ);
+                        BlockState expected = expectedChunk.getBlockState(pos);
+                        BlockState actual = actualChunk.getBlockState(pos);
+                        compared++;
+                        if (expected.getBlock() == actual.getBlock()) continue;
+                        unexpected++;
+                        ChunkAnalysisDifference difference = new ChunkAnalysisDifference(pos.immutable(),
+                                ChunkAnalysisDifference.Kind.UNEXPECTED, actual);
+                        differences.add(difference);
+                    }
+                }
+            }
         }
 
         private static boolean incompatibleCaveBaseline(int missingTerrain, int unexpectedTerrain) {
@@ -494,7 +864,7 @@ public final class ChunkAnalysisService {
             if (mode == ScanMode.VOIDS_ONLY) missing = excavationBlocks;
             return new ChunkAnalysisSnapshot(seed, dimension, center, radius, List.copyOf(differences),
                     missing, unexpected, changed, excavationBlocks, excavations, compared, skipped, unreliable,
-                    (System.nanoTime() - started) / 1_000_000L);
+                    (System.nanoTime() - started) / 1_000_000L, mode, auditContainers, auditRedstone, auditWorkstations);
         }
 
         private void applyVoidDetection() {
@@ -507,14 +877,14 @@ public final class ChunkAnalysisService {
                 if (difference.kind() == ChunkAnalysisDifference.Kind.MISSING_EXPECTED
                         && positions.remove(difference.pos().asLong())) {
                     differences.set(index, new ChunkAnalysisDifference(difference.pos(),
-                            ChunkAnalysisDifference.Kind.EXCAVATION, difference.displayState()));
+                            ChunkAnalysisDifference.Kind.EXCAVATION, difference.displayState(), difference.interestingCategory()));
                 }
             }
             for (ChunkAnalysisVoidDetector.Candidate candidate : result.blocks()) {
                 if (differences.size() >= MAX_RENDER_DIFFERENCES_STORED) break;
                 if (positions.remove(candidate.pos().asLong())) {
                     differences.add(new ChunkAnalysisDifference(candidate.pos(),
-                            ChunkAnalysisDifference.Kind.EXCAVATION, candidate.expectedState()));
+                            ChunkAnalysisDifference.Kind.EXCAVATION, candidate.expectedState(), null));
                 }
             }
             excavationBlocks = result.blocks().size();
@@ -522,8 +892,11 @@ public final class ChunkAnalysisService {
         }
     }
 
-    private enum ScanMode {
+    public enum ScanMode {
         FULL,
-        VOIDS_ONLY
+        VOIDS_ONLY,
+        INTERESTING_ONLY,
+        ALL_UNEXPECTED,
+        BOTH
     }
 }

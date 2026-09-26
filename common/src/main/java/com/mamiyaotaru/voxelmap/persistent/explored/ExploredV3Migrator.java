@@ -1,5 +1,6 @@
 package com.mamiyaotaru.voxelmap.persistent.explored;
 
+import com.mamiyaotaru.voxelmap.persistent.WorldMapLoadStatus;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -55,14 +56,17 @@ public final class ExploredV3Migrator {
 
     public static void migrate(Path v1TextFile, Path v2RegionDir, Path v3Dir, int v2Magic) {
         ExploredDiskStore store = new ExploredDiskStore(v3Dir);
-        int chunks = 0;
-        chunks += importV2(v2RegionDir, store, v2Magic);
-        chunks += importV1(v1TextFile, store);
-        store.flush();
-        writeManifest(v3Dir, chunks);
+        int total = countInputs(v1TextFile, v2RegionDir);
+        try (WorldMapLoadStatus.Task progress = WorldMapLoadStatus.begin("converting explored chunk data", total)) {
+            int chunks = 0;
+            chunks += importV2(v2RegionDir, store, v2Magic, progress);
+            chunks += importV1(v1TextFile, store, progress);
+            store.flush();
+            writeManifest(v3Dir, chunks);
+        }
     }
 
-    private static int importV2(Path v2RegionDir, ExploredDiskStore store, int v2Magic) {
+    private static int importV2(Path v2RegionDir, ExploredDiskStore store, int v2Magic, WorldMapLoadStatus.Task progress) {
         if (v2RegionDir == null || Files.notExists(v2RegionDir)) {
             return 0;
         }
@@ -70,6 +74,7 @@ public final class ExploredV3Migrator {
         try (Stream<Path> files = Files.list(v2RegionDir)) {
             for (Path file : (Iterable<Path>) files.filter(p -> p.getFileName().toString().endsWith(".bin"))::iterator) {
                 imported += importV2Region(file, store, v2Magic);
+                progress.step();
             }
         } catch (IOException ignored) {
         }
@@ -108,11 +113,12 @@ public final class ExploredV3Migrator {
         }
     }
 
-    private static int importV1(Path v1TextFile, ExploredDiskStore store) {
+    private static int importV1(Path v1TextFile, ExploredDiskStore store, WorldMapLoadStatus.Task progress) {
         if (v1TextFile == null) {
             return 0;
         }
         int imported = importV1File(v1TextFile, store);
+        progress.step();
         Path parent = v1TextFile.getParent();
         if (parent != null) {
             String fileName = v1TextFile.getFileName().toString();
@@ -125,12 +131,25 @@ public final class ExploredV3Migrator {
                         return n.startsWith(worldKey + ".") && n.endsWith(".txt");
                     })::iterator) {
                         imported += importV1File(file, store);
+                        progress.step();
                     }
                 } catch (IOException ignored) {
                 }
             }
         }
         return imported;
+    }
+
+    private static int countInputs(Path v1TextFile, Path v2RegionDir) {
+        int count = 0;
+        if (v1TextFile != null && Files.isRegularFile(v1TextFile)) count++;
+        if (v2RegionDir != null && Files.isDirectory(v2RegionDir)) {
+            try (Stream<Path> files = Files.list(v2RegionDir)) {
+                count += (int) files.filter(p -> p.getFileName().toString().endsWith(".bin")).count();
+            } catch (IOException ignored) {
+            }
+        }
+        return count;
     }
 
     private static int importV1File(Path file, ExploredDiskStore store) {

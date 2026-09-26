@@ -9,16 +9,15 @@ import com.mamiyaotaru.voxelmap.util.CommandUtils;
 import com.mamiyaotaru.voxelmap.util.MessageUtils;
 import com.mamiyaotaru.voxelmap.util.MutableBlockPos;
 import com.mamiyaotaru.voxelmap.util.TextUtils;
-import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Scanner;
 import java.util.stream.IntStream;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.world.level.CardinalLighting;
 import net.minecraft.world.level.biome.Biome;
@@ -93,60 +92,43 @@ public class ComparisonCachedRegion {
         try {
             File cachedRegionFileDir = VoxelConstants.getVoxelMapInstance().getDataStore().getWorldCacheDir(this.subworldNamePathPart + this.dimensionNamePathPart);
             cachedRegionFileDir.mkdirs();
-            File cachedRegionFile = new File(cachedRegionFileDir, "/" + this.key + ".zip");
-            if (cachedRegionFile.exists()) {
-                try (FileInputStream fis = new FileInputStream(cachedRegionFile); ZipInputStream zis = new ZipInputStream(new BufferedInputStream(fis)); Scanner sc = new Scanner(zis)) {
-                    BiMap<BlockState, Integer> stateToInt = null;
-                    BiMap<Biome, Integer> biomeMap = null;
-                    int version = 1;
-
-                    ZipEntry ze;
-                    byte[] decompressedByteData = null;
-                    for (; (ze = zis.getNextEntry()) != null; zis.closeEntry()) {
-                        if (ze.getName().equals("data")) {
-                            decompressedByteData = zis.readAllBytes();
-                        }
-
-                        if (ze.getName().equals("key")) {
-                            stateToInt = HashBiMap.create();
-
-                            while (sc.hasNextLine()) {
-                                BlockStateParser.parseLine(sc.nextLine(), stateToInt);
-                            }
-                        }
-
-                        if (ze.getName().equals("biomes")) {
-                            biomeMap = HashBiMap.create();
-                            while (sc.hasNextLine()) {
-                                BiomeParser.parseLine(world, sc.nextLine(), biomeMap);
-                            }
-                        }
-
-                        if (ze.getName().equals("control")) {
-                            Properties properties = new Properties();
-                            properties.load(zis);
-                            String versionString = properties.getProperty("version", "1");
-
-                            try {
-                                version = Integer.parseInt(versionString);
-                            } catch (NumberFormatException var14) {
-                                version = 1;
-                            }
-                        }
+            File legacyFile = new File(cachedRegionFileDir, this.key + ".zip");
+            MapRegionPack.PackedRegion region = MapRegionPack.forDirectory(cachedRegionFileDir)
+                    .readOrMigrate(legacyFile, this.x, this.z);
+            if (region != null) {
+                BiMap<BlockState, Integer> stateToInt = HashBiMap.create();
+                if (region.key() != null) {
+                    try (Scanner scanner = new Scanner(new ByteArrayInputStream(region.key()), StandardCharsets.UTF_8)) {
+                        while (scanner.hasNextLine()) BlockStateParser.parseLine(scanner.nextLine(), stateToInt);
                     }
+                }
 
-                    if (decompressedByteData != null && decompressedByteData.length == this.data.getExpectedDataLength(version) && stateToInt != null) {
-                        if (biomeMap == null) {
-                            biomeMap = HashBiMap.create();
-                            BiomeParser.populateLegacyBiomeMap(world, biomeMap);
-                        }
-                        this.data.setData(decompressedByteData, stateToInt, biomeMap, version);
-                        this.empty = false;
-                        this.loaded = true;
-                    } else {
-                        VoxelConstants.getLogger().warn("failed to load data from " + cachedRegionFile.getPath());
+                BiMap<Biome, Integer> biomeMap = HashBiMap.create();
+                if (region.biomes() != null) {
+                    try (Scanner scanner = new Scanner(new ByteArrayInputStream(region.biomes()), StandardCharsets.UTF_8)) {
+                        while (scanner.hasNextLine()) BiomeParser.parseLine(world, scanner.nextLine(), biomeMap);
                     }
+                } else {
+                    BiomeParser.populateLegacyBiomeMap(world, biomeMap);
+                }
 
+                int version = 1;
+                if (region.control() != null) {
+                    Properties properties = new Properties();
+                    try (InputStream input = new ByteArrayInputStream(region.control())) {
+                        properties.load(input);
+                    }
+                    try {
+                        version = Integer.parseInt(properties.getProperty("version", "1"));
+                    } catch (NumberFormatException ignored) { }
+                }
+
+                if (region.data().length == this.data.getExpectedDataLength(version) && !stateToInt.isEmpty()) {
+                    this.data.setData(region.data(), stateToInt, biomeMap, version);
+                    this.empty = false;
+                    this.loaded = true;
+                } else {
+                    VoxelConstants.getLogger().warn("failed to load data from " + legacyFile.getPath());
                 }
             }
         } catch (IOException var15) {

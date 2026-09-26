@@ -34,9 +34,7 @@ public class GuiSeedMapperEspProfiles extends GuiScreenMinimap {
     private Button fillEnabledButton;
     private Button rainbowButton;
     private Button outlineColorButton;
-    private Button outlineColorPickerButton;
     private Button fillColorButton;
-    private Button fillColorPickerButton;
     private GuiValueSliderMinimap outlineAlphaSlider;
     private GuiValueSliderMinimap fillAlphaSlider;
     private GuiValueSliderMinimap rainbowSpeedSlider;
@@ -85,14 +83,10 @@ public class GuiSeedMapperEspProfiles extends GuiScreenMinimap {
         }).bounds(right, y, 150, 20).build());
 
         y += 24;
-        outlineColorButton = addRenderableWidget(new Button.Builder(Component.empty(), button -> {})
-                .bounds(left, y, 118, 20).build());
-        outlineColorPickerButton = addRenderableWidget(new Button.Builder(Component.literal("..."), button -> openColorPicker(ColorTarget.OUTLINE))
-                .bounds(left + 122, y, 28, 20).build());
-        fillColorButton = addRenderableWidget(new Button.Builder(Component.empty(), button -> {})
-                .bounds(right, y, 118, 20).build());
-        fillColorPickerButton = addRenderableWidget(new Button.Builder(Component.literal("..."), button -> openColorPicker(ColorTarget.FILL))
-                .bounds(right + 122, y, 28, 20).build());
+        outlineColorButton = addRenderableWidget(new Button.Builder(Component.empty(), button -> openColorPicker(ColorTarget.OUTLINE))
+                .bounds(left, y, 150, 20).build());
+        fillColorButton = addRenderableWidget(new Button.Builder(Component.empty(), button -> openColorPicker(ColorTarget.FILL))
+                .bounds(right, y, 150, 20).build());
 
         y += 24;
         outlineAlphaSlider = addRenderableWidget(new GuiValueSliderMinimap(left, y, 150, 20, activeStyle().outlineAlpha, 0.0D, 1.0D, value -> {
@@ -136,8 +130,8 @@ public class GuiSeedMapperEspProfiles extends GuiScreenMinimap {
         timeoutButton.setMessage(Component.literal("Timeout: " + formatTimeout(settings.espTimeoutMinutes)));
         fillEnabledButton.setMessage(Component.literal("Fill Enabled: " + toggleText(activeStyle().fillEnabled)));
         rainbowButton.setMessage(Component.literal("Rainbow: " + toggleText(activeStyle().rainbow)));
-        outlineColorButton.setMessage(Component.literal("Outline Color: " + activeStyle().outlineColor));
-        fillColorButton.setMessage(Component.literal("Fill Color: " + activeStyle().fillColor));
+        outlineColorButton.setMessage(Component.literal("Outline Color :"));
+        fillColorButton.setMessage(Component.literal("Fill Color :"));
         outlineAlphaSlider.setActualValue(activeStyle().outlineAlpha);
         fillAlphaSlider.setActualValue(activeStyle().fillAlpha);
         rainbowSpeedSlider.setActualValue(activeStyle().rainbowSpeed);
@@ -297,9 +291,15 @@ public class GuiSeedMapperEspProfiles extends GuiScreenMinimap {
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
-        graphics.centeredText(this.getFont(), Component.literal("ESP Settings"), this.width / 2, 20, 0xFFFFFFFF);
-        super.extractRenderState(graphics, isColorPickerOpen() ? 0 : mouseX, isColorPickerOpen() ? 0 : mouseY, delta);
-        if (isColorPickerOpen()) {
+        boolean pickerOpen = isColorPickerOpen();
+        graphics.centeredText(this.getFont(), pickerOpen
+                ? Component.literal(activeColorTarget == ColorTarget.OUTLINE ? "Outline Color" : "Fill Color")
+                : Component.literal("ESP Settings"), this.width / 2, 20, 0xFFFFFFFF);
+        super.extractRenderState(graphics, pickerOpen ? 0 : mouseX, pickerOpen ? 0 : mouseY, delta);
+        if (!pickerOpen) {
+            drawColorSwatch(graphics, outlineColorButton, activeStyle().outlineColor);
+            drawColorSwatch(graphics, fillColorButton, activeStyle().fillColor);
+        } else {
             graphics.nextStratum();
             extractTransparentBackground(graphics);
 
@@ -329,5 +329,13 @@ public class GuiSeedMapperEspProfiles extends GuiScreenMinimap {
             colorPickerApplyButton.extractRenderState(graphics, mouseX, mouseY, delta);
             colorPickerCancelButton.extractRenderState(graphics, mouseX, mouseY, delta);
         }
+    }
+
+    private void drawColorSwatch(GuiGraphicsExtractor graphics, Button button, String color) {
+        int rgb = parseColorForPicker(color, 0xFFFFFF);
+        int right = button.getX() + button.getWidth() - 8;
+        int left = right - 30;
+        graphics.fill(left - 1, button.getY() + 3, right + 1, button.getY() + 17, 0xFF000000);
+        graphics.fill(left, button.getY() + 4, right, button.getY() + 16, 0xFF000000 | rgb);
     }
 }

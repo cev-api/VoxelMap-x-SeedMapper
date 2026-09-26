@@ -21,4 +21,24 @@ public enum SeedMapperMarkerOption {
         for (SeedMapperMarkerOption option : values()) if (option.id.equals(id)) return option;
         return null;
     }
+
+    /** Shared category lookup used by both marker scanning and targeted audits. */
+    public static Category categoryFor(net.minecraft.world.level.block.state.BlockState state) {
+        Category category = null;
+        SeedMapperMarkerOption option = fromBlock(state.getBlock());
+        if (option != null) category = option.category;
+        if (category != null) return category;
+
+        String path = net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(state.getBlock()).getPath();
+        if (path.equals("chest") || path.equals("trapped_chest") || path.equals("ender_chest")
+                || path.equals("barrel") || state.getBlock() instanceof net.minecraft.world.level.block.ShulkerBoxBlock) {
+            return Category.CONTAINERS;
+        }
+        if (path.equals("lever") || path.equals("redstone_wire") || path.equals("target")
+                || path.equals("tripwire") || path.equals("tripwire_hook")
+                || path.endsWith("_button") || path.endsWith("_pressure_plate")) {
+            return Category.REDSTONE;
+        }
+        return null;
+    }
 }

@@ -20,7 +20,9 @@ final class ChunkAnalysisVoidDetector {
         Map<Long, Candidate> remaining = new HashMap<>(source.size() * 2);
         for (Candidate candidate : source) remaining.put(candidate.pos().asLong(), candidate);
 
-        Map<Long, Candidate> all = Map.copyOf(remaining);
+        // The detector removes from remaining while traversing components, so retain a separate
+        // candidate lookup for the final detected list. The input cap keeps this bounded.
+        Map<Long, Candidate> all = new HashMap<>(remaining);
         RunResult thinRuns = detectThinRuns(all);
         HashSet<Long> detectedKeys = thinRuns.blocks();
         ArrayDeque<Long> queue = new ArrayDeque<>();

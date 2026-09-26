@@ -33,22 +33,25 @@ public final class ChunkAnalysisRenderer {
         ChunkAnalysisSettingsManager settings = VoxelConstants.getVoxelMapInstance().getChunkAnalysisOptions();
         if (settings == null || (!settings.ghostBlocks && !settings.espFill)) return;
 
-        List<ChunkAnalysisDifference> source = ChunkAnalysisService.get().snapshot().differences();
+        ChunkAnalysisSnapshot snapshot = ChunkAnalysisService.get().snapshot();
+        List<ChunkAnalysisDifference> source = snapshot.differences();
         if (source.isEmpty()) return;
+        boolean allUnexpected = snapshot.mode() == ChunkAnalysisService.ScanMode.ALL_UNEXPECTED;
 
         Vec3 cameraPos = camera.position();
-        double maxDistanceSquared = settings.renderDistance * (double) settings.renderDistance;
+        double maxDistanceSquared = allUnexpected ? Double.POSITIVE_INFINITY
+                : settings.renderDistance * (double) settings.renderDistance;
         if (settings.ghostBlocks) {
             OrderedSubmitNodeCollector ghostCollector = collector.order(VoxelMapRenderTypes.OVERLAY_ORDER_ANALYSIS_GHOSTS);
             List<ChunkAnalysisDifference> expectedCandidates = source.stream()
                     .filter(difference -> difference.displayState() != null)
                     .toList();
             List<ChunkAnalysisDifference> visible = fairVisibleSample(expectedCandidates, cameraPos,
-                    maxDistanceSquared, settings.renderLimit);
-            float opacity = (float) settings.ghostOpacity;
+                    maxDistanceSquared, allUnexpected ? expectedCandidates.size() : settings.renderLimit);
+            float opacity = (float) settings.ghostOpacity * flashMultiplier(settings.flashDetections);
             if (!visible.isEmpty()) {
                 ghostCollector.submitCustomGeometry(poseStack, VoxelMapRenderTypes.CHUNK_ANALYSIS_BLOCK_GHOST,
-                        (pose, buffer) -> drawBlockGhosts(buffer, pose, visible, cameraPos, opacity));
+                        (pose, buffer) -> drawBlockGhosts(buffer, pose, visible, cameraPos, opacity, settings));
             }
         }
         if (settings.espFill) {
@@ -57,17 +60,22 @@ public final class ChunkAnalysisRenderer {
             // cannot cover their textures. Blue/unexpected positions still need ESP fill
             // because the expected state there is air and therefore has no ghost model.
             List<ChunkAnalysisDifference> fillCandidates = settings.ghostBlocks
-                    ? source.stream().filter(difference -> difference.displayState() == null
-                            || difference.kind() == ChunkAnalysisDifference.Kind.EXCAVATION).toList()
+                    ? (allUnexpected ? source : source.stream().filter(difference -> difference.displayState() == null
+                            || difference.kind() == ChunkAnalysisDifference.Kind.EXCAVATION).toList())
                     : source;
             List<ChunkAnalysisDifference> visible = fairVisibleSample(fillCandidates, cameraPos,
-                    maxDistanceSquared, settings.renderLimit);
-            float opacity = (float) settings.fillOpacity;
+                    maxDistanceSquared, allUnexpected ? fillCandidates.size() : settings.renderLimit);
+            float opacity = (float) settings.fillOpacity * flashMultiplier(settings.flashDetections);
             if (!visible.isEmpty()) {
                 fillCollector.submitCustomGeometry(poseStack, VoxelMapRenderTypes.SEEDMAPPER_ESP_QUADS_NO_DEPTH,
-                        (pose, buffer) -> drawEspFills(buffer, pose, visible, cameraPos, opacity));
+                        (pose, buffer) -> drawEspFills(buffer, pose, visible, cameraPos, opacity, settings));
             }
         }
+    }
+
+    private static float flashMultiplier(boolean enabled) {
+        if (!enabled) return 1.0F;
+        return 0.35F + 0.65F * (0.5F + 0.5F * (float) Math.sin(System.nanoTime() * 0.000000012D));
     }
 
     /** Samples evenly through scan order, instead of dropping all chunks after an arbitrary prefix. */
@@ -85,7 +93,8 @@ public final class ChunkAnalysisRenderer {
     }
 
     private static void drawBlockGhosts(VertexConsumer buffer, PoseStack.Pose basePose,
-                                        List<ChunkAnalysisDifference> differences, Vec3 camera, float opacity) {
+                                        List<ChunkAnalysisDifference> differences, Vec3 camera, float opacity,
+                                        ChunkAnalysisSettingsManager settings) {
         Minecraft minecraft = Minecraft.getInstance();
         ArrayList<BlockStateModelPart> parts = new ArrayList<>();
         QuadInstance quadData = new QuadInstance();
@@ -110,7 +119,7 @@ public final class ChunkAnalysisRenderer {
                                     difference.displayState(), quad.materialInfo().tintIndex());
                             if (tintSource != null) nativeTint = tintSource.color(difference.displayState());
                         }
-                        quadData.setColor(softTint(nativeTint, difference.kind().color(), opacity));
+                        quadData.setColor(softTint(nativeTint, colorFor(difference, settings), opacity));
                         buffer.putBakedQuad(translated, quad, quadData);
                     }
                 }
@@ -126,9 +135,30 @@ public final class ChunkAnalysisRenderer {
     }
 
     private static void drawEspFills(VertexConsumer buffer, PoseStack.Pose pose,
-                                     List<ChunkAnalysisDifference> differences, Vec3 camera, float opacity) {
+                                     List<ChunkAnalysisDifference> differences, Vec3 camera, float opacity,
+                                     ChunkAnalysisSettingsManager settings) {
         for (ChunkAnalysisDifference difference : differences) {
-            drawBoxFaces(buffer, pose, difference.pos(), camera, difference.kind().color(), opacity);
+            drawBoxFaces(buffer, pose, difference.pos(), camera, colorFor(difference, settings), opacity);
+        }
+    }
+
+    private static int colorFor(ChunkAnalysisDifference difference, ChunkAnalysisSettingsManager settings) {
+        ChunkAnalysisDifference.Kind kind = difference.kind();
+        String configured = switch (kind) {
+            case MISSING_EXPECTED -> settings.missingExpectedColor;
+            case EXCAVATION -> settings.excavationColor;
+            case UNEXPECTED -> settings.unexpectedColor;
+            case CHANGED -> settings.changedColor;
+            case UNEXPECTED_INTERESTING -> difference.interestingCategory() == ChunkAnalysisDifference.InterestingCategory.REDSTONE
+                    ? settings.redstoneColor
+                    : difference.interestingCategory() == ChunkAnalysisDifference.InterestingCategory.WORKSTATIONS
+                    ? settings.workstationsColor
+                    : settings.inventoriesColor;
+        };
+        try {
+            return Integer.parseInt(configured.substring(configured.charAt(0) == '#' ? 1 : 0), 16);
+        } catch (RuntimeException ignored) {
+            return kind.color();
         }
     }
 
