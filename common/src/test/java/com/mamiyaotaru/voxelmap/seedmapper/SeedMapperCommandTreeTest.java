@@ -55,7 +55,11 @@ class SeedMapperCommandTreeTest {
                 Map.entry("seedmap highlight canyon 4", "seedmap highlight canyon 4"),
                 Map.entry("seedmap highlight ravine 4", "seedmap highlight canyon 4"),
                 Map.entry("seedmap highlight cave 4", "seedmap highlight cave 4"),
-                Map.entry("seedmap highlight caves 4", "seedmap highlight cave 4")
+                Map.entry("seedmap highlight caves 4", "seedmap highlight cave 4"),
+                Map.entry("seedmap chunkanalysis ore diamond_ore", "seedmap chunkanalysis ore diamond_ore"),
+                Map.entry("seedmap chunkanalysis ore diamond_ore 4", "seedmap chunkanalysis ore diamond_ore 4"),
+                Map.entry("seedmap chunkanalysis esp ore diamond_ore", "seedmap chunkanalysis esp ore diamond_ore"),
+                Map.entry("seedmap chunkanalysis esp ore diamond_ore 4", "seedmap chunkanalysis esp ore diamond_ore 4")
         );
 
         for (Map.Entry<String, String> entry : expected.entrySet()) {
@@ -77,6 +81,13 @@ class SeedMapperCommandTreeTest {
         assertTrue(dispatcher.getRoot().getChild("seedmap")
                 .getChild("highlight")
                 .getChild("terrain")
+                .getChild("chunks")
+                .getCommand() != null);
+        assertTrue(dispatcher.getRoot().getChild("seedmap")
+                .getChild("chunkanalysis")
+                .getChild("esp")
+                .getChild("ore")
+                .getChild("block")
                 .getChild("chunks")
                 .getCommand() != null);
     }

@@ -37,9 +37,10 @@ public final class ChunkAnalysisRenderer {
         List<ChunkAnalysisDifference> source = snapshot.differences();
         if (source.isEmpty()) return;
         boolean allUnexpected = snapshot.mode() == ChunkAnalysisService.ScanMode.ALL_UNEXPECTED;
+        boolean oreEsp = snapshot.mode() == ChunkAnalysisService.ScanMode.ORE;
 
         Vec3 cameraPos = camera.position();
-        double maxDistanceSquared = allUnexpected ? Double.POSITIVE_INFINITY
+        double maxDistanceSquared = allUnexpected || oreEsp ? Double.POSITIVE_INFINITY
                 : settings.renderDistance * (double) settings.renderDistance;
         if (settings.ghostBlocks) {
             OrderedSubmitNodeCollector ghostCollector = collector.order(VoxelMapRenderTypes.OVERLAY_ORDER_ANALYSIS_GHOSTS);
@@ -154,6 +155,7 @@ public final class ChunkAnalysisRenderer {
                     : difference.interestingCategory() == ChunkAnalysisDifference.InterestingCategory.WORKSTATIONS
                     ? settings.workstationsColor
                     : settings.inventoriesColor;
+            case ORE -> settings.oreColor;
         };
         try {
             return Integer.parseInt(configured.substring(configured.charAt(0) == '#' ? 1 : 0), 16);

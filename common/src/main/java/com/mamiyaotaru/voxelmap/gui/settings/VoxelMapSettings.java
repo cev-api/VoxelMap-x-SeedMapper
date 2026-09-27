@@ -11,6 +11,7 @@ import com.mamiyaotaru.voxelmap.chunksync.ChunkShareConfig;
 import com.mamiyaotaru.voxelmap.chunksync.ChunkShareTransport;
 import com.mamiyaotaru.voxelmap.chunksync.ChunkSyncCommandHandler;
 import com.mamiyaotaru.voxelmap.chunkanalysis.ChunkAnalysisService;
+import com.mamiyaotaru.voxelmap.chunkanalysis.ChunkAnalysisOreTarget;
 import com.mamiyaotaru.voxelmap.chunkanalysis.ChunkAnalysisSettingsManager;
 import com.mamiyaotaru.voxelmap.gui.GuiChunkSyncLayers;
 import com.mamiyaotaru.voxelmap.gui.GuiChunkAnalysisColors;
@@ -783,7 +784,7 @@ public final class VoxelMapSettings {
                                      seed.verifyOreAgainstWorld = value;
                                      MapSettingsManager.instance.saveAll();
                                  }),
-                        espAction("seedmapper.runEsp", "options.voxelmap.seedmapper.runEsp", host, () -> {
+                        seedMapperEspAction("seedmapper.runEsp", "options.voxelmap.seedmapper.runEsp", host, () -> {
                             String target = seed.espTarget == null ? "" : seed.espTarget.trim();
                             if (target.isBlank()) {
                                 SeedMapperCommandHandler.handleChatCommand("seedmap highlight clear");
@@ -791,15 +792,15 @@ public final class VoxelMapSettings {
                                 SeedMapperCommandHandler.handleChatCommand("seedmap highlight ore " + target + " " + seed.espDefaultChunks);
                             }
                         }),
-                        espAction("seedmapper.runOreVein", "options.voxelmap.seedmapper.runOreVein", host,
+                        seedMapperEspAction("seedmapper.runOreVein", "options.voxelmap.seedmapper.runOreVein", host,
                                 () -> SeedMapperCommandHandler.handleChatCommand("seedmap highlight orevein " + seed.espDefaultChunks)),
-                        espAction("seedmapper.runCanyon", "options.voxelmap.seedmapper.runCanyon", host,
+                        seedMapperEspAction("seedmapper.runCanyon", "options.voxelmap.seedmapper.runCanyon", host,
                                 () -> SeedMapperCommandHandler.handleChatCommand("seedmap highlight canyon " + seed.espDefaultChunks)),
-                        espAction("seedmapper.runCave", "options.voxelmap.seedmapper.runCave", host,
+                        seedMapperEspAction("seedmapper.runCave", "options.voxelmap.seedmapper.runCave", host,
                                 () -> SeedMapperCommandHandler.handleChatCommand("seedmap highlight cave " + seed.espDefaultChunks)),
-                        espAction("seedmapper.runTerrain", "options.voxelmap.seedmapper.runTerrain", tooltip("seedmapper.runTerrain"), host,
+                        seedMapperEspAction("seedmapper.runTerrain", "options.voxelmap.seedmapper.runTerrain", tooltip("seedmapper.runTerrain"), host,
                                 () -> SeedMapperCommandHandler.handleChatCommand("seedmap highlight terrain " + seed.espDefaultChunks)),
-                        espAction("seedmapper.runSurface", "options.voxelmap.seedmapper.runSurface", tooltip("seedmapper.runSurface"), host,
+                        seedMapperEspAction("seedmapper.runSurface", "options.voxelmap.seedmapper.runSurface", tooltip("seedmapper.runSurface"), host,
                                 () -> SeedMapperCommandHandler.handleChatCommand("seedmap highlight surface " + seed.espDefaultChunks)),
                         SettingsOption.action("seedmapper.clearEsp", "options.voxelmap.seedmapper.clearEsp", null,
                                 Component.literal("Clear"),
@@ -901,6 +902,28 @@ public final class VoxelMapSettings {
                                 () -> !"off".equals(settings.continuousMode), Component::empty, 1),
                         SettingsOption.action("chunkanalysis.clear", "options.voxelmap.chunkanalysis.clear", null,
                                 Component.translatable("options.voxelmap.action.clear"), ChunkAnalysisService.get()::clear)),
+                group("options.voxelmap.group.chunkanalysisEsp",
+                        SettingsAutocomplete.withOptions(SettingsOption.text("chunkanalysis.espTarget", "options.voxelmap.chunkanalysis.espTarget", null,
+                                () -> settings.espTarget == null ? "" : settings.espTarget,
+                                value -> {
+                                    ChunkAnalysisOreTarget target = ChunkAnalysisOreTarget.fromId(value);
+                                    settings.espTarget = target == null ? value.trim() : target.id();
+                                    MapSettingsManager.instance.saveAll();
+                                },
+                                () -> true, Component::empty), SeedMapperCommandTree.getCommonOreBlocks()),
+                        SettingsOption.slider("chunkanalysis.espChunks", "options.voxelmap.chunkanalysis.espChunks", null,
+                                () -> (double) settings.espChunks,
+                                value -> {
+                                    settings.espChunks = (int) Math.round(value);
+                                    MapSettingsManager.instance.saveAll();
+                                }, 0, ChunkAnalysisService.MAX_RADIUS, 1,
+                                value -> Component.literal(String.valueOf((int) Math.round(value))), () -> true, Component::empty, 0),
+                        SettingsOption.action("chunkanalysis.runEsp", "options.voxelmap.chunkanalysis.runEsp", null,
+                                Component.translatable("options.voxelmap.action.run"),
+                                () -> ChunkAnalysisService.get().scanOre(settings.espTarget, settings.espChunks),
+                                () -> !ChunkAnalysisService.get().isRunning(), Component::empty),
+                        SettingsOption.action("chunkanalysis.clearEsp", "options.voxelmap.chunkanalysis.clearEsp", null,
+                                Component.literal("Clear"), ChunkAnalysisService.get()::clear)),
                 group("options.voxelmap.group.chunkanalysisDisplay",
                         analysisToggle("chunkanalysis.flashDetections", "options.voxelmap.chunkanalysis.flashDetections",
                                 () -> settings.flashDetections, value -> settings.flashDetections = value),
@@ -1015,6 +1038,18 @@ public final class VoxelMapSettings {
             commitText(host);
             action.run();
         });
+    }
+
+    private static SettingsOption<Void> seedMapperEspAction(String id, String key, Supplier<Screen> host, Runnable action) {
+        return seedMapperEspAction(id, key, null, host, action);
+    }
+
+    private static SettingsOption<Void> seedMapperEspAction(String id, String key, String tooltipKey,
+                                                              Supplier<Screen> host, Runnable action) {
+        return SettingsOption.action(id, key, tooltipKey, Component.translatable("options.voxelmap.action.run"), () -> {
+            commitText(host);
+            action.run();
+        }, () -> !SeedMapperCommandHandler.isEspRunning(), Component::empty);
     }
 
     private static void confirmAction(Supplier<Screen> host, String messageKey, Runnable action) {

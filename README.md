@@ -69,6 +69,8 @@ Common commands:
 - `/seedmap highlight cave [chunks]`
 - `/seedmap highlight clear`
 - `/seedmap chunkanalysis scan [radius]` (defaults to a 9x9 loaded-chunk comparison)
+- `/seedmap chunkanalysis esp ore <block> [chunks]`
+- `/seedmap chunkanalysis ore <block> [chunks]`
 - `/seedmap chunkanalysis voids [radius]`
 - `/seedmap chunkanalysis audit [radius]`
 - `/seedmap chunkanalysis unexpected [radius]`
@@ -91,13 +93,24 @@ Common commands:
 - Tracks decoration-stage writes separately from stable terrain, so arbitrary replacements in seed-derived terrain are detected without a block whitelist; chunks with strongly bidirectional cave disagreement are reported and filtered as incompatible baselines.
 - Uses transparent tinted block-model ghosts or optional solid ESP fills, with fair sampling across scanned chunks and configurable performance limits.
 - Supports `scan`, `voids`, `audit`, `unexpected`, `continuous`, `clear`, `status`, and `ghost` modes from both commands and the ChunkAnalysis settings screen.
+- Provides vanilla-worldgen Ore ESP through `/seedmap chunkanalysis esp ore <block> [chunks]` (or `/seedmap chunkanalysis ore <block> [chunks]`).
+- Generates Ore ESP positions from ChunkAnalysis's in-memory vanilla `ProtoChunk`s rather than SeedMapper's Cubiomes ore-placement path.
+- Provides Ore ESP target and chunk-radius controls with autocomplete for diamond, iron, gold, emerald, copper, coal, lapis, redstone, Nether ores, ancient debris, and infested blocks.
+- Provides a dedicated Ore ESP color in the ChunkAnalysis color options.
 - Able to find tunnels, holes, stairs faster than traditional "TunnelHoleStairESP" hacks in modded clients.
 
 ![ChunkAnal](https://i.imgur.com/d6iBiUF.jpeg)
 ![Interesting](https://i.imgur.com/zTJ2jKq.jpeg)
 ![Everything](https://i.imgur.com/s7bmNVt.jpeg)
 
-### ESP, Tracing, and Loot Workflow
+#### ChunkAnalysis ESP
+- SeedMapper predicts ore placement with Cubiomes. Chunk Analysis regenerates the chunk using Minecraft’s own world-generation code, then scans the generated result for the selected ore.
+- Differences can depend on MC/Client version mismatches or anti-xray implementation. One may benefit you over the other.
+- Blue is ChunkAnalysis ESP and Red is SeedMapper's ESP. 
+![Blue](https://i.imgur.com/OL7SdPC.jpeg)
+![Red](https://i.imgur.com/6pEXKWl.jpeg)
+
+### SeedMapper ESP, Tracing, and Loot Workflow
 - Renders ESP for blocks, ore veins, caves, canyons, and terrain.
 - Provides surface ESP, which highlights only the topmost predicted block of each column.
 - Supports terrain ESP in the Nether and End as well as the Overworld.

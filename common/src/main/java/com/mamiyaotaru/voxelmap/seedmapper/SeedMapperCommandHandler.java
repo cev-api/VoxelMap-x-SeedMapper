@@ -69,6 +69,7 @@ import java.util.function.Consumer;
 import java.util.function.ToIntBiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 public final class SeedMapperCommandHandler {
@@ -89,6 +90,7 @@ public final class SeedMapperCommandHandler {
     private static String pendingDatapackLocateId;
     private static Consumer<String> statusSink;
     private static final ThreadLocal<SourceOverrides> SOURCE_OVERRIDES = new ThreadLocal<>();
+    private static final AtomicBoolean ESP_RUNNING = new AtomicBoolean();
     private static final int MAX_HIGHLIGHT_CHUNK_RANGE = 8;
     private static final long MAX_TERRAIN_BUFFER_BYTES = 64L * 1024L * 1024L;
     private static final int MAX_TERRAIN_HIGHLIGHTS = 100_000;
@@ -107,6 +109,10 @@ public final class SeedMapperCommandHandler {
     };
 
     private SeedMapperCommandHandler() {
+    }
+
+    public static boolean isEspRunning() {
+        return ESP_RUNNING.get();
     }
 
     public static boolean handleChatCommand(String rawCommand) {
@@ -201,6 +207,8 @@ public final class SeedMapperCommandHandler {
                 }
                 service.scanUnexpected(radius);
             }
+            case "esp" -> handleChunkAnalysisEsp(args);
+            case "ore" -> handleChunkAnalysisOre(args);
             case "continuous" -> {
                 var settings = VoxelConstants.getVoxelMapInstance().getChunkAnalysisOptions();
                 if (args.length < 4) {
@@ -230,8 +238,43 @@ public final class SeedMapperCommandHandler {
                 MapSettingsManager.instance.saveAll();
                 send("ChunkAnalysis ghost blocks: " + (enabled ? "ON" : "OFF") + ".");
             }
-            default -> send("Usage: /seedmap chunkanalysis <scan [radius]|voids [radius]|audit [radius]|unexpected [radius]|continuous <off|voids|audit|both>|clear|status|ghost [on|off]>");
+            default -> send("Usage: /seedmap chunkanalysis <scan [radius]|esp ore <block> [chunks]|ore <block> [chunks]|voids [radius]|audit [radius]|unexpected [radius]|continuous <off|voids|audit|both>|clear|status|ghost [on|off]>");
         }
+    }
+
+    private static void handleChunkAnalysisEsp(String[] args) {
+        if (args.length < 4) {
+            send("Usage: /seedmap chunkanalysis esp <ore> <block> [chunks]");
+            return;
+        }
+        if (!args[3].equalsIgnoreCase("ore")) {
+            send("Unknown ChunkAnalysis ESP category. Use ore.");
+            return;
+        }
+        handleChunkAnalysisOre(args, 4, "esp ore");
+    }
+
+    private static void handleChunkAnalysisOre(String[] args) {
+        handleChunkAnalysisOre(args, 3, "ore");
+    }
+
+    private static void handleChunkAnalysisOre(String[] args, int targetIndex, String commandName) {
+        var settings = VoxelConstants.getVoxelMapInstance().getChunkAnalysisOptions();
+        String target = args.length > targetIndex ? args[targetIndex] : settings.espTarget;
+        int radius = settings.espChunks;
+        if (args.length > targetIndex + 1) {
+            try {
+                radius = Integer.parseInt(args[targetIndex + 1]);
+            } catch (NumberFormatException exception) {
+                send("Usage: /seedmap chunkanalysis " + commandName + " <block> [chunks 0-8]");
+                return;
+            }
+        }
+        if (radius < 0 || radius > ChunkAnalysisService.MAX_RADIUS) {
+            send("Chunk range must be 0-" + ChunkAnalysisService.MAX_RADIUS + ".");
+            return;
+        }
+        ChunkAnalysisService.get().scanEsp("ore", target, radius);
     }
 
     private static void handleUpdateChecker(String[] args) {
@@ -341,26 +384,34 @@ public final class SeedMapperCommandHandler {
     }
 
     private static void handleHighlight(String[] args) {
-        if (args.length < 3) {
-            send("Usage: /seedmap highlight <ore|orevein|terrain|surface|canyon|cave|clear> ...");
+        if (!ESP_RUNNING.compareAndSet(false, true)) {
+            send("SeedMapper ESP is already running.");
             return;
         }
-        String highlightType = args[2].toLowerCase(Locale.ROOT);
-        if (!highlightType.equals("clear") && !highlightType.equals("off")) {
-            VoxelConstants.getVoxelMapInstance().getSeedMapperOptions().espEnabled = true;
-        }
-        switch (highlightType) {
-            case "clear", "off" -> {
-                SeedMapperEspManager.clear();
-                send("Cleared ESP highlights.");
+        try {
+            if (args.length < 3) {
+                send("Usage: /seedmap highlight <ore|orevein|terrain|surface|canyon|cave|clear> ...");
+                return;
             }
-            case "ore", "block" -> highlightOre(args);
-            case "orevein", "ore_vein" -> highlightOreVeinEsp(args);
-            case "terrain" -> highlightTerrainEsp(args);
-            case "surface" -> highlightSurfaceEsp(args);
-            case "canyon", "ravine" -> highlightCanyonEsp(args);
-            case "cave", "caves" -> highlightCaveEsp(args);
-            default -> send("Unknown highlight type. Use ore, orevein, terrain, surface, canyon, cave, or clear.");
+            String highlightType = args[2].toLowerCase(Locale.ROOT);
+            if (!highlightType.equals("clear") && !highlightType.equals("off")) {
+                VoxelConstants.getVoxelMapInstance().getSeedMapperOptions().espEnabled = true;
+            }
+            switch (highlightType) {
+                case "clear", "off" -> {
+                    SeedMapperEspManager.clear();
+                    send("Cleared ESP highlights.");
+                }
+                case "ore", "block" -> highlightOre(args);
+                case "orevein", "ore_vein" -> highlightOreVeinEsp(args);
+                case "terrain" -> highlightTerrainEsp(args);
+                case "surface" -> highlightSurfaceEsp(args);
+                case "canyon", "ravine" -> highlightCanyonEsp(args);
+                case "cave", "caves" -> highlightCaveEsp(args);
+                default -> send("Unknown highlight type. Use ore, orevein, terrain, surface, canyon, cave, or clear.");
+            }
+        } finally {
+            ESP_RUNNING.set(false);
         }
     }
 
@@ -2406,7 +2457,7 @@ public final class SeedMapperCommandHandler {
         lines.add("/seedmap highlight canyon [chunks]");
         lines.add("/seedmap highlight cave [chunks]");
         lines.add("/seedmap highlight clear");
-        lines.add("/seedmap chunkanalysis <scan [radius]|voids [radius]|audit [radius]|unexpected [radius]|continuous <off|voids|audit|both>|clear|status|ghost [on|off]>");
+        lines.add("/seedmap chunkanalysis <scan [radius]|esp ore <block> [chunks]|ore <block> [chunks]|voids [radius]|audit [radius]|unexpected [radius]|continuous <off|voids|audit|both>|clear|status|ghost [on|off]>");
         lines.add("/seedmap mine orevein [chunks]");
         lines.add("/seedmap mine stop");
         lines.add("/seedmap export [visible|radius <blocks>|area <x> <z> <radius>]");

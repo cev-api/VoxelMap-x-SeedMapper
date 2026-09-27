@@ -19,7 +19,8 @@ public record ChunkAnalysisDifference(BlockPos pos, Kind kind, BlockState displa
         EXCAVATION(0xFF174D),
         UNEXPECTED(0x3388FF),
         CHANGED(0xFFD43B),
-        UNEXPECTED_INTERESTING(0xFF8800);
+        UNEXPECTED_INTERESTING(0xFF8800),
+        ORE(0x00CFFF);
 
         private final int color;
 

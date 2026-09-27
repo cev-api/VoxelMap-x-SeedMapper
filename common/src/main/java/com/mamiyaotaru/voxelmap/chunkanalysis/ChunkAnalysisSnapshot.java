@@ -24,12 +24,13 @@ public record ChunkAnalysisSnapshot(
         ChunkAnalysisService.ScanMode mode,
         long auditContainers,
         long auditRedstone,
-        long auditWorkstations
+        long auditWorkstations,
+        String oreTarget
 ) {
     public static ChunkAnalysisSnapshot empty() {
         return new ChunkAnalysisSnapshot(0L, Level.OVERWORLD, new ChunkPos(0, 0), 0,
                 List.of(), 0L, 0L, 0L, 0L, 0, 0, 0, 0, 0L,
-                ChunkAnalysisService.ScanMode.FULL, 0L, 0L, 0L);
+                ChunkAnalysisService.ScanMode.FULL, 0L, 0L, 0L, "");
     }
 
     public long count(ChunkAnalysisDifference.Kind kind) {
@@ -39,6 +40,7 @@ public record ChunkAnalysisSnapshot(
             case UNEXPECTED -> unexpectedCount;
             case CHANGED -> changedCount;
             case UNEXPECTED_INTERESTING -> unexpectedCount;
+            case ORE -> unexpectedCount;
         };
     }
 }

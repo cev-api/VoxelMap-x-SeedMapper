@@ -168,6 +168,8 @@ public final class SeedMapperCommandTree {
                                  .executes(context -> runRaw(context, runner, "chunkanalysis unexpected"))
                                  .then(RequiredArgumentBuilder.<S, Integer>argument("radius", IntegerArgumentType.integer(0, 8))
                                          .executes(context -> run(context, runner, "chunkanalysis unexpected " + IntegerArgumentType.getInteger(context, "radius")))))
+                        .then(buildChunkAnalysisEspNode(runner))
+                        .then(buildChunkAnalysisOreNode(runner))
                          .then(LiteralArgumentBuilder.<S>literal("continuous")
                                  .executes(context -> runRaw(context, runner, "chunkanalysis continuous"))
                                  .then(LiteralArgumentBuilder.<S>literal("off").executes(context -> runRaw(context, runner, "chunkanalysis continuous off")))
@@ -382,6 +384,28 @@ public final class SeedMapperCommandTree {
             }
         }
         return highlight;
+    }
+
+    private static <S> LiteralArgumentBuilder<S> buildChunkAnalysisEspNode(Function<String, Integer> runner) {
+        LiteralArgumentBuilder<S> esp = LiteralArgumentBuilder.<S>literal("esp");
+        esp.then(buildChunkAnalysisOreNode(runner, "ore", "chunkanalysis esp ore"));
+        return esp;
+    }
+
+    private static <S> LiteralArgumentBuilder<S> buildChunkAnalysisOreNode(Function<String, Integer> runner) {
+        return buildChunkAnalysisOreNode(runner, "ore", "chunkanalysis ore");
+    }
+
+    private static <S> LiteralArgumentBuilder<S> buildChunkAnalysisOreNode(Function<String, Integer> runner,
+                                                                             String literal, String commandPrefix) {
+        return LiteralArgumentBuilder.<S>literal(literal)
+                .then(RequiredArgumentBuilder.<S, String>argument("block", StringArgumentType.word())
+                        .suggests((context, builder) -> SharedSuggestionProvider.suggest(COMMON_ORE_BLOCKS, builder))
+                        .executes(context -> run(context, runner, commandPrefix + " " + StringArgumentType.getString(context, "block")))
+                        .then(RequiredArgumentBuilder.<S, Integer>argument("chunks", IntegerArgumentType.integer(0, 8))
+                                .executes(context -> run(context, runner,
+                                        commandPrefix + " " + StringArgumentType.getString(context, "block") + " "
+                                                + IntegerArgumentType.getInteger(context, "chunks")))));
     }
 
     private static <S> int runRaw(CommandContext<S> context, Function<String, Integer> runner, String subcommand) {

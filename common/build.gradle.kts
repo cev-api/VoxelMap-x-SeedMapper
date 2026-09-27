@@ -2,6 +2,7 @@ plugins {
     id("java")
     id("idea")
     id("net.fabricmc.fabric-loom")
+    id("com.gradleup.shadow")
 }
 
 val minecraftVersion: String by rootProject.extra

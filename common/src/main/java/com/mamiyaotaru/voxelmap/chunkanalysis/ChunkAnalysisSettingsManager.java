@@ -19,6 +19,8 @@ public final class ChunkAnalysisSettingsManager implements ISubSettingsManager {
     /** off, voids, audit, or both; continuous scans begin when the player enters a new chunk. */
     public String continuousMode = "off";
     public int continuousRadius = ChunkAnalysisService.MAX_CONTINUOUS_RADIUS;
+    public String espTarget = "diamond_ore";
+    public int espChunks = ChunkAnalysisService.DEFAULT_RADIUS;
     public boolean flashDetections = false;
     public boolean chatFeedback = true;
     public int scanRadius = ChunkAnalysisService.DEFAULT_RADIUS;
@@ -34,6 +36,7 @@ public final class ChunkAnalysisSettingsManager implements ISubSettingsManager {
     public String inventoriesColor = "#FF8800";
     public String redstoneColor = "#FF33CC";
     public String workstationsColor = "#33FF88";
+    public String oreColor = "#00CFFF";
 
     @Override
     public void loadAll(File settingsFile) {
@@ -49,6 +52,8 @@ public final class ChunkAnalysisSettingsManager implements ISubSettingsManager {
                     case "ChunkAnalysis Structure Only" -> structureOnly = Boolean.parseBoolean(value[1]);
                     case "ChunkAnalysis Continuous Mode" -> continuousMode = normalizeContinuousMode(value[1]);
                     case "ChunkAnalysis Continuous Radius" -> continuousRadius = Mth.clamp(Integer.parseInt(value[1]), 0, ChunkAnalysisService.MAX_CONTINUOUS_RADIUS);
+                    case "ChunkAnalysis ESP Target" -> espTarget = normalizeEspTarget(value[1]);
+                    case "ChunkAnalysis ESP Chunks" -> espChunks = Mth.clamp(Integer.parseInt(value[1]), 0, ChunkAnalysisService.MAX_RADIUS);
                     case "ChunkAnalysis Flash Detections" -> flashDetections = Boolean.parseBoolean(value[1]);
                     case "ChunkAnalysis Chat Feedback" -> chatFeedback = Boolean.parseBoolean(value[1]);
                     case "ChunkAnalysis Scan Radius" -> scanRadius = Mth.clamp(Integer.parseInt(value[1]), 0, ChunkAnalysisService.MAX_RADIUS);
@@ -65,6 +70,7 @@ public final class ChunkAnalysisSettingsManager implements ISubSettingsManager {
                     case "ChunkAnalysis Inventories Color" -> inventoriesColor = normalizeColor(value[1], inventoriesColor);
                     case "ChunkAnalysis Redstone Color" -> redstoneColor = normalizeColor(value[1], redstoneColor);
                     case "ChunkAnalysis Workstations Color" -> workstationsColor = normalizeColor(value[1], workstationsColor);
+                    case "ChunkAnalysis Ore Color" -> oreColor = normalizeColor(value[1], oreColor);
                 }
             }
         } catch (IOException | NumberFormatException ignored) {
@@ -79,6 +85,8 @@ public final class ChunkAnalysisSettingsManager implements ISubSettingsManager {
         out.println("ChunkAnalysis Structure Only:" + structureOnly);
         out.println("ChunkAnalysis Continuous Mode:" + continuousMode);
         out.println("ChunkAnalysis Continuous Radius:" + continuousRadius);
+        out.println("ChunkAnalysis ESP Target:" + espTarget);
+        out.println("ChunkAnalysis ESP Chunks:" + espChunks);
         out.println("ChunkAnalysis Flash Detections:" + flashDetections);
         out.println("ChunkAnalysis Chat Feedback:" + chatFeedback);
         out.println("ChunkAnalysis Scan Radius:" + scanRadius);
@@ -94,6 +102,7 @@ public final class ChunkAnalysisSettingsManager implements ISubSettingsManager {
         out.println("ChunkAnalysis Inventories Color:" + inventoriesColor);
         out.println("ChunkAnalysis Redstone Color:" + redstoneColor);
         out.println("ChunkAnalysis Workstations Color:" + workstationsColor);
+        out.println("ChunkAnalysis Ore Color:" + oreColor);
     }
 
     @Override public String getKeyText(EnumOptionsMinimap option) { return MapSettingsManager.ERROR_STRING; }
@@ -112,6 +121,11 @@ public final class ChunkAnalysisSettingsManager implements ISubSettingsManager {
             case "both" -> "both";
             default -> "off";
         };
+    }
+
+    private static String normalizeEspTarget(String value) {
+        ChunkAnalysisOreTarget target = ChunkAnalysisOreTarget.fromId(value);
+        return target == null ? "diamond_ore" : target.id();
     }
 
     private static String normalizeColor(String value, String fallback) {

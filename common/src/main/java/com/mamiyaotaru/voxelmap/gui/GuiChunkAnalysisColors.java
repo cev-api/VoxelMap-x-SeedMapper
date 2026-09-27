@@ -27,7 +27,7 @@ public final class GuiChunkAnalysisColors extends GuiScreenMinimap {
     private static final int COLOR_GROUP_WIDTH = COLOR_LABEL_COLUMN_WIDTH + COLOR_ROW_GAP + COLOR_BUTTON_WIDTH;
     private static final int COLOR_ROW_TOP_OFFSET = 24;
     private final ChunkAnalysisSettingsManager settings = VoxelConstants.getVoxelMapInstance().getChunkAnalysisOptions();
-    private final ColorEntry[] colorEntries = new ColorEntry[7];
+    private final ColorEntry[] colorEntries = new ColorEntry[8];
     private GuiColorPickerContainer colorPicker;
     private Button colorPickerModeButton;
     private Button colorPickerApplyButton;
@@ -64,6 +64,9 @@ public final class GuiChunkAnalysisColors extends GuiScreenMinimap {
         y += 28;
         addColorButton(6, y, "options.voxelmap.chunkanalysis.workstationsColor", () -> settings.workstationsColor,
                 value -> settings.workstationsColor = value);
+        y += 28;
+        addColorButton(7, y, "options.voxelmap.chunkanalysis.oreColor", () -> settings.oreColor,
+                value -> settings.oreColor = value);
         addRenderableWidget(Button.builder(Component.translatable("gui.done"), button -> onClose())
                 .bounds(width / 2 - 75, y + 32, 150, 20).build());
 
@@ -132,7 +135,7 @@ public final class GuiChunkAnalysisColors extends GuiScreenMinimap {
         int panelLeft = width / 2 - 270;
         int panelTop = height / 6 + 4;
         int rowTop = height / 6 + COLOR_ROW_TOP_OFFSET;
-        int panelBottom = rowTop + 7 * 28 + 36;
+        int panelBottom = rowTop + 8 * 28 + 36;
         graphics.fill(panelLeft, panelTop, width / 2 + 270, panelBottom, 0x70000000);
         super.extractRenderState(graphics, pickerOpen ? 0 : mouseX, pickerOpen ? 0 : mouseY, delta);
         graphics.centeredText(getFont(), pickerOpen ? activeTitle : Component.translatable("options.voxelmap.chunkanalysis.colors"), width / 2, 16, 0xFFFFFFFF);

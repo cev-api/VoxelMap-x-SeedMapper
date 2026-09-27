@@ -17,7 +17,6 @@ val modMenuVersion by extra { "21.0.0" }
 val paperApiVersion by extra { "[26.3.build,)" }
 val forkVersion by extra { providers.gradleProperty("forkVersion").orElse(providers.gradleProperty("forkversion")).orNull ?: "0.01" }
 val modrinthId by extra { providers.gradleProperty("modrinth_id").orNull ?: "cVrDroCh" }
-val voxelMapVersion by extra { "1.16.12" }
 val voxelConfigVersion by extra { "1.0.2" }
 val geckolibVersion by extra { "5.5.7" }
 val voxelMapVersion by extra { "1.16.13" }
