@@ -2,7 +2,6 @@ plugins {
     id("java")
     id("idea")
     id("net.fabricmc.fabric-loom")
-    id("com.gradleup.shadow") version "8.3.0"
 }
 
 val minecraftVersion: String by rootProject.extra
@@ -79,7 +78,6 @@ tasks {
     jar {
         duplicatesStrategy = DuplicatesStrategy.EXCLUDE
         from(rootDir.resolve("LICENSE.md"))
-        // we no longer need manual zipTree because shadowJar handles it!
     }
 }
 

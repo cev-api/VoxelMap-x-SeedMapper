@@ -22,6 +22,9 @@ import com.mojang.renderpearl.api.textures.GpuSampler;
 import com.mojang.renderpearl.api.textures.GpuTexture;
 import com.mojang.renderpearl.api.textures.GpuTextureView;
 import java.awt.image.BufferedImage;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
+import java.lang.reflect.Method;
 import java.util.ArrayDeque;
 import java.util.Optional;
 import java.util.OptionalDouble;
@@ -98,24 +101,65 @@ public class RenderUtils {
     private static final VoxelMapRenderTarget FULLSCREEN_TARGET = new VoxelMapRenderTarget("VoxelMap Fullscreen Target", GpuFormat.RGBA8_UNORM, GpuFormat.D32_FLOAT);
     private static final ArrayDeque<ProjectionEntry> PROJECTION_STACK = new ArrayDeque<>();
 
+    // Mod Compatibility
+    private static boolean hasIrisShaders;
+    private static VarHandle iris_isRenderingLevel;
+
+    private static boolean hasVulkanMod;
+    private static Method vk_getRenderer;
+    private static Method vk_flushCmds;
+
     public static void init() {
-        FULLSCREEN_TARGET.createBuffers(getSafeScreenWidth(), getSafeScreenHeight());
+        FULLSCREEN_TARGET.createBuffers(getFramebufferWidth(), getFramebufferHeight());
+
+        try {
+            Class<?> immediateState = Class.forName("net.irisshaders.iris.vertices.ImmediateState");
+            iris_isRenderingLevel = MethodHandles.lookup().findStaticVarHandle(immediateState, "isRenderingLevel", boolean.class);
+            hasIrisShaders = true;
+        } catch (Exception ignored) {
+            hasIrisShaders = false;
+        }
+
+        try {
+            Class<?> renderer = Class.forName("net.vulkanmod.vulkan.Renderer");
+            vk_getRenderer = renderer.getMethod("getInstance");
+            vk_flushCmds = renderer.getMethod("flushCmds");
+            hasVulkanMod = true;
+        } catch (Exception ignored) {
+            hasVulkanMod = false;
+        }
     }
 
-    private static int getSafeScreenWidth() {
+    public static int getFramebufferWidth() {
+        return Math.max(1, Minecraft.getInstance().getWindow().getWidth());
+    }
+
+    public static int getFramebufferHeight() {
+        return Math.max(1, Minecraft.getInstance().getWindow().getHeight());
+    }
+
+    public static int getScreenWidth() {
         return Math.max(1, Minecraft.getInstance().getWindow().getScreenWidth());
     }
 
-    private static int getSafeScreenHeight() {
+    public static int getScreenHeight() {
         return Math.max(1, Minecraft.getInstance().getWindow().getScreenHeight());
     }
 
     public static float getGuiWidth() {
-        return (float) getSafeScreenWidth() / Minecraft.getInstance().getWindow().getGuiScale();
+        return (float) getFramebufferWidth() / Minecraft.getInstance().getWindow().getGuiScale();
     }
 
     public static float getGuiHeight() {
-        return (float) getSafeScreenHeight() / Minecraft.getInstance().getWindow().getGuiScale();
+        return (float) getFramebufferHeight() / Minecraft.getInstance().getWindow().getGuiScale();
+    }
+
+    public static float getRetinaScaleX() {
+        return (float) getFramebufferWidth() / getScreenWidth();
+    }
+
+    public static float getRetinaScaleY() {
+        return (float) getFramebufferHeight() / getScreenHeight();
     }
 
     public static Matrix4fStack getMatrixStack() {
@@ -127,7 +171,7 @@ public class RenderUtils {
     }
 
     public static boolean hasFlippedV() {
-        return !VoxelConstants.hasVulkanMod(); // Returns true if the renderer uses flipped textures
+        return !hasVulkanMod; // Returns true if the renderer uses flipped textures
     }
 
     public static void blitToScreen(GuiGraphicsExtractor graphics, GpuTextureView texture, float x, float y, float width, float height, int color) {
@@ -158,20 +202,34 @@ public class RenderUtils {
 
     public static void flushCmds() {
         RenderSystem.assertOnRenderThread();
-        if (!VoxelConstants.hasVulkanMod()) {
-            RenderSystem.getDevice().createCommandEncoder().submit();
-        } else {
+        RenderSystem.getDevice().createCommandEncoder().submit();
+        if (hasVulkanMod) {
             try {
-                Class<?> vkRendererClass = Class.forName("net.vulkanmod.vulkan.Renderer");
-                vkRendererClass.getMethod("flushCmds").invoke(vkRendererClass.getMethod("getInstance").invoke(null));
-            } catch (Exception ignored) {
+                vk_flushCmds.invoke(vk_getRenderer.invoke(null));
+            } catch (Exception e) {
+                VoxelConstants.getLogger().warn("Failed to flush VulkanMod commands!", e);
             }
         }
     }
 
+    public static boolean setShaderRendering(boolean flag) {
+        if (hasIrisShaders) {
+            try {
+                boolean previous = (boolean) iris_isRenderingLevel.get();
+                iris_isRenderingLevel.set(flag);
+                return previous;
+            } catch (Exception e) {
+                VoxelConstants.getLogger().warn("Failed to set Iris rendering level!", e);
+                return false;
+            }
+        }
+        // Todo: Check OptiFine compatibility
+        return false;
+    }
+
     public static VoxelMapRenderTarget getFullscreenTarget() {
-        int width = getSafeScreenWidth();
-        int height = getSafeScreenHeight();
+        int width = getFramebufferWidth();
+        int height = getFramebufferHeight();
         if (FULLSCREEN_TARGET.width != width || FULLSCREEN_TARGET.height != height) {
             FULLSCREEN_TARGET.resize(width, height);
         }

@@ -759,8 +759,8 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double amount) {
         this.timeOfLastMouseInput = System.currentTimeMillis();
         this.switchToMouseInput();
-        float mouseDirectX = (float) minecraft.mouseHandler.xpos();
-        float mouseDirectY = (float) minecraft.mouseHandler.ypos();
+        float mouseDirectX = (float) getRawMouseX();
+        float mouseDirectY = (float) getRawMouseY();
         if (amount != 0.0) {
             updateZoomForDirection(amount > 0.0 ? 1.0F : -1.0F, mouseDirectX, mouseDirectY);
         }
@@ -873,8 +873,8 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         selectedWaypoint = getHoveredWaypoint();
         if (mouseButtonEvent.button() == InputConstants.MOUSE_BUTTON_RIGHT && (selectedWaypoint != null || (mouseY > this.top && mouseY < this.bottom))) {
             this.timeOfLastKBInput = 0L;
-            int mouseDirectX = (int) minecraft.mouseHandler.xpos();
-            int mouseDirectY = (int) minecraft.mouseHandler.ypos();
+            int mouseDirectX = (int) getRawMouseX();
+            int mouseDirectY = (int) getRawMouseY();
             if (mapOptions.worldmapAllowed) {
                 double[] mapPoint = mapPointFromGui(mouseButtonEvent.x(), mouseButtonEvent.y());
                 selectedPlot = findPlotAt(mapPoint[0], mapPoint[1]);
@@ -1277,6 +1277,14 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         }
     }
 
+    private double getRawMouseX() {
+        return minecraft.mouseHandler.xpos() * RenderUtils.getRetinaScaleX();
+    }
+
+    private double getRawMouseY() {
+        return minecraft.mouseHandler.ypos() * RenderUtils.getRetinaScaleY();
+    }
+
     private void switchToMouseInput() {
         this.timeOfLastKBInput = 0L;
         if (!this.mouseCursorShown) {
@@ -1308,8 +1316,8 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
         this.mouseX = mouseX;
         this.mouseY = mouseY;
-        float mouseDirectX = (float) minecraft.mouseHandler.xpos();
-        float mouseDirectY = (float) minecraft.mouseHandler.ypos();
+        float mouseDirectX = (float) getRawMouseX();
+        float mouseDirectY = (float) getRawMouseY();
         if (this.zoom != this.zoomGoal) {
             long timeSinceZoom = System.currentTimeMillis() - this.timeOfZoom;
             if (timeSinceZoom < 700.0F) {

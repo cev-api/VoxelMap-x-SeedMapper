@@ -1,11 +1,14 @@
 plugins {
     id("idea")
     id("net.minecraftforge.gradle")
+    id("com.gradleup.shadow")
     id("java-library")
 }
 
 val minecraftVersion: String by rootProject.extra
 val forgeVersion: String by rootProject.extra
+val voxelConfigVersion: String by rootProject.extra
+val geckolibVersion: String by rootProject.extra
 
 val fullVersion: String by rootProject.extra
 val forkVersion: String by rootProject.extra
@@ -31,10 +34,19 @@ repositories {
     maven { url = uri("https://maven.minecraftforge.net/") }
 }
 
+val shade: Configuration by configurations.creating
+
+configurations.named("compileOnly") {
+    extendsFrom(shade)
+}
+
 dependencies {
     implementation(minecraft.dependency("net.minecraftforge:forge:${minecraftVersion}-${forgeVersion}"))
     compileOnly(project.project(":common").sourceSets.main.get().output)
     compileOnly(project.project(":server-common").sourceSets.main.get().output)
+
+    shade("de.voxelmap:voxelconfig:${voxelConfigVersion}")
+    compileOnly("com.geckolib:geckolib-common-${minecraftVersion}:${geckolibVersion}")
 }
 
 minecraft {
@@ -70,7 +82,7 @@ minecraft {
 }
 
 tasks {
-    withType<JavaCompile> {
+    named<JavaCompile>("compileJava") {
         val commonMain = project(":common").sourceSets.main.get()
         val serverCommonMain = project(":server-common").sourceSets.main.get()
         source(commonMain.java.srcDirs)
@@ -85,6 +97,10 @@ tasks {
         }
         from(serverCommonMain.resources.srcDirs) {
             duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+        }
+
+        from({ shade.map { zipTree(it) } }) {
+            exclude("META-INF/**")
         }
 
         inputs.property("version", fullVersion)
@@ -102,14 +118,34 @@ tasks {
     }
 
     jar {
+        archiveClassifier.set("slim")
+    }
+
+    // Forge loads every mod as a JPMS module, and two modules may not contain
+    // the same package. Other mods bundle VoxelConfig too, so our copy is
+    // relocated into our own package.
+    shadowJar {
+        archiveClassifier.set("")
+        destinationDirectory = rootDir.resolve("build").resolve("libs")
+        configurations.set(listOf(shade))
+        relocate("de.voxelmap.voxelconfig", "com.mamiyaotaru.voxelmap.shadow.voxelconfig")
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
         manifest {
             attributes["MixinConfigs"] = "mixin.voxelmap.json,mixin.voxelmap.forge.json"
         }
 
         from(rootDir.resolve("LICENSE.md"))
+        exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA", "module-info.class")
     }
 
-    jar.get().destinationDirectory = rootDir.resolve("build").resolve("libs")
+    assemble {
+        dependsOn(shadowJar)
+    }
+
+    compileTestJava {
+        enabled = false
+    }
 
     test {
         enabled = false
