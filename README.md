@@ -4,6 +4,8 @@
 
 VoxelMap x SeedMapper is a heavily modified fork of [VoxelMap Updated](https://github.com/fantahund/VoxelMap) that integrates SeedMapper directly into the client and extends VoxelMap with advanced chunk overlays, data sharing, and world-map tooling. Perfect for base and structure loot hunting!
 
+![GIF](https://i.imgur.com/Yi7C2ee.gif)
+
 ## Current Features
 
 ### SeedMapper Core
@@ -36,6 +38,14 @@ VoxelMap x SeedMapper is a heavily modified fork of [VoxelMap Updated](https://g
 - Provides separate SeedMapper structure-icon scale controls for the minimap and fullscreen world map under SeedMapper's World and Structures settings.
 
 ### SeedMap
+
+- Predicts biomes and terrain from the configured seed, independently of explored terrain data.
+- Uses world-aligned sampling across zoom levels, with individual-block biome sampling at close zooms and multiple samples for coarse texels.
+- Gives the visible map priority over off-screen padding when allocating preview resolution, so dragging does not lower the requested detail level.
+- Shows the biome preview first, then refines terrain shading on a bounded, interpolated height grid. SeedMap terrain shading is a prediction rather than a full block-by-block world render.
+- Provides **Preview Resolution** up to **4096** under **World Map → Seed Map**, alongside preview cache, padding, terrain-style, and update-while-moving controls. Existing saved resolution values are preserved.
+- Keeps cursor biome lookups asynchronous and cancels obsolete preview jobs when the map closes or its context changes.
+
 ![SeedMap](https://i.imgur.com/cgqdPWi.jpeg)
 
 #### SeedMapper Menu
@@ -179,12 +189,25 @@ Common commands:
 - Provides coordinate recentering/editing and a player recenter action.
 - Handles deep zoom-out and performance mode with improved texture processing and rendering.
 - Keeps waypoints visible in world-map performance mode when selected.
-- Displays the zoom level while zooming when enabled.
+- Displays the zoom ratio and blocks per pixel in the fullscreen map header.
 - Provides improved waypoint layering, depth handling, label ordering, icon rendering, and highlighted-waypoint alpha.
 - Handles world-map cache locations and chunk readiness checks safely.
 - Protects cache writes and decompression; stale cache data may require clearing after an upgrade.
 - Handles world-map input for right-click actions, coordinate editing, autocomplete, and resizing without losing screen values.
 - Supports player and dimension-aware world-map state, including custom-server dimensions and aliases.
+
+#### Detail, Visibility, and Performance
+
+Fullscreen map detail, visibility, rendering, and zoom controls are in the sidebar options screen under **World Map**.
+
+- **Detail** provides **Full Detail** and **Balanced** presets, independent chunk-trail and new/old-chunk resolutions, explored-terrain resolution, and automatic layer hiding controls. Full Detail keeps all layers visible, uses exact chunk overlays, and selects all explored-terrain pixels.
+- **Visibility by Zoom** provides separate sliders for terrain, chunk trails, trail nodes, new/old chunks, waypoints, waypoint names, entities, and SeedMap biomes. Each slider ends with **Always**.
+- **Rendering** offers **Automatic**, **Cached image**, and **Geometry** overlay modes, image scaling, smoothing, and optional marker reduction while moving or at high counts.
+- **Zoom & Storage** controls the zoom limits, scroll steps per doubling, zoom snapping, and **Retained Zoom View Cache**. Completed views are reused for repeat zooming within a configurable memory budget; older views can be evicted.
+- **Display → Show Loading Bars** enables or disables the individual loading bars at the bottom left.
+- Culls off-screen overlays, caches sparse chunk queries and completed map views, and schedules preview work separately from explored-terrain loading. Geometry is split into batches to stay within the renderer's vertex limit.
+
+Full Detail applies to explored terrain and overlays. SeedMap's preview resolution and terrain shading have their own sampling limits; higher preview resolution requires more computation and memory.
 
 #### SeedMapper Integration
 ![LargeMap](https://i.imgur.com/8ryURxr.png)
@@ -274,6 +297,8 @@ ChunkSync lets you securely share chunk-layer data with other players.
 - Provides screens for locator, loot viewer, ESP profiles, datapacks, saved seeds/maps, and the standalone SeedMap.
 - Provides SeedMapper settings for custom structure salts, treasure cluster scans, Biome Sample Y, and ChunkAnalysis modes.
 - Provides a category-based settings sidebar with per-option tooltips, autocomplete, dependency-aware controls, and category dropdowns.
+- Provides **Advanced → Servers & Seeds → Manage Server Seeds**, with search and **All servers / With seeds / Without seeds** filters.
+- Lists saved Minecraft servers, VoxelMap server/world seed records, and SeedMapper overrides, with controls to copy, edit, or delete a seed. Seed edits preserve waypoint records; deleting a seed does not delete the server's map data.
 - Provides Chunk management UI.
 - Provides ChunkSync management UI for passphrase, sharing, receiving, manual import/export, player layers, and status.
 - Uses the `VoxelMap x SeedMapper by CevAPI` branding.
@@ -312,13 +337,13 @@ Quick disable:
 - Targets Minecraft 26.3 with Fabric API `0.161.0+26.3` and NeoForge `26.3.0.16-beta`.
 - Uses VoxelConfig as a shared library and prebuilds it in GitHub Actions for CI builds.
 - Uses the current project metadata and fork versioning.
-- Names build artifacts `voxelmap-x-seedmapper_<loader>_v<version>.jar`.
+- Names build artifacts `voxelmap-x-seedmapper_<minecraft-version>_<loader>_v<version>.jar`.
 - Integrates with Fabric Mod Menu for the configuration screen.
 - Provides Cubiomes Minecraft-version selection with an automatic client-version mode.
 
 Example outputs:
-- `build/libs/voxelmap-x-seedmapper_fabric_v0.10.jar`
-- `build/libs/voxelmap-x-seedmapper_neoforge_v0.10.jar`
+- `build/libs/voxelmap-x-seedmapper_26.3_fabric_v0.13.jar`
+- `build/libs/voxelmap-x-seedmapper_26.3_neoforge_v0.13.jar`
 
 ## Platform Support
 - Fabric for Minecraft 26.3.

@@ -13,6 +13,7 @@ public final class CellGrid {
     public final int width;
     public final int height;
     public final boolean[] cells;
+    private final java.util.BitSet occupied = new java.util.BitSet();
 
     public CellGrid(int minX, int minZ, int width, int height) {
         this.minX = minX;
@@ -26,7 +27,9 @@ public final class CellGrid {
         int gx = x - minX;
         int gz = z - minZ;
         if (gx >= 0 && gx < width && gz >= 0 && gz < height) {
-            cells[gz * width + gx] = true;
+            int index = gz * width + gx;
+            cells[index] = true;
+            occupied.set(index);
         }
     }
 
@@ -34,6 +37,22 @@ public final class CellGrid {
         int gx = x - minX;
         int gz = z - minZ;
         return gx >= 0 && gx < width && gz >= 0 && gz < height && cells[gz * width + gx];
+    }
+
+    public int nextOccupied(int from) {
+        int index = occupied.nextSetBit(from);
+        while (index >= 0 && !cells[index]) index = occupied.nextSetBit(index + 1);
+        return index;
+    }
+
+    public CellGrid coarsen(int factor) {
+        int x = Math.floorDiv(minX, factor), z = Math.floorDiv(minZ, factor);
+        CellGrid coarse = new CellGrid(x, z, Math.floorDiv(minX + width - 1, factor) - x + 1,
+                Math.floorDiv(minZ + height - 1, factor) - z + 1);
+        for (int i = nextOccupied(0); i >= 0; i = nextOccupied(i + 1)) {
+            coarse.mark(Math.floorDiv(minX + i % width, factor), Math.floorDiv(minZ + i / width, factor));
+        }
+        return coarse;
     }
 
     public boolean isEmpty() {

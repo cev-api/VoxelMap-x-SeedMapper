@@ -6,6 +6,8 @@ import com.mamiyaotaru.voxelmap.persistent.explored.ExploredV3Migrator;
 import com.mamiyaotaru.voxelmap.persistent.ThreadManager;
 import com.mamiyaotaru.voxelmap.persistent.VoxelMapDataConfig;
 import com.mamiyaotaru.voxelmap.util.CellGrid;
+import com.mamiyaotaru.voxelmap.util.ChunkBounds;
+import com.mamiyaotaru.voxelmap.persistent.explored.ExploredCellQuery;
 import com.mamiyaotaru.voxelmap.util.GameVariableAccessShim;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ServerData;
@@ -27,13 +29,39 @@ public class ExploredChunksManager {
 
     private final Object worldLock = new Object();
     private volatile StoreCtx ctx;        // null until the first world is tracked
-    private String loadedWorldKey = "";   // main-thread only (written under worldLock)
+    private volatile String loadedWorldKey = "";   // main-thread only (written under worldLock)
     private volatile int worldGen = 0;    // bumped on each world (re)load / clear
     private Integer lastChunkX;
     private Integer lastChunkZ;
     private long lastFlushMs = 0L;
     private volatile boolean loadIncomplete = false;
     private volatile java.util.Map<String, StoreCtx> exploredPlayerLayers = java.util.Map.of();
+
+    private final java.util.Map<String, StoreCtx> readContexts = new java.util.LinkedHashMap<>(16, 0.75F, true);
+    private final java.util.Map<String, java.util.Map<String, StoreCtx>> readPlayerContexts = new java.util.LinkedHashMap<>(4, 0.75F, true);
+
+    public ExploredCellQuery prepareCells(ChunkBounds bounds, int cellSize, Identifier dimension, String slug) {
+        StoreCtx c = slug == null ? resolveStore(dimension)
+                : resolvePlayerLayerStore(slug, dimension == null ? loadedWorldKey : getWorldKeyForDimension(dimension));
+        return c == null ? null : new ExploredCellQuery(c.store(), c.loader(), bounds, cellSize);
+    }
+
+    public synchronized java.util.Set<String> playerLayerSlugs(Identifier dimension) {
+        String key = dimension == null ? loadedWorldKey : getWorldKeyForDimension(dimension);
+        if (key.equals(loadedWorldKey)) return exploredPlayerLayers.keySet();
+        return playerContexts(key).keySet();
+    }
+
+    private synchronized java.util.Map<String, StoreCtx> playerContexts(String key) {
+        java.util.Map<String, StoreCtx> layers = readPlayerContexts.computeIfAbsent(key, this::loadPlayerLayers);
+        while (readPlayerContexts.size() > 4) readPlayerContexts.remove(readPlayerContexts.keySet().iterator().next());
+        return layers;
+    }
+
+    private synchronized void invalidateReadContexts() {
+        readContexts.clear();
+        readPlayerContexts.clear();
+    }
 
     public void onTick() {
         if (!ensureTrackingWorld()) {
@@ -237,6 +265,7 @@ public class ExploredChunksManager {
     }
 
     public int importDimensionExplored(String dimension, long[] chunks) {
+        invalidateReadContexts();
         if (chunks.length == 0) {
             return 0;
         }
@@ -258,6 +287,7 @@ public class ExploredChunksManager {
     }
 
     public int importPlayerExplored(String slug, String dimension, long[] chunks) {
+        invalidateReadContexts();
         if (chunks.length == 0) {
             return 0;
         }
@@ -285,6 +315,7 @@ public class ExploredChunksManager {
     }
 
     public boolean removePlayerLayer(String slug) {
+        invalidateReadContexts();
         if (exploredPlayerLayers.containsKey(slug)) {
             java.util.Map<String, StoreCtx> updated = new java.util.LinkedHashMap<>(exploredPlayerLayers);
             updated.remove(slug);
@@ -334,6 +365,7 @@ public class ExploredChunksManager {
     }
 
     public void clearCurrentWorld() {
+        invalidateReadContexts();
         synchronized (worldLock) {
             if (ctx == null) {
                 return;
@@ -353,7 +385,7 @@ public class ExploredChunksManager {
     /**
      * Resolves the appropriate StoreCtx for the viewed dimension.
      * If viewedDimension is null or matches the player's current dimension, uses the tracked ctx.
-     * Otherwise, creates a temporary read-only store that queries the disk directly (no async loader).
+     * Otherwise, retains a bounded dimension context with asynchronous container loading.
      */
     private StoreCtx resolveStore(Identifier viewedDimension) {
         if (viewedDimension == null) {
@@ -369,21 +401,15 @@ public class ExploredChunksManager {
             }
             return ctx;
         }
-        // Different dimension — create a temporary read-only store (no async loading for now;
-        // data loads synchronously on first access via the store's own lazy-load mechanism).
-        Path v3Dir = v3DirFor(viewedKey);
-        ExploredDiskStore store = new ExploredDiskStore(v3Dir);
-        return new StoreCtx(store, null);
+        synchronized (this) {
+            StoreCtx result = readContexts.computeIfAbsent(viewedKey, key -> newContext(v3DirFor(key)));
+            while (readContexts.size() > 4) readContexts.remove(readContexts.keySet().iterator().next());
+            return result;
+        }
     }
 
     private StoreCtx resolvePlayerLayerStore(String slug, String worldKey) {
-        if (worldKey.equals(loadedWorldKey)) {
-            return exploredPlayerLayers.get(slug);
-        }
-        // Different dimension's player layer — create temporary read-only store
-        Path v3Dir = playerV3Dir(worldKey, slug);
-        ExploredDiskStore store = new ExploredDiskStore(v3Dir);
-        return new StoreCtx(store, null);
+        return worldKey.equals(loadedWorldKey) ? exploredPlayerLayers.get(slug) : playerContexts(worldKey).get(slug);
     }
 
     private String getWorldKeyForDimension(Identifier dimensionId) {
@@ -439,6 +465,7 @@ public class ExploredChunksManager {
             if (old != null) {
                 old.store().flush();
             }
+            invalidateReadContexts();
             loadedWorldKey = worldKey;
             worldGen++;
             Path v3Dir = v3DirFor(worldKey);
@@ -475,7 +502,7 @@ public class ExploredChunksManager {
 
     private StoreCtx newContext(Path v3Dir) {
         ExploredDiskStore store = new ExploredDiskStore(v3Dir);
-        return new StoreCtx(store, new ExploredAsyncLoader(store, ThreadManager.executorService));
+        return new StoreCtx(store, new ExploredAsyncLoader(store, ThreadManager.overlayExecutorService));
     }
 
     private void markExploredPath(ExploredDiskStore store, int startX, int startZ, int endX, int endZ) {

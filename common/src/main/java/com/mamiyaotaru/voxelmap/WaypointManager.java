@@ -698,6 +698,14 @@ public class WaypointManager implements IReloadListener {
         this.saveWaypoints();
     }
 
+    /** Refresh the live seed map after editing the persisted header through Advanced. */
+    public void updateStoredWorldSeed(String storageKey, String value) {
+        this.worldSeeds.remove(storageKey);
+        String key = TextUtils.descrubName(storageKey);
+        this.worldSeeds.remove(key);
+        if (!value.isBlank()) this.worldSeeds.put(key, value);
+    }
+
     public void saveWaypoints() {
         this.settingsFile = VoxelConstants.getVoxelMapInstance().getDataStore().getPointsFile();
         File saveDir = this.settingsFile.getParentFile();
@@ -820,7 +828,7 @@ public class WaypointManager implements IReloadListener {
                     for (String pair : worldSeedPairs) {
                         String[] worldSeedPair = pair.split("#");
                         if (worldSeedPair.length == 2) {
-                            this.worldSeeds.put(worldSeedPair[0], worldSeedPair[1]);
+                            this.worldSeeds.put(TextUtils.descrubName(worldSeedPair[0]), worldSeedPair[1]);
                         }
                     }
 

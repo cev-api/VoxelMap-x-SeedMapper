@@ -45,6 +45,8 @@ import com.mamiyaotaru.voxelmap.util.BackgroundImageInfo;
 import com.mamiyaotaru.voxelmap.util.BiomeMapData;
 import com.mamiyaotaru.voxelmap.util.BiomeRepository;
 import com.mamiyaotaru.voxelmap.util.CellGrid;
+import com.mamiyaotaru.voxelmap.util.ChunkBounds;
+import com.mamiyaotaru.voxelmap.persistent.explored.ExploredCellQuery;
 import com.mamiyaotaru.voxelmap.util.ColorUtils;
 import com.mamiyaotaru.voxelmap.util.CommandUtils;
 import com.mamiyaotaru.voxelmap.util.AppChatMessages;
@@ -108,7 +110,6 @@ import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.Locale;
 public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
@@ -139,7 +140,6 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     private int top;
     private int bottom;
     private boolean oldNorth;
-    private boolean lastStill;
     private boolean editingCoordinates;
     private boolean lastEditingCoordinates;
     private EditBox coordinateXInput;
@@ -190,7 +190,13 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     private boolean closed;
     private CachedRegion[] regions = new CachedRegion[0];
     BackgroundImageInfo backGroundImageInfo;
-    private final BiomeMapData biomeMapData = new BiomeMapData(760, 360);
+    private final WorldMapViewCache<BiomeViewKey, BiomeMapData> biomeViews = new WorldMapViewCache<>(4L << 20, data -> (long) data.getWidth() * data.getHeight() * 32);
+    private static final CachedRegion[] NO_REGIONS = new CachedRegion[0];
+    private BiomeDiskSource biomeDiskSource;
+    private record BiomeDiskSource(PersistentMap map, net.minecraft.client.multiplayer.ClientLevel world, String worldName,
+            String subworld, Identifier dimension, java.io.File directory) { }
+    private record BiomeViewKey(CachedRegion[] regions, BiomeDiskSource disk, long version, Identifier dimension, float centerX, float centerY,
+            double mapX, double mapZ, float guiToMap, float mouseToMap, float pixelsX, float pixelsY, boolean north) { }
     private float mapPixelsX;
     private float mapPixelsY;
     private final Object closedLock = new Object();
@@ -254,8 +260,6 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     private String seedMapperLoadingSummary = "";
     private SeedMapperQueryCacheKey seedMapperLoadingKey;
     private long seedMapperLoadingStickyUntilMs = 0L;
-    private static final int SEED_PREVIEW_MIN_TEXTURE_WIDTH = 256;
-    private static final int SEED_PREVIEW_MIN_TEXTURE_HEIGHT = 128;
     private static final int SEED_PREVIEW_CONTOUR_INTERVAL = 16;
     private static final long SEED_PREVIEW_REQUEST_INTERVAL_MOVING_MS = 125L;
     private static final long SEED_PREVIEW_REQUEST_INTERVAL_STILL_MS = 50L;
@@ -264,16 +268,21 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     private SeedPreviewQueryCacheKey seedPreviewPendingKey;
     private int[] seedPreviewPendingPixels;
     private Future<?> seedPreviewFuture;
+    private WorldMapProgress.Task seedPreviewProgress;
     private long seedPreviewLastRequestMs = 0L;
     private boolean seedPreviewLoading = false;
     private boolean seedPreviewDrewThisFrame = false;
     private long seedPreviewLoadingStartedMs = 0L;
     private static final long SEED_PREVIEW_LOADING_DEBOUNCE_MS = 500L;
-    private int seedBiomeNameQuartX = Integer.MIN_VALUE;
-    private int seedBiomeNameQuartZ = Integer.MIN_VALUE;
-    private long seedBiomeNameSeed = 0L;
-    private int seedBiomeNameDimension = Integer.MIN_VALUE;
-    private String seedBiomeNameCached = "";
+    private static final ExecutorService seedBiomeNameWorker = Executors.newSingleThreadExecutor(r -> {
+        Thread thread = new Thread(r, "Voxelmap Cursor Biome");
+        thread.setDaemon(true);
+        return thread;
+    });
+    private final AsyncLatestValue<SeedBiomeNameKey, String> seedBiomeNames =
+            new AsyncLatestValue<>(seedBiomeNameWorker, 128);
+    private record SeedBiomeNameKey(long seed, int dimension, int quartX, int quartZ,
+                                    int mcVersion, int flags, int sampleY) { }
     private final Object seedPreviewLock = new Object();
     private int seedPreviewCacheLimit = 8;
     private final LinkedHashMap<SeedPreviewQueryCacheKey, int[]> seedPreviewCache =
@@ -283,6 +292,15 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                     return size() > Math.max(1, seedPreviewCacheLimit);
                 }
             };
+    private static final ExecutorService seedPreviewCoordinator = Executors.newSingleThreadExecutor(r -> {
+        Thread thread = new Thread(r, "Voxelmap SeedPreview Coordinator");
+        thread.setDaemon(true);
+        return thread;
+    });
+    private record SeedHeightChunk(long seed, int dimension, int version, int flags, int x, int z) { }
+    private final Map<SeedHeightChunk, int[]> seedHeightChunks = new LinkedHashMap<>(256, .75F, true) {
+        @Override protected boolean removeEldestEntry(Map.Entry<SeedHeightChunk, int[]> eldest) { return size() > 8192; }
+    };
     private static final int SEED_PREVIEW_WORKER_THREADS =
             Math.max(1, Math.min(Runtime.getRuntime().availableProcessors() - 1, 8));
     private static final ExecutorService seedPreviewSampler =
@@ -301,33 +319,44 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             });
     private final Map<Integer, Integer> seedPreviewBiomeColorCache = new HashMap<>();
     private final Map<Integer, Boolean> seedPreviewOceanicCache = new HashMap<>();
-    private long exploredLinesLastQueryMs = 0L;
-    private long exploredLinesLastDataVersion = Long.MIN_VALUE;
-    private ExploredLinesQueryCacheKey exploredLinesLastQueryKey;
-    private List<ChunkPos> exploredLinesLastResult = List.of();
-    private CellGrid exploredLinesLastCellResult = new CellGrid(0, 0, 0, 0);
-    private ExploredLineRenderCacheKey exploredLineRenderCacheKey;
-    private ExploredLineMesher.Result exploredLineMesh = ExploredLineMesher.Result.EMPTY;
+    private record OverlayViewKey(ChunkBounds bounds, int cell, long version, boolean literal, boolean outlines, int budget) { }
+    private record TrailView(ExploredLineMesher.Result mesh, List<CellGrid> squares, int cell, boolean outlines) {
+        long bytes() { return (long) mesh.segments().length * 4 + (long) mesh.nodeCoords().length * 4
+                + mesh.nodeLinked().length + (squares == null ? 0 : squares.stream().mapToLong(grid -> grid.cells.length).sum()); }
+    }
+    private record AreaView(List<NewOldChunkRenderRect> oldRects, List<NewOldChunkRenderRect> newRects) {
+        long bytes() { return (long) (oldRects.size() + newRects.size()) * 32; }
+    }
+    private record RenderSourceKey(String layer, OverlayViewKey view) { }
+    private record GeometryKey(Object source, WorldMapGeometry.Bounds bounds, float thickness, boolean nodes) { }
+    private record GeometryView(GeometryKey key, WorldMapGeometry.Quads quads) { }
+    private final WorldMapViewCache<OverlayViewKey, TrailView> trailViews = new WorldMapViewCache<OverlayViewKey, TrailView>(48L << 20, TrailView::bytes).trackProgress(layer -> "Chunk Trails");
+    private final WorldMapViewCache<OverlayViewKey, AreaView> areaViews = new WorldMapViewCache<OverlayViewKey, AreaView>(16L << 20, AreaView::bytes).trackProgress(layer -> "New/Old Chunks");
+    private final WorldMapRasterLayers rasterLayers = new WorldMapRasterLayers();
+    private final WorldMapViewCache<GeometryKey, GeometryView> geometryViews = new WorldMapViewCache<GeometryKey, GeometryView>(64L << 20, view -> view.quads().bytes()).trackProgress(GuiPersistentMap::loadingLayerLabel);
+    private final Map<String, Integer> trailDetail = new HashMap<>();
+    private int trailZoomBucket = Integer.MIN_VALUE;
+    private long overlayProfileLastMs;
+
     private float[] exploredQuadCoords = new float[4096];
     private int[] exploredQuadColors = new int[1024];
     private int exploredQuadCount = 0;
     private final List<PlayerLayerStatusHitbox> playerLayerStatusHitboxes = new ArrayList<>();
     private final List<WaypointLabelBounds> waypointLabelBounds = new ArrayList<>();
+    private final java.util.Map<Long, List<WaypointLabelBounds>> waypointLabelBuckets = new java.util.HashMap<>();
+    private final java.util.Map<Long, WaypointClusterData> waypointIconBuckets = new java.util.HashMap<>();
+    private final java.util.LinkedHashMap<String, Integer> waypointTextWidths = new java.util.LinkedHashMap<>(128, .75F, true);
+    private List<PendingWaypointLabel> lastLabelInput = List.of();
+    private List<PlacedWaypointLabel> lastLabelLayout = List.of();
+    private java.util.Map<Long, WaypointClusterData> lastLabelClusters = java.util.Map.of();
+    private int lastLabelOptions;
+    private String frameWaypointSearch = "";
+    private long waypointFontVersion;
+    private record PlacedWaypointLabel(PendingWaypointLabel label, int row) { }
+
     private final List<PendingWaypointLabel> pendingWaypointLabels = new ArrayList<>();
     private final Map<Long, WaypointClusterData> waypointClusters = new HashMap<>();
-    private NewOldChunkOverlayRenderCacheKey newOldChunkOverlayRenderCacheKey;
-    private List<NewOldChunkRenderRect> newOldChunkOldRects = List.of();
-    private List<NewOldChunkRenderRect> newOldChunkNewRects = List.of();
     private long newOldChunkLastMotionMs = 0L;
-    private long newOldChunkCacheHits = 0L;
-    private long newOldChunkCacheMisses = 0L;
-    private long newOldChunkLastDebugLogMs = 0L;
-    private int newOldChunkLastOldReturned = 0;
-    private int newOldChunkLastNewReturned = 0;
-    private int newOldChunkLastVisibleOld = 0;
-    private int newOldChunkLastVisibleNew = 0;
-    private int newOldChunkLastCells = 0;
-    private long newOldChunkLastRebuildTimeMs = 0L;
     private SeedMapperChestLootWidget seedMapperChestLootWidget;
     private SeedMapperVaultLootWidget seedMapperVaultLootWidget;
     private long seedMapperLootWidgetOpenedAtMs;
@@ -435,7 +464,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
         normalizeWorldMapDimensionView();
         loadPlotsForViewedDimension();
-        this.screenTitle = I18n.get("worldmap.title");
+        this.screenTitle = "VoxelMapper by CevAPI";
         this.buildWorldName();
         this.leftMouseButtonDown = false;
         this.sideMargin = 10;
@@ -496,9 +525,8 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         this.scScale = (float) minecraft.getWindow().getGuiScale();
         this.mapPixelsX = minecraft.getWindow().getWidth();
         this.mapPixelsY = (minecraft.getWindow().getHeight() - (int) (64.0F * this.scScale));
-        this.lastStill = false;
         this.timeAtLastTick = System.currentTimeMillis();
-        ensureSeedPreviewTextureSize(resolveSeedPreviewTextureWidth(), resolveSeedPreviewTextureHeight());
+        ensureSeedPreviewTextureSize(1, 1);
     }
 
     @Override
@@ -592,7 +620,8 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         clearExploredLineCaches();
         synchronized (this.seedPreviewLock) {
             if (this.seedPreviewFuture != null) {
-                this.seedPreviewFuture.cancel(false);
+                this.seedPreviewFuture.cancel(true);
+                if (this.seedPreviewProgress != null) this.seedPreviewProgress.cancel();
                 this.seedPreviewFuture = null;
             }
             this.seedPreviewDisplayedKey = null;
@@ -752,7 +781,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     private void captureZoomAnchor() {
         this.zoomAnchorMapCenterX = this.mapCenterX;
         this.zoomAnchorMapCenterZ = this.mapCenterZ;
-        this.zoomAnchorScale = Math.max(0.0001F, this.scaledWorldMapZoom(this.zoomStart));
+        this.zoomAnchorScale = Math.max(0.0000001F, this.scaledWorldMapZoom(this.zoomStart));
     }
 
     @Override
@@ -782,9 +811,9 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
     private void updateZoomForDirection(float direction, float mouseDirectX, float mouseDirectY) {
         if (direction > 0.0F) {
-            this.zoomGoal *= 1.26F;
+            this.zoomGoal = options.detail.stepZoom(this.zoomGoal, 1);
         } else {
-            this.zoomGoal /= 1.26F;
+            this.zoomGoal = options.detail.stepZoom(this.zoomGoal, -1);
         }
         this.zoomStart = this.zoom;
         this.zoomGoal = this.bindZoom(this.zoomGoal);
@@ -1147,7 +1176,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         }
         if (!this.editingCoordinates && minecraft.options.keyJump.matches(keyEvent)) {
             if (minecraft.options.keyJump.matches(keyEvent)) {
-                this.zoomGoal /= 1.26F;
+                this.zoomGoal = options.detail.stepZoom(this.zoomGoal, -1);
             }
 
             this.zoomStart = this.zoom;
@@ -1302,10 +1331,19 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
+        WorldMapProfiler.begin();
+        WorldMapUploadBudget.beginFrame();
         graphics.pose().pushMatrix();
         this.waypointLabelBounds.clear();
         this.pendingWaypointLabels.clear();
         this.waypointClusters.clear();
+        this.waypointLabelBuckets.clear();
+        this.waypointIconBuckets.clear();
+        this.frameWaypointSearch = getWaypointSearchQuery();
+        long fontVersion = persistentMap.colorManager.worldMapPaletteVersion();
+        if (fontVersion != waypointFontVersion) {
+            waypointFontVersion = fontVersion; waypointTextWidths.clear(); lastLabelInput = List.of();
+        }
         this.buttonWaypoints.active = mapOptions.waypointsAllowed;
         refreshWorldMapControlLabels();
         this.zoomGoal = this.bindZoom(this.zoomGoal);
@@ -1435,26 +1473,32 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         }
         Identifier viewedDimension = getViewedDimensionIdentifier();
         PreviewBounds visibleBounds = getVisibleWorldBounds();
+        long cacheBytes = (long) options.detail.zoomCacheMiB << 20;
+        trailViews.setBudget(cacheBytes / 8); areaViews.setBudget(cacheBytes / 8);
+        geometryViews.setBudget(cacheBytes / 8); rasterLayers.setBudget(cacheBytes / 2);
+        trailViews.beginFrame(); areaViews.beginFrame(); geometryViews.beginFrame(); rasterLayers.beginFrame();
         boolean farZoomPerformanceMode = isFarZoomPerformanceMode();
+        boolean terrainVisible = !farZoomPerformanceMode && layerVisible(WorldMapDetailSettings.Layer.TERRAIN);
         int exploredLeftRegion = left - 1;
         int exploredRightRegion = right + 1;
         int exploredTopRegion = top - 1;
         int exploredBottomRegion = bottom + 1;
         // Keep full visible explored-line bounds in performance mode to avoid "windowed" clipping while panning.
 
+        boolean detailedTerrain = mapToGui >= 0.125F && (long) (right - left + 3) * (bottom - top + 3) <= 128;
         synchronized (this.closedLock) {
             if (this.closed) {
                 return;
             }
-            if (!farZoomPerformanceMode && mapOptions.worldmapAllowed) {
+            if (terrainVisible && mapOptions.worldmapAllowed && detailedTerrain) {
                 this.regions = this.persistentMap.getRegions(left - 1, right + 1, top - 1, bottom + 1, viewedDimension);
             } else {
-                this.regions = new CachedRegion[0];
+                this.regions = NO_REGIONS;
             }
         }
 
         this.backGroundImageInfo = this.waypointManager.getBackgroundImageInfo();
-        if (this.backGroundImageInfo != null && !farZoomPerformanceMode) {
+        if (this.backGroundImageInfo != null && terrainVisible) {
             graphics.blitSprite(RenderPipelines.GUI_TEXTURED, backGroundImageInfo.getImageLocation(), backGroundImageInfo.left, backGroundImageInfo.top + 32, 0, 0, backGroundImageInfo.width, backGroundImageInfo.height, backGroundImageInfo.width, backGroundImageInfo.height);
         }
 
@@ -1467,20 +1511,27 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         float cursorCoordX = 0.0f;
         graphics.pose().scale(this.mapToGui, this.mapToGui);
         if (mapOptions.worldmapAllowed) {
-            if (!farZoomPerformanceMode) {
-                drawSeedPreview(graphics, visibleBounds);
+            WorldMapProfiler.phaseBegin();
+            if (!farZoomPerformanceMode) drawSeedPreview(graphics, visibleBounds);
+            if (terrainVisible) {
+                graphics.nextStratum();
+                this.persistentMap.drawTerrainOverview(graphics, left, right, top, bottom, viewedDimension, mapToGui);
+                graphics.nextStratum();
                 for (CachedRegion region : this.regions) {
                     if (region == null) {
                         continue;
                     }
                     Identifier resource = region.getTextureLocation(this.zoom);
                     if (resource != null) {
-                        graphics.blit(RenderPipelines.GUI_TEXTURED, resource, region.getX() * 256, region.getZ() * 256, 0, 0, region.getWidth(), region.getWidth(), region.getWidth(), region.getWidth());
+                        VoxelMapGuiGraphics.blitMapTile(graphics, resource, region.getX() * 256, region.getZ() * 256, region.getWidth());
                     }
                 }
             }
+            WorldMapProfiler.terrainEnd();
+            WorldMapProfiler.phaseBegin();
             drawExploredChunkLinesWorldMap(graphics, exploredLeftRegion, exploredRightRegion, exploredTopRegion, exploredBottomRegion);
             drawNewOldChunkOverlayWorldMap(graphics, exploredLeftRegion, exploredRightRegion, exploredTopRegion, exploredBottomRegion);
+            WorldMapProfiler.overlaysEnd();
 
             if (!farZoomPerformanceMode && mapOptions.worldBorder) {
                 WorldBorder worldBorder = minecraft.level.getWorldBorder();
@@ -1524,71 +1575,35 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
             graphics.pose().scale(this.guiToMap, this.guiToMap);
             graphics.pose().translate(-(this.centerX - this.mapCenterX * this.mapToGui), -((this.top + this.centerY) - this.mapCenterZ * this.mapToGui));
-            if (!farZoomPerformanceMode && mapOptions.biomeOverlay != 0) {
-                float biomeScaleX = this.mapPixelsX / 760.0F;
-                float biomeScaleY = this.mapPixelsY / 360.0F;
-                boolean still = !this.leftMouseButtonDown;
-                still = still && this.zoom == this.zoomGoal;
-                still = still && this.deltaX == 0.0F && this.deltaY == 0.0F;
-                still = still && ThreadManager.executorService.getActiveCount() == 0;
-                if (still && !this.lastStill) {
-                    int column;
-                    if (this.oldNorth) {
-                        column = (int) Math.floor(Math.floor(this.mapCenterZ - this.centerY * this.guiToMap) / 256.0) - (left - 1);
-                    } else {
-                        column = (int) Math.floor(Math.floor(this.mapCenterX - this.centerX * this.guiToMap) / 256.0) - (left - 1);
+            if (!farZoomPerformanceMode && layerVisible(WorldMapDetailSettings.Layer.BIOMES) && mapOptions.biomeOverlay != 0) {
+                float biomeScaleX = this.mapPixelsX / 190.0F;
+                float biomeScaleY = this.mapPixelsY / 90.0F;
+                boolean still = !mapIsMoving();
+                long version = 0;
+                for (CachedRegion region : regions) if (region != null)
+                    version = 31 * version + region.getMostRecentChange() + (region.isLoaded() ? 1 : 0);
+                BiomeDiskSource disk = null;
+                if (regions.length == 0) {
+                    if (biomeDiskSource == null) {
+                        String worldName = waypointManager.getCurrentWorldName();
+                        String subworld = waypointManager.getCurrentSubworldDescriptor(false);
+                        CachedRegion origin = new CachedRegion(persistentMap, "biome overview", "0,0", minecraft.level, worldName, subworld, 0, 0, viewedDimension, true);
+                        biomeDiskSource = new BiomeDiskSource(persistentMap, minecraft.level, worldName, subworld, viewedDimension, origin.cacheDirectory());
                     }
-
-                    for (int x = 0; x < this.biomeMapData.getWidth(); ++x) {
-                        for (int z = 0; z < this.biomeMapData.getHeight(); ++z) {
-                            float floatMapX;
-                            float floatMapZ;
-                            if (this.oldNorth) {
-                                floatMapX = z * biomeScaleY * this.mouseDirectToMap + (this.mapCenterZ - this.centerY * this.guiToMap);
-                                floatMapZ = -(x * biomeScaleX * this.mouseDirectToMap + (this.mapCenterX - this.centerX * this.guiToMap));
-                            } else {
-                                floatMapX = x * biomeScaleX * this.mouseDirectToMap + (this.mapCenterX - this.centerX * this.guiToMap);
-                                floatMapZ = z * biomeScaleY * this.mouseDirectToMap + (this.mapCenterZ - this.centerY * this.guiToMap);
-                            }
-
-                            int mapX = (int) Math.floor(floatMapX);
-                            int mapZ = (int) Math.floor(floatMapZ);
-                            int regionX = (int) Math.floor(mapX / 256.0F) - (left - 1);
-                            int regionZ = (int) Math.floor(mapZ / 256.0F) - (top - 1);
-                            if (!this.oldNorth && regionX != column || this.oldNorth && regionZ != column) {
-                                this.persistentMap.compress();
-                            }
-
-                            column = !this.oldNorth ? regionX : regionZ;
-                            CachedRegion region = this.regions[regionZ * (right + 1 - (left - 1) + 1) + regionX];
-                            Biome biome = null;
-                            if (region != null && region.getMapData() != null && region.isLoaded() && !region.isEmpty()) {
-                                int inRegionX = mapX - region.getX() * region.getWidth();
-                                int inRegionZ = mapZ - region.getZ() * region.getWidth();
-                                int height = region.getMapData().getHeight(inRegionX, inRegionZ);
-                                int light = region.getMapData().getLight(inRegionX, inRegionZ);
-                                if (height != Short.MIN_VALUE || light != 0) {
-                                    biome = region.getMapData().getBiome(inRegionX, inRegionZ);
-                                }
-                            }
-
-                            this.biomeMapData.setBiome(x, z, biome);
-                        }
-                    }
-
-                    this.persistentMap.compress();
-                    this.biomeMapData.segmentBiomes();
-                    this.biomeMapData.findCenterOfSegments(true);
+                    disk = biomeDiskSource;
+                    MapRegionPack index = MapRegionPack.requestDirectory(disk.directory());
+                    if (index != null) version = index.indexVersion();
                 }
-
-                this.lastStill = still;
+                BiomeViewKey biomeKey = new BiomeViewKey(regions, disk, version, viewedDimension, centerX, centerY,
+                        mapCenterX, mapCenterZ, guiToMap, mouseDirectToMap, mapPixelsX, mapPixelsY, oldNorth);
+                BiomeMapData biomeMapData = biomeViews.get("biomes", biomeKey, still, () -> buildBiomeLabels(biomeKey));
                 boolean displayStill = !this.leftMouseButtonDown;
                 displayStill = displayStill && this.zoom == this.zoomGoal;
                 displayStill = displayStill && this.deltaX == 0.0F && this.deltaY == 0.0F;
-                if (displayStill) {
+                if (displayStill && biomeMapData != null && biomeViews.matches("biomes", biomeKey)) {
                     int minimumSize = (int) (20.0F * this.scScale / biomeScaleX);
                     minimumSize *= minimumSize;
-                    ArrayList<AbstractMapData.BiomeLabel> labels = this.biomeMapData.getBiomeLabels();
+                    ArrayList<AbstractMapData.BiomeLabel> labels = biomeMapData.getBiomeLabels();
                     for (AbstractMapData.BiomeLabel biomeLabel : labels) {
                         if (biomeLabel.segmentSize > minimumSize) {
                             String label = biomeLabel.name; // + " (" + biomeLabel.x + "," + biomeLabel.z + ")";
@@ -1611,8 +1626,9 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         graphics.nextStratum();
         graphics.enableScissor(0, this.top, this.width, this.bottom);
 
+        WorldMapProfiler.phaseBegin();
         Waypoint currentlyHovered = null;
-        boolean showWaypointsInThisMode = !farZoomPerformanceMode || this.options.isShowWaypointsInPerformanceModeEnabled();
+        boolean showWaypointsInThisMode = layerVisible(WorldMapDetailSettings.Layer.WAYPOINTS) && (!farZoomPerformanceMode || this.options.isShowWaypointsInPerformanceModeEnabled());
         if (showWaypointsInThisMode && mapOptions.waypointsAllowed && options.showWaypoints) {
             TextureAtlas textureAtlas = VoxelConstants.getVoxelMapInstance().getWaypointManager().getTextureAtlas();
             for (Waypoint waypoint : waypointManager.getWaypoints()) {
@@ -1636,11 +1652,12 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         hoverdWaypoint = currentlyHovered;
 
         drawQueuedWaypointLabels(graphics);
+        WorldMapProfiler.waypointsEnd();
 
-        if (!farZoomPerformanceMode && mapOptions.worldmapAllowed) {
+        if (!farZoomPerformanceMode && layerVisible(WorldMapDetailSettings.Layer.ENTITIES) && mapOptions.worldmapAllowed) {
             drawSeedMapperFeatureStrip(graphics, mouseX, mouseY);
         }
-        if (!farZoomPerformanceMode) {
+        if (!farZoomPerformanceMode && layerVisible(WorldMapDetailSettings.Layer.ENTITIES)) {
             drawSeedMapperMarkers(graphics, mouseX, mouseY);
             drawContainerMarkers(graphics, mouseX, mouseY);
         }
@@ -1668,7 +1685,9 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         }
 
         if (mapOptions.worldmapAllowed) {
-            graphics.centeredText(this.getFont(), this.screenTitle, this.getWidth() / 2, 16, 0xFFFFFFFF);
+            graphics.centeredText(this.getFont(), this.screenTitle, this.getWidth() / 2, 4, 0xFFFFFFFF);
+            graphics.centeredText(this.getFont(), Component.literal("Zoom " + WorldMapDetailSettings.scaleText(zoom)
+                    + " | " + String.format(java.util.Locale.ROOT, "%,.1f blocks/pixel", guiToMap)), this.getWidth() / 2, 16, 0xFFAAAAAA);
             if (plotMode) {
                 graphics.text(this.getFont(), plotStartSet ? "Plot: click the end point" : "Plot: click the start point",
                         this.getWidth() / 2 - 58, 28, 0xFFFFF27A);
@@ -1721,7 +1740,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 seedHeaderBottom = seedY + this.getFont().lineHeight + 1;
             }
             if (farZoomPerformanceMode) {
-                String perfText = "Performance Mode: Explored chunk lines only";
+                String perfText = "Legacy layer hiding active";
                 int perfWidth = this.getFont().width(perfText);
                 graphics.text(this.getFont(), perfText, this.getWidth() - this.sideMargin - perfWidth, 28, 0xFFAAAAAA);
             }
@@ -1767,423 +1786,355 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             graphics.nextStratum();
             drawBottomStatusTexts(graphics);
         }
+        WorldMapProfiler.end(trailViews.hits(), trailViews.builds(), areaViews.hits(), areaViews.builds());
+    }
+
+    private static BiomeMapData buildBiomeLabels(BiomeViewKey view) {
+        java.util.Map<Long, CompressibleMapData> sources = new java.util.HashMap<>();
+        for (CachedRegion region : view.regions()) if (region != null && region.isLoaded() && !region.isEmpty()) {
+            CompressibleMapData data = region.getMapData();
+            if (data != null) sources.put(packXZ(region.getX(), region.getZ()), data);
+        }
+        MapRegionPack disk = view.disk() == null ? null : MapRegionPack.forDirectory(view.disk().directory());
+        BiomeMapData result = new BiomeMapData(190, 90);
+        float sx = view.pixelsX() / result.getWidth(), sy = view.pixelsY() / result.getHeight();
+        java.util.Map<Long, List<int[]>> samples = new java.util.LinkedHashMap<>();
+        for (int z = 0; z < result.getHeight(); z++) for (int x = 0; x < result.getWidth(); x++) {
+            int wx = (int) Math.floor(view.north() ? z * sy * view.mouseToMap() + view.mapZ() - view.centerY() * view.guiToMap()
+                    : x * sx * view.mouseToMap() + view.mapX() - view.centerX() * view.guiToMap());
+            int wz = (int) Math.floor(view.north() ? -(x * sx * view.mouseToMap() + view.mapX() - view.centerX() * view.guiToMap())
+                    : z * sy * view.mouseToMap() + view.mapZ() - view.centerY() * view.guiToMap());
+            samples.computeIfAbsent(packXZ(Math.floorDiv(wx, 256), Math.floorDiv(wz, 256)), ignored -> new ArrayList<>())
+                    .add(new int[]{x, z, wx & 255, wz & 255});
+        }
+        // Group samples by region: each saved region is decoded once, and its temporary data can be released immediately.
+        for (var entry : samples.entrySet()) {
+            if (Thread.currentThread().isInterrupted()) throw new java.util.concurrent.CancellationException();
+            int rx = (int) (entry.getKey() >> 32), rz = (int) (long) entry.getKey();
+            CompressibleMapData data = sources.get(entry.getKey());
+            if (data == null && disk != null && disk.contains(rx, rz)) {
+                BiomeDiskSource captured = view.disk();
+                data = new CachedRegion(captured.map(), "biome overview", rx + "," + rz, captured.world(), captured.worldName(),
+                        captured.subworld(), rx, rz, captured.dimension(), true, captured.directory()).loadOverviewMapData();
+            }
+            if (data != null) for (int[] sample : entry.getValue())
+                if (data.getHeight(sample[2], sample[3]) != Short.MIN_VALUE || data.getLight(sample[2], sample[3]) != 0)
+                    result.setBiome(sample[0], sample[1], data.getBiome(sample[2], sample[3]));
+        }
+        result.segmentBiomes(); result.findCenterOfSegments(true);
+        return result;
+    }
+
+    private ChunkBounds overlayBounds(int cell) {
+        PreviewBounds bounds = getVisibleWorldBounds();
+        return new ChunkBounds(Math.floorDiv(bounds.minX(), 16), Math.floorDiv(bounds.maxX(), 16),
+                Math.floorDiv(bounds.minZ(), 16), Math.floorDiv(bounds.maxZ(), 16)).align(cell, cell);
+    }
+
+    private WorldMapGeometry.Bounds overlayClipBounds() {
+        PreviewBounds bounds = getVisibleWorldBounds();
+        return new WorldMapGeometry.Bounds(bounds.minX(), bounds.maxX(), bounds.minZ(), bounds.maxZ());
+    }
+
+    private boolean mapIsMoving() {
+        return currentDragging || Math.abs(deltaX) > 0.01F || Math.abs(deltaY) > 0.01F || zoom != zoomGoal;
+    }
+
+    private int exploredCellSize(boolean literal) {
+        if (options.detail.trailResolution != 0) return options.detail.trailResolution;
+        int size = 1;
+        float chunkPixels = 16 * Math.max(0.0000001F, mapToGui);
+        float target = literal ? 0.45F : (mapIsMoving() ? 2.0F : 1.0F);
+        while (size * chunkPixels < target) size *= 2;
+        ChunkBounds bounds = overlayBounds(size);
+        while ((long) (bounds.maxX() - bounds.minX() + 1) * (bounds.maxZ() - bounds.minZ() + 1) / size / size > 750_000L) size *= 2;
+        return size;
+    }
+
+    private final WorldMapTrailTiles trailTiles = new WorldMapTrailTiles();
+
+    private TrailView buildTrailView(ExploredCellQuery query, boolean outlines, boolean nodes, int budget) {
+        if (budget == Integer.MAX_VALUE) {
+            var sparse = query.store().sparseCellsInBounds(query.bounds(), query.cellSize());
+            if (outlines) {
+                List<CellGrid> tiles = new ArrayList<>();
+                for (long key : sparse.tileKeys()) tiles.add(sparse.tile(key, 0));
+                return new TrailView(ExploredLineMesher.Result.EMPTY, tiles, query.cellSize(), true);
+            }
+            return new TrailView(trailTiles.buildSparse(sparse, query.cellSize()), null, query.cellSize(), false);
+        }
+        long snapshotVersion = query.store().versionInBounds(query.bounds(), com.mamiyaotaru.voxelmap.persistent.explored.ExploredDiskStore.selectLevelForCellSize(query.cellSize()));
+        CellGrid cells = query.build();
+        int size = query.cellSize();
+        if (outlines) {
+            while (cellsCount(cells) * 4 > budget) { cells = cells.coarsen(2); size *= 2; }
+            return new TrailView(ExploredLineMesher.Result.EMPTY, List.of(cells), size, true);
+        }
+        ExploredLineMesher.Result mesh;
+        while (true) {
+            mesh = trailTiles.build(query, cells, size, snapshotVersion);
+            int count = mesh.segmentCount();
+            for (int i = 0; i < mesh.nodeCount(); i++) if (nodes || !mesh.nodeLinked()[i]) count++;
+            if (count <= budget || size >= 1_048_576) break;
+            cells = cells.coarsen(2);
+            size *= 2;
+        }
+        if (!nodes) {
+            int isolated = 0;
+            for (boolean linked : mesh.nodeLinked()) if (!linked) isolated++;
+            float[] centers = new float[isolated * 2];
+            int next = 0;
+            for (int i = 0; i < mesh.nodeCount(); i++) if (!mesh.nodeLinked()[i]) {
+                centers[next++] = mesh.nodeCoords()[i * 2]; centers[next++] = mesh.nodeCoords()[i * 2 + 1];
+            }
+            mesh = new ExploredLineMesher.Result(mesh.segments(), mesh.segmentCount(), centers, new boolean[isolated], isolated);
+        }
+        return new TrailView(mesh, null, size, false);
+    }
+
+    private static int cellsCount(CellGrid cells) {
+        int count = 0;
+        for (int i = cells.nextOccupied(0); i >= 0; i = cells.nextOccupied(i + 1)) count++;
+        return count;
     }
 
     private void drawExploredChunkLinesWorldMap(GuiGraphicsExtractor graphics, int leftRegion, int rightRegion, int topRegion, int bottomRegion) {
-        this.exploredQuadCount = 0;
-        // Clear up front so an early return (overlay off / zero alpha) leaves no stale player-layer labels.
-        this.playerLayerStatusHitboxes.clear();
-        if (!options.showExploredChunks) {
+        exploredQuadCount = 0;
+        playerLayerStatusHitboxes.clear();
+        if (!options.showExploredChunks || !layerVisible(WorldMapDetailSettings.Layer.TRAILS)) return;
+        int alpha = Mth.clamp((int) Math.round(radarOptions.exploredChunksOpacity * 2.55D), 0, 255);
+        boolean literal = options.isLiteralLineModeEnabled();
+        if (isFarZoomPerformanceMode()) alpha = Math.max(alpha, 210);
+        if (literal) alpha = Math.max(alpha, 235);
+        if (alpha == 0) return;
+        int color = (alpha << 24) | radarOptions.getExploredChunksColorRgb();
+        float thickness = Math.max(0.15F, 1.25F * options.getChunkLineThickness() / Math.max(0.0000001F, mapToGui));
+        Identifier dimension = getViewedDimensionIdentifier();
+        var manager = VoxelConstants.getVoxelMapInstance().getExploredChunksManager();
+        int baseCell = exploredCellSize(literal);
+        int bucket = Math.getExponent(mapToGui);
+        if (bucket != trailZoomBucket) { trailDetail.clear(); trailZoomBucket = bucket; }
+        var slugs = manager.playerLayerSlugs(dimension);
+        int players = 0;
+        for (String slug : slugs) if (ChunkSharePlayerSettings.isEnabled(slug)) players++;
+        boolean outlines = !literal;
+        graphics.nextStratum();
+        drawTrailLayer(graphics, manager, dimension, null, baseCell, thickness, color, literal, outlines, players == 0 ? 65_536 : 32_768);
+        for (String slug : slugs) {
+            if (!ChunkSharePlayerSettings.isEnabled(slug)) continue;
+            drawTrailLayer(graphics, manager, dimension, slug, baseCell, thickness, playerLayerColor(slug, color),
+                    literal, false, Math.max(1, 32_768 / Math.max(1, players)));
+        }
+        if (VoxelConstants.DEBUG && System.currentTimeMillis() - overlayProfileLastMs > 5000) {
+            overlayProfileLastMs = System.currentTimeMillis();
+            VoxelConstants.getLogger().info("World map view caches: trail hits={} builds={} area hits={} builds={} geometryBuilds={}",
+                    trailViews.hits(), trailViews.builds(), areaViews.hits(), areaViews.builds(), geometryViews.builds());
+        }
+    }
+
+    private void drawTrailLayer(GuiGraphicsExtractor graphics, com.mamiyaotaru.voxelmap.ExploredChunksManager manager,
+            Identifier dimension, String slug, int baseCell, float thickness, int color, boolean literal, boolean outlines, int budget) {
+        String name = dimension + ":" + (slug == null ? "self" : slug);
+        boolean automatic = options.detail.trailResolution == 0;
+        if (!automatic) budget = Integer.MAX_VALUE;
+        final int buildBudget = budget;
+        int cell = automatic ? Math.max(baseCell, trailDetail.getOrDefault(name, baseCell)) : baseCell;
+        ChunkBounds bounds = overlayBounds(cell);
+        ExploredCellQuery query = manager.prepareCells(bounds, cell, dimension, slug);
+        if (query == null) return;
+        String layer = name + ":" + query.store().identity();
+        var status = automatic ? query.request() : new ExploredCellQuery.Status(query.store().contentVersionInBounds(bounds, cell), true);
+        boolean nodes = literal && layerVisible(WorldMapDetailSettings.Layer.TRAIL_NODES);
+        OverlayViewKey key = new OverlayViewKey(bounds, cell, status.version(), nodes, outlines, budget);
+        RenderSourceKey requestedSource = new RenderSourceKey(layer, key);
+        if (options.detail.overlayRenderer != 2 && rasterLayers.drawCached(graphics, layer,
+                rasterKey(requestedSource, overlayClipBounds(), thickness, nodes, color))) {
+            trailViews.cancelPending(layer); geometryViews.cancelPending(layer);
             return;
         }
-
-        int minChunkX = leftRegion * 16;
-        int maxChunkX = rightRegion * 16 + 15;
-        int minChunkZ = topRegion * 16;
-        int maxChunkZ = bottomRegion * 16 + 15;
-
-        int centerChunkX = (minChunkX + maxChunkX) >> 1;
-        int centerChunkZ = (minChunkZ + maxChunkZ) >> 1;
-        int radius = Math.max(maxChunkX - centerChunkX, maxChunkZ - centerChunkZ) + 2;
-
-        boolean farZoomPerformanceMode = isFarZoomPerformanceMode();
-        boolean literalLineMode = options.isLiteralLineModeEnabled();
-        int alpha = Mth.clamp((int) Math.round((radarOptions.exploredChunksOpacity / 100.0D) * 255.0D), 0, 255);
-        if (farZoomPerformanceMode) {
-            alpha = Math.max(alpha, 210);
-        }
-        if (literalLineMode) {
-            alpha = Math.max(alpha, 235);
-        }
-        if (alpha <= 0) {
+        TrailView view = trailViews.get(layer, key, status.ready(), () -> buildTrailView(query, outlines, nodes, buildBudget), GuiPersistentMap::sameOverlayView);
+        if (view == null) return;
+        if (automatic) trailDetail.put(name, view.cell());
+        GeometryKey geometryKey = new GeometryKey(new RenderSourceKey(layer, trailViews.displayedKey(layer)), overlayClipBounds(), thickness, nodes);
+        long primitives = view.outlines() ? view.squares().stream().mapToLong(grid -> grid.cells.length * 4L).sum()
+                : (long) view.mesh().segmentCount() + view.mesh().nodeCount();
+        if (useRaster(primitives)) {
+            var rasterKey = rasterKey(geometryKey.source(), geometryKey.bounds(), thickness, nodes, color);
+            rasterLayers.draw(graphics, layer, rasterKey, () -> {
+                try (var painter = new WorldMapRaster.Painter(rasterKey.bounds(), rasterKey.width(), rasterKey.height(), rasterKey.color(), thickness, rasterKey.smooth())) {
+                    if (view.outlines()) {
+                        float width = view.cell() * 16F;
+                        for (CellGrid grid : view.squares()) {
+                            for (int i = grid.nextOccupied(0); i >= 0; i = grid.nextOccupied(i + 1)) {
+                                float x = (grid.minX + i % grid.width) * width, z = (grid.minZ + i / grid.width) * width;
+                                painter.outline(x, z, x + width, z + width);
+                            }
+                        }
+                    } else painter.trails(view.mesh(), thickness, nodes);
+                    return painter.finish();
+                }
+            });
             return;
         }
-
-        int color = (alpha << 24) | (radarOptions.getExploredChunksColorRgb() & 0x00FFFFFF);
-        float thicknessMultiplier = options.getChunkLineThickness();
-        float targetScreenThickness = (literalLineMode ? 1.25F : (farZoomPerformanceMode ? 2.4F : 1.25F)) * thicknessMultiplier;
-        if (literalLineMode) {
-            // Prevent a zoom boundary from making the line effectively sub-pixel and "disappearing".
-            targetScreenThickness = Math.max(0.8F, targetScreenThickness);
-        }
-        float lineThickness = literalLineMode
-                ? Math.max(0.15F, targetScreenThickness / Math.max(0.0001F, this.mapToGui))
-                : Math.max(1.0F, targetScreenThickness / Math.max(0.0001F, this.mapToGui));
-        boolean mapInMotion = currentDragging
-                || Math.abs(this.deltaX) > 0.01F
-                || Math.abs(this.deltaY) > 0.01F
-                || this.zoom != this.zoomGoal;
-        boolean ultraLowDetail = this.mapToGui < 0.20F;
-        int decimationMask = 0;
-        if (!literalLineMode && mapInMotion) {
-            if (this.mapToGui < 0.12F) {
-                decimationMask = 0x7; // keep about 1/8 while moving
-            } else if (this.mapToGui < 0.18F) {
-                decimationMask = 0x3; // keep about 1/4 while moving
-            } else if (this.mapToGui < 0.28F) {
-                decimationMask = 0x1; // keep about 1/2 while moving
-            }
-        }
-        if (!literalLineMode && !mapInMotion && this.mapToGui < 0.10F) {
-            decimationMask = Math.max(decimationMask, 0x3); // keep about 1/4 while still
-        }
-        if (!literalLineMode && this.mapToGui < 0.06F && !farZoomPerformanceMode) {
-            decimationMask = Math.max(decimationMask, 0x1F); // keep about 1/32 at extreme zoom-out
-        }
-        int maxDraw = Integer.MAX_VALUE;
-        if (!literalLineMode) {
-            maxDraw = mapInMotion ? 3000 : 12000;
-            if (ultraLowDetail) {
-                maxDraw = Math.min(maxDraw, mapInMotion ? 700 : 5000);
-            }
-            if (farZoomPerformanceMode) {
-                maxDraw = Math.min(maxDraw, mapInMotion ? 6000 : 12000);
-            } else if (this.mapToGui < 0.10F) {
-                maxDraw = Math.min(maxDraw, mapInMotion ? 1200 : 3000);
-            } else if (this.mapToGui < 0.06F) {
-                maxDraw = Math.min(maxDraw, mapInMotion ? 800 : 1800);
-            }
-        }
-        int maxScanned = Integer.MAX_VALUE;
-        if (!literalLineMode) {
-            if (farZoomPerformanceMode) {
-                maxScanned = mapInMotion ? 250_000 : 500_000;
-            } else if (this.mapToGui < 0.10F) {
-                maxScanned = 120_000;
-            } else if (this.mapToGui < 0.06F) {
-                maxScanned = 80_000;
-            }
-        }
-        int scanned = 0;
-        int drawn = 0;
-        int querySnap;
-        if (literalLineMode) {
-            if (this.mapToGui < 0.012F) {
-                querySnap = mapInMotion ? 4096 : 2048;
-            } else if (this.mapToGui < 0.02F) {
-                querySnap = mapInMotion ? 1024 : 512;
-            } else if (this.mapToGui < 0.05F) {
-                querySnap = mapInMotion ? 512 : 256;
-            } else {
-                querySnap = mapInMotion ? 256 : 128;
-            }
-        } else {
-            querySnap = mapInMotion ? 64 : 32;
-        }
-        int queryMinChunkX = Math.floorDiv(minChunkX, querySnap) * querySnap;
-        int queryMaxChunkX = Math.floorDiv(maxChunkX + querySnap - 1, querySnap) * querySnap;
-        int queryMinChunkZ = Math.floorDiv(minChunkZ, querySnap) * querySnap;
-        int queryMaxChunkZ = Math.floorDiv(maxChunkZ + querySnap - 1, querySnap) * querySnap;
-        ExploredLinesQueryCacheKey queryKey = new ExploredLinesQueryCacheKey(queryMinChunkX, queryMaxChunkX, queryMinChunkZ, queryMaxChunkZ, querySnap, getViewedDimensionIdentifier());
-        long now = System.currentTimeMillis();
-        long minIntervalMs;
-        if (literalLineMode) {
-            if (this.mapToGui < 0.012F) {
-                minIntervalMs = mapInMotion ? 1500L : 3000L;
-            } else if (this.mapToGui < 0.02F) {
-                minIntervalMs = mapInMotion ? 900L : 1800L;
-            } else if (this.mapToGui < 0.05F) {
-                minIntervalMs = mapInMotion ? 600L : 1200L;
-            } else {
-                minIntervalMs = mapInMotion ? 350L : 700L;
-            }
-        } else {
-            minIntervalMs = mapInMotion ? 180L : 350L;
-        }
-        boolean vectorLineMode = literalLineMode || mapInMotion || farZoomPerformanceMode || this.mapToGui < 0.16F;
-        int cellChunkSize = 1;
-        if (literalLineMode) {
-            float chunkScreenSize = 16.0F * this.mapToGui;
-            cellChunkSize = Math.max(1, (int) Math.ceil(0.45F / Math.max(0.0001F, chunkScreenSize)));
-        } else if (vectorLineMode) {
-            if (this.mapToGui < 0.006F) {
-                cellChunkSize = mapInMotion ? 256 : 128;
-            } else if (this.mapToGui < 0.012F) {
-                cellChunkSize = mapInMotion ? 128 : 64;
-            } else if (this.mapToGui < 0.03F) {
-                cellChunkSize = mapInMotion ? 64 : 32;
-            } else if (this.mapToGui < 0.06F) {
-                cellChunkSize = mapInMotion ? 16 : 8;
-            } else if (this.mapToGui < 0.10F) {
-                cellChunkSize = mapInMotion ? 4 : 2;
-            } else {
-                cellChunkSize = mapInMotion ? 2 : 1;
-            }
-        }
-
-        com.mamiyaotaru.voxelmap.ExploredChunksManager exploredChunksManager = VoxelConstants.getVoxelMapInstance().getExploredChunksManager();
-        Identifier viewedDimension = getViewedDimensionIdentifier();
-        long exploredDataVersion = exploredChunksManager.getDataVersion(viewedDimension);
-        boolean queryKeyChanged = exploredLinesLastQueryKey == null || !exploredLinesLastQueryKey.equals(queryKey);
-        boolean queryIntervalElapsed = now - exploredLinesLastQueryMs >= minIntervalMs;
-        boolean dataChanged = exploredLinesLastDataVersion != exploredDataVersion;
-        boolean refreshChunks = exploredLinesLastResult.isEmpty() || queryKeyChanged || (dataChanged && queryIntervalElapsed);
-        if (vectorLineMode) {
-            ExploredLineRenderCacheKey renderCacheKey = new ExploredLineRenderCacheKey(queryKey, cellChunkSize, exploredDataVersion);
-            if (!renderCacheKey.equals(exploredLineRenderCacheKey) || dataChanged) {
-                CellGrid previousCells = exploredLinesLastCellResult;
-                ExploredLineMesher.Result previousMesh = exploredLineMesh;
-                CellGrid queriedCells = exploredChunksManager.getExploredCellsInRange(centerChunkX, centerChunkZ, radius, cellChunkSize, viewedDimension);
-                if (exploredChunksManager.consumeStorageLoadIncomplete()) {
-                    exploredLinesLastCellResult = previousCells;
-                    exploredLineMesh = previousMesh;
-                    exploredLineRenderCacheKey = null;
-                } else {
-                    exploredLinesLastCellResult = queriedCells;
-                    rebuildExploredLineRenderCache(exploredLinesLastCellResult, cellChunkSize, literalLineMode);
-                    exploredLineRenderCacheKey = renderCacheKey;
-                    exploredLinesLastQueryKey = queryKey;
-                    exploredLinesLastQueryMs = now;
-                    exploredLinesLastDataVersion = exploredDataVersion;
+        GeometryView geometry = geometryViews.get(layer, geometryKey, true, () -> {
+            WorldMapGeometry.Quads quads;
+            if (view.outlines()) {
+                WorldMapGeometry.Builder builder = new WorldMapGeometry.Builder();
+                float width = view.cell() * 16.0F;
+                for (CellGrid grid : view.squares()) for (int i = grid.nextOccupied(0); i >= 0; i = grid.nextOccupied(i + 1)) {
+                    float x = (grid.minX + i % grid.width) * width, z = (grid.minZ + i / grid.width) * width;
+                    WorldMapGeometry.Bounds clip = geometryKey.bounds();
+                    if (x > clip.maxX() || x + width < clip.minX() || z > clip.maxZ() || z + width < clip.minZ()) continue;
+                    builder.line(x, z, x + width, z, thickness, clip); builder.line(x, z + width, x + width, z + width, thickness, clip);
+                    builder.line(x, z, x, z + width, thickness, clip); builder.line(x + width, z, x + width, z + width, thickness, clip);
                 }
-            }
-            ExploredLineMesher.Result mesh = exploredLineMesh;
-            float[] segmentCoords = mesh.segments();
-            int segmentCount = mesh.segmentCount();
-            for (int i = 0; i < segmentCount; i++) {
-                int o = i << 2;
-                appendThickInterpolatedLine(segmentCoords[o], segmentCoords[o + 1], segmentCoords[o + 2], segmentCoords[o + 3], lineThickness, color);
-            }
-            if (literalLineMode) {
-                float cellWorldSize = cellChunkSize * 16.0F;
-                float nodeHalf = Math.max(lineThickness * 0.55F, cellWorldSize * 0.04F);
-                boolean ultraFarLiteral = this.mapToGui < 0.03F;
-                float[] nodeCoords = mesh.nodeCoords();
-                boolean[] nodeLinked = mesh.nodeLinked();
-                int nodeCount = mesh.nodeCount();
-                for (int i = 0; i < nodeCount; i++) {
-                    if (!ultraFarLiteral || !nodeLinked[i]) {
-                        float nx = nodeCoords[i << 1];
-                        float nz = nodeCoords[(i << 1) + 1];
-                        appendExploredQuad(nx - nodeHalf, nz - nodeHalf, nx + nodeHalf, nz + nodeHalf, color);
-                    }
-                }
-            }
-            renderPlayerExploredLayers(graphics, exploredChunksManager, centerChunkX, centerChunkZ, radius, cellChunkSize, lineThickness, color, viewedDimension);
-            flushExploredQuads(graphics);
-            return;
-        }
+                quads = builder.build();
+            } else quads = WorldMapGeometry.lines(view.mesh(), geometryKey.bounds(), thickness, nodes);
+            return new GeometryView(geometryKey, quads);
+        }, GuiPersistentMap::sameGeometryView);
+        if (geometry != null) VoxelMapGuiGraphics.fillMapQuads(graphics, geometry.quads().vertices(), geometry.quads().count(), color);
+    }
 
-        if (refreshChunks) {
-            exploredLinesLastResult = new ArrayList<>(exploredChunksManager.getExploredChunksInRange(centerChunkX, centerChunkZ, radius, viewedDimension));
-            exploredLinesLastQueryKey = queryKey;
-            exploredLinesLastQueryMs = now;
-            exploredLinesLastDataVersion = exploredDataVersion;
-        }
+    private static boolean sameOverlayView(OverlayViewKey a, OverlayViewKey b) {
+        return a.bounds().equals(b.bounds()) && a.cell() == b.cell() && a.literal() == b.literal()
+                && a.outlines() == b.outlines() && a.budget() == b.budget();
+    }
 
-        for (ChunkPos chunk : exploredLinesLastResult) {
-            if (++scanned >= maxScanned) {
-                break;
-            }
-            if (drawn >= maxDraw) {
-                break;
-            }
-            int chunkX = chunk.x();
-            int chunkZ = chunk.z();
-            if (chunkX < minChunkX || chunkX > maxChunkX || chunkZ < minChunkZ || chunkZ > maxChunkZ) {
-                continue;
-            }
-            if (decimationMask != 0) {
-                int hash = (chunkX * 73428767) ^ (chunkZ * 912931);
-                if ((hash & decimationMask) != 0) {
-                    continue;
-                }
-            }
-            float minX = chunk.getMinBlockX();
-            float minZ = chunk.getMinBlockZ();
-            float maxX = minX + 16.0F;
-            float maxZ = minZ + 16.0F;
+    private static boolean sameGeometryView(GeometryKey a, GeometryKey b) {
+        return a.bounds().equals(b.bounds()) && a.thickness() == b.thickness() && a.nodes() == b.nodes();
+    }
 
-            appendExploredQuad(minX, minZ, maxX, minZ + lineThickness, color);
-            appendExploredQuad(minX, maxZ - lineThickness, maxX, maxZ, color);
-            appendExploredQuad(minX, minZ, minX + lineThickness, maxZ, color);
-            appendExploredQuad(maxX - lineThickness, minZ, maxX, maxZ, color);
-            drawn++;
-        }
+    private boolean useRaster(long primitives) {
+        return options.detail.overlayRenderer == 1 || (options.detail.overlayRenderer == 0 && primitives > 50_000);
+    }
 
-        renderPlayerExploredLayers(graphics, exploredChunksManager, centerChunkX, centerChunkZ, radius, cellChunkSize, lineThickness, color, viewedDimension);
-        flushExploredQuads(graphics);
+    private WorldMapRasterLayers.Key rasterKey(Object source, WorldMapGeometry.Bounds bounds, float thickness, boolean nodes, int color) {
+        float factor = options.detail.rasterScalePercent / 100F;
+        int width = Math.max(1, Math.min(8192, Math.round((oldNorth ? mapPixelsY : mapPixelsX) * factor)));
+        int height = Math.max(1, Math.min(8192, Math.round((oldNorth ? mapPixelsX : mapPixelsY) * factor)));
+        return new WorldMapRasterLayers.Key(source, bounds, thickness, nodes, color, width, height, options.detail.smoothOverlays);
     }
 
     private void drawNewOldChunkOverlayWorldMap(GuiGraphicsExtractor graphics, int leftRegion, int rightRegion, int topRegion, int bottomRegion) {
-        if (!options.showNewOldChunks || !radarOptions.showNewerNewChunks) {
-            return;
-        }
-        // At extreme zoom-out these overlays are barely legible and can still add frame cost.
-        // Hard-stop rendering at and below 0.020x world map zoom.
-        if (this.zoom <= 0.020F) {
-            return;
-        }
-
-        int minChunkX = leftRegion * 16;
-        int maxChunkX = rightRegion * 16 + 15;
-        int minChunkZ = topRegion * 16;
-        int maxChunkZ = bottomRegion * 16 + 15;
-
-        boolean farZoomPerformanceMode = isFarZoomPerformanceMode();
-        boolean mapInMotion = currentDragging
-                || Math.abs(this.deltaX) > 0.01F
-                || Math.abs(this.deltaY) > 0.01F
-                || this.zoom != this.zoomGoal;
-        long now = System.currentTimeMillis();
-        if (mapInMotion) {
-            newOldChunkLastMotionMs = now;
-        }
-        boolean movingLod = mapInMotion || now - newOldChunkLastMotionMs < 250L;
-
-        int oldAlpha = Mth.clamp((int) Math.round((radarOptions.newerNewChunksOldOpacity / 100.0D) * 255.0D), 0, 255);
-        int newAlpha = Mth.clamp((int) Math.round((radarOptions.newerNewChunksNewOpacity / 100.0D) * 255.0D), 0, 255);
-        if (oldAlpha <= 0 && newAlpha <= 0) {
-            return;
-        }
-
-        int oldColor = (oldAlpha << 24) | (radarOptions.getNewerNewChunksOldColorRgb() & 0x00FFFFFF);
-        int newColor = (newAlpha << 24) | (radarOptions.getNewerNewChunksNewColorRgb() & 0x00FFFFFF);
-
-        int cellChunkSize = getNewOldChunkCellChunkSize(movingLod, farZoomPerformanceMode);
-        int maxDraw = getNewOldChunkMaxDraw(movingLod, farZoomPerformanceMode);
-        int zoomBucket = getNewOldChunkZoomBucket();
-        int querySnap = Math.max(cellChunkSize, movingLod ? 16 : 8);
-        int queryMinChunkX = Math.floorDiv(minChunkX, querySnap) * querySnap;
-        int queryMaxChunkX = Math.floorDiv(maxChunkX + querySnap, querySnap) * querySnap - 1;
-        int queryMinChunkZ = Math.floorDiv(minChunkZ, querySnap) * querySnap;
-        int queryMaxChunkZ = Math.floorDiv(maxChunkZ + querySnap, querySnap) * querySnap - 1;
-
-        NewerNewChunksManager manager = VoxelConstants.getVoxelMapInstance().getNewerNewChunksManager();
-        Identifier viewedDimensionOverlay = getViewedDimensionIdentifier();
-        NewOldChunkOverlayRenderCacheKey cacheKey = new NewOldChunkOverlayRenderCacheKey(
-                queryMinChunkX, queryMaxChunkX, queryMinChunkZ, queryMaxChunkZ,
-                zoomBucket, cellChunkSize, oldColor, newColor, farZoomPerformanceMode, movingLod,
-                maxDraw, manager.getDataVersion(viewedDimensionOverlay), manager.getLoadedWorldKey(viewedDimensionOverlay));
-        if (!cacheKey.equals(newOldChunkOverlayRenderCacheKey)) {
-            List<NewOldChunkRenderRect> previousOldRects = newOldChunkOldRects;
-            List<NewOldChunkRenderRect> previousNewRects = newOldChunkNewRects;
-            rebuildNewOldChunkOverlayRenderCache(manager, cacheKey, viewedDimensionOverlay);
-            long rebuiltDataVersion = manager.getDataVersion(viewedDimensionOverlay);
-            if (manager.consumeStorageLoadIncomplete()) {
-                newOldChunkOverlayRenderCacheKey = null;
-                newOldChunkOldRects = previousOldRects;
-                newOldChunkNewRects = previousNewRects;
-            } else {
-                newOldChunkOverlayRenderCacheKey = rebuiltDataVersion == cacheKey.dataVersion()
-                        ? cacheKey
-                        : new NewOldChunkOverlayRenderCacheKey(cacheKey.minChunkX(), cacheKey.maxChunkX(), cacheKey.minChunkZ(), cacheKey.maxChunkZ(),
-                                cacheKey.zoomBucket(), cacheKey.cellChunkSize(), cacheKey.oldColor(), cacheKey.newColor(),
-                                cacheKey.farZoomPerformanceMode(), cacheKey.movingLod(), cacheKey.maxDraw(), rebuiltDataVersion, cacheKey.worldKey());
-            }
-            newOldChunkCacheMisses++;
-        } else {
-            newOldChunkCacheHits++;
-        }
-
-        // Submit all rects as a single batched GUI element (old first, then new on top) instead of one
-        // element per rect, avoiding the O(N^2) strata sort in the GUI renderer (same fix as explored lines).
-        int rectCount = newOldChunkOldRects.size() + newOldChunkNewRects.size();
-        if (rectCount > 0) {
-            float[] coords = new float[rectCount * 4];
-            int[] colors = new int[rectCount];
-            int i = 0;
-            for (NewOldChunkRenderRect rect : newOldChunkOldRects) {
-                int o = i << 2;
-                coords[o] = rect.minX();
-                coords[o + 1] = rect.minZ();
-                coords[o + 2] = rect.maxX();
-                coords[o + 3] = rect.maxZ();
-                colors[i++] = rect.color();
-            }
-            for (NewOldChunkRenderRect rect : newOldChunkNewRects) {
-                int o = i << 2;
-                coords[o] = rect.minX();
-                coords[o + 1] = rect.minZ();
-                coords[o + 2] = rect.maxX();
-                coords[o + 3] = rect.maxZ();
-                colors[i++] = rect.color();
-            }
-            VoxelMapGuiGraphics.fillRectsBatched(graphics, coords, colors, rectCount);
-        }
-
-        renderPlayerNewOldOverlays(graphics, manager, queryMinChunkX, queryMaxChunkX, queryMinChunkZ, queryMaxChunkZ,
-                cellChunkSize, oldColor, newColor, maxDraw, viewedDimensionOverlay);
-
-        maybeLogNewOldChunkOverlayDebug(manager);
-    }
-
-    private void renderPlayerNewOldOverlays(GuiGraphicsExtractor graphics, NewerNewChunksManager manager,
-            int queryMinChunkX, int queryMaxChunkX, int queryMinChunkZ, int queryMaxChunkZ,
-            int cellChunkSize, int oldColor, int newColor, int maxDraw, Identifier viewedDimension) {
-        java.util.Set<String> slugs = manager.playerLayerSlugs();
-        if (slugs.isEmpty()) {
-            return;
-        }
-        int centerChunkX = (queryMinChunkX + queryMaxChunkX) >> 1;
-        int centerChunkZ = (queryMinChunkZ + queryMaxChunkZ) >> 1;
-        int radius = Math.max(queryMaxChunkX - centerChunkX, queryMaxChunkZ - centerChunkZ) + 2;
-        int effectiveCell = Math.max(1, cellChunkSize);
-
-        java.util.ArrayList<NewOldChunkRenderRect> rects = new java.util.ArrayList<>();
+        if (!options.showNewOldChunks || !radarOptions.showNewerNewChunks || !layerVisible(WorldMapDetailSettings.Layer.NEW_OLD)) return;
+        boolean moving = mapIsMoving();
+        if (moving) newOldChunkLastMotionMs = System.currentTimeMillis();
+        moving |= System.currentTimeMillis() - newOldChunkLastMotionMs < 250;
+        int cell = options.detail.areaResolution == 0 ? getNewOldChunkCellChunkSize(moving, isFarZoomPerformanceMode()) : options.detail.areaResolution;
+        ChunkBounds bounds = overlayBounds(cell);
+        var manager = VoxelConstants.getVoxelMapInstance().getNewerNewChunksManager();
+        Identifier dimension = getViewedDimensionIdentifier();
+        int oldColor = (Mth.clamp((int) Math.round(radarOptions.newerNewChunksOldOpacity * 2.55D), 0, 255) << 24)
+                | radarOptions.getNewerNewChunksOldColorRgb();
+        int newColor = (Mth.clamp((int) Math.round(radarOptions.newerNewChunksNewOpacity * 2.55D), 0, 255) << 24)
+                | radarOptions.getNewerNewChunksNewColorRgb();
+        if ((oldColor >>> 24) == 0 && (newColor >>> 24) == 0) return;
+        var slugs = manager.playerLayerSlugs(dimension);
+        int players = 0;
+        for (String slug : slugs) if (ChunkSharePlayerSettings.isEnabled(slug)) players++;
+        int budget = options.detail.areaResolution == 0 ? Math.min(32_768, getNewOldChunkMaxDraw(moving, isFarZoomPerformanceMode())) : Integer.MAX_VALUE;
+        graphics.nextStratum();
+        drawAreaLayer(graphics, manager, dimension, null, bounds, cell, oldColor, newColor, budget);
         for (String slug : slugs) {
-            if (!ChunkSharePlayerSettings.isEnabled(slug)) {
-                continue;
-            }
-            NewerNewChunksManager.NewOldCellsSnapshot snap =
-                    manager.getPlayerNewOldCellsInRange(slug, centerChunkX, centerChunkZ, radius, effectiveCell, viewedDimension);
-            // greedyMesh consumes the grid; the snapshot grids are freshly built per call so that's fine.
-            rects.addAll(greedyMeshNewOldChunkCells(snap.oldCells(), effectiveCell,
-                    ChunkSharePlayerSettings.colorFor(slug, oldColor), maxDraw));
-            rects.addAll(greedyMeshNewOldChunkCells(snap.newCells(), effectiveCell,
-                    ChunkSharePlayerSettings.colorFor(slug, newColor), maxDraw));
+            if (ChunkSharePlayerSettings.isEnabled(slug)) drawAreaLayer(graphics, manager, dimension, slug, bounds, cell,
+                    playerLayerColor(slug, oldColor), playerLayerColor(slug, newColor), (budget == Integer.MAX_VALUE ? budget : Math.max(1, budget / Math.max(1, players))));
         }
-        if (rects.isEmpty()) {
+    }
+
+    private void drawAreaLayer(GuiGraphicsExtractor graphics, NewerNewChunksManager manager, Identifier dimension,
+            String slug, ChunkBounds bounds, int cell, int oldColor, int newColor, int budget) {
+        var query = manager.prepareCells(bounds, cell, dimension, slug);
+        if (query == null) return;
+        boolean automatic = options.detail.areaResolution == 0;
+        var status = automatic ? query.request() : new ExploredCellQuery.Status(Math.max(Math.max(query.fresh().store().contentVersionInBounds(bounds, cell), query.old().store().contentVersionInBounds(bounds, cell)),
+                Math.max(query.updating().store().contentVersionInBounds(bounds, cell), query.generation().store().contentVersionInBounds(bounds, cell))), true);
+        String layer = "area:" + dimension + ":" + slug + ":" + query.fresh().store().identity();
+        OverlayViewKey key = new OverlayViewKey(bounds, cell, status.version(), false, false, budget);
+        RenderSourceKey requestedSource = new RenderSourceKey(layer, key);
+        var oldImageKey = rasterKey(requestedSource, overlayClipBounds(), 0, false, oldColor);
+        var newImageKey = rasterKey(requestedSource, overlayClipBounds(), 0, false, newColor);
+        if (options.detail.overlayRenderer != 2 && rasterLayers.contains(layer + ":old", oldImageKey) && rasterLayers.contains(layer + ":new", newImageKey)) {
+            rasterLayers.drawCached(graphics, layer + ":old", oldImageKey);
+            rasterLayers.drawCached(graphics, layer + ":new", newImageKey);
+            areaViews.cancelPending(layer); geometryViews.cancelPending(layer + ":old"); geometryViews.cancelPending(layer + ":new");
             return;
         }
-        float[] coords = new float[rects.size() << 2];
-        int[] colors = new int[rects.size()];
-        int i = 0;
-        for (NewOldChunkRenderRect rect : rects) {
-            int o = i << 2;
-            coords[o] = rect.minX();
-            coords[o + 1] = rect.minZ();
-            coords[o + 2] = rect.maxX();
-            coords[o + 3] = rect.maxZ();
-            colors[i++] = rect.color();
-        }
-        VoxelMapGuiGraphics.fillRectsBatched(graphics, coords, colors, rects.size());
-    }
-
-    private void rebuildNewOldChunkOverlayRenderCache(NewerNewChunksManager manager, NewOldChunkOverlayRenderCacheKey cacheKey, Identifier viewedDimension) {
-        long start = System.nanoTime();
-        int centerChunkX = (cacheKey.minChunkX() + cacheKey.maxChunkX()) >> 1;
-        int centerChunkZ = (cacheKey.minChunkZ() + cacheKey.maxChunkZ()) >> 1;
-        int radius = Math.max(cacheKey.maxChunkX() - centerChunkX, cacheKey.maxChunkZ() - centerChunkZ) + 2;
-
-        int remainingDraw = cacheKey.maxDraw();
-        int effectiveCell = Math.max(1, cacheKey.cellChunkSize());
-        NewerNewChunksManager.NewOldCellsSnapshot snapshot = manager.getNewOldCellsInRange(centerChunkX, centerChunkZ, radius, effectiveCell, viewedDimension);
-        newOldChunkLastOldReturned = snapshot.oldChunks();
-        newOldChunkLastNewReturned = snapshot.newChunks();
-        BuildNewOldChunkRectsResult oldResult = buildNewOldChunkRectsFromCells(snapshot.oldCells(), cacheKey.oldColor(), effectiveCell, remainingDraw, newOldChunkLastOldReturned);
-        remainingDraw = Math.max(0, remainingDraw - oldResult.rects().size());
-        BuildNewOldChunkRectsResult newResult = buildNewOldChunkRectsFromCells(snapshot.newCells(), cacheKey.newColor(), effectiveCell, remainingDraw, newOldChunkLastNewReturned);
-
-        newOldChunkOldRects = oldResult.rects();
-        newOldChunkNewRects = newResult.rects();
-        newOldChunkLastVisibleOld = oldResult.visibleChunks();
-        newOldChunkLastVisibleNew = newResult.visibleChunks();
-        newOldChunkLastCells = oldResult.generatedCells() + newResult.generatedCells();
-        newOldChunkLastRebuildTimeMs = (System.nanoTime() - start) / 1_000_000L;
-    }
-
-    private BuildNewOldChunkRectsResult buildNewOldChunkRectsFromCells(CellGrid cells, int color, int cellChunkSize, int maxDraw, int visibleChunks) {
-        if (maxDraw <= 0 || cells.isEmpty()) {
-            return new BuildNewOldChunkRectsResult(List.of(), visibleChunks, 0);
-        }
-        int cellCount = 0;
-        for (boolean b : cells.cells) {
-            if (b) {
-                cellCount++;
+        AreaView view = areaViews.get(layer, key, status.ready(), () -> {
+            if (!automatic) return buildSparseAreas(query, cell);
+            var snap = query.build();
+            CellGrid oldGrid = snap.oldCells(), newGrid = snap.newCells();
+            int size = cell;
+            while (true) {
+                // Greedy meshing consumes its input. Copies retain the grids for a coarser retry.
+                CellGrid oldCopy = copyCells(oldGrid), newCopy = copyCells(newGrid);
+                var oldRects = greedyMeshNewOldChunkCells(oldCopy, size, 0, Integer.MAX_VALUE);
+                var newRects = greedyMeshNewOldChunkCells(newCopy, size, 0, Integer.MAX_VALUE);
+                if (oldRects.size() + newRects.size() <= budget || size >= 1024) return new AreaView(oldRects, newRects);
+                oldGrid = oldGrid.coarsen(2); newGrid = newGrid.coarsen(2); size *= 2;
+                for (int i = oldGrid.nextOccupied(0); i >= 0; i = oldGrid.nextOccupied(i + 1)) newGrid.cells[i] = false;
             }
+        }, GuiPersistentMap::sameOverlayView);
+        if (view == null) return;
+        drawAreaGeometry(graphics, layer + ":old", new RenderSourceKey(layer, areaViews.displayedKey(layer)), view.oldRects(), oldColor);
+        drawAreaGeometry(graphics, layer + ":new", new RenderSourceKey(layer, areaViews.displayedKey(layer)), view.newRects(), newColor);
+    }
+
+    private static CellGrid copyCells(CellGrid source) {
+        CellGrid copy = new CellGrid(source.minX, source.minZ, source.width, source.height);
+        for (int i = source.nextOccupied(0); i >= 0; i = source.nextOccupied(i + 1)) copy.mark(source.minX + i % source.width, source.minZ + i / source.width);
+        return copy;
+    }
+
+    private void drawAreaGeometry(GuiGraphicsExtractor graphics, String layer, RenderSourceKey source, List<NewOldChunkRenderRect> rects, int color) {
+        WorldMapGeometry.Bounds bounds = overlayClipBounds();
+        GeometryKey key = new GeometryKey(source, bounds, 0, false);
+        if (useRaster(rects.size())) {
+            var rasterKey = rasterKey(source, bounds, 0, false, color);
+            rasterLayers.draw(graphics, layer, rasterKey, () -> {
+                try (var painter = new WorldMapRaster.Painter(bounds, rasterKey.width(), rasterKey.height(), color, 1, rasterKey.smooth())) {
+                    int completed = 0;
+                    WorldMapProgress.report("Drawing chunks", 0, rects.size());
+                    for (NewOldChunkRenderRect rect : rects) {
+                        painter.rect(rect.minX(), rect.minZ(), rect.maxX(), rect.maxZ());
+                        if ((++completed & 4095) == 0) WorldMapProgress.report("Drawing chunks", completed, rects.size());
+                    }
+                    return painter.finish();
+                }
+            });
+            return;
         }
-        return new BuildNewOldChunkRectsResult(greedyMeshNewOldChunkCells(cells, cellChunkSize, color, maxDraw), visibleChunks, cellCount);
+        GeometryView geometry = geometryViews.get(layer, key, true, () -> {
+            WorldMapGeometry.Builder builder = new WorldMapGeometry.Builder();
+            for (NewOldChunkRenderRect rect : rects) {
+                if (Thread.currentThread().isInterrupted()) throw new java.util.concurrent.CancellationException();
+                float x0 = Math.max(bounds.minX(), rect.minX()), x1 = Math.min(bounds.maxX(), rect.maxX());
+                float z0 = Math.max(bounds.minZ(), rect.minZ()), z1 = Math.min(bounds.maxZ(), rect.maxZ());
+                if (x1 > x0 && z1 > z0) builder.rect(x0, z0, x1, z1);
+            }
+            return new GeometryView(key, builder.build());
+        }, GuiPersistentMap::sameGeometryView);
+        if (geometry != null) VoxelMapGuiGraphics.fillMapQuads(graphics, geometry.quads().vertices(), geometry.quads().count(), color);
+    }
+
+    private AreaView buildSparseAreas(NewerNewChunksManager.CellQuery query, int size) {
+        var fresh = query.fresh().store().sparseCellsInBounds(query.fresh().bounds(), size);
+        var old = query.old().store().sparseCellsInBounds(query.old().bounds(), size);
+        old.subtract(query.updating().store().sparseCellsInBounds(query.updating().bounds(), size));
+        old.subtract(query.generation().store().sparseCellsInBounds(query.generation().bounds(), size));
+        if (size == 1) old.subtract(fresh); else fresh.subtract(old);
+        List<NewOldChunkRenderRect> oldRects = new ArrayList<>(), newRects = new ArrayList<>();
+        var oldTiles = old.tileKeys(); var freshTiles = fresh.tileKeys();
+        int completed = 0, total = oldTiles.size() + freshTiles.size();
+        WorldMapProgress.report("Meshing tiles", 0, total);
+        for (long tile : oldTiles) {
+            oldRects.addAll(greedyMeshNewOldChunkCells(old.tile(tile, 0), size, 0, Integer.MAX_VALUE));
+            WorldMapProgress.report("Meshing tiles", ++completed, total);
+        }
+        for (long tile : freshTiles) {
+            newRects.addAll(greedyMeshNewOldChunkCells(fresh.tile(tile, 0), size, 0, Integer.MAX_VALUE));
+            WorldMapProgress.report("Meshing tiles", ++completed, total);
+        }
+        return new AreaView(List.copyOf(oldRects), List.copyOf(newRects));
     }
 
     private List<NewOldChunkRenderRect> greedyMeshNewOldChunkCells(CellGrid grid, int cellChunkSize, int color, int maxDraw) {
@@ -2269,181 +2220,25 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         return Integer.MAX_VALUE;
     }
 
-    private int getNewOldChunkMaxQueryResults(int cellChunkSize, int maxDraw) {
-        if (cellChunkSize <= 1 && maxDraw == Integer.MAX_VALUE) {
-            return Integer.MAX_VALUE;
-        }
-        if (maxDraw == Integer.MAX_VALUE) {
-            return 120_000;
-        }
-        return Math.max(8_000, Math.min(120_000, maxDraw * Math.max(4, cellChunkSize)));
-    }
-
-    private int getNewOldChunkZoomBucket() {
-        if (this.mapToGui < 0.03F) {
-            return 0;
-        }
-        if (this.mapToGui < 0.06F) {
-            return 1;
-        }
-        if (this.mapToGui < 0.10F) {
-            return 2;
-        }
-        if (this.mapToGui < 0.18F) {
-            return 3;
-        }
-        return 4;
-    }
-
-    private int getExploredVectorMaxCells(boolean mapInMotion) {
-        if (this.mapToGui < 0.006F) {
-            return mapInMotion ? 700 : 1200;
-        }
-        if (this.mapToGui < 0.012F) {
-            return mapInMotion ? 1000 : 1800;
-        }
-        if (this.mapToGui < 0.03F) {
-            return mapInMotion ? 1800 : 3000;
-        }
-        if (this.mapToGui < 0.06F) {
-            return mapInMotion ? 2500 : 4500;
-        }
-        return mapInMotion ? 3500 : 6000;
-    }
-
-    private int getExploredVectorMaxSegments(boolean mapInMotion) {
-        if (this.mapToGui < 0.006F) {
-            return mapInMotion ? 160 : 260;
-        }
-        if (this.mapToGui < 0.012F) {
-            return mapInMotion ? 220 : 380;
-        }
-        if (this.mapToGui < 0.03F) {
-            return mapInMotion ? 360 : 700;
-        }
-        return mapInMotion ? 650 : 1200;
-    }
-
-    private void maybeLogNewOldChunkOverlayDebug(NewerNewChunksManager manager) {
-        if (!VoxelConstants.DEBUG) {
-            return;
-        }
-        long now = System.currentTimeMillis();
-        if (now - newOldChunkLastDebugLogMs < 5000L) {
-            return;
-        }
-        newOldChunkLastDebugLogMs = now;
-        VoxelConstants.getLogger().info("World map new/old overlay: hits={} misses={} oldReturned={} newReturned={} oldVisible={} newVisible={} cells={} rects={} rebuildMs={} storageFiles={} storageDecoded={} storageMissing={} storageMs={} migrationMs={} version={}",
-                newOldChunkCacheHits, newOldChunkCacheMisses,
-                newOldChunkLastOldReturned, newOldChunkLastNewReturned,
-                newOldChunkLastVisibleOld, newOldChunkLastVisibleNew,
-                newOldChunkLastCells, newOldChunkOldRects.size() + newOldChunkNewRects.size(),
-                newOldChunkLastRebuildTimeMs,
-                manager.getLastLoadedRegionFiles(), manager.getLastDecodedChunks(), manager.getLastSkippedMissingRegionFiles(),
-                manager.getLastStorageLoadTimeMs(), manager.getLastMigrationTimeMs(), manager.getDataVersion());
-    }
-
-    private int drawChunkSquaresWorldMap(GuiGraphicsExtractor graphics, List<ChunkPos> chunks, int minChunkX, int maxChunkX, int minChunkZ, int maxChunkZ, int color, int cellChunkSize, int maxDraw, int startDrawn) {
-        int drawn = startDrawn;
-        if (cellChunkSize > 1) {
-            java.util.HashSet<Long> cells = new java.util.HashSet<>();
-            for (ChunkPos chunk : chunks) {
-                int chunkX = chunk.x();
-                int chunkZ = chunk.z();
-                if (chunkX < minChunkX || chunkX > maxChunkX || chunkZ < minChunkZ || chunkZ > maxChunkZ) {
-                    continue;
-                }
-                int cellX = Math.floorDiv(chunkX, cellChunkSize);
-                int cellZ = Math.floorDiv(chunkZ, cellChunkSize);
-                cells.add(chunkKey(cellX, cellZ));
-            }
-
-            float worldCellSize = 16.0F * cellChunkSize;
-            for (long key : cells) {
-                if (drawn >= maxDraw) {
-                    break;
-                }
-                int cellX = (int) (key >> 32);
-                int cellZ = (int) key;
-                float minX = cellX * worldCellSize;
-                float minZ = cellZ * worldCellSize;
-                VoxelMapGuiGraphics.fillGradient(graphics, minX, minZ, minX + worldCellSize, minZ + worldCellSize, color, color, color, color);
-                drawn++;
-            }
-            return drawn;
-        }
-
-        for (ChunkPos chunk : chunks) {
-            if (drawn >= maxDraw) {
-                break;
-            }
-            int chunkX = chunk.x();
-            int chunkZ = chunk.z();
-            if (chunkX < minChunkX || chunkX > maxChunkX || chunkZ < minChunkZ || chunkZ > maxChunkZ) {
-                continue;
-            }
-
-            float minX = chunk.getMinBlockX();
-            float minZ = chunk.getMinBlockZ();
-            VoxelMapGuiGraphics.fillGradient(graphics, minX, minZ, minX + 16.0F, minZ + 16.0F, color, color, color, color);
-            drawn++;
-        }
-        return drawn;
-    }
-
     private long chunkKey(int x, int z) {
         return (((long) x) << 32) ^ (z & 0xFFFFFFFFL);
     }
 
-    private void rebuildExploredLineRenderCache(CellGrid chunkSet, int cellChunkSize, boolean buildNodes) {
-        exploredLineMesh = ExploredLineMesher.build(
-                chunkSet, cellChunkSize, buildNodes, exploredLineMesh.segmentCount(), exploredLineMesh.nodeCount());
-    }
-
     private void clearExploredLineCaches() {
-        exploredLinesLastQueryMs = 0L;
-        exploredLinesLastDataVersion = Long.MIN_VALUE;
-        exploredLinesLastQueryKey = null;
-        exploredLinesLastResult = List.of();
-        exploredLinesLastCellResult = new CellGrid(0, 0, 0, 0);
-        exploredLineRenderCacheKey = null;
-        exploredLineMesh = ExploredLineMesher.Result.EMPTY;
+        biomeViews.clear(); biomeDiskSource = null;
+        trailTiles.clear();
+        trailViews.clear(); areaViews.clear(); geometryViews.clear(); rasterLayers.clear(); trailDetail.clear();
     }
 
     private static int playerLayerColor(String slug, int alphaSource) {
         return ChunkSharePlayerSettings.colorFor(slug, alphaSource);
     }
 
-    /** Draws each imported player's explored lattice and their old/new area outline, in the player's colour. */
-    private void renderPlayerExploredLayers(GuiGraphicsExtractor graphics, com.mamiyaotaru.voxelmap.ExploredChunksManager mgr,
-            int centerChunkX, int centerChunkZ, int radius, int cellChunkSize, float lineThickness, int selfColor,
-            Identifier viewedDimension) {
-        java.util.Set<String> slugs = mgr.playerLayerSlugs();
-        if (slugs.isEmpty()) {
-            return;
-        }
-        for (String slug : slugs) {
-            if (!ChunkSharePlayerSettings.isEnabled(slug)) {
-                continue;
-            }
-            int layerColor = playerLayerColor(slug, selfColor);
-
-            CellGrid cells = mgr.getPlayerExploredCellsInRange(slug, centerChunkX, centerChunkZ, radius, cellChunkSize, viewedDimension);
-            ExploredLineMesher.Result mesh = ExploredLineMesher.build(cells, cellChunkSize, false, 0, 0);
-            float[] seg = mesh.segments();
-            int segCount = mesh.segmentCount();
-            for (int i = 0; i < segCount; i++) {
-                int o = i << 2;
-                appendThickInterpolatedLine(seg[o], seg[o + 1], seg[o + 2], seg[o + 3], lineThickness, layerColor);
-            }
-        }
-    }
-
     private void drawPlayerLayerStatuses(GuiGraphicsExtractor graphics) {
         this.playerLayerStatusHitboxes.clear();
         java.util.Set<String> slugs = new java.util.LinkedHashSet<>();
-        slugs.addAll(VoxelConstants.getVoxelMapInstance().getExploredChunksManager().playerLayerSlugs());
-        slugs.addAll(VoxelConstants.getVoxelMapInstance().getNewerNewChunksManager().playerLayerSlugs());
+        slugs.addAll(VoxelConstants.getVoxelMapInstance().getExploredChunksManager().playerLayerSlugs(getViewedDimensionIdentifier()));
+        slugs.addAll(VoxelConstants.getVoxelMapInstance().getNewerNewChunksManager().playerLayerSlugs(getViewedDimensionIdentifier()));
         int y = this.top + 5;
         for (String slug : slugs) {
             boolean enabled = ChunkSharePlayerSettings.isEnabled(slug);
@@ -2467,23 +2262,31 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         graphics.text(this.getFont(), text, x, y, textColor);
     }
 
+    static String loadingLayerLabel(String layer) { return layer.startsWith("area:") ? "New/Old Chunks" : "Chunk Trails"; }
+
     private void drawBottomStatusTexts(GuiGraphicsExtractor graphics) {
-        int y = this.bottom - 14;
-        String worldMapStatus = WorldMapLoadStatus.current();
-        if (worldMapStatus != null) {
-            drawStatusText(graphics, worldMapStatus, this.sideMargin + 2, y, 0xFFE0E0E0, 0xFF000000);
-            y -= 12;
+        if (!this.options.showLoadingBars) return;
+        int y = this.bottom - 22;
+        int x = this.sideMargin + 2;
+        int width = Math.min(220, Math.max(80, this.getWidth() / 3));
+        for (WorldMapProgress.Row row : WorldMapProgress.rows()) {
+            if (y < this.top + 16) break;
+            graphics.fill(x - 2, y - 2, x + width + 2, y + 17, 0xD0000000);
+            String text = row.layer() + ": " + (row.percent() < 0 ? "Loading" : row.percent() + "%") + " (" + row.stage() + ")";
+            graphics.text(this.getFont(), this.getFont().plainSubstrByWidth(text, width), x, y, 0xFFE0E0E0);
+            graphics.fill(x, y + 11, x + width, y + 15, 0xFF343434);
+            if (row.percent() >= 0) graphics.fill(x, y + 11, x + width * row.percent() / 100, y + 15, 0xFF00BEE8);
+            else {
+                int offset = (int) ((System.currentTimeMillis() / 15) % Math.max(1, width - 24));
+                graphics.fill(x + offset, y + 11, x + offset + 24, y + 15, 0xFF00BEE8);
+            }
+            y -= 22;
         }
-        if (seedMapperQueryLoading) {
-            drawStatusText(graphics, "Loading SeedMapper: " + (seedMapperLoadingSummary == null || seedMapperLoadingSummary.isBlank() ? "structures" : seedMapperLoadingSummary), this.sideMargin + 2, y, 0xFFE0E0E0, 0xFF000000);
-            y -= 12;
-        }
-        if (this.seedPreviewLoading) {
-            drawStatusText(graphics, "Loading SeedMap terrain...", this.sideMargin + 2, y, 0xFFE0E0E0, 0xFF000000);
-            y -= 12;
-        }
-        if (this.zoom != this.zoomGoal) {
-            drawStatusText(graphics, String.format(java.util.Locale.ROOT, "Zoom: %.3fx", this.zoom), this.sideMargin + 2, y, 0xFFFFFFFF, 0xFF000000);
+        if (seedMapperQueryLoading && y >= this.top + 16) {
+            drawStatusText(graphics, "Structures: Loading", x, y, 0xFFE0E0E0, 0xD0000000);
+            graphics.fill(x, y + 11, x + width, y + 15, 0xFF343434);
+            int offset = (int) ((System.currentTimeMillis() / 15) % Math.max(1, width - 24));
+            graphics.fill(x + offset, y + 11, x + offset + 24, y + 15, 0xFF00BEE8);
         }
     }
 
@@ -2556,13 +2359,13 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             return;
         }
         // Sub-pixel stepping keeps diagonal lines visually continuous while still cheap at far zoom.
-        float step = Math.max(Math.max(1.0F, thickness * 0.45F), 0.35F / Math.max(0.0001F, this.mapToGui));
+        float step = Math.max(Math.max(1.0F, thickness * 0.45F), 0.35F / Math.max(0.0000001F, this.mapToGui));
         if (this.mapToGui < 0.006F) {
-            step = Math.max(step, 10.0F / Math.max(0.0001F, this.mapToGui));
+            step = Math.max(step, 10.0F / Math.max(0.0000001F, this.mapToGui));
         } else if (this.mapToGui < 0.012F) {
-            step = Math.max(step, 7.0F / Math.max(0.0001F, this.mapToGui));
+            step = Math.max(step, 7.0F / Math.max(0.0000001F, this.mapToGui));
         } else if (this.mapToGui < 0.03F) {
-            step = Math.max(step, 4.0F / Math.max(0.0001F, this.mapToGui));
+            step = Math.max(step, 4.0F / Math.max(0.0000001F, this.mapToGui));
         }
         int steps = Math.max(1, (int) Math.ceil(length / step));
         for (int i = 0; i <= steps; i++) {
@@ -2573,8 +2376,12 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         }
     }
 
+    private boolean layerVisible(WorldMapDetailSettings.Layer layer) {
+        return options.detail.visible(layer, zoom);
+    }
+
     private boolean isFarZoomPerformanceMode() {
-        return this.mapToGui < this.options.getPerformanceModeThreshold();
+        return options.automaticLayerHiding && this.mapToGui < this.options.getPerformanceModeThreshold();
     }
 
     private boolean drawPlayer(GuiGraphicsExtractor graphics, Identifier skin, float playerX, float playerZ, int mouseX, int mouseY) {
@@ -2588,13 +2395,14 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
         double wayX = this.mapCenterX - (this.oldNorth ? -playerZ : playerX);
         double wayY = this.mapCenterZ - (this.oldNorth ? playerX : playerZ);
-        float locate = (float) Math.atan2(wayX, wayY);
-        float hypot = (float) Math.sqrt(wayX * wayX + wayY * wayY) * mapToGui;
-
-        double dispX = hypot * Math.sin(locate);
-        double dispY = hypot * Math.cos(locate);
+        double dispX = wayX * mapToGui;
+        double dispY = wayY * mapToGui;
+        float locate = 0;
+        float hypot = 0;
         boolean far = Math.abs(dispX) > borderX || Math.abs(dispY) > borderY;
         if (far) {
+            locate = (float) Math.atan2(wayX, wayY);
+            hypot = (float) Math.hypot(dispX, dispY);
             hypot *= (float) Math.min(borderX / Math.abs(dispX), borderY / Math.abs(dispY));
         }
 
@@ -2607,9 +2415,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             graphics.pose().rotate(locate);
             graphics.pose().translate(-x, -y);
         } else {
-            graphics.pose().rotate(-locate);
-            graphics.pose().translate(0.0F, -hypot);
-            graphics.pose().rotate(locate);
+            graphics.pose().translate((float) -dispX, (float) -dispY);
         }
 
         Vector2f guiVector = graphics.pose().transformPosition(new Vector2f(x, y));
@@ -2670,17 +2476,18 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
         double wayX = this.mapCenterX - (this.oldNorth ? -ptZ : ptX);
         double wayY = this.mapCenterZ - (this.oldNorth ? ptX : ptZ);
-        float locate = (float) Math.atan2(wayX, wayY);
-        float hypot = (float) Math.sqrt(wayX * wayX + wayY * wayY) * mapToGui;
-
-        double dispX = hypot * Math.sin(locate);
-        double dispY = hypot * Math.cos(locate);
+        double dispX = wayX * mapToGui;
+        double dispY = wayY * mapToGui;
+        float locate = 0;
+        float hypot = 0;
         boolean far = Math.abs(dispX) > borderX || Math.abs(dispY) > borderY;
         if (far) {
             if (!options.showDistantWaypoints) {
                 return false;
             }
 
+            locate = (float) Math.atan2(wayX, wayY);
+            hypot = (float) Math.hypot(dispX, dispY);
             hypot *= (float) Math.min(borderX / Math.abs(dispX), borderY / Math.abs(dispY));
         }
 
@@ -2714,9 +2521,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 graphics.pose().translate(0.0F, -hypot);
             }
         } else {
-            graphics.pose().rotate(-locate);
-            graphics.pose().translate(0.0F, -hypot);
-            graphics.pose().rotate(locate);
+            graphics.pose().translate((float) -dispX, (float) -dispY);
         }
 
         Vector2f guiVector = graphics.pose().transformPosition(new Vector2f(x, y));
@@ -2732,9 +2537,22 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             }
         }
 
-        String searchQuery = getWaypointSearchQuery();
+        String searchQuery = frameWaypointSearch;
         boolean searchActive = !searchQuery.isEmpty();
         boolean searchMatch = !searchActive || waypointMatchesSearch(waypoint, searchQuery);
+
+        if (options.clusterWaypointNames && mapToGui < 1.0F && !isHighlighted && !isHovered && !(searchActive && searchMatch)) {
+            long bucket = packXZ(Math.round(screenX / 8), Math.round(screenY / 8));
+            WaypointClusterData cluster = waypointIconBuckets.get(bucket);
+            if (cluster != null) {
+                cluster.count++;
+                graphics.pose().popMatrix();
+                return false;
+            }
+            cluster = new WaypointClusterData(Math.round(screenX), Math.round(screenY));
+            cluster.count = 1;
+            waypointIconBuckets.put(bucket, cluster);
+        }
 
         int iconColor = color == -1
                 ? waypoint.getUnifiedColor(!waypoint.enabled && !isHighlighted && !isHovered ? 0.3F : 1.0F)
@@ -2748,7 +2566,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
         icon.blit(graphics, RenderPipelines.GUI_TEXTURED, x - ICON_WIDTH / 2.0F, y - ICON_HEIGHT / 2.0F, ICON_WIDTH, ICON_HEIGHT, iconColor);
 
-        boolean showLabel = options.showWaypointNames && searchMatch && !far;
+        boolean showLabel = options.showWaypointNames && layerVisible(WorldMapDetailSettings.Layer.WAYPOINT_NAMES) && searchMatch && !far;
         if (showLabel) {
             int labelWidth = textWidth(name);
             float labelBaseY = screenY + ICON_HEIGHT / 2.0F + WAYPOINT_LABEL_PADDING;
@@ -2800,16 +2618,13 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 || Math.abs(this.deltaX) > 0.01F
                 || Math.abs(this.deltaY) > 0.01F
                 || this.zoom != this.zoomGoal;
-        PreviewBounds requestBounds = getSeedPreviewRequestBounds(visibleBounds, mapInMotion);
-        int requestTextureWidth;
-        int requestTextureHeight;
-        if (mapInMotion && this.seedPreviewDisplayedKey != null) {
-            requestTextureWidth = this.seedPreviewDisplayedKey.textureWidth();
-            requestTextureHeight = this.seedPreviewDisplayedKey.textureHeight();
-        } else {
-            requestTextureWidth = resolveSeedPreviewTextureWidth();
-            requestTextureHeight = resolveSeedPreviewTextureHeight();
-        }
+        PreviewBounds requestBounds = getSeedPreviewRequestBounds(visibleBounds);
+        SeedPreviewSampling.Layout sampling = SeedPreviewSampling.viewport(visibleBounds.minX(), visibleBounds.maxX(),
+                visibleBounds.minZ(), visibleBounds.maxZ(), requestBounds.minX(), requestBounds.maxX(),
+                requestBounds.minZ(), requestBounds.maxZ(), this.guiToMap / this.guiToDirectMouse,
+                this.options.getSeedMapPreviewResolution());
+        requestBounds = new PreviewBounds(sampling.minX(), sampling.maxX(), sampling.minZ(), sampling.maxZ());
+        int requestTextureWidth = sampling.width(), requestTextureHeight = sampling.height();
         SeedPreviewQueryCacheKey requestKey = new SeedPreviewQueryCacheKey(
                 seed,
                 getViewedDimensionIdentifier(),
@@ -2829,15 +2644,26 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         synchronized (this.seedPreviewLock) {
             this.seedPreviewCacheLimit = this.options.getSeedMapPreviewCacheSize();
             boolean needNew = this.seedPreviewDisplayedKey == null
-                    || !canReuseSeedPreviewForRequest(this.seedPreviewDisplayedKey, requestKey);
+                    || !canReuseSeedPreviewForRequest(this.seedPreviewDisplayedKey, requestKey, visibleBounds);
             boolean allowRequeue = !mapInMotion
                     || this.options.seedMapPreviewUpdateWhileMoving
                     || this.seedPreviewDisplayedKey == null;
             if (needNew && allowRequeue) {
+                SeedPreviewQueryCacheKey cachedKey = requestKey;
                 int[] cached = this.seedPreviewCache.get(requestKey);
+                if (cached == null) {
+                    // The viewport may fit a retained padded image even if its new
+                    // padding differs. Reuse that image without sampling or uploading
+                    // a succession of nearly identical views while dragging.
+                    for (var entry : this.seedPreviewCache.entrySet()) {
+                        if (canReuseSeedPreviewForRequest(entry.getKey(), requestKey, visibleBounds)) {
+                            cachedKey = entry.getKey(); cached = entry.getValue();
+                        }
+                    }
+                }
                 if (cached != null) {
                     this.seedPreviewPendingPixels = cached;
-                    this.seedPreviewPendingKey = requestKey;
+                    this.seedPreviewPendingKey = cachedKey;
                     this.seedPreviewLoading = false;
                 } else {
                     boolean workerIdle = this.seedPreviewFuture == null || this.seedPreviewFuture.isDone() || this.seedPreviewFuture.isCancelled();
@@ -2862,12 +2688,12 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         }
         this.seedPreviewDrewThisFrame = true;
 
-        float previewSpanX = Math.max(1.0F, this.seedPreviewDisplayedKey.maxX() - this.seedPreviewDisplayedKey.minX());
-        float previewSpanZ = Math.max(1.0F, this.seedPreviewDisplayedKey.maxZ() - this.seedPreviewDisplayedKey.minZ());
-        float minU = (overlapMinX - this.seedPreviewDisplayedKey.minX()) / previewSpanX;
-        float maxU = (overlapMaxX - this.seedPreviewDisplayedKey.minX()) / previewSpanX;
-        float minV = (overlapMinZ - this.seedPreviewDisplayedKey.minZ()) / previewSpanZ;
-        float maxV = (overlapMaxZ - this.seedPreviewDisplayedKey.minZ()) / previewSpanZ;
+        float previewSpanX = Math.max(1.0F, (float) this.seedPreviewDisplayedKey.maxX() - this.seedPreviewDisplayedKey.minX());
+        float previewSpanZ = Math.max(1.0F, (float) this.seedPreviewDisplayedKey.maxZ() - this.seedPreviewDisplayedKey.minZ());
+        float minU = ((float) overlapMinX - this.seedPreviewDisplayedKey.minX()) / previewSpanX;
+        float maxU = ((float) overlapMaxX - this.seedPreviewDisplayedKey.minX()) / previewSpanX;
+        float minV = ((float) overlapMinZ - this.seedPreviewDisplayedKey.minZ()) / previewSpanZ;
+        float maxV = ((float) overlapMaxZ - this.seedPreviewDisplayedKey.minZ()) / previewSpanZ;
         VoxelMapGuiGraphics.blitFloat(
                 graphics,
                 RenderPipelines.GUI_TEXTURED,
@@ -2890,8 +2716,12 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             this.seedPreviewLoadingStartedMs = this.seedPreviewLastRequestMs;
         }
         this.seedPreviewLoading = true;
-        this.seedPreviewFuture = ThreadManager.executorService.submit(() -> {
-            int[] pixels = buildSeedPreviewPixels(requestKey);
+        if (this.seedPreviewProgress != null) this.seedPreviewProgress.cancel();
+        WorldMapProgress.Task task = WorldMapProgress.begin("Seed Map");
+        this.seedPreviewProgress = task;
+        this.seedPreviewFuture = seedPreviewCoordinator.submit(() -> {
+            int[] pixels = WorldMapProgress.run(task, () -> buildSeedPreviewPixels(requestKey));
+            SeedPreviewJobs.checkCancelled();
             synchronized (this.seedPreviewLock) {
                 this.seedPreviewPendingPixels = pixels;
                 this.seedPreviewPendingKey = requestKey;
@@ -2906,23 +2736,26 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 && displayedKey.dimension() == requestKey.dimension()
                 && displayedKey.generatorFlags() == requestKey.generatorFlags()
                 && displayedKey.mcVersion() == requestKey.mcVersion()
-                && displayedKey.settingsHash() == requestKey.settingsHash();
+                && displayedKey.settingsHash() == requestKey.settingsHash()
+                && displayedKey.biomeY() == requestKey.biomeY()
+                && displayedKey.terrainEnabled() == requestKey.terrainEnabled();
     }
 
-    private boolean canReuseSeedPreviewForRequest(SeedPreviewQueryCacheKey displayedKey, SeedPreviewQueryCacheKey requestKey) {
+    private boolean canReuseSeedPreviewForRequest(SeedPreviewQueryCacheKey displayedKey, SeedPreviewQueryCacheKey requestKey, PreviewBounds visibleBounds) {
         return displayedKey.seed() == requestKey.seed()
                 && displayedKey.dimensionIdentifier().equals(requestKey.dimensionIdentifier())
                 && displayedKey.dimension() == requestKey.dimension()
                 && displayedKey.generatorFlags() == requestKey.generatorFlags()
-                && displayedKey.textureWidth() == requestKey.textureWidth()
-                && displayedKey.textureHeight() == requestKey.textureHeight()
+                && ((long) displayedKey.maxX() - displayedKey.minX()) / displayedKey.textureWidth()
+                        <= ((long) requestKey.maxX() - requestKey.minX()) / requestKey.textureWidth()
+                && displayedKey.biomeY() == requestKey.biomeY()
                 && displayedKey.mcVersion() == requestKey.mcVersion()
                 && displayedKey.terrainEnabled() == requestKey.terrainEnabled()
                 && displayedKey.settingsHash() == requestKey.settingsHash()
-                && displayedKey.minX() <= requestKey.minX()
-                && displayedKey.maxX() >= requestKey.maxX()
-                && displayedKey.minZ() <= requestKey.minZ()
-                && displayedKey.maxZ() >= requestKey.maxZ();
+                && displayedKey.minX() <= visibleBounds.minX()
+                && displayedKey.maxX() >= visibleBounds.maxX()
+                && displayedKey.minZ() <= visibleBounds.minZ()
+                && displayedKey.maxZ() >= visibleBounds.maxZ();
     }
 
     private void applyPendingSeedPreview() {
@@ -2949,25 +2782,52 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             SeedMapperNative.ensureLoaded();
             warmupCubiomes(requestKey);
             boolean terrain = requestKey.terrainEnabled();
-            int[] biomeIds = new int[width * height];
-            int[] heights = terrain ? new int[width * height] : null;
-            AtomicBoolean terrainOk = new AtomicBoolean(true);
-            sampleSeedPreviewBands(requestKey, biomeIds, heights, terrainOk);
-            int[] effectiveHeights = (heights != null && terrainOk.get()) ? heights : null;
+            int[] biomeIds = new int[width * height * 4];
+            sampleSeedPreviewBands(requestKey, biomeIds);
+            WorldMapProgress.report("Coloring rows", 0, height);
             for (int y = 0; y < height; y++) {
+                SeedPreviewJobs.checkCancelled();
+                WorldMapProgress.report("Coloring rows", y, height);
                 int rowOffset = y * width;
                 for (int x = 0; x < width; x++) {
                     int idx = rowOffset + x;
-                    int color = resolveSeedPreviewColor(biomeIds[idx], requestKey.mcVersion());
-                    if (effectiveHeights != null) {
-                        color = applySeedPreviewTerrainStyle(color, biomeIds[idx], effectiveHeights, width, x, y);
-                    }
+                    int color = SeedPreviewSampling.average(resolveSeedPreviewColor(biomeIds[idx * 4], requestKey.mcVersion()),
+                            resolveSeedPreviewColor(biomeIds[idx * 4 + 1], requestKey.mcVersion()),
+                            resolveSeedPreviewColor(biomeIds[idx * 4 + 2], requestKey.mcVersion()),
+                            resolveSeedPreviewColor(biomeIds[idx * 4 + 3], requestKey.mcVersion()));
                     pixels[idx] = ColorUtils.premultiplyWithAlpha(color);
                 }
             }
+            if (terrain) {
+                SeedPreviewJobs.checkCancelled();
+                synchronized (this.seedPreviewLock) {
+                    // Keep an immutable biome preview visible while terrain is refined.
+                    this.seedPreviewPendingPixels = pixels.clone();
+                    this.seedPreviewPendingKey = requestKey;
+                }
+                int[] effectiveHeights = sampleSeedPreviewHeights(requestKey);
+                WorldMapProgress.report("Shading rows", 0, height);
+                for (int y = 0; y < height; y++) {
+                    SeedPreviewJobs.checkCancelled();
+                    for (int x = 0; x < width; x++) {
+                        int index = y * width + x;
+                        int color = SeedPreviewSampling.average(resolveSeedPreviewColor(biomeIds[index * 4], requestKey.mcVersion()),
+                                resolveSeedPreviewColor(biomeIds[index * 4 + 1], requestKey.mcVersion()),
+                                resolveSeedPreviewColor(biomeIds[index * 4 + 2], requestKey.mcVersion()),
+                                resolveSeedPreviewColor(biomeIds[index * 4 + 3], requestKey.mcVersion()));
+                        pixels[index] = ColorUtils.premultiplyWithAlpha(applySeedPreviewTerrainStyle(color,
+                                biomeIds[index * 4], effectiveHeights, width, x, y));
+                    }
+                    WorldMapProgress.report("Shading rows", y + 1, height);
+                }
+            }
+        } catch (java.util.concurrent.CancellationException cancelled) {
+            throw cancelled;
         } catch (RuntimeException ex) {
             // Returning the zero-filled buffer renders a blank map, so the cause has to be
             // logged loudly and surfaced to the player rather than only warned about.
+            WorldMapProgress.Task progress = WorldMapProgress.currentTask();
+            if (progress != null) progress.cancel();
             VoxelConstants.getLogger().error("Failed generating SeedMapper world-map preview", ex);
             SeedMapperNative.reportFailureOnce();
         }
@@ -2993,95 +2853,119 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         }
     }
 
-    private void sampleSeedPreviewBands(SeedPreviewQueryCacheKey requestKey, int[] biomeIds, int[] heights, AtomicBoolean terrainOk) {
+    private void sampleSeedPreviewBands(SeedPreviewQueryCacheKey requestKey, int[] biomeIds) {
         int width = requestKey.textureWidth();
         int height = requestKey.textureHeight();
         int sampleY = getSeedPreviewSampleQuartY(requestKey.dimension(), requestKey.biomeY());
-        double spanX = Math.max(1.0D, requestKey.maxX() - requestKey.minX());
-        double spanZ = Math.max(1.0D, requestKey.maxZ() - requestKey.minZ());
-        boolean terrain = heights != null;
+        double spanX = Math.max(1.0D, (double) requestKey.maxX() - requestKey.minX());
+        double spanZ = Math.max(1.0D, (double) requestKey.maxZ() - requestKey.minZ());
         int bands = Math.max(1, Math.min(SEED_PREVIEW_WORKER_THREADS, height));
         List<Future<?>> futures = new ArrayList<>(bands);
+        WorldMapProgress.Task progress = WorldMapProgress.currentTask();
+        java.util.concurrent.atomic.AtomicInteger completedRows = new java.util.concurrent.atomic.AtomicInteger();
+        if (progress != null) progress.update("Sampling rows", 0, height);
         for (int b = 0; b < bands; b++) {
             final int y0 = b * height / bands;
             final int y1 = (b + 1) * height / bands;
             futures.add(seedPreviewSampler.submit(() -> {
-                // Cubiomes uses a process-wide structure-salt callback.  Keep
-                // the complete generator/sample lifetime under the same lock
-                // as locator and ESP work so concurrent map bands cannot race
-                // the callback or native generator state.
-                synchronized (SeedMapperNative.cubiomesLock()) {
+                SeedPreviewJobs.checkCancelled();
                 try (Arena arena = Arena.ofConfined()) {
                     MemorySegment generator = Generator.allocate(arena);
-                    Cubiomes.setupGenerator(generator, requestKey.mcVersion(), requestKey.generatorFlags());
-                    Cubiomes.applySeed(generator, requestKey.dimension(), requestKey.seed());
-                    MemorySegment terrainParams = null;
-                    if (terrain) {
-                        terrainParams = TerrainNoise.allocate(arena);
-                        Cubiomes.setupTerrainNoise(terrainParams, requestKey.mcVersion(), requestKey.generatorFlags());
-                        Cubiomes.initTerrainNoise(terrainParams, requestKey.seed(), requestKey.dimension());
-                    }
-                    MemorySegment generatedHeights = null;
-                    int generatedChunkX = Integer.MIN_VALUE;
-                    int generatedChunkZ = Integer.MIN_VALUE;
-                    int generatedColYMax = requestKey.dimension() == Cubiomes.DIM_END() ? 32 : 16;
-                    if (terrain && requestKey.dimension() != Cubiomes.DIM_OVERWORLD()) {
-                        generatedHeights = arena.allocate(Cubiomes.C_INT, 16L * 16L);
+                    synchronized (SeedMapperNative.cubiomesLock()) {
+                        SeedPreviewJobs.checkCancelled();
+                        Cubiomes.setupGenerator(generator, requestKey.mcVersion(), requestKey.generatorFlags());
+                        Cubiomes.applySeed(generator, requestKey.dimension(), requestKey.seed());
                     }
                     for (int y = y0; y < y1; y++) {
-                        int blockZ = Mth.floor(requestKey.minZ() + (y + 0.5D) * spanZ / height);
-                        int quartZ = blockZ >> 2;
-                        int rowOffset = y * width;
-                        for (int x = 0; x < width; x++) {
-                            int blockX = Mth.floor(requestKey.minX() + (x + 0.5D) * spanX / width);
-                            biomeIds[rowOffset + x] = Cubiomes.getBiomeAt(generator, 4, blockX >> 2, sampleY, quartZ);
-                            if (terrainParams != null) {
-                                if (requestKey.dimension() == Cubiomes.DIM_OVERWORLD()) {
-                                    heights[rowOffset + x] = Cubiomes.samplePreliminarySurfaceLevel(terrainParams, blockX, blockZ);
+                        synchronized (SeedMapperNative.cubiomesLock()) {
+                            SeedPreviewJobs.checkCancelled();
+                            int blockZ = Mth.floor(requestKey.minZ() + (y + 0.5D) * spanZ / height);
+                            int quartZ = blockZ >> 2;
+                            int rowOffset = y * width;
+                            for (int x = 0; x < width; x++) {
+                                if ((x & 31) == 0) SeedPreviewJobs.checkCancelled();
+                                int blockX = Mth.floor(requestKey.minX() + (x + 0.5D) * spanX / width);
+                                int index = (rowOffset + x) * 4;
+                                if (spanX / width <= 4) {
+                                    // Scale 1 applies the game's block-level biome boundary
+                                    // sampling; quart coordinates are only valid at scale 4.
+                                    boolean blockSampling = spanX / width < 4;
+                                    int biome = blockSampling
+                                            ? Cubiomes.getBiomeAt(generator, 1, blockX, sampleY * 4, blockZ)
+                                            : Cubiomes.getBiomeAt(generator, 4, blockX >> 2, sampleY, quartZ);
+                                    java.util.Arrays.fill(biomeIds, index, index + 4, biome);
                                 } else {
-                                    int chunkX = Math.floorDiv(blockX, 16);
-                                    int chunkZ = Math.floorDiv(blockZ, 16);
-                                    if (chunkX != generatedChunkX || chunkZ != generatedChunkZ) {
-                                        generateSurfaceHeightChunk(terrainParams, chunkX, chunkZ,
-                                                generatedColYMax, generatedHeights);
-                                        generatedChunkX = chunkX;
-                                        generatedChunkZ = chunkZ;
+                                    for (int sample = 0; sample < 4; sample++) {
+                                        int sx = Mth.floor(requestKey.minX() + (x + ((sample & 1) == 0 ? .25D : .75D)) * spanX / width);
+                                        int sz = Mth.floor(requestKey.minZ() + (y + ((sample & 2) == 0 ? .25D : .75D)) * spanZ / height);
+                                        biomeIds[index + sample] = Cubiomes.getBiomeAt(generator, 4, sx >> 2, sampleY, sz >> 2);
                                     }
-                                    int localX = Math.floorMod(blockX, 16);
-                                    int localZ = Math.floorMod(blockZ, 16);
-                                    heights[rowOffset + x] = generatedHeights.getAtIndex(
-                                            Cubiomes.C_INT, localX * 16L + localZ);
                                 }
                             }
+                            if (progress != null) progress.update("Sampling rows", completedRows.incrementAndGet(), height);
                         }
                     }
                 }
-                }
             }));
         }
-        awaitSeedPreviewBands(futures);
+        SeedPreviewJobs.await(futures);
     }
 
-    private void generateSurfaceHeightChunk(MemorySegment terrainParams, int chunkX, int chunkZ,
-                                            int colYMax, MemorySegment generatedHeights) {
-        synchronized (SeedMapperNative.cubiomesLock()) {
-            Cubiomes.generateRegion(terrainParams, chunkX, chunkZ, 1, 1,
-                    MemorySegment.NULL, 0, colYMax, generatedHeights, 1);
-        }
-    }
-
-    private void awaitSeedPreviewBands(List<Future<?>> futures) {
-        for (Future<?> future : futures) {
-            try {
-                future.get();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new RuntimeException("Interrupted while sampling SeedMap preview", e);
-            } catch (java.util.concurrent.ExecutionException e) {
-                Throwable cause = e.getCause();
-                throw new RuntimeException("SeedMap preview sampling band failed", cause != null ? cause : e);
+    private int[] sampleSeedPreviewHeights(SeedPreviewQueryCacheKey key) {
+        // Terrain heights need a bounded world-space lattice, not a full 256-column
+        // chunk generation for each high-resolution biome texel. Interpolate the
+        // height field independently so biome resolution can remain high.
+        var layout = SeedPreviewTerrainSampling.layout(key.minX(), key.maxX(), key.minZ(), key.maxZ());
+        int[] coarse = new int[(layout.width() + 1) * (layout.height() + 1)];
+        int rowWidth = layout.width() + 1;
+        WorldMapProgress.report("Sampling terrain", 0, coarse.length);
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment params = TerrainNoise.allocate(arena);
+            synchronized (SeedMapperNative.cubiomesLock()) {
+                SeedPreviewJobs.checkCancelled();
+                Cubiomes.setupTerrainNoise(params, key.mcVersion(), key.generatorFlags());
+                Cubiomes.initTerrainNoise(params, key.seed(), key.dimension());
+            }
+            MemorySegment chunkBuffer = arena.allocate(Cubiomes.C_INT, 256);
+            for (int z = 0; z <= layout.height(); z++) {
+                for (int x = 0; x <= layout.width(); x++) {
+                    SeedPreviewJobs.checkCancelled();
+                    int blockX = layout.minX() + x * layout.step(), blockZ = layout.minZ() + z * layout.step();
+                    int height;
+                    synchronized (SeedMapperNative.cubiomesLock()) {
+                        SeedPreviewJobs.checkCancelled();
+                        if (key.dimension() == Cubiomes.DIM_OVERWORLD()) {
+                            height = Cubiomes.samplePreliminarySurfaceLevel(params, blockX, blockZ);
+                        } else {
+                            int chunkX = Math.floorDiv(blockX, 16), chunkZ = Math.floorDiv(blockZ, 16);
+                            SeedHeightChunk chunkKey = new SeedHeightChunk(key.seed(), key.dimension(), key.mcVersion(), key.generatorFlags(), chunkX, chunkZ);
+                            int[] chunk = this.seedHeightChunks.get(chunkKey);
+                            if (chunk == null) {
+                                Cubiomes.generateRegion(params, chunkX, chunkZ, 1, 1, MemorySegment.NULL, 0,
+                                        key.dimension() == Cubiomes.DIM_END() ? 32 : 16, chunkBuffer, 1);
+                                chunk = new int[256];
+                                for (int i = 0; i < chunk.length; i++) chunk[i] = chunkBuffer.getAtIndex(Cubiomes.C_INT, i);
+                                this.seedHeightChunks.put(chunkKey, chunk);
+                            }
+                            height = chunk[Math.floorMod(blockX, 16) * 16 + Math.floorMod(blockZ, 16)];
+                        }
+                    }
+                    int index = z * rowWidth + x;
+                    coarse[index] = height;
+                    if ((index & 31) == 0) WorldMapProgress.report("Sampling terrain", index + 1, coarse.length);
+                }
             }
         }
+        int[] heights = new int[key.textureWidth() * key.textureHeight()];
+        double step = ((double) key.maxX() - key.minX()) / key.textureWidth();
+        for (int z = 0; z < key.textureHeight(); z++) {
+            SeedPreviewJobs.checkCancelled();
+            for (int x = 0; x < key.textureWidth(); x++) {
+                heights[z * key.textureWidth() + x] = SeedPreviewTerrainSampling.interpolate(layout, coarse,
+                        key.minX() + (x + .5) * step, key.minZ() + (z + .5) * step);
+            }
+        }
+        return heights;
     }
 
     private int applySeedPreviewTerrainStyle(int color, int biomeId, int[] heights, int width, int x, int y) {
@@ -3403,8 +3287,8 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             return;
         }
 
-        boolean lowDetail = mapToGui < 0.35F;
-        boolean ultraLowDetail = mapToGui < 0.20F;
+        boolean lowDetail = options.detail.reduceMarkersWhileMoving && mapToGui < 0.35F;
+        boolean ultraLowDetail = options.detail.reduceMarkersWhileMoving && mapToGui < 0.20F;
         if (!mapInMotion && !lowDetail && markers.size() < 2000) {
             final double priorityX = GameVariableAccessShim.xCoordDouble();
             final double priorityZ = GameVariableAccessShim.zCoordDouble();
@@ -3415,11 +3299,11 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             }));
         }
 
-        int markerLimit = Math.max(200, seedMapperOptions.worldMapMarkerLimit);
-        if (seedMapperOptions.worldMapEntityLimit > 0) {
+        int markerLimit = options.detail.limitMarkerCount ? Math.max(200, seedMapperOptions.worldMapMarkerLimit) : Integer.MAX_VALUE;
+        if (options.detail.limitMarkerCount && seedMapperOptions.worldMapEntityLimit > 0) {
             markerLimit = Math.min(markerLimit, seedMapperOptions.worldMapEntityLimit);
         }
-        if (mapInMotion) {
+        if (mapInMotion && options.detail.reduceMarkersWhileMoving) {
             if (ultraLowDetail) {
                 markerLimit = Math.min(markerLimit, 180);
             } else if (lowDetail) {
@@ -3427,7 +3311,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             }
         }
         int maxTotal = markerLimit;
-        if (mapInMotion) {
+        if (mapInMotion && options.detail.reduceMarkersWhileMoving) {
             maxTotal = Math.min(maxTotal, 1200);
             if (ultraLowDetail) {
                 maxTotal = Math.min(maxTotal, 120);
@@ -3437,12 +3321,12 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         int denseDrawn = 0;
         int totalDrawn = 0;
         int scanned = 0;
-        int maxScanned = mapInMotion ? Math.min(Math.max(2500, markerLimit), 6000) : Integer.MAX_VALUE;
+        int maxScanned = mapInMotion && options.detail.reduceMarkersWhileMoving ? Math.min(Math.max(2500, markerLimit), 6000) : Integer.MAX_VALUE;
         if (mapInMotion && ultraLowDetail) {
             maxScanned = Math.min(maxScanned, 1500);
         }
         int decimationMask = 0;
-        if (mapInMotion) {
+        if (mapInMotion && options.detail.reduceMarkersWhileMoving) {
             if (mapToGui < 0.12F) {
                 decimationMask = 0x7; // keep about 1/8 while moving
             } else if (mapToGui < 0.18F) {
@@ -3973,11 +3857,10 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
         double wayX = this.mapCenterX - (this.oldNorth ? -ptZ : ptX);
         double wayY = this.mapCenterZ - (this.oldNorth ? ptX : ptZ);
-        float locate = (float) Math.atan2(wayX, wayY);
-        float hypot = (float) Math.sqrt(wayX * wayX + wayY * wayY) * mapToGui;
-
-        double dispX = hypot * Math.sin(locate);
-        double dispY = hypot * Math.cos(locate);
+        double dispX = wayX * mapToGui;
+        double dispY = wayY * mapToGui;
+        float locate = 0;
+        float hypot = 0;
         boolean far = Math.abs(dispX) > borderX || Math.abs(dispY) > borderY;
         if (far) {
             return;
@@ -4197,38 +4080,18 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         );
     }
 
-    private int resolveSeedPreviewTextureWidth() {
-        int viewportWidth = Math.max(1, Math.round((this.centerX * 2) * this.guiToDirectMouse));
-        float downsampleFactor = this.guiToMap <= 4.0F ? 1.0F : Mth.clamp(4.0F / this.guiToMap, 0.25F, 1.0F);
-        int targetWidth = Mth.ceil(viewportWidth * downsampleFactor);
-        int maxWidth = Math.max(SEED_PREVIEW_MIN_TEXTURE_WIDTH, this.options.getSeedMapPreviewResolution());
-        return quantizeSeedPreviewTextureSize(targetWidth, SEED_PREVIEW_MIN_TEXTURE_WIDTH, maxWidth);
-    }
-
-    private int resolveSeedPreviewTextureHeight() {
-        int viewportHeight = Math.max(1, Math.round((this.centerY * 2) * this.guiToDirectMouse));
-        float downsampleFactor = this.guiToMap <= 4.0F ? 1.0F : Mth.clamp(4.0F / this.guiToMap, 0.25F, 1.0F);
-        int targetHeight = Mth.ceil(viewportHeight * downsampleFactor);
-        int maxHeight = Math.max(SEED_PREVIEW_MIN_TEXTURE_HEIGHT, this.options.getSeedMapPreviewResolution());
-        return quantizeSeedPreviewTextureSize(targetHeight, SEED_PREVIEW_MIN_TEXTURE_HEIGHT, maxHeight);
-    }
-
-    private int quantizeSeedPreviewTextureSize(int value, int min, int max) {
-        int clamped = Mth.clamp(value, min, max);
-        return Math.max(min, ((clamped + 63) / 64) * 64);
-    }
-
-    private PreviewBounds getSeedPreviewRequestBounds(PreviewBounds visibleBounds, boolean mapInMotion) {
-        int spanX = Math.max(1, visibleBounds.maxX() - visibleBounds.minX());
-        int spanZ = Math.max(1, visibleBounds.maxZ() - visibleBounds.minZ());
-        int span = Math.max(spanX, spanZ);
-        int padding = Math.max(this.options.getSeedMapPreviewPadding(), span / (mapInMotion ? 3 : 4));
-        int snap = Math.max(256, Math.min(8192, Integer.highestOneBit(Math.max(256, padding))));
-        int minX = Math.floorDiv(visibleBounds.minX() - padding, snap) * snap;
-        int maxX = Math.floorDiv(visibleBounds.maxX() + padding + snap - 1, snap) * snap;
-        int minZ = Math.floorDiv(visibleBounds.minZ() - padding, snap) * snap;
-        int maxZ = Math.floorDiv(visibleBounds.maxZ() + padding + snap - 1, snap) * snap;
-        return new PreviewBounds(minX, maxX, minZ, maxZ);
+    private PreviewBounds getSeedPreviewRequestBounds(PreviewBounds visibleBounds) {
+        long spanX = Math.max(1L, (long) visibleBounds.maxX() - visibleBounds.minX());
+        long spanZ = Math.max(1L, (long) visibleBounds.maxZ() - visibleBounds.minZ());
+        long padding = Math.max(this.options.getSeedMapPreviewPadding(), Math.max(spanX, spanZ) / 3);
+        int snap = (int) Math.max(256L, Math.min(8192L, Long.highestOneBit(Math.max(256L, padding))));
+        // Far beyond Minecraft's world border, retain headroom for grid alignment
+        // instead of overflowing int endpoints during very wide zoom transitions.
+        int minX = (int) Math.min(1_000_000_000L, Math.max(-1_000_000_000L, Math.floorDiv((long) visibleBounds.minX() - padding, snap) * snap));
+        int maxX = (int) Math.max(-1_000_000_000L, Math.min(1_000_000_000L, Math.floorDiv((long) visibleBounds.maxX() + padding + snap - 1, snap) * snap));
+        int minZ = (int) Math.min(1_000_000_000L, Math.max(-1_000_000_000L, Math.floorDiv((long) visibleBounds.minZ() - padding, snap) * snap));
+        int maxZ = (int) Math.max(-1_000_000_000L, Math.min(1_000_000_000L, Math.floorDiv((long) visibleBounds.maxZ() + padding + snap - 1, snap) * snap));
+        return new PreviewBounds(Math.min(minX, maxX), Math.max(minX, maxX), Math.min(minZ, maxZ), Math.max(minZ, maxZ));
     }
 
     private void ensureSeedPreviewTextureSize(int width, int height) {
@@ -4267,41 +4130,30 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         if (dimension == Integer.MIN_VALUE) {
             return "";
         }
-        int quartX = blockX >> 2;
-        int quartZ = blockZ >> 2;
-        if (quartX == this.seedBiomeNameQuartX && quartZ == this.seedBiomeNameQuartZ
-                && seed == this.seedBiomeNameSeed && dimension == this.seedBiomeNameDimension) {
-            return this.seedBiomeNameCached;
-        }
+        SeedBiomeNameKey key = new SeedBiomeNameKey(seed, dimension, blockX >> 2, blockZ >> 2,
+                SeedMapperCompat.getMcVersion(), getSeedMapperGeneratorFlags(), getSeedPreviewSampleQuartY(dimension));
+        String name = this.seedBiomeNames.get(key, () -> sampleSeedBiomeName(key));
+        return name == null ? "" : name;
+    }
 
-        String name = "";
+    private String sampleSeedBiomeName(SeedBiomeNameKey key) {
+        // Never acquire the native lock on the render thread: preview generation
+        // can hold it for seconds at high resolutions.
         try {
             SeedMapperNative.ensureLoaded();
-            int mcVersion = SeedMapperCompat.getMcVersion();
-            int generatorFlags = getSeedMapperGeneratorFlags();
-            int sampleY = getSeedPreviewSampleQuartY(dimension);
             synchronized (SeedMapperNative.cubiomesLock()) {
                 try (Arena arena = Arena.ofConfined()) {
                     MemorySegment generator = Generator.allocate(arena);
-                    Cubiomes.setupGenerator(generator, mcVersion, generatorFlags);
-                    Cubiomes.applySeed(generator, dimension, seed);
-                    int biomeId = Cubiomes.getBiomeAt(generator, 4, quartX, sampleY, quartZ);
-                    MemorySegment biomeNameSegment = Cubiomes.biome2str(mcVersion, biomeId);
-                    if (biomeNameSegment != null && biomeNameSegment.address() != 0L) {
-                        name = prettifyBiomeName(biomeNameSegment.getString(0));
-                    }
+                    Cubiomes.setupGenerator(generator, key.mcVersion(), key.flags());
+                    Cubiomes.applySeed(generator, key.dimension(), key.seed());
+                    int biomeId = Cubiomes.getBiomeAt(generator, 4, key.quartX(), key.sampleY(), key.quartZ());
+                    MemorySegment name = Cubiomes.biome2str(key.mcVersion(), biomeId);
+                    return name != null && name.address() != 0L ? prettifyBiomeName(name.getString(0)) : "";
                 }
             }
         } catch (RuntimeException ex) {
-            name = "";
+            return "";
         }
-
-        this.seedBiomeNameQuartX = quartX;
-        this.seedBiomeNameQuartZ = quartZ;
-        this.seedBiomeNameSeed = seed;
-        this.seedBiomeNameDimension = dimension;
-        this.seedBiomeNameCached = name;
-        return name;
     }
 
     private String prettifyBiomeName(String raw) {
@@ -4925,7 +4777,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         return null;
     }
 
-    private long packXZ(int x, int z) {
+    private static long packXZ(int x, int z) {
         return ((long) x << 32) ^ (z & 0xFFFFFFFFL);
     }
 
@@ -4945,47 +4797,37 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     }
 
     private void drawQueuedWaypointLabels(GuiGraphicsExtractor graphics) {
-        if (this.pendingWaypointLabels.isEmpty()) {
-            return;
-        }
-
-        float mapCenterX = this.getWidth() / 2.0F;
-        float mapCenterY = this.top + (this.bottom - this.top) / 2.0F;
-        Comparator<PendingWaypointLabel> comparator = Comparator
-                .comparing(PendingWaypointLabel::searchActive).reversed()
-                .thenComparing(Comparator.comparing(PendingWaypointLabel::searchMatch).reversed())
-                .thenComparing(Comparator.comparing(PendingWaypointLabel::highlighted).reversed())
-                .thenComparingInt(PendingWaypointLabel::labelWidth)
-                .thenComparingDouble(label -> label.distanceToCenter(mapCenterX, mapCenterY));
-        this.pendingWaypointLabels.sort(comparator);
-
-        for (PendingWaypointLabel label : this.pendingWaypointLabels) {
-            int rows = options.clusterWaypointNames ? WAYPOINT_LABEL_LINE_LIMIT : 1;
-            int row = reserveWaypointLabel(label.centerX, label.iconCenterY, label.baseY, label.labelWidth, label.labelHeight, rows);
-            if (row >= 0) {
-                int drawX = Math.round(label.centerX) - label.labelWidth / 2;
-                int lineStep = label.labelHeight + 1;
-                int drawY;
-                if ((row & 1) == 0) {
-                    drawY = Math.round(label.baseY + (row / 2) * lineStep);
-                } else {
-                    drawY = Math.round(label.iconCenterY - ICON_HEIGHT / 2.0F - label.labelHeight - WAYPOINT_LABEL_PADDING - (row / 2) * lineStep);
-                }
-                graphics.text(this.getFont(), label.text, drawX, drawY, label.color, true);
-            } else if (options.clusterWaypointNames) {
-                registerWaypointCluster(label.clusterKey, label.centerX, label.iconCenterY);
+        int layoutOptions = java.util.Objects.hash(options.clusterWaypointNames, top, bottom, width, height);
+        if (layoutOptions != lastLabelOptions || !pendingWaypointLabels.equals(lastLabelInput)) {
+            lastLabelOptions = layoutOptions;
+            lastLabelInput = List.copyOf(pendingWaypointLabels);
+            float centerX = getWidth() / 2.0F, centerY = top + (bottom - top) / 2.0F;
+            pendingWaypointLabels.sort(Comparator.comparing(PendingWaypointLabel::highlighted).reversed()
+                    .thenComparing(Comparator.comparing(PendingWaypointLabel::searchMatch).reversed())
+                    .thenComparingInt(PendingWaypointLabel::labelWidth)
+                    .thenComparingDouble(label -> label.distanceToCenter(centerX, centerY)));
+            List<PlacedWaypointLabel> placed = new ArrayList<>();
+            for (PendingWaypointLabel label : pendingWaypointLabels) {
+                int row = options.clusterWaypointNames ? reserveWaypointLabel(label.centerX, label.iconCenterY, label.baseY, label.labelWidth,
+                        label.labelHeight, WAYPOINT_LABEL_LINE_LIMIT) : 0;
+                if (row >= 0) placed.add(new PlacedWaypointLabel(label, row));
+                else if (options.clusterWaypointNames) registerWaypointCluster(label.clusterKey, label.centerX, label.iconCenterY);
             }
+            lastLabelLayout = List.copyOf(placed);
+            lastLabelClusters = java.util.Map.copyOf(waypointClusters);
         }
-
-        for (WaypointClusterData cluster : this.waypointClusters.values()) {
-            if (cluster.count > 1) {
-                drawWaypointClusterBadge(graphics, cluster.anchorX, cluster.anchorY, cluster.count);
-            }
+        for (PlacedWaypointLabel placed : lastLabelLayout) {
+            PendingWaypointLabel label = placed.label();
+            int row = placed.row(), step = label.labelHeight + 1;
+            int y = (row & 1) == 0 ? Math.round(label.baseY + (row / 2) * step)
+                    : Math.round(label.iconCenterY - ICON_HEIGHT / 2.0F - label.labelHeight - WAYPOINT_LABEL_PADDING - (row / 2) * step);
+            graphics.text(getFont(), label.text, Math.round(label.centerX) - label.labelWidth / 2, y, label.color, true);
         }
-
-        this.pendingWaypointLabels.clear();
-        this.waypointLabelBounds.clear();
-        this.waypointClusters.clear();
+        for (WaypointClusterData cluster : lastLabelClusters.values()) if (cluster.count > 1)
+            drawWaypointClusterBadge(graphics, cluster.anchorX, cluster.anchorY, cluster.count);
+        for (WaypointClusterData cluster : waypointIconBuckets.values()) if (cluster.count > 1)
+            drawWaypointClusterBadge(graphics, cluster.anchorX, cluster.anchorY, cluster.count);
+        pendingWaypointLabels.clear(); waypointLabelBounds.clear(); waypointLabelBuckets.clear(); waypointClusters.clear();
     }
 
     private int reserveWaypointLabel(float centerX, float iconCenterY, float topY, int labelWidth, int labelHeight, int maxRows) {
@@ -5006,6 +4848,9 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             WaypointLabelBounds candidate = new WaypointLabelBounds(left, top, right, bottom);
             if (!intersectsAnyWaypointLabel(candidate)) {
                 this.waypointLabelBounds.add(candidate);
+                for (int bx = Math.floorDiv(candidate.left, 64); bx <= Math.floorDiv(candidate.right, 64); bx++)
+                    for (int by = Math.floorDiv(candidate.top, 64); by <= Math.floorDiv(candidate.bottom, 64); by++)
+                        waypointLabelBuckets.computeIfAbsent(packXZ(bx, by), ignored -> new ArrayList<>()).add(candidate);
                 return row;
             }
         }
@@ -5013,11 +4858,11 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     }
 
     private boolean intersectsAnyWaypointLabel(WaypointLabelBounds candidate) {
-        for (WaypointLabelBounds bounds : this.waypointLabelBounds) {
-            if (bounds.intersects(candidate)) {
-                return true;
+        for (int bx = Math.floorDiv(candidate.left, 64); bx <= Math.floorDiv(candidate.right, 64); bx++)
+            for (int by = Math.floorDiv(candidate.top, 64); by <= Math.floorDiv(candidate.bottom, 64); by++) {
+                List<WaypointLabelBounds> nearby = waypointLabelBuckets.get(packXZ(bx, by));
+                if (nearby != null) for (WaypointLabelBounds bounds : nearby) if (bounds.intersects(candidate)) return true;
             }
-        }
         return false;
     }
 
@@ -5178,17 +5023,6 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     private record SeedMapperQueryCacheKey(long seed, int dimension, int generatorFlags, int minX, int maxX, int minZ, int maxZ, boolean lootOnly, int enabledFeatureHash, int datapackHash, int customSaltHash, String lootSearch, String datapackWorldKey) {
     }
 
-    private record ExploredLinesQueryCacheKey(int minChunkX, int maxChunkX, int minChunkZ, int maxChunkZ, int snap, Identifier viewedDimension) {
-    }
-
-    private record ExploredLineRenderCacheKey(ExploredLinesQueryCacheKey queryKey, int cellChunkSize, long dataVersion) {
-    }
-
-    private record NewOldChunkOverlayRenderCacheKey(int minChunkX, int maxChunkX, int minChunkZ, int maxChunkZ,
-            int zoomBucket, int cellChunkSize, int oldColor, int newColor, boolean farZoomPerformanceMode,
-            boolean movingLod, int maxDraw, long dataVersion, String worldKey) {
-    }
-
     private record NewOldChunkRenderRect(float minX, float minZ, float maxX, float maxZ, int color) {
     }
 
@@ -5213,13 +5047,18 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
     @Override
     public void removed() {
+        persistentMap.suspendTerrainOverview();
+        biomeViews.clear(); biomeDiskSource = null;
+        trailTiles.clear();
+        trailViews.clear(); areaViews.clear(); geometryViews.clear(); rasterLayers.clear();
         synchronized (this.closedLock) {
             this.closed = true;
             this.persistentMap.getRegions(0, -1, 0, -1);
-            this.regions = new CachedRegion[0];
+            this.regions = NO_REGIONS;
         }
         if (this.seedPreviewFuture != null) {
-            this.seedPreviewFuture.cancel(false);
+            this.seedPreviewFuture.cancel(true);
+            if (this.seedPreviewProgress != null) this.seedPreviewProgress.cancel();
             this.seedPreviewFuture = null;
         }
         minecraft.getTextureManager().release(seedPreviewTextureLocation);
@@ -5602,11 +5441,11 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     }
 
     private void drawPlots(GuiGraphicsExtractor graphics, float cursorX, float cursorZ) {
-        float previewThickness = Math.max(1.0F, 2.0F / Math.max(0.0001F, this.mapToGui));
+        float previewThickness = Math.max(1.0F, 2.0F / Math.max(0.0000001F, this.mapToGui));
         for (PlotManager.Plot plot : plotManager.getPlots()) {
             if (!isPlotVisibleInViewedDimension(plot)) continue;
             double[] viewPlot = plotCoordinatesForView(plot);
-            float thickness = Math.max(1.0F, (2.0F + plot.thickness()) / Math.max(0.0001F, this.mapToGui));
+            float thickness = Math.max(1.0F, (2.0F + plot.thickness()) / Math.max(0.0000001F, this.mapToGui));
             float x1 = (float) viewPlot[0];
             float z1 = (float) viewPlot[1];
             float x2 = (float) viewPlot[2];
@@ -5620,11 +5459,11 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 z1 = cursorZ;
             }
             int color = new int[]{0xFFFFD21F, 0xFF4DD2FF, 0xFF66E36F, 0xFFFF66C4, 0xFFB980FF, 0xFFFF8033}[Math.floorMod(plot.color(), 6)];
-            appendThickInterpolatedLine(x1, z1, x2, z2, thickness + 2.0F / Math.max(0.0001F, this.mapToGui), 0xDD000000);
+            appendThickInterpolatedLine(x1, z1, x2, z2, thickness + 2.0F / Math.max(0.0000001F, this.mapToGui), 0xDD000000);
             appendThickInterpolatedLine(x1, z1, x2, z2, thickness, color);
         }
         if (plotStartSet) {
-            float endpointSize = Math.min(128.0F, Math.max(2.0F, 6.0F / Math.max(0.0001F, this.mapToGui)));
+            float endpointSize = Math.min(128.0F, Math.max(2.0F, 6.0F / Math.max(0.0000001F, this.mapToGui)));
             float endpointHalf = endpointSize / 2.0F;
             appendExploredQuad((float) plotStartX - endpointHalf - 1.0F, (float) plotStartZ - endpointHalf - 1.0F,
                     (float) plotStartX + endpointHalf + 1.0F, (float) plotStartZ + endpointHalf + 1.0F, 0xFF000000);
@@ -5640,7 +5479,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             float z1 = (float) original[1] + dz;
             float x2 = (float) original[2] + dx;
             float z2 = (float) original[3] + dz;
-            appendThickInterpolatedLine(x1, z1, x2, z2, previewThickness + 2.0F / Math.max(0.0001F, this.mapToGui), 0xAA000000);
+            appendThickInterpolatedLine(x1, z1, x2, z2, previewThickness + 2.0F / Math.max(0.0000001F, this.mapToGui), 0xAA000000);
             appendThickInterpolatedLine(x1, z1, x2, z2, previewThickness, 0xAAFFFFFF);
         }
         flushExploredQuads(graphics);
@@ -5862,7 +5701,13 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     }
 
     private int textWidth(String string) {
-        return minecraft.font.width(string);
+        Integer width = waypointTextWidths.get(string);
+        if (width == null) {
+            width = minecraft.font.width(string);
+            waypointTextWidths.put(string, width);
+            if (waypointTextWidths.size() > 4096) waypointTextWidths.remove(waypointTextWidths.keySet().iterator().next());
+        }
+        return width;
     }
 
     private int textWidth(Component text) {

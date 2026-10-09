@@ -38,7 +38,7 @@ public class CompressibleMapData extends AbstractMapData {
     private final static int REGION_SIZE = 256;
     private final static byte[] compressedEmptyData = CompressionUtils.compress(generateEmptyData());
 
-    private byte[] data;
+    private volatile byte[] data;
     private boolean isCompressed;
     private BiMap<BlockState, Integer> blockStateToInt;
     int blockStateCount = 1;
@@ -411,6 +411,8 @@ public class CompressibleMapData extends AbstractMapData {
         int length = this.width * this.height * 2;
         System.arraycopy(oldData, start, newData, newStart, length);
     }
+
+    public long estimatedBytes() { return data.length + 16_384L; }
 
     public synchronized byte[] getData() {
         if (this.isCompressed) {

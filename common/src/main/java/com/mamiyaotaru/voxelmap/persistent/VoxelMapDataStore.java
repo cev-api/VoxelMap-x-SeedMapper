@@ -108,6 +108,12 @@ public final class VoxelMapDataStore {
         return properDir;
     }
 
+    File getWorldCacheDir(File capturedWorldDirectory, String subPath) {
+        File properDir = new File(capturedWorldDirectory, subPath);
+        if (capturedWorldDirectory.equals(getWorldCacheDir())) recoverMisplacedCache(subPath, properDir);
+        return properDir;
+    }
+
     private void recoverMisplacedCache(String subPath, File properDir) {
         if (isWorldRelative() || properDir.exists()) {
             return;

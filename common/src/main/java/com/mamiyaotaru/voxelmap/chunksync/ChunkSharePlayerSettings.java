@@ -16,6 +16,9 @@ import java.util.Set;
 public final class ChunkSharePlayerSettings {
     private static final String FILE_NAME = "players.properties";
     private static final String KEY_PLAYERS = "players";
+    private static Properties cachedProperties;
+    private static Path cachedFile;
+    private static long settingsVersion;
     private static final int[] PALETTE = {
             0xFF5555, 0x55FF55, 0x5599FF, 0xFFEE44, 0xFF55FF,
             0x55FFFF, 0xFFAA33, 0xAA66FF, 0x33CCAA, 0xFF99CC
@@ -121,18 +124,28 @@ public final class ChunkSharePlayerSettings {
     }
 
     private static Properties load() {
+        Path path = file();
+        if (cachedProperties != null && path.equals(cachedFile)) return cachedProperties;
         Properties props = new Properties();
-        if (Files.isRegularFile(file())) {
-            try (InputStream in = Files.newInputStream(file())) {
+        if (Files.isRegularFile(path)) {
+            try (InputStream in = Files.newInputStream(path)) {
                 props.load(in);
             } catch (IOException e) {
                 VoxelConstants.getLogger().warn("Failed to read chunk-share player settings", e);
             }
         }
+        cachedProperties = props;
+        cachedFile = path;
+        settingsVersion++;
         return props;
     }
 
+    public static synchronized long version() { return settingsVersion; }
+
     private static void save(Properties props) {
+        cachedProperties = props;
+        cachedFile = file();
+        settingsVersion++;
         try {
             Files.createDirectories(file().getParent());
             try (OutputStream out = Files.newOutputStream(file())) {

@@ -50,6 +50,48 @@ public class VoxelMapGuiGraphics {
                 RenderPipelines.GUI, TextureSetup.noTexture(), new Matrix3x2f(graphics.pose()), x0, y0, x1, y1, color00, color10, color01, color11, graphics.scissorStack.peek()));
     }
 
+    /** Terrain has an explicit stratum; tiles must not run the GUI's pairwise overlap search. */
+    public static void blitMapTile(GuiGraphicsExtractor graphics, Identifier location,
+            float x, float z, float width) {
+        blitMapRectangle(graphics, location, x, z, width, width);
+    }
+
+    public static void blitMapRectangle(GuiGraphicsExtractor graphics, Identifier location,
+            float x, float z, float width, float height) {
+        blitMapRectangle(graphics, location, x, z, width, height, true);
+    }
+
+    public static void blitMapOverlay(GuiGraphicsExtractor graphics, Identifier location,
+            float x, float z, float width, float height) {
+        blitMapRectangle(graphics, location, x, z, width, height, false);
+    }
+
+    private static void blitMapRectangle(GuiGraphicsExtractor graphics, Identifier location,
+            float x, float z, float width, float height, boolean terrain) {
+        AbstractTexture texture = Minecraft.getInstance().getTextureManager().getTexture(location);
+        FloatBlitRenderState state = new FloatBlitRenderState(RenderPipelines.GUI_TEXTURED,
+                TextureSetup.singleTexture(texture.getTextureView(), texture.getSampler()), new Matrix3x2f(graphics.pose()),
+                x, z, x + width, z + height, 0, 1, 0, 1, -1, -1, graphics.scissorStack.peek());
+        if (state.bounds() != null) {
+            graphics.guiRenderState.current.addGuiElement(state);
+            if (terrain) com.mamiyaotaru.voxelmap.persistent.WorldMapProfiler.tile();
+            else com.mamiyaotaru.voxelmap.persistent.WorldMapProfiler.quads(1);
+        }
+    }
+
+    public static void fillMapQuads(GuiGraphicsExtractor graphics, float[] vertices, int count, int color) {
+        if (count == 0 || (color >>> 24) == 0) return;
+        if (count < 0 || count > vertices.length / 8) throw new IllegalArgumentException("Invalid world-map quad count");
+        com.mamiyaotaru.voxelmap.persistent.WorldMapProfiler.quads(count);
+        // Retain the immutable snapshot; ranges avoid copying large cached arrays.
+        // MixinGuiRendererWorldMap isolates each range into a separate native draw.
+        ScreenRectangle scissor = graphics.scissorStack.peek();
+        Matrix3x2f pose = new Matrix3x2f(graphics.pose());
+        WorldMapGeometryBatch.forEach(count, (first, length) -> graphics.guiRenderState.current.addGuiElement(new WorldMapQuadRenderState(
+                RenderPipelines.GUI, TextureSetup.noTexture(), pose,
+                vertices, first, length, color, scissor, scissor)));
+    }
+
     public static void fillRectsBatched(GuiGraphicsExtractor graphics, float[] coords, int[] colors, int count) {
         if (count <= 0) {
             return;

@@ -80,6 +80,31 @@ final class ExploredTileMap {
         return size + (hasZeroKey ? 1 : 0);
     }
 
+    boolean remove(long key) {
+        if (key == EMPTY_KEY) {
+            boolean present = hasZeroKey;
+            hasZeroKey = false;
+            zeroValue = null;
+            return present;
+        }
+        int i = slot(key, mask);
+        while (keys[i] != EMPTY_KEY && keys[i] != key) i = (i + 1) & mask;
+        if (keys[i] == EMPTY_KEY) return false;
+        keys[i] = EMPTY_KEY;
+        values[i] = null;
+        size--;
+        // Reinsert the following cluster so lookup never stops at a hole.
+        for (i = (i + 1) & mask; keys[i] != EMPTY_KEY; i = (i + 1) & mask) {
+            long movedKey = keys[i];
+            ExploredTile movedValue = values[i];
+            keys[i] = EMPTY_KEY;
+            values[i] = null;
+            size--;
+            computeIfAbsent(movedKey, ignored -> movedValue);
+        }
+        return true;
+    }
+
     interface EntryVisitor {
         void accept(long key, ExploredTile value);
     }

@@ -25,8 +25,8 @@ import org.lwjgl.system.MemoryUtil;
 public class CompressibleMapRegionTexture extends AbstractTexture {
     private final static int MIP_LEVELS = 7;
 
-    private NativeImage pixels;
-    private NativeImage[] pixelsMipmapped;
+    private volatile NativeImage pixels;
+    private volatile NativeImage[] pixelsMipmapped;
 
     private final boolean compressNotDelete;
     private final Identifier location = Identifier.fromNamespaceAndPath(VoxelConstants.MOD_ID, "mapimage/" + UUID.randomUUID());
@@ -34,7 +34,7 @@ public class CompressibleMapRegionTexture extends AbstractTexture {
     private final GpuSampler samplerSmall;
     private final GpuSampler samplerLarge;
 
-    private byte[] bytes;
+    private volatile byte[] bytes;
     private long lastAllocationWarnMs = 0L;
 
     public CompressibleMapRegionTexture() {
@@ -57,6 +57,13 @@ public class CompressibleMapRegionTexture extends AbstractTexture {
         this.samplerLarge = RenderSystem.getSamplerCache().getSampler(AddressMode.CLAMP_TO_EDGE, AddressMode.CLAMP_TO_EDGE, FilterMode.LINEAR, FilterMode.NEAREST, true);
         this.sampler = samplerLarge;
     }
+
+    public long estimatedHeapBytes() { byte[] current = bytes; return current == null ? 0 : current.length; }
+    public long estimatedNativeBytes() {
+        NativeImage[] levels = pixelsMipmapped;
+        return pixels == null ? 0 : levels == null ? 256L * 256 * 4 : 349_520L;
+    }
+    public long estimatedGpuBytes() { return texture == null ? 0 : 349_520L; }
 
     public NativeImage getData() {
         ensurePixelsAllocated();

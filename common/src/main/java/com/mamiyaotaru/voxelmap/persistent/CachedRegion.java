@@ -59,8 +59,8 @@ public class CachedRegion {
     public final static int REGION_WIDTH = CHUNKS_WIDTH * CHUNK_BLOCKS;
     public static final EmptyCachedRegion EMPTY_REGION = new EmptyCachedRegion();
 
-    private long mostRecentView;
-    private long mostRecentChange;
+    private volatile long mostRecentView;
+    private volatile long mostRecentChange;
     private final PersistentMap persistentMap;
     private String key;
     private String fileKey;
@@ -73,30 +73,34 @@ public class CachedRegion {
     private String worldNamePathPart;
     private String subworldNamePathPart = "";
     private String dimensionNamePathPart;
+    private final File storageWorldDirectory;
+    private volatile File storageDirectory;
     private final Identifier viewedDimensionIdentifier;
     private final boolean canLoadLiveDimensionData;
     private boolean underground;
     private int x;
     private int z;
-    private boolean empty = true;
-    private boolean liveChunksUpdated;
+    private volatile boolean empty = true;
+    private volatile boolean liveChunksUpdated;
+    private volatile boolean savePending;
+    private long lastSaveAttemptMs;
     boolean remoteWorld;
     private final boolean[] liveChunkUpdateQueued = new boolean[CHUNKS_WIDTH * CHUNKS_WIDTH];
     private final boolean[] chunkUpdateQueued = new boolean[CHUNKS_WIDTH * CHUNKS_WIDTH];
-    private CompressibleMapRegionTexture image;
-    private CompressibleMapData data;
+    private volatile CompressibleMapRegionTexture image;
+    private volatile CompressibleMapData data;
     final MutableBlockPos blockPos = new MutableBlockPos(0, 0, 0);
     final MutableBlockPos loopBlockPos = new MutableBlockPos(0, 0, 0);
-    Future<?> future;
+    volatile Future<?> future;
     private final ReentrantLock threadLock = new ReentrantLock();
-    boolean displayOptionsChanged;
-    boolean imageChanged;
-    boolean refreshQueued;
-    boolean refreshingImage;
-    boolean dataUpdated;
-    boolean dataUpdateQueued;
-    boolean loaded;
-    boolean closed;
+    volatile boolean displayOptionsChanged;
+    volatile boolean imageChanged;
+    volatile boolean refreshQueued;
+    volatile boolean refreshingImage;
+    volatile boolean dataUpdated;
+    volatile boolean dataUpdateQueued;
+    volatile boolean loaded;
+    volatile boolean closed;
     private static final Object anvilLock = new Object();
     private static final ReadWriteLock tickLock = new ReentrantReadWriteLock();
     private static int loadedChunkCount;
@@ -108,9 +112,18 @@ public class CachedRegion {
         this.persistentMap = null;
         this.viewedDimensionIdentifier = Level.OVERWORLD.identifier();
         this.canLoadLiveDimensionData = false;
+        this.storageWorldDirectory = null;
     }
 
     public CachedRegion(PersistentMap persistentMap, String key, String fileKey, ClientLevel world, String worldName, String subworldName, int x, int z, Identifier viewedDimensionIdentifier) {
+        this(persistentMap, key, fileKey, world, worldName, subworldName, x, z, viewedDimensionIdentifier, false);
+    }
+
+    CachedRegion(PersistentMap persistentMap, String key, String fileKey, ClientLevel world, String worldName, String subworldName, int x, int z, Identifier viewedDimensionIdentifier, boolean overviewOnly) {
+        this(persistentMap, key, fileKey, world, worldName, subworldName, x, z, viewedDimensionIdentifier, overviewOnly, null);
+    }
+
+    CachedRegion(PersistentMap persistentMap, String key, String fileKey, ClientLevel world, String worldName, String subworldName, int x, int z, Identifier viewedDimensionIdentifier, boolean overviewOnly, File capturedDirectory) {
         this.persistentMap = persistentMap;
         this.key = key;
         this.fileKey = fileKey;
@@ -126,16 +139,18 @@ public class CachedRegion {
         var viewedDimension = dimensionManager.getDimensionContainerByIdentifier(this.viewedDimensionIdentifier);
         String dimensionName = viewedDimension == null ? this.viewedDimensionIdentifier.toString() : viewedDimension.getStorageName();
         this.dimensionNamePathPart = TextUtils.scrubNameFile(dimensionName);
+        this.storageWorldDirectory = capturedDirectory == null ? VoxelConstants.getVoxelMapInstance().getDataStore().getWorldCacheDir() : null;
+        this.storageDirectory = capturedDirectory == null ? new File(storageWorldDirectory, subworldNamePathPart + dimensionNamePathPart) : capturedDirectory;
         this.canLoadLiveDimensionData = world != null && this.viewedDimensionIdentifier.equals(world.dimension().identifier());
         boolean knownUnderground;
         knownUnderground = dimensionName.toLowerCase().contains("erebus");
         DimensionType dimensionType = this.canLoadLiveDimensionData && world != null ? world.dimensionType() : viewedDimension == null ? null : viewedDimension.type;
         this.underground = isUndergroundDimension(dimensionType, dimensionName, knownUnderground);
         this.remoteWorld = !VoxelConstants.getMinecraft().hasSingleplayerServer();
-        persistentMap.getSettingsAndLightingChangeNotifier().addObserver(this);
+        if (!overviewOnly) persistentMap.getSettingsAndLightingChangeNotifier().addObserver(this);
         this.x = x;
         this.z = z;
-        if (!this.remoteWorld) {
+        if (!overviewOnly && !this.remoteWorld) {
             Optional<net.minecraft.world.level.Level> optionalWorld = resolveViewedServerWorld(this.viewedDimensionIdentifier);
             if (optionalWorld.isEmpty() && this.canLoadLiveDimensionData && world != null) {
                 optionalWorld = VoxelConstants.getWorldByKey(world.dimension());
@@ -168,7 +183,8 @@ public class CachedRegion {
                 this.subworldName = newName;
                 if (!Objects.equals(this.subworldName, "")) {
                     this.subworldNamePathPart = TextUtils.scrubNameFile(this.subworldName) + "/";
-                }
+                } else { this.subworldNamePathPart = ""; }
+                this.storageDirectory = new File(storageWorldDirectory, subworldNamePathPart + dimensionNamePathPart);
             } catch (Exception ignored) {
             } finally {
                 this.threadLock.unlock();
@@ -481,7 +497,9 @@ public class CachedRegion {
 
     private void loadCachedData() {
         try {
-            File cachedRegionFileDir = VoxelConstants.getVoxelMapInstance().getDataStore().getWorldCacheDir(this.subworldNamePathPart + this.dimensionNamePathPart);
+            if (storageWorldDirectory != null) VoxelConstants.getVoxelMapInstance().getDataStore()
+                    .getWorldCacheDir(storageWorldDirectory, subworldNamePathPart + dimensionNamePathPart);
+            File cachedRegionFileDir = cacheDirectory();
             cachedRegionFileDir.mkdirs();
             File legacyFile = new File(cachedRegionFileDir, this.fileKey + ".zip");
             MapRegionPack.PackedRegion region = MapRegionPack.forDirectory(cachedRegionFileDir)
@@ -535,37 +553,26 @@ public class CachedRegion {
     }
 
     private void saveData(boolean newThread) {
-        if (this.liveChunksUpdated && !this.worldNamePathPart.isEmpty()) {
-            if (newThread) {
-                ThreadManager.submitSaveTask(() -> {
-                    if (VoxelConstants.DEBUG) {
-                        VoxelConstants.getLogger().info("Saving region file for " + CachedRegion.this.x + "," + CachedRegion.this.z + " in " + CachedRegion.this.worldNamePathPart + "/" + CachedRegion.this.subworldNamePathPart + CachedRegion.this.dimensionNamePathPart);
-                    }
-                    CachedRegion.this.threadLock.lock();
-
-                    try {
-                        CachedRegion.this.doSave();
-                    } catch (Exception ex) {
-                        VoxelConstants.getLogger().error("Failed to save region file for " + CachedRegion.this.x + "," + CachedRegion.this.z + " in " + CachedRegion.this.worldNamePathPart + "/" + CachedRegion.this.subworldNamePathPart + CachedRegion.this.dimensionNamePathPart, ex);
-                    } finally {
-                        CachedRegion.this.threadLock.unlock();
-                    }
-                    if (VoxelConstants.DEBUG) {
-                        VoxelConstants.getLogger().info("Finished saving region file for " + CachedRegion.this.x + "," + CachedRegion.this.z + " in " + CachedRegion.this.worldNamePathPart + "/" + CachedRegion.this.subworldNamePathPart + CachedRegion.this.dimensionNamePathPart + " ("
-                                + ThreadManager.saveExecutorService.getQueue().size() + ")");
-                    }
-                }, "region " + this.x + "," + this.z + " (" + this.worldNamePathPart + "/" + this.subworldNamePathPart + this.dimensionNamePathPart + ")");
-            } else {
+        if (!liveChunksUpdated || worldNamePathPart.isEmpty() || savePending) return;
+        if (newThread) {
+            long now = System.currentTimeMillis();
+            if (now - lastSaveAttemptMs < 5000) return;
+            lastSaveAttemptMs = now;
+            savePending = true;
+            boolean accepted = ThreadManager.submitSaveTask(() -> {
+                threadLock.lock();
                 try {
-                    this.doSave();
-                } catch (Exception ex) {
-                    VoxelConstants.getLogger().error(ex);
-                }
-            }
-
-            this.liveChunksUpdated = false;
+                    doSave();
+                    liveChunksUpdated = false;
+                } catch (Exception exception) {
+                    VoxelConstants.getLogger().error("Could not save map region {},{}; retaining dirty data", x, z, exception);
+                } finally { savePending = false; threadLock.unlock(); }
+            }, "region " + x + "," + z);
+            if (!accepted) savePending = false;
+        } else {
+            try { doSave(); liveChunksUpdated = false; }
+            catch (Exception exception) { VoxelConstants.getLogger().error("Could not save map region {},{}; retaining dirty data", x, z, exception); }
         }
-
     }
 
     private void doSave() throws IOException {
@@ -573,7 +580,7 @@ public class CachedRegion {
         BiMap<Biome, Integer> biomeToInt = this.data.getBiomeToInt();
         byte[] byteArray = this.data.getData();
         if (byteArray.length == this.data.getExpectedDataLength(CompressibleMapData.DATA_VERSION)) {
-            File cachedRegionFileDir = VoxelConstants.getVoxelMapInstance().getDataStore().getWorldCacheDir(this.subworldNamePathPart + this.dimensionNamePathPart);
+            File cachedRegionFileDir = cacheDirectory();
             cachedRegionFileDir.mkdirs();
             byte[] stateKey = stateToBytes(stateToInt);
             byte[] biomeKey = biomeToBytes(biomeToInt);
@@ -585,7 +592,7 @@ public class CachedRegion {
                 writeLegacyZip(cachedRegionFileDir, byteArray, stateKey, biomeKey, control);
             }
         } else {
-            VoxelConstants.getLogger().warn("Data array wrong size: " + byteArray.length + "for " + this.x + "," + this.z + " in " + this.worldNamePathPart + "/" + this.subworldNamePathPart + this.dimensionNamePathPart);
+            throw new IOException("Data array wrong size: " + byteArray.length + "for " + this.x + "," + this.z + " in " + this.worldNamePathPart + "/" + this.subworldNamePathPart + this.dimensionNamePathPart);
         }
 
     }
@@ -633,6 +640,64 @@ public class CachedRegion {
         zip.closeEntry();
     }
 
+    java.io.File cacheDirectory() {
+        return storageDirectory;
+    }
+
+    /** Samples stored terrain without creating a native image, GPU texture, or live/anvil chunk loads. */
+    CompressibleMapData loadOverviewMapData() {
+        this.data = new CompressibleMapData(world);
+        loadCachedData();
+        return empty ? null : data;
+    }
+
+    int[] sampleOverview(int resolution) {
+        return sampleOverview(resolution, 0);
+    }
+
+    int[] sampleOverview(int resolution, int sourceResolution) {
+        this.data = new CompressibleMapData(world);
+        loadCachedData();
+        if (empty) return new int[resolution * resolution];
+        int[] pixels = samplePixels(resolution, sourceResolution);
+        this.data = null;
+        return pixels;
+    }
+
+    int[] sampleLoadedOverview(int resolution) {
+        return sampleLoadedOverview(resolution, 0);
+    }
+
+    int[] sampleLoadedOverview(int resolution, int sourceResolution) {
+        threadLock.lock();
+        try { return !closed && loaded && data != null ? samplePixels(resolution, sourceResolution) : null; }
+        finally { threadLock.unlock(); }
+    }
+
+    private int[] samplePixels(int resolution) {
+        return samplePixels(resolution, 0);
+    }
+
+    private int[] samplePixels(int resolution, int sourceResolution) {
+        int[] pixels = new int[resolution * resolution];
+        int step = REGION_WIDTH / resolution;
+        for (int z = 0; z < resolution; z++) for (int x = 0; x < resolution; x++) {
+            int red = 0, green = 0, blue = 0, count = 0;
+            // Sample every represented chunk so narrow explored routes survive downsampling.
+            int stride = Math.min(step, sourceResolution == 0 ? 16 : Math.max(1, REGION_WIDTH / sourceResolution));
+            for (int dz = stride / 2; dz < step; dz += stride) for (int dx = stride / 2; dx < step; dx += stride) {
+                int color = persistentMap.getPixelColor(data, world, blockPos, loopBlockPos, underground, 8,
+                        this.x * REGION_WIDTH, this.z * REGION_WIDTH, x * step + dx, z * step + dz);
+                if ((color >>> 24) == 0) continue;
+                // Match NativeImage.setPixel in the detailed terrain renderer.
+                color = net.minecraft.util.ARGB.toABGR(com.mamiyaotaru.voxelmap.util.ColorUtils.premultiplyWithAlpha(color));
+                red += color & 255; green += (color >> 8) & 255; blue += (color >> 16) & 255; count++;
+            }
+            if (count > 0) pixels[z * resolution + x] = 0xFF000000 | red / count | (green / count << 8) | (blue / count << 16);
+        }
+        return pixels;
+    }
+
     private void fillImage() {
         for (int t = 0; t < REGION_WIDTH; ++t) {
             for (int s = 0; s < REGION_WIDTH; ++s) {
@@ -646,7 +711,7 @@ public class CachedRegion {
     private void saveImage() {
         if (!this.empty && this.image != null) {
 
-            File imageFileDir = VoxelConstants.getVoxelMapInstance().getDataStore().getWorldCacheDir(this.subworldNamePathPart + this.dimensionNamePathPart + "/images/z1");
+            File imageFileDir = new File(cacheDirectory(), "images/z1");
             imageFileDir.mkdirs();
             final File imageFile = new File(imageFileDir, this.fileKey + ".png");
                        
@@ -722,12 +787,14 @@ public class CachedRegion {
     }
 
     public Identifier getTextureLocation(float zoom) {
+        if (closed) return null;
         if (this.image != null) {
             if (!this.refreshingImage) {
                 synchronized (this.image) {
-                    if (this.imageChanged) {
-                        this.imageChanged = false;
-                        this.image.uploadToTexture();
+                    if (this.imageChanged && WorldMapUploadBudget.available(349_520)) {
+                        long started = WorldMapUploadBudget.begin(349_520);
+                        try { this.image.uploadToTexture(); this.imageChanged = false; }
+                        finally { WorldMapUploadBudget.end(started); }
                     }
                 }
             }
@@ -737,6 +804,13 @@ public class CachedRegion {
             return null;
         }
     }
+
+    public long estimatedHeapBytes() {
+        CompressibleMapData current = data;
+        return (current == null ? 0 : current.estimatedBytes()) + (image == null ? 0 : image.estimatedHeapBytes());
+    }
+    public long estimatedNativeBytes() { return image == null ? 0 : image.estimatedNativeBytes(); }
+    public long estimatedGpuBytes() { return image == null ? 0 : image.estimatedGpuBytes(); }
 
     public CompressibleMapData getMapData() {
         return this.data;
@@ -788,28 +862,40 @@ public class CachedRegion {
         return this.data.isCompressed();
     }
 
+    boolean prepareForEviction() {
+        if (!threadLock.tryLock()) return false;
+        try {
+            if (savePending || (liveChunksUpdated && !worldNamePathPart.isEmpty())) {
+                saveData(true);
+                return false;
+            }
+            closed = true;
+            if (future != null) future.cancel(false);
+            return true;
+        } finally { threadLock.unlock(); }
+    }
+
     public void cleanup() {
-        this.closed = true;
-        this.queuedToCompress = true;
-        if (this.future != null) {
-            this.future.cancel(false);
+        closed = true;
+        queuedToCompress = true;
+        if (future != null) future.cancel(false);
+        persistentMap.getSettingsAndLightingChangeNotifier().removeObserver(this);
+        if (!threadLock.tryLock()) {
+            persistentMap.deferCleanup(this);
+            return;
         }
-
-        this.persistentMap.getSettingsAndLightingChangeNotifier().removeObserver(this);
-        if (this.image != null) {
-            if (this.persistentMap.getOptions().outputImages) {
-                this.saveImage();
+        try {
+            if (savePending || (liveChunksUpdated && !worldNamePathPart.isEmpty())) {
+                saveData(true);
+                persistentMap.deferCleanup(this);
+                return;
             }
-
-            this.threadLock.lock();
-            try {
-                this.image.deleteTexture();
-            } finally {
-                this.threadLock.unlock();
+            if (image != null) {
+                if (persistentMap.getOptions().outputImages) saveImage();
+                image.deleteTexture();
             }
-        }
-
-        this.saveData(true);
+            saveData(true);
+        } finally { threadLock.unlock(); }
     }
 
     private final class FillChunkRunnable implements Runnable {
@@ -828,6 +914,7 @@ public class CachedRegion {
             CachedRegion.this.threadLock.lock();
 
             try {
+                if (CachedRegion.this.closed) return;
                 if (!CachedRegion.this.loaded) {
                     CachedRegion.this.load();
                 }
@@ -856,6 +943,7 @@ public class CachedRegion {
             CachedRegion.this.threadLock.lock();
 
             try {
+                if (CachedRegion.this.closed) return;
                 if (!CachedRegion.this.loaded) {
                     CachedRegion.this.load();
                 }

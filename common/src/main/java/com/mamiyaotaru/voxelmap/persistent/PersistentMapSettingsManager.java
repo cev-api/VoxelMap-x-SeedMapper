@@ -187,7 +187,7 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
         }
     }
 
-    public static final int MIN_WORLDMAP_ZOOM_POWER = -9;
+    public static final int MIN_WORLDMAP_ZOOM_POWER = -18;
     public static final int MAX_WORLDMAP_ZOOM_POWER = 8;
     private static final int MAX_WORLDMAP_CACHE_SIZE = 20000;
     public static final float MIN_PERFORMANCE_MODE_THRESHOLD = 0.0025F;
@@ -196,22 +196,24 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
     public static final float MAX_CHUNK_LINE_THICKNESS = 2.00F;
     public static final float MIN_SEEDMAP_CONTOUR_STRENGTH = 0.10F;
     public static final float MAX_SEEDMAP_CONTOUR_STRENGTH = 1.00F;
-    public static final float MIN_SEEDMAP_MIN_ZOOM = 0.001953125F;
+    public static final float MIN_SEEDMAP_MIN_ZOOM = 0.0F;
     public static final float MAX_SEEDMAP_MIN_ZOOM = 0.30F;
-    public static final float MIN_SEEDMAP_TERRAIN_MIN_ZOOM = 0.001953125F;
+    public static final float MIN_SEEDMAP_TERRAIN_MIN_ZOOM = 0.0F;
     public static final float MAX_SEEDMAP_TERRAIN_MIN_ZOOM = 0.30F;
     public static final float MIN_SEEDMAP_PREVIEW_PADDING = 256.0F;
     public static final float MAX_SEEDMAP_PREVIEW_PADDING = 4096.0F;
     public static final float MIN_SEEDMAP_PREVIEW_RESOLUTION = 256.0F;
-    public static final float MAX_SEEDMAP_PREVIEW_RESOLUTION = 2048.0F;
+    public static final float MAX_SEEDMAP_PREVIEW_RESOLUTION = 4096.0F;
     public static final float MIN_SEEDMAP_PREVIEW_CACHE = 1.0F;
     public static final float MAX_SEEDMAP_PREVIEW_CACHE = 16.0F;
+    public final WorldMapDetailSettings detail = new WorldMapDetailSettings();
+    public boolean automaticLayerHiding = false;
     protected int mapX;
     protected int mapZ;
     protected float zoom = 8.0F;
-    private float minZoomPower = -9.0F;
+    private float minZoomPower = -18.0F;
     private float maxZoomPower = 8.0F;
-    protected float minZoom = 0.001953125F;
+    protected float minZoom = 0.000003814697265625F;
     protected float maxZoom = 256.0F;
     protected int cacheSize = 500;
     protected boolean outputImages;
@@ -220,6 +222,7 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
     public boolean showWaypointsInPerformanceMode = false;
     public boolean literalLineMode = true;
     public boolean showCoordinates = true;
+    public boolean showLoadingBars = true;
     public boolean showPlayerDirectionArrow = true;
     public boolean hideMultiworldButton = false;
     public boolean showWaypoints = true;
@@ -234,7 +237,7 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
     private float seedMapMinZoom = MIN_SEEDMAP_MIN_ZOOM;
     private float seedMapTerrainMinZoom = MIN_SEEDMAP_TERRAIN_MIN_ZOOM;
     private float seedMapPreviewPadding = 512.0F;
-    private float seedMapPreviewResolution = 1024.0F;
+    private float seedMapPreviewResolution = 2048.0F;
     private float seedMapPreviewCacheSize = 8.0F;
     public boolean seedMapPreviewUpdateWhileMoving = true;
     public boolean seedMapShowBiomeUnderCursor = false;
@@ -251,8 +254,10 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
 
             String sCurrentLine;
             while ((sCurrentLine = in.readLine()) != null) {
-                String[] curLine = sCurrentLine.split(":");
+                String[] curLine = sCurrentLine.split(":", 2);
+                if (curLine.length < 2 || detail.load(curLine[0], curLine[1])) continue;
                 switch (curLine[0]) {
+                    case "Worldmap Automatic Layer Hiding" -> automaticLayerHiding = Boolean.parseBoolean(curLine[1]);
                     case "Worldmap Zoom" -> zoom = Float.parseFloat(curLine[1]);
                     case "Worldmap Minimum Zoom" -> minZoom = Float.parseFloat(curLine[1]);
                     case "Worldmap Maximum Zoom" -> maxZoom = Float.parseFloat(curLine[1]);
@@ -278,6 +283,7 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
                     case "Worldmap Show New Old Chunks" -> showNewOldChunks = Boolean.parseBoolean(curLine[1]);
                     case "Worldmap Show Explored Chunks" -> showExploredChunks = Boolean.parseBoolean(curLine[1]);
                     case "Worldmap Show Entities" -> showWorldMapEntities = Boolean.parseBoolean(curLine[1]);
+                    case "Show Worldmap Loading Bars" -> showLoadingBars = Boolean.parseBoolean(curLine[1]);
                     case "Show Worldmap Coordinates" -> showCoordinates = Boolean.parseBoolean(curLine[1]);
                     case "Show Worldmap Player Direction Arrow" -> showPlayerDirectionArrow = Boolean.parseBoolean(curLine[1]);
                     case "Hide Worldmap Multiworld Button" -> hideMultiworldButton = Boolean.parseBoolean(curLine[1]);
@@ -314,9 +320,9 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
         }
 
         // Migrate older minimum zoom defaults so users can zoom out much further immediately.
-        if (minZoom == 0.5F || minZoom == 0.03125F || minZoom == 0.0078125F) {
-            minZoom = 0.001953125F;
-            minZoomPower = -9.0F;
+        if (minZoom == 0.5F || minZoom == 0.03125F || minZoom == 0.0078125F || minZoom == 0.001953125F) {
+            minZoom = 0.000003814697265625F;
+            minZoomPower = -18.0F;
         }
 
         bindCacheSize();
@@ -333,6 +339,8 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
 
     @Override
     public void saveAll(PrintWriter out) {
+        detail.save(out);
+        out.println("Worldmap Automatic Layer Hiding:" + automaticLayerHiding);
         out.println("Worldmap Zoom:" + zoom);
         out.println("Worldmap Minimum Zoom:" + minZoom);
         out.println("Worldmap Maximum Zoom:" + maxZoom);
@@ -354,6 +362,7 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
         out.println("Worldmap Show Explored Chunks:" + showExploredChunks);
         out.println("Worldmap Show Entities:" + showWorldMapEntities);
         out.println("Show Worldmap Coordinates:" + showCoordinates);
+        out.println("Show Worldmap Loading Bars:" + showLoadingBars);
         out.println("Show Worldmap Player Direction Arrow:" + showPlayerDirectionArrow);
         out.println("Hide Worldmap Multiworld Button:" + hideMultiworldButton);
         out.println("Show Worldmap Waypoints:" + showWaypoints);
@@ -379,13 +388,13 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
             case FLOAT -> {
                 float value = getFloatValue(option);
                 return switch (option) {
-                    case MIN_ZOOM, MAX_ZOOM -> s + (float) Math.pow(2.0, value) + "x";
+                    case MIN_ZOOM, MAX_ZOOM -> s + WorldMapDetailSettings.scaleText((float) Math.pow(2.0, value));
                     case CACHE_SIZE -> s + (int) value;
-                    case WORLDMAP_PERFORMANCE_MODE_THRESHOLD -> s + String.format(Locale.ROOT, "%.2f%%", value * 100.0F);
+                    case WORLDMAP_PERFORMANCE_MODE_THRESHOLD -> s + WorldMapDetailSettings.scaleText(value);
                     case WORLDMAP_CHUNK_LINE_THICKNESS -> s + String.format(Locale.ROOT, "%.2fx", value);
                     case WORLDMAP_SEEDMAP_CONTOUR_STRENGTH -> s + String.format(Locale.ROOT, "%.0f%%", value * 100.0F);
-                    case WORLDMAP_SEEDMAP_MIN_ZOOM -> s + String.format(Locale.ROOT, "%.4fx", value);
-                    case WORLDMAP_SEEDMAP_TERRAIN_MIN_ZOOM -> s + String.format(Locale.ROOT, "%.4fx", value);
+                    case WORLDMAP_SEEDMAP_MIN_ZOOM -> s + (value == 0 ? "Always" : WorldMapDetailSettings.scaleText(value));
+                    case WORLDMAP_SEEDMAP_TERRAIN_MIN_ZOOM -> s + (value == 0 ? "Always" : WorldMapDetailSettings.scaleText(value));
                     case WORLDMAP_SEEDMAP_PREVIEW_PADDING -> s + String.format(Locale.ROOT, "%.0f blocks", value);
                     case WORLDMAP_SEEDMAP_PREVIEW_RESOLUTION -> s + String.format(Locale.ROOT, "%.0f px", value);
                     case WORLDMAP_SEEDMAP_PREVIEW_CACHE -> s + String.format(Locale.ROOT, "%.0f", value);
@@ -554,8 +563,8 @@ public class PersistentMapSettingsManager implements ISubSettingsManager {
     }
 
     private void bindCacheSize() {
-        int minCacheSize = calculateMinCacheSize();
-        cacheSize = Math.max(cacheSize, minCacheSize);
+        // Far zoom uses overview atlases, so it does not require full-resolution region residency.
+        cacheSize = Math.max(cacheSize, 30);
         cacheSize = Math.min(cacheSize, MAX_WORLDMAP_CACHE_SIZE);
     }
 

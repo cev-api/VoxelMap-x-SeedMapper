@@ -73,6 +73,10 @@ import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.LevelChunk;
 
 public class ColorManager implements IReloadListener {
+    private volatile long worldMapPaletteVersion;
+    private volatile int worldMapPaletteFingerprint;
+    public long worldMapPaletteVersion() { return worldMapPaletteVersion; }
+    public int worldMapPaletteFingerprint() { return worldMapPaletteFingerprint; }
     private boolean resourcePacksChanged;
     private ClientLevel world;
     private BufferedImage terrainBuff;
@@ -89,8 +93,8 @@ public class ColorManager implements IReloadListener {
     private float failedToLoadY;
     private String renderPassThreeBlendMode;
     private final RandomSource random = RandomSource.create();
-    private boolean loaded;
-    private boolean loadedTerrainImage;
+    private volatile boolean loaded;
+    private volatile boolean loadedTerrainImage;
     private final MutableBlockPos dummyBlockPos = new MutableBlockPos(BlockPos.ZERO.getX(), BlockPos.ZERO.getY(), BlockPos.ZERO.getZ());
     private final ColorResolver spruceColorResolver = (blockState, biome, blockPos) -> FoliageColor.FOLIAGE_EVERGREEN;
     private final ColorResolver birchColorResolver = (blockState, biome, blockPos) -> FoliageColor.FOLIAGE_BIRCH;
@@ -155,7 +159,7 @@ public class ColorManager implements IReloadListener {
         return changed;
     }
 
-    private void loadColors() {
+    private synchronized void loadColors() {
         this.loadedTerrainImage = false;
         VoxelConstants.getMinecraft().getSkinManager().get(VoxelConstants.getPlayer().getGameProfile());
         BlockRepository.getBlocks();
@@ -194,6 +198,22 @@ public class ColorManager implements IReloadListener {
         }
 
         this.loaded = true;
+        updateWorldMapPaletteFingerprint();
+    }
+
+    public boolean worldMapPaletteReady() { return loaded && loadedTerrainImage; }
+
+    private synchronized void updateWorldMapPaletteFingerprint() {
+        int fingerprint = 1;
+        for (int i = 0; i < blockColors.length; i++) if (i != BlockRepository.airID && i != BlockRepository.voidAirID && i != BlockRepository.caveAirID)
+            fingerprint = 31 * fingerprint + blockColors[i];
+        if (terrainBuff != null) {
+            int sx = Math.max(1, terrainBuff.getWidth() / 64), sy = Math.max(1, terrainBuff.getHeight() / 64);
+            for (int y = 0; y < terrainBuff.getHeight(); y += sy)
+                for (int x = 0; x < terrainBuff.getWidth(); x += sx) fingerprint = 31 * fingerprint + terrainBuff.getRGB(x, y);
+        }
+        worldMapPaletteFingerprint = fingerprint;
+        worldMapPaletteVersion++;
     }
 
     private void loadColorPicker() {
@@ -211,7 +231,7 @@ public class ColorManager implements IReloadListener {
 
     }
 
-    public void setSkyColor(int skyColor) {
+    public synchronized void setSkyColor(int skyColor) {
         this.blockColors[BlockRepository.airID] = skyColor;
         this.blockColors[BlockRepository.voidAirID] = skyColor;
         this.blockColors[BlockRepository.caveAirID] = skyColor;
@@ -219,8 +239,11 @@ public class ColorManager implements IReloadListener {
 
     private void loadTexturePackTerrainImage() {
         RenderUtils.readTextureContentsToBufferedImage(VoxelConstants.getMinecraft().getTextureManager().getTexture(TextureAtlas.LOCATION_BLOCKS).getTexture(), image -> {
-            terrainBuff = image;
-            loadedTerrainImage = true;
+            synchronized (ColorManager.this) {
+                terrainBuff = image;
+                updateWorldMapPaletteFingerprint();
+                loadedTerrainImage = true;
+            }
         });
     }
 
@@ -238,7 +261,7 @@ public class ColorManager implements IReloadListener {
 
     }
 
-    public final int getBlockColorWithDefaultTint(MutableBlockPos blockPos, int blockStateID) {
+    public final synchronized int getBlockColorWithDefaultTint(MutableBlockPos blockPos, int blockStateID) {
         if (this.loaded && loadedTerrainImage) {
             int col = 0x1B000000;
 
@@ -252,7 +275,7 @@ public class ColorManager implements IReloadListener {
         }
     }
 
-    public final int getBlockColor(MutableBlockPos blockPos, int blockStateID, Biome biomeID) {
+    public final synchronized int getBlockColor(MutableBlockPos blockPos, int blockStateID, Biome biomeID) {
         if (this.loaded && loadedTerrainImage) {
             if (VoxelConstants.usesConnectedTextures() && this.biomeTextureAvailable.contains(blockStateID)) {
                 Integer col = this.blockBiomeSpecificColors.get(blockStateID + " " + biomeID);
@@ -501,7 +524,7 @@ public class ColorManager implements IReloadListener {
         return -1;
     }
 
-    public int getBiomeTint(AbstractMapData mapData, ClientLevel world, BlockState blockState, int blockStateID, MutableBlockPos blockPos, MutableBlockPos loopBlockPos, int startX, int startZ) {
+    public synchronized int getBiomeTint(AbstractMapData mapData, ClientLevel world, BlockState blockState, int blockStateID, MutableBlockPos blockPos, MutableBlockPos loopBlockPos, int startX, int startZ) {
         ChunkAccess chunk = world.getChunk(blockPos);
         boolean live = chunk != null && !((LevelChunk) chunk).isEmpty() && VoxelConstants.getPlayer().level().hasChunk(blockPos.getX() >> 4, blockPos.getZ() >> 4);
         int tint = -2;

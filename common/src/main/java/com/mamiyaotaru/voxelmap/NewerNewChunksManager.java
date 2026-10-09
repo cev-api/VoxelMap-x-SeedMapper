@@ -1,5 +1,8 @@
 package com.mamiyaotaru.voxelmap;
 
+import com.mamiyaotaru.voxelmap.util.ChunkBounds;
+import com.mamiyaotaru.voxelmap.persistent.explored.ExploredCellQuery;
+
 import com.mamiyaotaru.voxelmap.util.CellGrid;
 import com.mamiyaotaru.voxelmap.util.GameVariableAccessShim;
 import com.mamiyaotaru.voxelmap.persistent.ThreadManager;
@@ -105,7 +108,7 @@ public class NewerNewChunksManager {
     private volatile int worldGen = 0;
     private long lastFlushMs = 0L;
 
-    private String loadedWorldKey = "";
+    private volatile String loadedWorldKey = "";
     private long dataVersion = 0L;
     private long lastRescanGameTime = Long.MIN_VALUE;
     private boolean lastKnownFeatureState = false;
@@ -137,6 +140,59 @@ public class NewerNewChunksManager {
         }
     }
 
+    private final java.util.Map<String, EnumMap<OverlayType, CategoryStore>> readContexts = new java.util.LinkedHashMap<>(4, 0.75F, true);
+    private final java.util.Map<String, java.util.Map<String, EnumMap<OverlayType, CategoryStore>>> readPlayerContexts = new java.util.LinkedHashMap<>(4, 0.75F, true);
+
+    public record CellQuery(ExploredCellQuery fresh, ExploredCellQuery old,
+            ExploredCellQuery updating, ExploredCellQuery generation) {
+        public ExploredCellQuery.Status request() {
+            var a = fresh.request(); var b = old.request();
+            var c = updating.request(); var d = generation.request();
+            return new ExploredCellQuery.Status(Math.max(Math.max(a.version(), b.version()), Math.max(c.version(), d.version())),
+                    a.ready() && b.ready() && c.ready() && d.ready());
+        }
+
+        public NewOldCellsSnapshot build() {
+            CellGrid newGrid = fresh.build(), oldGrid = old.build();
+            CellGrid updatingGrid = updating.build(), generationGrid = generation.build();
+            int oldCount = 0, newCount = 0;
+            for (int i = 0; i < oldGrid.cells.length; i++) {
+                if (updatingGrid.cells[i] || generationGrid.cells[i] || (fresh.cellSize() == 1 && newGrid.cells[i])) oldGrid.cells[i] = false;
+                if (fresh.cellSize() > 1 && oldGrid.cells[i]) newGrid.cells[i] = false;
+                if (oldGrid.cells[i]) oldCount++;
+                if (newGrid.cells[i]) newCount++;
+            }
+            return new NewOldCellsSnapshot(oldGrid, newGrid, oldCount, newCount);
+        }
+    }
+
+    public CellQuery prepareCells(ChunkBounds bounds, int cellSize, Identifier dimension, String slug) {
+        var s = slug == null ? resolveStores(dimension) : playerContexts(dimension).get(slug);
+        if (s == null) return null;
+        return new CellQuery(cellQuery(s.get(OverlayType.NEW), bounds, cellSize),
+                cellQuery(s.get(OverlayType.OLD), bounds, cellSize),
+                cellQuery(s.get(OverlayType.BEING_UPDATED), bounds, cellSize),
+                cellQuery(s.get(OverlayType.OLD_GENERATION), bounds, cellSize));
+    }
+
+    private ExploredCellQuery cellQuery(CategoryStore c, ChunkBounds bounds, int cellSize) {
+        return new ExploredCellQuery(c.store(), c.loader(), bounds, cellSize);
+    }
+
+    public java.util.Set<String> playerLayerSlugs(Identifier dimension) { return playerContexts(dimension).keySet(); }
+
+    private synchronized java.util.Map<String, EnumMap<OverlayType, CategoryStore>> playerContexts(Identifier dimension) {
+        String key = dimension == null ? loadedWorldKey : getWorldKeyForDimension(dimension);
+        if (key.equals(loadedWorldKey)) return newOldPlayerLayers;
+        var layers = readPlayerContexts.computeIfAbsent(key, this::loadPlayerLayers);
+        while (readPlayerContexts.size() > 4) readPlayerContexts.remove(readPlayerContexts.keySet().iterator().next());
+        return layers;
+    }
+
+    private synchronized void invalidateReadContexts() {
+        readContexts.clear(); readPlayerContexts.clear();
+    }
+
     public NewerNewChunksManager() {
     }
 
@@ -163,6 +219,7 @@ public class NewerNewChunksManager {
                 return;
             }
             flushAll();
+            invalidateReadContexts();
             loadedWorldKey = worldKey;
             worldGen++;
             dataVersion++;
@@ -177,7 +234,7 @@ public class NewerNewChunksManager {
         for (OverlayType type : OverlayType.values()) {
             var store = new com.mamiyaotaru.voxelmap.persistent.explored.ExploredDiskStore(v3DirFor(worldKey, type));
             map.put(type, new CategoryStore(store,
-                    new com.mamiyaotaru.voxelmap.persistent.explored.ExploredAsyncLoader(store, ThreadManager.executorService)));
+                    new com.mamiyaotaru.voxelmap.persistent.explored.ExploredAsyncLoader(store, ThreadManager.overlayExecutorService)));
         }
         return map;
     }
@@ -187,7 +244,7 @@ public class NewerNewChunksManager {
         for (OverlayType type : OverlayType.values()) {
             var store = new com.mamiyaotaru.voxelmap.persistent.explored.ExploredDiskStore(playerV3Dir(worldKey, slug, type));
             map.put(type, new CategoryStore(store,
-                    new com.mamiyaotaru.voxelmap.persistent.explored.ExploredAsyncLoader(store, ThreadManager.executorService)));
+                    new com.mamiyaotaru.voxelmap.persistent.explored.ExploredAsyncLoader(store, ThreadManager.overlayExecutorService)));
         }
         return map;
     }
@@ -236,6 +293,7 @@ public class NewerNewChunksManager {
     }
 
     public int importPlayerNewOld(String slug, String dimension, java.util.Map<String, long[]> byCategory) {
+        invalidateReadContexts();
         ensureTrackingWorld();
         String worldKey = serverName() + "_" + dimension;
         boolean current = worldKey.equals(loadedWorldKey);
@@ -267,6 +325,7 @@ public class NewerNewChunksManager {
     }
 
     public boolean removePlayerLayer(String slug) {
+        invalidateReadContexts();
         if (newOldPlayerLayers.containsKey(slug)) {
             var updated = new java.util.LinkedHashMap<>(newOldPlayerLayers);
             updated.remove(slug);
@@ -388,6 +447,7 @@ public class NewerNewChunksManager {
     }
 
     public int importDimensionNewOld(String dimension, java.util.Map<String, long[]> byCategory) {
+        invalidateReadContexts();
         String worldKey = serverName() + "_" + dimension;
         var s = stores;
         boolean current = worldKey.equals(loadedWorldKey) && s != null;
@@ -922,7 +982,9 @@ public class NewerNewChunksManager {
         if (s == null) {
             return 0L;
         }
-        return dataVersion;
+        long version = dataVersion;
+        for (CategoryStore c : s.values()) version = Math.max(version, c.store().dataVersion());
+        return version;
     }
 
     public String getLoadedWorldKey() {
@@ -961,6 +1023,7 @@ public class NewerNewChunksManager {
     }
 
     public void clearCurrentWorldData() {
+        invalidateReadContexts();
         synchronized (worldLock) {
             worldGen++;
             flushAll();
@@ -1409,22 +1472,17 @@ public class NewerNewChunksManager {
             }
             return stores;
         }
-        // Different dimension — create temporary read-only stores from disk (no async loaders)
-        return buildStoresNoLoaders(viewedKey);
+        synchronized (this) {
+            var result = readContexts.computeIfAbsent(viewedKey, this::buildStores);
+            while (readContexts.size() > 4) readContexts.remove(readContexts.keySet().iterator().next());
+            return result;
+        }
     }
 
-    private EnumMap<OverlayType, CategoryStore> buildPlayerStoresIfNeeded(String worldKey, String slug) {
-        Path slugDir = nncBaseDir(worldKey).resolve("players").resolve(slug);
-        if (!java.nio.file.Files.isDirectory(slugDir)) {
-            return null;
-        }
-        // Temporary read-only stores (no async loaders)
-        EnumMap<OverlayType, CategoryStore> map = new EnumMap<>(OverlayType.class);
-        for (OverlayType type : OverlayType.values()) {
-            var store = new com.mamiyaotaru.voxelmap.persistent.explored.ExploredDiskStore(playerV3Dir(worldKey, slug, type));
-            map.put(type, new CategoryStore(store, null));
-        }
-        return map;
+    private synchronized EnumMap<OverlayType, CategoryStore> buildPlayerStoresIfNeeded(String worldKey, String slug) {
+        var layers = readPlayerContexts.computeIfAbsent(worldKey, this::loadPlayerLayers);
+        while (readPlayerContexts.size() > 4) readPlayerContexts.remove(readPlayerContexts.keySet().iterator().next());
+        return layers.get(slug);
     }
 
     private EnumMap<OverlayType, CategoryStore> buildStoresNoLoaders(String worldKey) {

@@ -34,6 +34,10 @@ public final class ExploredAsyncLoader {
             if (!queued.add(request)) {
                 return;
             }
+            if (queue.size() >= 1024) {
+                LoadRequest stale = queue.poll();
+                if (stale != null) queued.remove(stale);
+            }
             queue.add(request);
             ensureWorkerLocked();
         }
@@ -55,13 +59,15 @@ public final class ExploredAsyncLoader {
     private void ensureWorkerLocked() {
         if (!workerRunning && (!queue.isEmpty() || flushRequested)) {
             workerRunning = true;
-            executor.execute(this::runWorker);
+            try { executor.execute(this::runWorker); }
+            catch (java.util.concurrent.RejectedExecutionException stopped) { workerRunning = false; }
         }
     }
 
     private void runWorker() {
         try {
-            while (true) {
+            int remaining = 8;
+            while (remaining-- > 0) {
                 LoadRequest request;
                 boolean doFlush;
                 synchronized (monitor) {
@@ -86,6 +92,10 @@ public final class ExploredAsyncLoader {
                     store.flush();
                 }
             }
+            synchronized (monitor) {
+                workerRunning = false;
+                ensureWorkerLocked();
+            }
         } catch (RuntimeException | Error e) {
             // reset the running flag and re-submit a worker if work remains,
             // so future loads still get processed
@@ -93,7 +103,8 @@ public final class ExploredAsyncLoader {
                 workerRunning = false;
                 if (!queue.isEmpty() || flushRequested) {
                     workerRunning = true;
-                    executor.execute(this::runWorker);
+                    try { executor.execute(this::runWorker); }
+                    catch (java.util.concurrent.RejectedExecutionException stopped) { workerRunning = false; }
                 }
             }
             throw e;

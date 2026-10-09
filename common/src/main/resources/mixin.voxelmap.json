@@ -18,6 +18,7 @@
     "MixinClientLevel",
     "MixinChatHud",
     "MixinInGameHud",
+    "MixinGuiRendererWorldMap",
     "MixinManageServerScreen",
     "MixinCappedProcessorChunkAnalysis",
     "MixinEntityTypeChunkAnalysis",

@@ -5,6 +5,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import com.mamiyaotaru.voxelmap.util.CellGrid;
+import com.mamiyaotaru.voxelmap.util.ChunkBounds;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
@@ -23,14 +28,33 @@ public final class ExploredDiskStore {
     private final Path baseDir;
     private final ExploredPyramid pyramid = new ExploredPyramid();
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-    private final AtomicLong dataVersion = new AtomicLong();
+    private static final AtomicLong GENERATIONS = new AtomicLong();
+    private final long identity = GENERATIONS.incrementAndGet();
+    private final AtomicLong dataVersion = new AtomicLong(identity);
+    private final AtomicLong contentVersion = new AtomicLong(identity);
+    private final Map<TileKey, Long> contentRevisions = new HashMap<>();
+    private final int[] contentMinX = new int[ExploredPyramid.LEVELS], contentMaxX = new int[ExploredPyramid.LEVELS];
+    private final int[] contentMinZ = new int[ExploredPyramid.LEVELS], contentMaxZ = new int[ExploredPyramid.LEVELS];
+    private final long[] contentLevelVersions = new long[ExploredPyramid.LEVELS];
+    private long residencyVersion;
+    private final Map<ContainerKey, Long> revisions = new HashMap<>();
+    private final Map<TileKey, Long> tileRevisions = new HashMap<>();
+    private final LinkedHashMap<ContainerKey, Boolean> residency = new LinkedHashMap<>();
+    private final Set<ContainerKey> writing = new HashSet<>();
+    private static final int MAX_RESIDENT_TILES = 16_384;
+    private static final int MAX_RESIDENT_CONTAINERS = 512;
 
     private final Set<ContainerKey> dirty = new HashSet<>();   // guarded by lock
     private final Set<ContainerKey> loaded = new HashSet<>();  // guarded by lock
 
     public ExploredDiskStore(Path baseDir) {
         this.baseDir = baseDir;
+        java.util.Arrays.fill(contentMinX, Integer.MAX_VALUE); java.util.Arrays.fill(contentMaxX, Integer.MIN_VALUE);
+        java.util.Arrays.fill(contentMinZ, Integer.MAX_VALUE); java.util.Arrays.fill(contentMaxZ, Integer.MIN_VALUE);
+        java.util.Arrays.fill(contentLevelVersions, identity);
     }
+
+    private record TileKey(int level, int x, int z) { }
 
     private record ContainerKey(int level, int containerX, int containerZ) {
     }
@@ -45,6 +69,80 @@ public final class ExploredDiskStore {
 
     public long dataVersion() {
         return dataVersion.get();
+    }
+
+    public long identity() { return identity; }
+
+    /** Loading/evicting resident containers does not invalidate a complete disk-backed viewport. */
+    public long contentVersion() { return contentVersion.get(); }
+
+    public long contentVersionInBounds(ChunkBounds bounds, int cellSize) {
+        int level = selectLevelForCellSize(cellSize), shift = TILE_SHIFT * (level + 1);
+        int minX = bounds.minX() >> shift, maxX = bounds.maxX() >> shift;
+        int minZ = bounds.minZ() >> shift, maxZ = bounds.maxZ() >> shift;
+        long version = identity;
+        lock.readLock().lock();
+        try {
+            if (minX <= contentMinX[level] && maxX >= contentMaxX[level] && minZ <= contentMinZ[level] && maxZ >= contentMaxZ[level])
+                return contentLevelVersions[level];
+            if ((long) (maxX - minX + 1) * (maxZ - minZ + 1) <= contentRevisions.size()) {
+                for (int x = minX; x <= maxX; x++) for (int z = minZ; z <= maxZ; z++)
+                    version = Math.max(version, contentRevisions.getOrDefault(new TileKey(level, x, z), identity));
+            } else for (var entry : contentRevisions.entrySet()) {
+                TileKey key = entry.getKey();
+                if (key.level() == level && key.x() >= minX && key.x() <= maxX && key.z() >= minZ && key.z() <= maxZ)
+                    version = Math.max(version, entry.getValue());
+            }
+            return version;
+        } finally { lock.readLock().unlock(); }
+    }
+
+    /** Worker-only sparse snapshot. Reads existing files without changing bounded live residency. */
+    public com.mamiyaotaru.voxelmap.util.SparseCellGrid sparseCellsInBounds(ChunkBounds bounds, int cellSize) {
+        var result = new com.mamiyaotaru.voxelmap.util.SparseCellGrid();
+        if (bounds.isEmpty() || cellSize <= 0) return result;
+        int level = selectLevelForCellSize(cellSize);
+        int coverage = (int) bitCoverage(level);
+        int shift = TILE_SHIFT * (level + 1) + CONTAINER_SHIFT;
+        Path directory = baseDir.resolve("lod" + level);
+        if (Files.isDirectory(directory)) {
+            try (Stream<Path> files = Files.list(directory)) {
+                var paths = files.filter(file -> {
+                    String[] name = file.getFileName().toString().split("\\.");
+                    if (name.length != 4 || !name[0].equals("c") || !name[3].equals("bin")) return false;
+                    try {
+                        int cx = Integer.parseInt(name[1]), cz = Integer.parseInt(name[2]);
+                        return cx >= (bounds.minX() >> shift) && cx <= (bounds.maxX() >> shift)
+                                && cz >= (bounds.minZ() >> shift) && cz <= (bounds.maxZ() >> shift);
+                    } catch (NumberFormatException ignored) { return false; }
+                }).toList();
+                int completed = 0;
+                com.mamiyaotaru.voxelmap.persistent.WorldMapProgress.report("Reading containers", 0, paths.size());
+                for (Path file : paths) {
+                    if (Thread.currentThread().isInterrupted()) throw new java.util.concurrent.CancellationException();
+                    String[] name = file.getFileName().toString().split("\\.");
+                    if (name.length != 4 || !name[0].equals("c") || !name[3].equals("bin")) continue;
+                    int cx, cz;
+                    try { cx = Integer.parseInt(name[1]); cz = Integer.parseInt(name[2]); }
+                    catch (NumberFormatException ignored) { continue; }
+                    if (cx < (bounds.minX() >> shift) || cx > (bounds.maxX() >> shift)
+                            || cz < (bounds.minZ() >> shift) || cz > (bounds.maxZ() >> shift)) continue;
+                    ExploredContainer container = ExploredContainerIo.read(file);
+                    if (container == null) {
+                        com.mamiyaotaru.voxelmap.persistent.WorldMapProgress.report("Reading containers", ++completed, paths.size());
+                        continue;
+                    }
+                    for (int z = 0; z < 32; z++) for (int x = 0; x < 32; x++) {
+                        ExploredTile tile = container.getTile(x, z);
+                        if (tile != null) emitTileCells((cx << 5) + x, (cz << 5) + z, coverage, cellSize, bounds, tile, result::mark);
+                    }
+                    com.mamiyaotaru.voxelmap.persistent.WorldMapProgress.report("Reading containers", ++completed, paths.size());
+                }
+            } catch (IOException failure) { throw new java.io.UncheckedIOException(failure); }
+        }
+        // Include unsaved exploration. Disk and resident bits are monotonic, so OR is lossless.
+        forEachCell(bounds, cellSize, result::mark);
+        return result;
     }
 
     public boolean isChunkExplored(int chunkX, int chunkZ) {
@@ -77,12 +175,64 @@ public final class ExploredDiskStore {
     public void setChunk(int chunkX, int chunkZ) {
         lock.writeLock().lock();
         try {
-            pyramid.setChunk(chunkX, chunkZ, (level, tileX, tileZ) ->
-                    dirty.add(new ContainerKey(level, tileX >> CONTAINER_SHIFT, tileZ >> CONTAINER_SHIFT)));
+            pyramid.setChunk(chunkX, chunkZ, (level, tileX, tileZ) -> {
+                ContainerKey key = new ContainerKey(level, tileX >> CONTAINER_SHIFT, tileZ >> CONTAINER_SHIFT);
+                dirty.add(key);
+                residency.put(key, Boolean.TRUE);
+                long version = GENERATIONS.incrementAndGet();
+                tileRevisions.put(new TileKey(level, tileX, tileZ), version);
+                contentRevisions.put(new TileKey(level, tileX, tileZ), version);
+                contentMinX[level] = Math.min(contentMinX[level], tileX); contentMaxX[level] = Math.max(contentMaxX[level], tileX);
+                contentMinZ[level] = Math.min(contentMinZ[level], tileZ); contentMaxZ[level] = Math.max(contentMaxZ[level], tileZ);
+                contentLevelVersions[level] = version;
+                dataVersion.set(version);
+                contentVersion.set(version);
+            });
         } finally {
             lock.writeLock().unlock();
         }
-        dataVersion.incrementAndGet();
+    }
+
+    public long versionInBounds(ChunkBounds bounds, int level) {
+        int shift = TILE_SHIFT * (level + 1) + CONTAINER_SHIFT;
+        long version;
+        lock.readLock().lock();
+        try {
+            version = Math.max(identity, residencyVersion);
+            for (int x = bounds.minX() >> shift; x <= bounds.maxX() >> shift; x++) {
+                for (int z = bounds.minZ() >> shift; z <= bounds.maxZ() >> shift; z++) {
+                    version = Math.max(version, revisions.getOrDefault(new ContainerKey(level, x, z), identity));
+                }
+            }
+            int tileShift = TILE_SHIFT * (level + 1);
+            int minX = bounds.minX() >> tileShift, maxX = bounds.maxX() >> tileShift;
+            int minZ = bounds.minZ() >> tileShift, maxZ = bounds.maxZ() >> tileShift;
+            long checks = (long) (maxX - minX + 1) * (maxZ - minZ + 1);
+            if (checks <= tileRevisions.size()) {
+                for (int x = minX; x <= maxX; x++) for (int z = minZ; z <= maxZ; z++)
+                    version = Math.max(version, tileRevisions.getOrDefault(new TileKey(level, x, z), identity));
+            } else {
+                for (var entry : tileRevisions.entrySet()) {
+                    TileKey key = entry.getKey();
+                    if (key.level() == level && key.x() >= minX && key.x() <= maxX && key.z() >= minZ && key.z() <= maxZ)
+                        version = Math.max(version, entry.getValue());
+                }
+            }
+            return version;
+        } finally { lock.readLock().unlock(); }
+    }
+
+    public CellGrid cellsInBounds(ChunkBounds bounds, int cellSize) {
+        if (bounds.isEmpty() || cellSize <= 0) return new CellGrid(0, 0, 0, 0);
+        int minX = Math.floorDiv(bounds.minX(), cellSize);
+        int minZ = Math.floorDiv(bounds.minZ(), cellSize);
+        int width = Math.floorDiv(bounds.maxX(), cellSize) - minX + 1;
+        int height = Math.floorDiv(bounds.maxZ(), cellSize) - minZ + 1;
+        if ((long) width * height > 16_000_000L) return new CellGrid(0, 0, 0, 0);
+        CellGrid grid = new CellGrid(minX, minZ, width, height);
+        // A grid mark is idempotent; avoid constructing a second hash set to deduplicate cells.
+        forEachCell(bounds, cellSize, grid::mark);
+        return grid;
     }
 
     private static long bitCoverage(int level) {
@@ -182,71 +332,63 @@ public final class ExploredDiskStore {
      *
      */
     public void forEachExploredCellInRange(int centerChunkX, int centerChunkZ, int radius, int cellChunkSize, CellConsumer consumer) {
-        if (cellChunkSize <= 0) {
-            return;
-        }
+        LongHashSet emitted = new LongHashSet();
+        forEachCell(ChunkBounds.around(centerChunkX, centerChunkZ, radius), cellChunkSize, (x, z) -> {
+            if (emitted.add(((long) x << 32) ^ (z & 0xFFFFFFFFL))) consumer.accept(x, z);
+        });
+    }
+
+    private void forEachCell(ChunkBounds bounds, int cellChunkSize, CellConsumer consumer) {
+        if (bounds.isEmpty() || cellChunkSize <= 0) return;
         int level = selectLevelForCellSize(cellChunkSize);
-        long coverage = bitCoverage(level);
-        int minChunkX = centerChunkX - radius;
-        int maxChunkX = centerChunkX + radius;
-        int minChunkZ = centerChunkZ - radius;
-        int maxChunkZ = centerChunkZ + radius;
-        LongHashSet emittedCells = new LongHashSet();
+        int coverage = (int) bitCoverage(level);
+        int shift = TILE_SHIFT * (level + 1);
+        int minTileX = bounds.minX() >> shift, maxTileX = bounds.maxX() >> shift;
+        int minTileZ = bounds.minZ() >> shift, maxTileZ = bounds.maxZ() >> shift;
         lock.readLock().lock();
         try {
-            int levelTileShift = TILE_SHIFT * (level + 1);
-            int minTileX = minChunkX >> levelTileShift;
-            int maxTileX = maxChunkX >> levelTileShift;
-            int minTileZ = minChunkZ >> levelTileShift;
-            int maxTileZ = maxChunkZ >> levelTileShift;
-
-            long rectTiles = (long) (maxTileX - minTileX + 1) * (long) (maxTileZ - minTileZ + 1);
-            if (rectTiles <= pyramid.tileCount(level)) {
-                for (int tileX = minTileX; tileX <= maxTileX; tileX++) {
-                    for (int tileZ = minTileZ; tileZ <= maxTileZ; tileZ++) {
-                        ExploredTile tile = pyramid.tileAt(level, tileX, tileZ);
-                        if (tile != null && !tile.isEmpty()) {
-                            emitTileCells(tileX, tileZ, coverage, cellChunkSize, minChunkX, maxChunkX, minChunkZ, maxChunkZ, tile, emittedCells, consumer);
-                        }
+            long tiles = (long) (maxTileX - minTileX + 1) * (maxTileZ - minTileZ + 1);
+            if (tiles <= pyramid.tileCount(level)) {
+                for (int x = minTileX; x <= maxTileX; x++) {
+                    for (int z = minTileZ; z <= maxTileZ; z++) {
+                        ExploredTile tile = pyramid.tileAt(level, x, z);
+                        if (tile != null) emitTileCells(x, z, coverage, cellChunkSize, bounds, tile, consumer);
                     }
                 }
             } else {
                 pyramid.forEachTile(level, (key, tile) -> {
-                    int tileX = (int) (key >> 32);
-                    int tileZ = (int) key;
-                    if (tileX < minTileX || tileX > maxTileX || tileZ < minTileZ || tileZ > maxTileZ || tile.isEmpty()) {
-                        return;
+                    int x = (int) (key >> 32), z = (int) key;
+                    if (x >= minTileX && x <= maxTileX && z >= minTileZ && z <= maxTileZ) {
+                        emitTileCells(x, z, coverage, cellChunkSize, bounds, tile, consumer);
                     }
-                    emitTileCells(tileX, tileZ, coverage, cellChunkSize, minChunkX, maxChunkX, minChunkZ, maxChunkZ, tile, emittedCells, consumer);
                 });
             }
-        } finally {
-            lock.readLock().unlock();
-        }
+        } finally { lock.readLock().unlock(); }
     }
 
-    private static void emitTileCells(int tileX, int tileZ, long coverage, int cellChunkSize,
-            int minChunkX, int maxChunkX, int minChunkZ, int maxChunkZ,
-            ExploredTile tile, LongHashSet emittedCells, CellConsumer consumer) {
-        for (int bx = 0; bx < ExploredTile.SIDE; bx++) {
-            for (int bz = 0; bz < ExploredTile.SIDE; bz++) {
-                if (!tile.get(bx, bz)) {
-                    continue;
-                }
-                long blockChunkX = ((long) tileX * ExploredTile.SIDE + bx) * coverage;
-                long blockChunkZ = ((long) tileZ * ExploredTile.SIDE + bz) * coverage;
-                if (blockChunkX + coverage - 1 < minChunkX || blockChunkX > maxChunkX
-                        || blockChunkZ + coverage - 1 < minChunkZ || blockChunkZ > maxChunkZ) {
-                    continue;
-                }
-                int cellX = (int) Math.floorDiv(blockChunkX, (long) cellChunkSize);
-                int cellZ = (int) Math.floorDiv(blockChunkZ, (long) cellChunkSize);
-                long cellKey = ((long) cellX << 32) ^ (cellZ & 0xFFFFFFFFL);
-                if (emittedCells.add(cellKey)) {
-                    consumer.accept(cellX, cellZ);
-                }
-            }
+    private static void emitTileCells(int tileX, int tileZ, int coverage, int cellSize,
+            ChunkBounds bounds, ExploredTile tile, CellConsumer consumer) {
+        // Intermediate power-of-two summaries are derived in memory, preserving the V3 disk format.
+        int reduction = 0;
+        if (cellSize % coverage == 0) {
+            int ratio = cellSize / coverage;
+            if ((ratio & (ratio - 1)) == 0) reduction = Math.min(4, Integer.numberOfTrailingZeros(ratio));
         }
+        int step = coverage << reduction;
+        ExploredTile bits = tile.reduced(reduction);
+        long baseX = (long) tileX * ExploredTile.SIDE * coverage;
+        long baseZ = (long) tileZ * ExploredTile.SIDE * coverage;
+        bits.forEachSetBit((x, z) -> {
+            long chunkX = baseX + (long) x * step, chunkZ = baseZ + (long) z * step;
+            if (chunkX + step - 1 < bounds.minX() || chunkX > bounds.maxX()
+                    || chunkZ + step - 1 < bounds.minZ() || chunkZ > bounds.maxZ()) return;
+            // Non-aligned coarse bits may span more than one output cell. Mark each intersecting cell.
+            int firstX = (int) Math.floorDiv(Math.max(chunkX, bounds.minX()), cellSize);
+            int lastX = (int) Math.floorDiv(Math.min(chunkX + step - 1, bounds.maxX()), cellSize);
+            int firstZ = (int) Math.floorDiv(Math.max(chunkZ, bounds.minZ()), cellSize);
+            int lastZ = (int) Math.floorDiv(Math.min(chunkZ + step - 1, bounds.maxZ()), cellSize);
+            for (int cx = firstX; cx <= lastX; cx++) for (int cz = firstZ; cz <= lastZ; cz++) consumer.accept(cx, cz);
+        });
     }
 
     public void loadContainer(int level, int containerX, int containerZ) {
@@ -268,10 +410,15 @@ public final class ExploredDiskStore {
             if (!loaded.add(key)) {
                 return; // another thread loaded it meanwhile
             }
+            residency.put(key, Boolean.TRUE);
             if (container != null) {
                 mergeContainerLocked(level, containerX, containerZ, container);
+                long version = GENERATIONS.incrementAndGet();
+                revisions.put(key, version);
+                dataVersion.set(version);
                 merged = true;
             }
+            pruneResidencyLocked(key);
         } finally {
             lock.writeLock().unlock();
         }
@@ -279,7 +426,7 @@ public final class ExploredDiskStore {
             // only a load that actually merged data changes what renders, a missing container is marked
             // loaded (so we don't retry it) but must NOT bump the version and trigger a spurious
             // re-query/re-render of unchanged data
-            dataVersion.incrementAndGet();
+            // The container revision was published under the write lock above.
         }
     }
 
@@ -299,59 +446,69 @@ public final class ExploredDiskStore {
     /** writes all dirty containers to disk, merging existing on-disk data first so a container modified
      *  without ever being loaded (e.g. the player explored its area without opening the map there) can't
      *  overwrite previously-saved chunks */
-    public void flush() {
+    public synchronized void flush() {
         List<ContainerKey> keys;
         List<ContainerKey> needMerge = new ArrayList<>();
         lock.writeLock().lock();
         try {
-            if (dirty.isEmpty()) {
-                return;
-            }
+            if (dirty.isEmpty()) return;
             keys = new ArrayList<>(dirty);
-            for (ContainerKey key : keys) {
-                if (!loaded.contains(key)) {
-                    needMerge.add(key);
-                }
-            }
-            dirty.clear();
-        } finally {
-            lock.writeLock().unlock();
-        }
+            for (ContainerKey key : keys) if (!loaded.contains(key)) needMerge.add(key);
+            writing.addAll(keys); dirty.clear();
+        } finally { lock.writeLock().unlock(); }
 
-        List<ExploredContainer> existing = new ArrayList<>();
-        for (ContainerKey key : needMerge) {
-            ExploredContainer onDisk = ExploredContainerIo.read(containerPath(key.level(), key.containerX(), key.containerZ()));
-            if (onDisk != null) {
-                existing.add(onDisk);
-            }
-        }
-
-        List<PendingWrite> pending = new ArrayList<>();
-        lock.writeLock().lock();
         try {
             for (ContainerKey key : needMerge) {
-                loaded.add(key);
+                ExploredContainer existing = ExploredContainerIo.read(containerPath(key.level(), key.containerX(), key.containerZ()));
+                lock.writeLock().lock();
+                try {
+                    loaded.add(key); residency.put(key, Boolean.TRUE);
+                    if (existing != null) {
+                        mergeContainerLocked(key.level(), key.containerX(), key.containerZ(), existing);
+                        long revision = GENERATIONS.incrementAndGet(); revisions.put(key, revision); dataVersion.set(revision);
+                    }
+                } finally { lock.writeLock().unlock(); }
             }
-            for (ExploredContainer onDisk : existing) {
-                mergeContainerLocked(onDisk.level(), onDisk.containerX(), onDisk.containerZ(), onDisk);
-            }
+            // Snapshot one container at a time. Encoding and disk writes never hold the store lock.
             for (ContainerKey key : keys) {
-                ExploredContainer container = buildContainerLocked(key.level(), key.containerX(), key.containerZ());
-                pending.add(new PendingWrite(containerPath(key.level(), key.containerX(), key.containerZ()), container.encode()));
+                ExploredContainer snapshot;
+                lock.readLock().lock();
+                try { snapshot = buildContainerLocked(key.level(), key.containerX(), key.containerZ()); }
+                finally { lock.readLock().unlock(); }
+                try { ExploredContainerIo.writeBytes(containerPath(key.level(), key.containerX(), key.containerZ()), snapshot.encode()); }
+                catch (IOException failed) {
+                    lock.writeLock().lock();
+                    try { dirty.add(key); } finally { lock.writeLock().unlock(); }
+                } finally {
+                    lock.writeLock().lock();
+                    try { writing.remove(key); pruneResidencyLocked(key); }
+                    finally { lock.writeLock().unlock(); }
+                }
             }
         } finally {
-            lock.writeLock().unlock();
-        }
-
-        for (PendingWrite write : pending) {
-            try {
-                ExploredContainerIo.writeBytes(write.path(), write.data());
-            } catch (IOException ignored) {
-            }
+            lock.writeLock().lock();
+            try { for (ContainerKey key : keys) if (writing.remove(key)) dirty.add(key); }
+            finally { lock.writeLock().unlock(); }
         }
     }
 
-    private record PendingWrite(Path path, byte[] data) {
+    private void pruneResidencyLocked(ContainerKey newest) {
+        int tiles = 0;
+        for (int level = 0; level < ExploredPyramid.LEVELS; level++) tiles += pyramid.tileCount(level);
+        if (tiles <= MAX_RESIDENT_TILES && residency.size() <= MAX_RESIDENT_CONTAINERS) return;
+        var iterator = residency.keySet().iterator();
+        while (iterator.hasNext() && (tiles > MAX_RESIDENT_TILES || residency.size() > MAX_RESIDENT_CONTAINERS)) {
+            ContainerKey key = iterator.next();
+            if (key.equals(newest) || dirty.contains(key) || writing.contains(key)) continue;
+            int removed = pyramid.removeContainer(key.level(), key.containerX(), key.containerZ());
+            tiles -= removed;
+            if (removed > 0) for (int x = 0; x < 32; x++) for (int z = 0; z < 32; z++)
+                tileRevisions.remove(new TileKey(key.level(), (key.containerX() << 5) + x, (key.containerZ() << 5) + z));
+            loaded.remove(key);
+            residencyVersion = GENERATIONS.incrementAndGet();
+            revisions.remove(key);
+            iterator.remove();
+        }
     }
 
     private ExploredContainer buildContainerLocked(int level, int containerX, int containerZ) {
@@ -362,7 +519,7 @@ public final class ExploredDiskStore {
             for (int localZ = 0; localZ < ExploredContainer.TILES_PER_SIDE; localZ++) {
                 ExploredTile tile = pyramid.tileAt(level, baseTileX + localX, baseTileZ + localZ);
                 if (tile != null && !tile.isEmpty()) {
-                    container.putTile(localX, localZ, tile);
+                    container.putTile(localX, localZ, ExploredTile.fromBytes(tile.toBytes()));
                 }
             }
         }

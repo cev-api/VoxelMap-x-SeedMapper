@@ -102,6 +102,14 @@ public final class ExploredPyramid {
         return levels[level].size();
     }
 
+    public int removeContainer(int level, int containerX, int containerZ) {
+        int removed = 0;
+        for (int x = 0; x < 32; x++) for (int z = 0; z < 32; z++) {
+            if (levels[level].remove(key((containerX << 5) + x, (containerZ << 5) + z))) removed++;
+        }
+        return removed;
+    }
+
     public void forEachTile(int level, ExploredTileMap.EntryVisitor visitor) {
         levels[level].forEach(visitor);
     }

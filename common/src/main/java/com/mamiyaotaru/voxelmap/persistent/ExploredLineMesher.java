@@ -40,13 +40,9 @@ final class ExploredLineMesher {
         boolean[] nodeLinked = buildNodes ? new boolean[Math.max(16, nodeHint + 16)] : EMPTY_BOOLS;
         int nodeCount = 0;
 
-        for (int gz = 0; gz < h; gz++) {
-            int rowBase = gz * w;
-            for (int gx = 0; gx < w; gx++) {
-                if (!cells[rowBase + gx]) {
-                    continue;
-                }
-                int idx = rowBase + gx;
+        for (int idx = grid.nextOccupied(0); idx >= 0; idx = grid.nextOccupied(idx + 1)) {
+                int gx = idx % w;
+                int gz = idx / w;
                 boolean left;
                 boolean right;
                 boolean up;
@@ -143,7 +139,6 @@ final class ExploredLineMesher {
                     segs = ensure(segs, segFloats + 4);
                     segFloats = writeSegment(segs, segFloats, cellX, cellZ, minX + endGx, minZ + endGz, cellChunkSize);
                 }
-            }
         }
 
         return new Result(segs, segFloats >> 2, nodeCoords, nodeLinked, nodeCount);

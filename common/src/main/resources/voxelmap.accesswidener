@@ -1,11 +1,13 @@
 accessWidener v1 official
 
 # classes
+accessible class net/minecraft/client/renderer/state/gui/GuiRenderState$Node
 accessible class net/minecraft/client/gui/components/AbstractSelectionList$Entry
 accessible class net/minecraft/client/gui/GuiGraphicsExtractor$ScissorStack
 accessible class net/minecraft/world/level/biome/Biome$ClimateSettings
 
 # fields
+accessible field net/minecraft/client/renderer/state/gui/GuiRenderState current Lnet/minecraft/client/renderer/state/gui/GuiRenderState$Node;
 accessible field net/minecraft/client/model/QuadrupedModel head Lnet/minecraft/client/model/geom/ModelPart;
 accessible field net/minecraft/client/model/geom/ModelPart children Ljava/util/Map;
 mutable field net/minecraft/client/Options keyMappings [Lnet/minecraft/client/KeyMapping;

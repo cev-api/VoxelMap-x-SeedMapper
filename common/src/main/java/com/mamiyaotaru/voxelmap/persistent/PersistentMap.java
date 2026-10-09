@@ -82,6 +82,13 @@ public class PersistentMap implements IChangeObserver {
         double distance2sq = (coordinates2.x * 256 + 128 - PersistentMap.this.options.mapX) * (coordinates2.x * 256 + 128 - PersistentMap.this.options.mapX) + (coordinates2.z * 256 + 128 - PersistentMap.this.options.mapZ) * (coordinates2.z * 256 + 128 - PersistentMap.this.options.mapZ);
         return Double.compare(distance1sq, distance2sq);
     };
+    private final TerrainOverview terrainOverview = new TerrainOverview(this);
+    private final java.util.Map<String, File> terrainDirectories = new java.util.HashMap<>();
+    private long lastIndexVersion;
+    private long lastPruneMs;
+    private Set<String> terrainWorkingSet = java.util.Set.of();
+    private final java.util.Queue<CachedRegion> deferredCleanup = new java.util.concurrent.ConcurrentLinkedQueue<>();
+    private long lastOverviewOptionsVersion;
     private boolean queuedChangedChunks;
     private MapChunkCache chunkCache;
     private int lastRenderDistance;
@@ -175,8 +182,10 @@ public class PersistentMap implements IChangeObserver {
             this.purgeCachedRegions();
         }
 
-        if (this.queuedChangedChunks) {
+        long now = System.currentTimeMillis();
+        if (this.queuedChangedChunks || now - lastPruneMs > 1000) {
             this.queuedChangedChunks = false;
+            lastPruneMs = now;
             this.prunePool();
         }
 
@@ -204,6 +213,7 @@ public class PersistentMap implements IChangeObserver {
     }
 
     public void purgeCachedRegions() {
+        terrainOverview.clear(); terrainDirectories.clear(); terrainWorkingSet = java.util.Set.of(); lastIndexVersion = 0;
         synchronized (this.cachedRegionsPool) {
             for (CachedRegion cachedRegion : this.cachedRegionsPool) {
                 cachedRegion.cleanup();
@@ -757,9 +767,11 @@ public class PersistentMap implements IChangeObserver {
 
     public CachedRegion[] getRegions(int left, int right, int top, int bottom, Identifier viewedDimension) {
         String dimensionCacheKey = dimensionCacheKey(viewedDimension);
+        MapRegionPack index = right < left || bottom < top ? null : terrainIndex(viewedDimension);
+        long indexVersion = index == null ? 0 : index.indexVersion();
         synchronized (this.lastRegionsLock) {
-            if (left == this.lastLeft && right == this.lastRight && top == this.lastTop && bottom == this.lastBottom && dimensionCacheKey.equals(this.lastDimensionCacheKey)) {
-                return this.lastRegionsArray.clone();
+            if (left == this.lastLeft && right == this.lastRight && top == this.lastTop && bottom == this.lastBottom && dimensionCacheKey.equals(this.lastDimensionCacheKey) && indexVersion == lastIndexVersion) {
+                return this.lastRegionsArray;
             }
         }
         {
@@ -786,6 +798,8 @@ public class PersistentMap implements IChangeObserver {
                 CachedRegion cachedRegion;
                 synchronized (this.cachedRegions) {
                     cachedRegion = this.cachedRegions.get(cacheKey);
+                    if (cachedRegion == null && index != null && index.migrationComplete() && !index.contains(x, z) && !isLiveRegion(viewedDimension, x, z)) continue;
+                    if (cachedRegion == null && index == null && !isLiveRegion(viewedDimension, x, z)) continue;
                     if (cachedRegion == null) {
                         cachedRegion = new CachedRegion(this, cacheKey, fileKey, this.world, worldName, subWorldName, x, z, viewedDimension);
                         this.cachedRegions.put(cacheKey, cachedRegion);
@@ -799,6 +813,9 @@ public class PersistentMap implements IChangeObserver {
                 visibleCachedRegionsArray[(z - top) * (right - left + 1) + (x - left)] = cachedRegion;
             }
 
+            java.util.Set<String> visibleKeys = new java.util.HashSet<>();
+            for (CachedRegion region : visibleCachedRegionsArray) if (region != null && region != CachedRegion.EMPTY_REGION) visibleKeys.add(region.getKey());
+            terrainWorkingSet = visibleKeys;
             this.prunePool();
             synchronized (this.lastRegionsLock) {
                 this.lastLeft = left;
@@ -806,35 +823,81 @@ public class PersistentMap implements IChangeObserver {
                 this.lastTop = top;
                 this.lastBottom = bottom;
                 this.lastDimensionCacheKey = dimensionCacheKey;
+                this.lastIndexVersion = indexVersion;
                 this.lastRegionsArray = visibleCachedRegionsArray;
-                return visibleCachedRegionsArray.clone();
+                return visibleCachedRegionsArray;
             }
         }
     }
 
+    private MapRegionPack terrainIndex(Identifier dimension) {
+        String key = dimensionCacheKey(dimension);
+        File dir = terrainDirectories.computeIfAbsent(key, ignored -> {
+            String name = VoxelConstants.getVoxelMapInstance().getWaypointManager().getCurrentWorldName();
+            String sub = VoxelConstants.getVoxelMapInstance().getWaypointManager().getCurrentSubworldDescriptor(false);
+            return new CachedRegion(this, "overview", "0,0", world, name, sub, 0, 0, dimension, true).cacheDirectory();
+        });
+        return MapRegionPack.requestDirectory(dir);
+    }
+
+    private boolean isLiveRegion(Identifier dimension, int x, int z) {
+        return world != null && world.dimension().identifier().equals(dimension)
+                && Math.abs(x - (GameVariableAccessShim.xCoord() >> 8)) <= 2
+                && Math.abs(z - (GameVariableAccessShim.zCoord() >> 8)) <= 2;
+    }
+
+    CachedRegion overviewRegion(Identifier dimension, int x, int z) {
+        CachedRegion region = cachedRegions.get(buildRegionCacheKey(dimension, x, z));
+        return region == CachedRegion.EMPTY_REGION ? null : region;
+    }
+
+    public void drawTerrainOverview(net.minecraft.client.gui.GuiGraphicsExtractor graphics,
+            int left, int right, int top, int bottom, Identifier dimension, float scale) {
+        long version = colorManager.worldMapPaletteVersion();
+        if (version != lastOverviewOptionsVersion) {
+            if (lastOverviewOptionsVersion != 0) terrainOverview.invalidate();
+            lastOverviewOptionsVersion = version;
+        }
+        terrainOverview.render(graphics, left, right, top, bottom, dimension, scale);
+    }
+
+    void suspendTerrainOverview() { terrainOverview.suspend(); }
+
+    void deferCleanup(CachedRegion region) { deferredCleanup.add(region); }
+
     private void prunePool() {
+        int pending = Math.min(16, deferredCleanup.size());
+        while (pending-- > 0) { CachedRegion region = deferredCleanup.poll(); if (region != null) region.cleanup(); }
         synchronized (this.cachedRegionsPool) {
             Iterator<CachedRegion> iterator = this.cachedRegionsPool.iterator();
 
             while (iterator.hasNext()) {
                 CachedRegion region = iterator.next();
                 if (region.isLoaded() && region.isEmpty()) {
-                    this.cachedRegions.put(region.getKey(), CachedRegion.EMPTY_REGION);
+                    this.cachedRegions.remove(region.getKey(), region);
                     region.cleanup();
                     iterator.remove();
                 }
             }
 
-            if (this.cachedRegionsPool.size() > this.options.cacheSize) {
+            long heap = 0, nativeBytes = 0, gpu = 0;
+            for (CachedRegion region : cachedRegionsPool) {
+                heap += region.estimatedHeapBytes(); nativeBytes += region.estimatedNativeBytes(); gpu += region.estimatedGpuBytes();
+            }
+            long heapLimit = Math.min(256L << 20, Runtime.getRuntime().maxMemory() / 8);
+            int keep = Math.max(30, Math.min(1024, options.cacheSize));
+            if (cachedRegionsPool.size() > keep || heap > heapLimit || nativeBytes > (96L << 20) || gpu > (128L << 20)) {
                 this.cachedRegionsPool.sort(this.ageThenDistanceSorter);
-                List<CachedRegion> toRemove = this.cachedRegionsPool.subList(this.options.cacheSize, this.cachedRegionsPool.size());
-
-                for (CachedRegion cachedRegion : toRemove) {
-                    this.cachedRegions.remove(cachedRegion.getKey());
-                    cachedRegion.cleanup();
+                // Dirty or busy entries stay addressable until their save finishes successfully.
+                for (int i = cachedRegionsPool.size() - 1; i >= 0 && cachedRegionsPool.size() > 30
+                        && (cachedRegionsPool.size() > keep || heap > heapLimit || nativeBytes > (96L << 20) || gpu > (128L << 20)); i--) {
+                    CachedRegion region = cachedRegionsPool.get(i);
+                    if (terrainWorkingSet.contains(region.getKey()) || !region.prepareForEviction()) continue;
+                    heap -= region.estimatedHeapBytes(); nativeBytes -= region.estimatedNativeBytes(); gpu -= region.estimatedGpuBytes();
+                    cachedRegions.remove(region.getKey(), region);
+                    synchronized (lastRegionsLock) { lastDimensionCacheKey = ""; }
+                    region.cleanup(); cachedRegionsPool.remove(i);
                 }
-
-                toRemove.clear();
             }
 
             this.compress();

@@ -24,6 +24,7 @@ import com.mamiyaotaru.voxelmap.gui.GuiSeedMapperLootViewer;
 import com.mamiyaotaru.voxelmap.gui.GuiSeedMapperMap;
 import com.mamiyaotaru.voxelmap.gui.GuiSeedMapperMarkerOptions;
 import com.mamiyaotaru.voxelmap.gui.GuiSeedMapperSavedSeeds;
+import com.mamiyaotaru.voxelmap.gui.GuiServerSeeds;
 import com.mamiyaotaru.voxelmap.gui.overridden.EnumOptionsMinimap;
 import com.mamiyaotaru.voxelmap.gui.overridden.GuiScreenMinimap;
 import com.mamiyaotaru.voxelmap.interfaces.ISettingsManager;
@@ -417,7 +418,11 @@ public final class VoxelMapSettings {
 
     private static SettingsCategory worldMap(MapSettingsManager map, PersistentMapSettingsManager world, SeedMapperSettingsManager seed, Supplier<Screen> host) {
         return new SettingsCategory("worldmap", "options.voxelmap.category.worldmap", List.of(
+                detailGroup(world),
+                visibilityGroup(world),
+                renderingGroup(world),
                 group("options.voxelmap.group.worldmapDisplay",
+                        detailToggle("loadingBars", world, () -> world.showLoadingBars, value -> world.showLoadingBars = value),
                         persistentToggle("worldmap.coordinates", "options.worldmap.showCoordinates", world, EnumOptionsMinimap.SHOW_WORLDMAP_COORDS, () -> true, Component::empty, 0),
                         persistentToggle("worldmap.arrow", "options.worldmap.showPlayerDirectionArrow", world, EnumOptionsMinimap.SHOW_WORLDMAP_PLAYER_DIRECTION_ARROW, () -> true, Component::empty, 0),
                         persistentToggle("worldmap.hideMultiworld", "options.worldmap.hideMultiworldButton", world, EnumOptionsMinimap.WORLDMAP_HIDE_MULTIWORLD_BUTTON, () -> true, Component::empty, 0),
@@ -428,6 +433,13 @@ public final class VoxelMapSettings {
                         persistentToggle("worldmap.cluster", "options.worldmap.clusterWaypoints", world, EnumOptionsMinimap.WORLDMAP_CLUSTER_WAYPOINTS, () -> map.waypointsAllowed && world.showWaypoints, requires("options.voxelmap.requires.worldmapWaypoints"), 1),
                         persistentToggle("worldmap.perfWaypoints", "options.worldmap.showWaypointsInPerformanceMode", world, EnumOptionsMinimap.WORLDMAP_SHOW_WAYPOINTS_IN_PERFORMANCE_MODE, () -> map.waypointsAllowed && world.showWaypoints, requires("options.voxelmap.requires.worldmapWaypoints"), 1)),
                 group("options.voxelmap.group.zoomCache",
+                        SettingsOption.slider("worldmap.zoomCache", "options.voxelmap.worldmap.zoomCache", "options.voxelmap.worldmap.zoomCache.tooltip",
+                                () -> (double) world.detail.zoomCacheMiB, value -> { world.detail.zoomCacheMiB = value.intValue(); world.saveAll(); },
+                                64, 1024, 64, value -> Component.literal(value.intValue() + " MiB"), () -> true, Component::empty, 0),
+                        SettingsOption.slider("worldmap.scrollSteps", "options.voxelmap.worldmap.scrollSteps", null,
+                                () -> (double) world.detail.scrollStepsPerOctave, value -> { world.detail.scrollStepsPerOctave = value.intValue(); world.saveAll(); },
+                                1, 12, 1, value -> Component.literal(value.intValue() + " steps"), () -> true, Component::empty, 0),
+                        detailToggle("snapZoom", world, () -> world.detail.snapZoom, value -> world.detail.snapZoom = value),
                         SettingsOption.slider("worldmap.farthestZoom", "options.voxelmap.worldmap.farthestZoom", tooltip("worldmap.farthestZoom"),
                                 () -> (double) world.getFloatValue(EnumOptionsMinimap.MIN_ZOOM),
                                 value -> world.setFloatValue(EnumOptionsMinimap.MIN_ZOOM, zoomPowerToNormalized(value)),
@@ -443,7 +455,7 @@ public final class VoxelMapSettings {
                                 30, 5000, 10, value -> Component.translatable("options.voxelmap.value.regions", value.intValue()), () -> true, Component::empty, 0),
                         persistentSlider("worldmap.perfThreshold", "options.worldmap.performanceModeThreshold", world, EnumOptionsMinimap.WORLDMAP_PERFORMANCE_MODE_THRESHOLD,
                                 PersistentMapSettingsManager.MIN_PERFORMANCE_MODE_THRESHOLD, PersistentMapSettingsManager.MAX_PERFORMANCE_MODE_THRESHOLD, 0.0025,
-                                value -> Component.literal(String.format(Locale.ROOT, "%.4f", value))),
+                                value -> Component.literal(value == 0 ? "Always" : com.mamiyaotaru.voxelmap.persistent.WorldMapDetailSettings.scaleText(value.floatValue()))),
                         persistentSlider("worldmap.lineThickness", "options.worldmap.chunkLineThickness", world, EnumOptionsMinimap.WORLDMAP_CHUNK_LINE_THICKNESS,
                                 PersistentMapSettingsManager.MIN_CHUNK_LINE_THICKNESS, PersistentMapSettingsManager.MAX_CHUNK_LINE_THICKNESS, 0.05,
                                 value -> Component.literal(String.format(Locale.ROOT, "%.2f", value)))),
@@ -473,10 +485,10 @@ public final class VoxelMapSettings {
                                 value -> Component.literal(String.valueOf(value.intValue()))),
                         persistentSlider("worldmap.seedmapMinZoom", "options.worldmap.seedmapMinZoom", world, EnumOptionsMinimap.WORLDMAP_SEEDMAP_MIN_ZOOM,
                                 PersistentMapSettingsManager.MIN_SEEDMAP_MIN_ZOOM, PersistentMapSettingsManager.MAX_SEEDMAP_MIN_ZOOM, 0.001953125,
-                                value -> Component.literal(String.format(Locale.ROOT, "%.4f", value))),
+                                value -> Component.literal(value == 0 ? "Always" : com.mamiyaotaru.voxelmap.persistent.WorldMapDetailSettings.scaleText(value.floatValue()))),
                         persistentSlider("worldmap.seedmapTerrainZoom", "options.worldmap.seedmapTerrainMinZoom", world, EnumOptionsMinimap.WORLDMAP_SEEDMAP_TERRAIN_MIN_ZOOM,
                                 PersistentMapSettingsManager.MIN_SEEDMAP_TERRAIN_MIN_ZOOM, PersistentMapSettingsManager.MAX_SEEDMAP_TERRAIN_MIN_ZOOM, 0.001953125,
-                                value -> Component.literal(String.format(Locale.ROOT, "%.4f", value))),
+                                value -> Component.literal(value == 0 ? "Always" : com.mamiyaotaru.voxelmap.persistent.WorldMapDetailSettings.scaleText(value.floatValue()))),
                         persistentSlider("worldmap.seedmapResolution", "options.worldmap.seedmapPreviewResolution", world, EnumOptionsMinimap.WORLDMAP_SEEDMAP_PREVIEW_RESOLUTION,
                                 PersistentMapSettingsManager.MIN_SEEDMAP_PREVIEW_RESOLUTION, PersistentMapSettingsManager.MAX_SEEDMAP_PREVIEW_RESOLUTION, 128,
                                 value -> Component.literal(String.valueOf(value.intValue()))),
@@ -487,6 +499,60 @@ public final class VoxelMapSettings {
                         SettingsOption.action("worldmap.transport", "options.voxelmap.worldmap.transportShortcuts", null,
                                 Component.translatable("options.voxelmap.action.open"),
                                 () -> VoxelConstants.getMinecraft().gui.setScreen(new GuiTransportShortcutsOptions(host.get()))))));
+    }
+
+    private static SettingsGroup detailGroup(PersistentMapSettingsManager world) {
+        return group("options.voxelmap.group.worldmapDetail",
+                SettingsOption.action("worldmap.fullDetail", "options.voxelmap.worldmap.fullDetail", null, Component.translatable("options.voxelmap.action.run"), () -> {
+                    world.detail.fullDetail(); world.automaticLayerHiding = false; world.clusterWaypointNames = false;
+                    world.setFloatValue(EnumOptionsMinimap.WORLDMAP_SEEDMAP_MIN_ZOOM, 0);
+                    world.setFloatValue(EnumOptionsMinimap.WORLDMAP_SEEDMAP_TERRAIN_MIN_ZOOM, 0); world.saveAll();
+                }),
+                SettingsOption.action("worldmap.balanced", "options.voxelmap.worldmap.balanced", null, Component.translatable("options.voxelmap.action.run"), () -> {
+                    world.detail.balanced(); world.automaticLayerHiding = false; world.clusterWaypointNames = true; world.saveAll();
+                }),
+                detailChoice("trailResolution", world, () -> world.detail.trailResolution, value -> world.detail.trailResolution = value, resolutionChoices(128, false)),
+                detailChoice("areaResolution", world, () -> world.detail.areaResolution, value -> world.detail.areaResolution = value, resolutionChoices(128, false)),
+                detailChoice("terrainResolution", world, () -> world.detail.terrainResolution, value -> world.detail.terrainResolution = value, resolutionChoices(256, true)),
+                detailToggle("automaticLayerHiding", world, () -> world.automaticLayerHiding, value -> world.automaticLayerHiding = value));
+    }
+
+    private static SettingsGroup visibilityGroup(PersistentMapSettingsManager world) {
+        List<SettingsOption<?>> options = new ArrayList<>();
+        for (var layer : com.mamiyaotaru.voxelmap.persistent.WorldMapDetailSettings.Layer.values())
+            options.add(SettingsOption.slider("worldmap.visibility." + layer, "options.voxelmap.worldmap.visibility." + layer, null,
+                    () -> (double) com.mamiyaotaru.voxelmap.persistent.WorldMapDetailSettings.visibilitySlider(world.detail.hideBeyond.getOrDefault(layer, 0)),
+                    value -> { world.detail.hideBeyond.put(layer, com.mamiyaotaru.voxelmap.persistent.WorldMapDetailSettings.visibilityCutoff(value.intValue())); world.saveAll(); },
+                    2, 19, 1, value -> Component.literal(value >= 19 ? "Always" : "Hide beyond 1:" + String.format(Locale.ROOT, "%,d", 1 << value.intValue())),
+                    () -> true, Component::empty, 0));
+        return group("options.voxelmap.group.worldmapVisibility", options.toArray(SettingsOption[]::new));
+    }
+
+    private static SettingsGroup renderingGroup(PersistentMapSettingsManager world) {
+        return group("options.voxelmap.group.worldmapRendering",
+                detailChoice("overlayRenderer", world, () -> world.detail.overlayRenderer, value -> world.detail.overlayRenderer = value, List.of(
+                        new SettingsOption.Choice<>(0, Component.literal("Automatic")), new SettingsOption.Choice<>(1, Component.literal("Cached image")), new SettingsOption.Choice<>(2, Component.literal("Geometry")))),
+                detailChoice("rasterScale", world, () -> world.detail.rasterScalePercent, value -> world.detail.rasterScalePercent = value, List.of(
+                        new SettingsOption.Choice<>(50, Component.literal("50%")), new SettingsOption.Choice<>(100, Component.literal("100%")), new SettingsOption.Choice<>(200, Component.literal("200%")))),
+                detailToggle("smoothOverlays", world, () -> world.detail.smoothOverlays, value -> world.detail.smoothOverlays = value),
+                detailToggle("reduceMovingMarkers", world, () -> world.detail.reduceMarkersWhileMoving, value -> world.detail.reduceMarkersWhileMoving = value),
+                detailToggle("limitMarkers", world, () -> world.detail.limitMarkerCount, value -> world.detail.limitMarkerCount = value));
+    }
+
+    private static List<SettingsOption.Choice<Integer>> resolutionChoices(int max, boolean terrain) {
+        List<SettingsOption.Choice<Integer>> choices = new ArrayList<>();
+        choices.add(new SettingsOption.Choice<>(0, Component.literal("Automatic")));
+        for (int value = 1; value <= max; value *= 2)
+            choices.add(new SettingsOption.Choice<>(value, Component.literal(terrain ? (value == 256 ? "All pixels" : value + " samples per axis") : (value == 1 ? "Exact (1 chunk)" : value + " chunks"))));
+        return choices;
+    }
+
+    private static SettingsOption<Integer> detailChoice(String id, PersistentMapSettingsManager world, Supplier<Integer> getter, Consumer<Integer> setter, List<SettingsOption.Choice<Integer>> choices) {
+        return SettingsOption.choice("worldmap." + id, "options.voxelmap.worldmap." + id, null, getter, value -> { setter.accept(value); world.saveAll(); }, choices);
+    }
+
+    private static SettingsOption<Boolean> detailToggle(String id, PersistentMapSettingsManager world, Supplier<Boolean> getter, Consumer<Boolean> setter) {
+        return SettingsOption.toggle("worldmap." + id, "options.voxelmap.worldmap." + id, null, getter, value -> { setter.accept(value); world.saveAll(); });
     }
 
     private static List<SettingsOption.Choice<PersistentMapSettingsManager.SeedMapStyle>> seedMapStyleChoices() {
@@ -507,6 +573,8 @@ public final class VoxelMapSettings {
 
     private static SettingsCategory advanced(VoxelMap voxelMap, MapSettingsManager map, RadarSettingsManager radar, Supplier<Screen> host) {
         return new SettingsCategory("advanced", "options.voxelmap.category.advanced", List.of(
+                group("options.voxelmap.group.serverSeeds",
+                        openScreen("advanced.serverSeeds", "options.voxelmap.advanced.serverSeeds", host, GuiServerSeeds::new)),
                 group("options.voxelmap.group.worldServer",
                         SettingsOption.text("advanced.dataName", "options.voxelmap.advanced.dataName", tooltip("advanced.dataName"),
                                 () -> voxelMap.getWaypointManager().getCurrentWorldName(), value -> { },
@@ -983,7 +1051,7 @@ public final class VoxelMapSettings {
     }
 
     private static Component zoomLabel(Double power) {
-        return Component.literal(String.format(Locale.ROOT, "%.3gx", Math.pow(2.0, power)));
+        return Component.literal(com.mamiyaotaru.voxelmap.persistent.WorldMapDetailSettings.scaleText((float) Math.pow(2.0, power)));
     }
 
     private static float zoomPowerToNormalized(double power) {

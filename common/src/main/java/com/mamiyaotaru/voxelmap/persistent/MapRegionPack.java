@@ -48,7 +48,11 @@ final class MapRegionPack {
     private final Path packPath;
     private final ReentrantLock lock = new ReentrantLock();
     private final Map<Long, List<Entry>> history = new HashMap<>();
+    private final ConcurrentMap<Long, Long> visibleRevisions = new ConcurrentHashMap<>();
     private final AtomicBoolean migrationScheduled = new AtomicBoolean();
+    private volatile boolean migrationComplete;
+    private final java.util.concurrent.atomic.AtomicLong indexVersion = new java.util.concurrent.atomic.AtomicLong(1);
+    private static final ConcurrentMap<Path, java.util.concurrent.CompletableFuture<MapRegionPack>> INDEX_REQUESTS = new ConcurrentHashMap<>();
     private long recordBytes;
     private long liveRecordBytes;
 
@@ -63,6 +67,31 @@ final class MapRegionPack {
         Path normalized = directory.toPath().toAbsolutePath().normalize();
         return OPEN_PACKS.computeIfAbsent(normalized, MapRegionPack::new);
     }
+
+    static MapRegionPack requestDirectory(File directory) {
+        Path path = directory.toPath().toAbsolutePath().normalize();
+        MapRegionPack existing = OPEN_PACKS.get(path);
+        if (existing != null) return existing;
+        INDEX_REQUESTS.computeIfAbsent(path, ignored -> java.util.concurrent.CompletableFuture.supplyAsync(
+                () -> forDirectory(directory), ThreadManager.overlayExecutorService));
+        return null;
+    }
+
+    long indexVersion() { return indexVersion.get(); }
+    boolean migrationComplete() { return migrationComplete; }
+
+    long revision(int regionX, int regionZ) {
+        return visibleRevisions.getOrDefault(key(regionX, regionZ), 0L);
+    }
+
+    private static long revisionOf(Entry entry) {
+        long revision = (Integer.toUnsignedLong(entry.checksum()) << 32) ^ entry.payloadLength();
+        return revision == 0 ? 1 : revision;
+    }
+
+    boolean contains(int regionX, int regionZ) { return revision(regionX, regionZ) != 0; }
+
+    long[] occupiedRegions() { return visibleRevisions.keySet().stream().mapToLong(Long::longValue).toArray(); }
 
     PackedRegion read(int regionX, int regionZ) {
         lock.lock();
@@ -128,6 +157,7 @@ final class MapRegionPack {
                                 || offset + RECORD_HEADER_BYTES + payloadLength > length) break;
                         Entry entry = new Entry(offset, offset + RECORD_HEADER_BYTES, payloadLength, checksum);
                         history.computeIfAbsent(key(regionX, regionZ), ignored -> new ArrayList<>()).add(entry);
+                        visibleRevisions.put(key(regionX, regionZ), revisionOf(entry));
                         recordBytes += RECORD_HEADER_BYTES + payloadLength;
                         offset += RECORD_HEADER_BYTES + payloadLength;
                     }
@@ -175,8 +205,10 @@ final class MapRegionPack {
         List<Entry> entries = history.computeIfAbsent(key(regionX, regionZ), ignored -> new ArrayList<>());
         if (!entries.isEmpty()) liveRecordBytes -= entries.get(entries.size() - 1).recordBytes();
         entries.add(entry);
+        visibleRevisions.put(key(regionX, regionZ), revisionOf(entry));
         liveRecordBytes += entry.recordBytes();
         recordBytes += entry.recordBytes();
+        indexVersion.incrementAndGet();
         if (recordBytes > COMPACTION_MIN_BYTES && recordBytes > liveRecordBytes * 2L) compactLocked();
     }
 
@@ -239,6 +271,8 @@ final class MapRegionPack {
             }
         } catch (IOException exception) {
             VoxelConstants.getLogger().debug("Legacy map migration stopped for {}", directory, exception);
+        } finally {
+            migrationComplete = true; indexVersion.incrementAndGet();
         }
     }
 

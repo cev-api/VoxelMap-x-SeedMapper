@@ -11,6 +11,31 @@ public final class ExploredTile {
     private static final int WORDS = 16;
 
     private final long[] words = new long[WORDS];
+    private volatile ExploredTile[] reductions;
+
+    public interface BitConsumer { void accept(int x, int z); }
+
+    public void forEachSetBit(BitConsumer consumer) {
+        for (int w = 0; w < WORDS; w++) {
+            long bits = words[w];
+            while (bits != 0L) {
+                int index = (w << 6) + Long.numberOfTrailingZeros(bits);
+                consumer.accept(index & 31, index >> 5);
+                bits &= bits - 1;
+            }
+        }
+    }
+
+    public synchronized ExploredTile reduced(int shift) {
+        if (shift == 0) return this;
+        if (reductions == null) reductions = new ExploredTile[4];
+        if (reductions[shift - 1] == null) {
+            ExploredTile summary = new ExploredTile();
+            forEachSetBit((x, z) -> summary.set(x >> shift, z >> shift));
+            reductions[shift - 1] = summary;
+        }
+        return reductions[shift - 1];
+    }
 
     private static int bitIndex(int x, int z) {
         return (z << 5) | x;
@@ -28,6 +53,7 @@ public final class ExploredTile {
         long mask = 1L << (i & 63);
         boolean was = (words[w] & mask) != 0L;
         words[w] |= mask;
+        if (!was) reductions = null;
         return !was;
     }
 
@@ -38,6 +64,7 @@ public final class ExploredTile {
         long mask = 1L << (i & 63);
         boolean was = (words[w] & mask) != 0L;
         words[w] &= ~mask;
+        if (was) reductions = null;
         return was;
     }
 
@@ -59,6 +86,7 @@ public final class ExploredTile {
     }
 
     public void orFrom(ExploredTile other) {
+        reductions = null;
         for (int i = 0; i < WORDS; i++) {
             words[i] |= other.words[i];
         }
