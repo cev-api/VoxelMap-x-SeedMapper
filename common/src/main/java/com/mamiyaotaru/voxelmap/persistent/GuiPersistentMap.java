@@ -218,6 +218,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     Waypoint selectedSeedMapperWaypoint;
     Waypoint selectedSeedMapperAssociatedWaypoint;
     private final Map<String, String> seedMapperHighlightWaypoints = new HashMap<>();
+    private Map<Long, Waypoint> seedMapperWaypointLookup;
     private PopupGuiButton buttonWaypoints;
     private PopupGuiButton buttonExploredChunks;
     private PopupGuiButton buttonNewOldChunks;
@@ -3123,6 +3124,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
     private void drawSeedMapperMarkers(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
         seedMapperMarkerHitboxes.clear();
+        seedMapperWaypointLookup = null;
         boolean showNetherPortals = mapOptions.showNetherPortalMarkers;
         boolean showEndPortals = mapOptions.showEndPortalMarkers;
         boolean showEndBeacons = mapOptions.showEndGatewayMarkers;
@@ -3287,6 +3289,8 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             return;
         }
 
+        seedMapperWaypointLookup = buildSeedMapperWaypointLookup();
+
         boolean lowDetail = options.detail.reduceMarkersWhileMoving && mapToGui < 0.35F;
         boolean ultraLowDetail = options.detail.reduceMarkersWhileMoving && mapToGui < 0.20F;
         if (!mapInMotion && !lowDetail && markers.size() < 2000) {
@@ -3303,6 +3307,13 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         if (options.detail.limitMarkerCount && seedMapperOptions.worldMapEntityLimit > 0) {
             markerLimit = Math.min(markerLimit, seedMapperOptions.worldMapEntityLimit);
         }
+        // Structure icons overlap heavily when zoomed out, and submitting thousands
+        // of independent GUI elements makes the world map unusable at those scales.
+        int markerBudget = options.detail.zoomedOutSeedMapperMarkerLimit;
+        int zoomDensityLimit = markerBudget <= 0 ? Integer.MAX_VALUE
+                : mapToGui < 0.18F ? markerBudget
+                : mapToGui < 0.35F ? markerBudget * 2 : Integer.MAX_VALUE;
+        markerLimit = Math.min(markerLimit, zoomDensityLimit);
         if (mapInMotion && options.detail.reduceMarkersWhileMoving) {
             if (ultraLowDetail) {
                 markerLimit = Math.min(markerLimit, 180);
@@ -3357,7 +3368,11 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             markers = visibleMarkers;
         }
 
+        boolean showSeedMapperStructures = layerVisible(WorldMapDetailSettings.Layer.SEEDMAPPER_STRUCTURES);
         for (SeedMapperMarker marker : markers) {
+            if (!showSeedMapperStructures && marker.feature().isStructure()) {
+                continue;
+            }
             if (++scanned > maxScanned || totalDrawn >= maxTotal) {
                 break;
             }
@@ -3829,9 +3844,6 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     }
 
     private void drawSeedMapperMarker(GuiGraphicsExtractor graphics, SeedMapperMarker marker, int mouseX, int mouseY) {
-        float ptX = marker.blockX() + 0.5F;
-        float ptZ = marker.blockZ() + 0.5F;
-
         boolean datapackStructure = marker.feature() == SeedMapperFeature.DATAPACK_STRUCTURE;
         boolean portalMarker = marker.feature() == SeedMapperFeature.NETHER_PORTAL
                 || marker.feature() == SeedMapperFeature.END_PORTAL
@@ -3850,27 +3862,10 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             iconWidth = scaledSize;
             iconHeight = scaledSize;
         }
-        int x = this.width / 2;
-        int y = this.height / 2;
-        int borderX = this.centerX + iconWidth / 2;
-        int borderY = this.centerY + iconHeight / 2;
-
-        double wayX = this.mapCenterX - (this.oldNorth ? -ptZ : ptX);
-        double wayY = this.mapCenterZ - (this.oldNorth ? ptX : ptZ);
-        double dispX = wayX * mapToGui;
-        double dispY = wayY * mapToGui;
-        float locate = 0;
-        float hypot = 0;
-        boolean far = Math.abs(dispX) > borderX || Math.abs(dispY) > borderY;
-        if (far) {
-            return;
-        }
-
-        graphics.pose().pushMatrix();
-        graphics.pose().rotate(-locate);
-        graphics.pose().translate(0.0F, -hypot);
-        graphics.pose().rotate(locate);
-
+        WorldMapMarkerPosition position = WorldMapMarkerPosition.project(marker.blockX(), marker.blockZ(),
+                this.mapCenterX, this.mapCenterZ, this.mapToGui, this.oldNorth, this.width, this.height);
+        float x = position.x();
+        float y = position.y();
         Vector2f guiVector = graphics.pose().transformPosition(new Vector2f(x, y));
         float screenX = guiVector.x();
         float screenY = guiVector.y();
@@ -3880,7 +3875,6 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         if (iconTop <= getSeedMapperStripBottomY()
                 && iconRight >= seedMapperStripLeft
                 && iconLeft <= seedMapperStripRight) {
-            graphics.pose().popMatrix();
             return;
         }
         // SeedMapper parity: never render offscreen icons on persistent map.
@@ -3888,14 +3882,12 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 || screenX > this.width - iconWidth / 2.0F
                 || screenY < this.top + iconHeight / 2.0F
                 || screenY > this.bottom - iconHeight / 2.0F) {
-            graphics.pose().popMatrix();
             return;
         }
         String worldKey = currentSeedMapperWorldKey();
         boolean completed = seedMapperOptions.isCompleted(worldKey, marker.feature(), marker.blockX(), marker.blockZ());
         Waypoint linkedWaypoint = findWaypointForMarker(marker);
         if (linkedWaypoint != null && mapOptions.waypointsAllowed && options.showWaypoints) {
-            graphics.pose().popMatrix();
             return;
         }
         seedMapperMarkerHitboxes.add(new SeedMapperMarkerHitbox(marker, worldKey, screenX, screenY, iconWidth, iconHeight));
@@ -3941,7 +3933,6 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 drawWaypointClusterBadge(graphics, x, y, count);
             }
         }
-        graphics.pose().popMatrix();
     }
 
     private int parseClusterTreasureCount(String label) {
@@ -3963,7 +3954,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         drawLine(graphics, x + inset, y + height - inset, x + width - inset, y + inset, 2, 0xFFFF2020);
     }
 
-    private void drawDatapackMarker(GuiGraphicsExtractor graphics, int x, int y, int iconWidth, int iconHeight, int color) {
+    private void drawDatapackMarker(GuiGraphicsExtractor graphics, float x, float y, int iconWidth, int iconHeight, int color) {
         float left = x - iconWidth / 2.0F;
         float top = y - iconHeight / 2.0F;
         if (SeedMapperImportedDatapackManager.usesPotionIcon()) {
@@ -4758,9 +4749,30 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         MapSettingsManager.instance.saveAll();
     }
 
+    private Map<Long, Waypoint> buildSeedMapperWaypointLookup() {
+        Map<Long, Waypoint> waypoints = new HashMap<>();
+        Map<Long, Waypoint> highlighted = new HashMap<>();
+        for (Waypoint waypoint : waypointManager.getWaypoints()) {
+            if (!isWaypointVisibleInViewedDimension(waypoint)) {
+                continue;
+            }
+            long key = packXZ(getWaypointXInViewedDimension(waypoint), getWaypointZInViewedDimension(waypoint));
+            if (isSeedMapperHighlightWaypoint(waypoint)) {
+                highlighted.putIfAbsent(key, waypoint);
+            } else {
+                waypoints.putIfAbsent(key, waypoint);
+            }
+        }
+        waypoints.putAll(highlighted);
+        return waypoints;
+    }
+
     private Waypoint findWaypointForMarker(SeedMapperMarker marker) {
         if (marker == null) {
             return null;
+        }
+        if (seedMapperWaypointLookup != null) {
+            return seedMapperWaypointLookup.get(packXZ(marker.blockX(), marker.blockZ()));
         }
         for (Waypoint waypoint : waypointManager.getWaypoints()) {
             if (!isWaypointVisibleInViewedDimension(waypoint)) continue;

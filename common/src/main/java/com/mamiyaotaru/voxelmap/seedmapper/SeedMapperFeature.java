@@ -86,6 +86,10 @@ public enum SeedMapperFeature {
         return structureId;
     }
 
+    public boolean isStructure() {
+        return structureId >= 0 || this == DATAPACK_STRUCTURE;
+    }
+
     public int dimension() {
         return dimension;
     }

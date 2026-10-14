@@ -56,6 +56,7 @@ public class MapSettingsManager implements ISettingsManager {
     public boolean rotates = true;
     public boolean showWaypointBeacons = false;
     public boolean showWaypointSigns = true;
+    public float minimapIconScale = 1.0F;
     public boolean autoPortalWaypoints = false;
     private boolean lastWaypointBeacons = false;
     private boolean lastWaypointSigns = true;
@@ -263,6 +264,7 @@ public class MapSettingsManager implements ISettingsManager {
                         case "Waypoint Sort By" -> waypointSort = Mth.clamp(Integer.parseInt(curLine[1]), 1, 4);
                         case "Waypoint Max Distance" -> maxWaypointDisplayDistance = Mth.clamp(Integer.parseInt(curLine[1]), -1, 1000000);
                         case "Waypoint Sign Scale" -> waypointSignScale = Mth.clamp(Float.parseFloat(curLine[1]), 0.5F, 1.5F);
+                        case "Minimap Icon Scale" -> minimapIconScale = Mth.clamp(Float.parseFloat(curLine[1]), 0.5F, 2.0F);
                         case "Waypoint Compass" -> waypointCompass = Boolean.parseBoolean(curLine[1]);
                         case "Waypoint Compass Show Coords" -> waypointCompassShowCoords = Boolean.parseBoolean(curLine[1]);
                         case "Waypoint Compass Text Outline" -> waypointCompassTextOutline = Boolean.parseBoolean(curLine[1]);
@@ -384,6 +386,7 @@ public class MapSettingsManager implements ISettingsManager {
 
             out.println("Waypoint Sort By:" + waypointSort);
             out.println("Waypoint Max Distance:" + maxWaypointDisplayDistance);
+            out.println("Minimap Icon Scale:" + minimapIconScale);
             out.println("Waypoint Sign Scale:" + waypointSignScale);
             out.println("Waypoint Compass:" + waypointCompass);
             out.println("Waypoint Compass Show Coords:" + waypointCompassShowCoords);

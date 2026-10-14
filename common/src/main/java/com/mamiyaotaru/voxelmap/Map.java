@@ -2011,7 +2011,8 @@ public class Map implements Runnable, IChangeObserver, IReloadListener {
                     matrixStack.translate(0.0F, -hypot, 0.0F);
                 }
 
-                pass.submitQuad(matrixStack, icon, x - 4.0F, y - 4.0F, MAP_OVERLAY_DEPTH, 8.0F, 8.0F, iconColor);
+                float iconSize = 8.0F * this.options.minimapIconScale;
+                pass.submitQuad(matrixStack, icon, x - iconSize / 2.0F, y - iconSize / 2.0F, MAP_OVERLAY_DEPTH, iconSize, iconSize, iconColor);
             } catch (Exception var40) {
                 this.showMessage("Error: marker overlay not found!");
             } finally {
@@ -2031,7 +2032,8 @@ public class Map implements Runnable, IChangeObserver, IReloadListener {
                 matrixStack.translate(0.0F, -hypot, 0.0F);
                 matrixStack.rotate(Axis.ZP.rotationDegrees(locate));
 
-                pass.submitQuad(matrixStack, icon, x - 4.0F, y - 4.0F, MAP_OVERLAY_DEPTH, 8.0F, 8.0F, iconColor);
+                float iconSize = 8.0F * this.options.minimapIconScale;
+                pass.submitQuad(matrixStack, icon, x - iconSize / 2.0F, y - iconSize / 2.0F, MAP_OVERLAY_DEPTH, iconSize, iconSize, iconColor);
             } catch (Exception var42) {
                 this.showMessage("Error: waypoint overlay not found!");
             } finally {
@@ -2179,7 +2181,8 @@ public class Map implements Runnable, IChangeObserver, IReloadListener {
                 ? SeedMapperImportedDatapackManager.iconSizeForMinimap()
                 : 8.0F;
         iconSize *= (float) seedMapperOptions.seedMapperMinimapIconScale;
-        iconSize = Math.max(4.0F, iconSize * seedMapperMinimapIconScale(blockDistance, distantRange));
+        iconSize = Math.max(4.0F, iconSize * seedMapperMinimapIconScale(blockDistance, distantRange))
+                * this.options.minimapIconScale;
 
         try {
             matrixStack.pushMatrix();
@@ -2273,7 +2276,7 @@ public class Map implements Runnable, IChangeObserver, IReloadListener {
             // Keep the minimap's entity base size aligned with the persistent
             // map.  Both views then differ only by their own scale setting,
             // rather than having an unexplained 2.5px-versus-8px disparity.
-            float entityIconSize = 8.0F * (float) seedMapperOptions.minimapEntityScale;
+            float entityIconSize = 8.0F * (float) seedMapperOptions.minimapEntityScale * this.options.minimapIconScale;
             // Use the same alpha-blended GUI path as the world map.  The
             // depth-tested variant can leave transparent sprite pixels black
             // on the minimap.
@@ -2543,7 +2546,7 @@ public class Map implements Runnable, IChangeObserver, IReloadListener {
             return;
         }
 
-        float iconSize = 8.0F * (float) seedMapperOptions.minimapEntityScale;
+        float iconSize = 8.0F * (float) seedMapperOptions.minimapEntityScale * this.options.minimapIconScale;
         try {
             matrixStack.pushMatrix();
             matrixStack.rotate(Axis.ZP.rotationDegrees(-locate));
@@ -2701,9 +2704,9 @@ public class Map implements Runnable, IChangeObserver, IReloadListener {
 
 
     private void drawArrow(SubmitPass pass, Matrix4fStack matrixStack, int x, int y, float scaleProj) {
-        final float arrowSize = 6.0F;
         matrixStack.pushMatrix();
-        matrixStack.scale(scaleProj, scaleProj, 1.0F);
+        float iconScale = scaleProj * this.options.minimapIconScale;
+        matrixStack.scale(iconScale, iconScale, 1.0F);
 
         matrixStack.translate(x, y, 0.0F);
         matrixStack.rotate(Axis.ZP.rotationDegrees(this.options.rotates && !this.fullscreenMap ? 0.0F : this.direction + this.rotationFactor));

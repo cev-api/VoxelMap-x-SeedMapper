@@ -62,10 +62,9 @@ public final class VoxelMapSettings {
 
         return List.of(
                 general(map),
-                minimap(voxelMap, map, seed, host),
+                minimap(voxelMap, map, radar, seed, openEntityTypeDialog, host),
                 worldMap(map, world, seed, host),
                 waypoints(map),
-                radar(radar, map, seed, openEntityTypeDialog, host),
                 chunks(map, radar, world, host),
                 sharing(host),
                 seedmapper(seed, host),
@@ -171,6 +170,9 @@ public final class VoxelMapSettings {
 
     private static SettingsGroup markerDisplay(MapSettingsManager map, SeedMapperSettingsManager seed) {
         return group("options.voxelmap.group.markerDisplay",
+                slider("minimap.iconScale", "options.voxelmap.minimap.iconScale", map, () -> (double) map.minimapIconScale,
+                        value -> map.minimapIconScale = value.floatValue(), 0.5, 2.0, 0.01,
+                        value -> Component.literal(String.format(Locale.ROOT, "%.2fx", value)), () -> true, Component::empty, 0),
                 seedToggle("markers.clustering", "options.voxelmap.markers.clustering", map, () -> seed.markerClustering, value -> seed.markerClustering = value),
                 seedToggle("markers.persistence", "options.voxelmap.markers.persistence", map, () -> seed.markerPersistence, value -> seed.markerPersistence = value),
                 SettingsOption.slider("entities.mapScale", "options.voxelmap.entities.mapScale", null,
@@ -236,8 +238,9 @@ public final class VoxelMapSettings {
                         toggle("advanced.filtering", "options.voxelmap.advanced.textureFiltering", map, () -> map.filtering, value -> map.filtering = value))));
     }
 
-    private static SettingsCategory minimap(VoxelMap voxelMap, MapSettingsManager map, SeedMapperSettingsManager seed, Supplier<Screen> host) {
-        return new SettingsCategory("minimap", "options.voxelmap.category.minimap", List.of(
+    private static SettingsCategory minimap(VoxelMap voxelMap, MapSettingsManager map, RadarSettingsManager radar,
+                                            SeedMapperSettingsManager seed, Runnable openEntityTypeDialog, Supplier<Screen> host) {
+        List<SettingsGroup> groups = new ArrayList<>(List.of(
                 group("options.voxelmap.group.visibilityPosition",
                         toggle("minimap.visible", "options.voxelmap.minimap.visible", map, () -> !map.hide, value -> map.hide = !value,
                                 () -> map.minimapAllowed, serverDisabled(), 0),
@@ -267,10 +270,12 @@ public final class VoxelMapSettings {
                         toggle("minimap.scoreboard", "options.minimap.moveScoreboardBelowMap", map, () -> map.moveScoreboardBelowMap, value -> map.moveScoreboardBelowMap = value)),
                 minimapExtras(voxelMap, map, seed),
                 highlights(map, host)));
+        groups.addAll(radarGroups(radar, map, seed, openEntityTypeDialog, host));
+        return new SettingsCategory("minimap", "options.voxelmap.category.minimap", groups);
     }
 
-    private static SettingsCategory radar(RadarSettingsManager radar, MapSettingsManager map, SeedMapperSettingsManager seed, Runnable openEntityTypeDialog, Supplier<Screen> host) {
-        return new SettingsCategory("radar", "options.voxelmap.category.radar", List.of(
+    private static List<SettingsGroup> radarGroups(RadarSettingsManager radar, MapSettingsManager map, SeedMapperSettingsManager seed, Runnable openEntityTypeDialog, Supplier<Screen> host) {
+        return List.of(
                 group("options.voxelmap.group.radarGeneral",
                         toggle("radar.visible", "options.minimap.radar.showRadar", radar, () -> radar.showRadar, value -> radar.showRadar = value,
                                 () -> radarAvailable(radar), serverDisabled(), 0),
@@ -305,7 +310,7 @@ public final class VoxelMapSettings {
                         dependentRadarToggle("radar.outlines", "options.minimap.radar.iconOutlines", radar, () -> radar.outlines, value -> radar.outlines = value, () -> radar.radarMode == 2)),
                 portalMarkers(map),
                 detections(map, seed, host),
-                markerDisplay(map, seed)));
+                markerDisplay(map, seed));
     }
 
     private static SettingsCategory waypoints(MapSettingsManager map) {
@@ -436,6 +441,12 @@ public final class VoxelMapSettings {
                         SettingsOption.slider("worldmap.zoomCache", "options.voxelmap.worldmap.zoomCache", "options.voxelmap.worldmap.zoomCache.tooltip",
                                 () -> (double) world.detail.zoomCacheMiB, value -> { world.detail.zoomCacheMiB = value.intValue(); world.saveAll(); },
                                 64, 1024, 64, value -> Component.literal(value.intValue() + " MiB"), () -> true, Component::empty, 0),
+                        SettingsOption.slider("worldmap.zoomedOutMarkerBudget", "options.voxelmap.worldmap.zoomedOutMarkerBudget", "options.voxelmap.worldmap.zoomedOutMarkerBudget.tooltip",
+                                () -> (double) world.detail.zoomedOutSeedMapperMarkerLimit,
+                                value -> { world.detail.zoomedOutSeedMapperMarkerLimit = Math.max(0, Math.min(10000, ((int) Math.round(value / 100.0D)) * 100)); world.saveAll(); },
+                                0, 10000, 100,
+                                value -> value == 0 ? Component.translatable("options.voxelmap.worldmap.zoomedOutMarkerBudget.off") : Component.literal(String.valueOf((int) Math.round(value / 100.0D) * 100)),
+                                () -> true, Component::empty, 0),
                         SettingsOption.slider("worldmap.scrollSteps", "options.voxelmap.worldmap.scrollSteps", null,
                                 () -> (double) world.detail.scrollStepsPerOctave, value -> { world.detail.scrollStepsPerOctave = value.intValue(); world.saveAll(); },
                                 1, 12, 1, value -> Component.literal(value.intValue() + " steps"), () -> true, Component::empty, 0),

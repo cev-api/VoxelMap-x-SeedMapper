@@ -6,7 +6,7 @@ import java.util.Locale;
 
 /** Fidelity choices are independent of viewport culling and caching. Zero cutoff means always visible. */
 public final class WorldMapDetailSettings {
-    public enum Layer { TERRAIN, TRAILS, TRAIL_NODES, NEW_OLD, WAYPOINTS, WAYPOINT_NAMES, ENTITIES, BIOMES }
+    public enum Layer { TERRAIN, TRAILS, TRAIL_NODES, NEW_OLD, WAYPOINTS, WAYPOINT_NAMES, ENTITIES, SEEDMAPPER_STRUCTURES, BIOMES }
     public final EnumMap<Layer, Integer> hideBeyond = new EnumMap<>(Layer.class);
     public int trailResolution = 1; // chunks per cell; 0 explicitly selects automatic aggregation
     public int areaResolution = 1;
@@ -14,6 +14,7 @@ public final class WorldMapDetailSettings {
     public boolean reduceMarkersWhileMoving = false;
     public boolean limitMarkerCount = false;
     public int zoomCacheMiB = 512; // retained overlay and terrain viewport history
+    public int zoomedOutSeedMapperMarkerLimit = 1200; // 0 disables the zoom-based SeedMapper icon budget
     public int scrollStepsPerOctave = 3;
     public boolean snapZoom = false;
     public int overlayRenderer = 0; // automatic, cached image, geometry
@@ -49,6 +50,7 @@ public final class WorldMapDetailSettings {
             case "Worldmap Reduce Moving Markers" -> reduceMarkersWhileMoving = Boolean.parseBoolean(value);
             case "Worldmap Limit Marker Count" -> limitMarkerCount = Boolean.parseBoolean(value);
             case "Worldmap Zoom Cache MiB" -> zoomCacheMiB = Math.max(64, Math.min(1024, Integer.parseInt(value)));
+            case "Worldmap Zoomed-out SeedMapper Marker Limit" -> zoomedOutSeedMapperMarkerLimit = Math.max(0, Math.min(10000, Integer.parseInt(value)));
             case "Worldmap Scroll Steps Per Octave" -> scrollStepsPerOctave = Math.max(1, Math.min(12, Integer.parseInt(value)));
             case "Worldmap Snap Zoom" -> snapZoom = Boolean.parseBoolean(value);
             case "Worldmap Overlay Renderer" -> overlayRenderer = Math.max(0, Math.min(2, Integer.parseInt(value)));
@@ -67,6 +69,7 @@ public final class WorldMapDetailSettings {
         out.println("Worldmap Reduce Moving Markers:" + reduceMarkersWhileMoving);
         out.println("Worldmap Limit Marker Count:" + limitMarkerCount);
         out.println("Worldmap Zoom Cache MiB:" + zoomCacheMiB);
+        out.println("Worldmap Zoomed-out SeedMapper Marker Limit:" + zoomedOutSeedMapperMarkerLimit);
         out.println("Worldmap Scroll Steps Per Octave:" + scrollStepsPerOctave);
         out.println("Worldmap Snap Zoom:" + snapZoom);
         out.println("Worldmap Overlay Renderer:" + overlayRenderer);
