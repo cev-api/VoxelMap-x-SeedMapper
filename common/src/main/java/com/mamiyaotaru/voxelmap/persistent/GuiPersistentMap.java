@@ -3294,11 +3294,13 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         boolean lowDetail = options.detail.reduceMarkersWhileMoving && mapToGui < 0.35F;
         boolean ultraLowDetail = options.detail.reduceMarkersWhileMoving && mapToGui < 0.20F;
         if (!mapInMotion && !lowDetail && markers.size() < 2000) {
-            final double priorityX = GameVariableAccessShim.xCoordDouble();
-            final double priorityZ = GameVariableAccessShim.zCoordDouble();
+            final double priorityX = this.mapCenterX;
+            final double priorityZ = this.mapCenterZ;
             markers.sort(Comparator.comparingDouble(marker -> {
-                double dx = marker.blockX() - priorityX;
-                double dz = marker.blockZ() - priorityZ;
+                double markerX = this.oldNorth ? -(marker.blockZ() + 0.5D) : marker.blockX() + 0.5D;
+                double markerZ = this.oldNorth ? marker.blockX() + 0.5D : marker.blockZ() + 0.5D;
+                double dx = markerX - priorityX;
+                double dz = markerZ - priorityZ;
                 return dx * dx + dz * dz;
             }));
         }
@@ -3348,21 +3350,23 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         }
         double visibleHalfX = (this.centerX + ICON_WIDTH + 12.0D) / Math.max(0.0001D, this.mapToGui);
         double visibleHalfZ = (this.centerY + ICON_HEIGHT + 12.0D) / Math.max(0.0001D, this.mapToGui);
-        final double playerX = GameVariableAccessShim.xCoordDouble();
-        final double playerZ = GameVariableAccessShim.zCoordDouble();
 
-        // World-map marker limit should prioritize a circular region around the player.
+        // World-map marker limits should prioritize the area currently being viewed.
         if (!mapInMotion && markers.size() > maxTotal) {
             var visibleMarkers = new ArrayList<SeedMapperMarker>(Math.min(markers.size(), 32768));
             for (SeedMapperMarker marker : markers) {
-                if (Math.abs(marker.blockX() - this.mapCenterX) <= visibleHalfX
-                        && Math.abs(marker.blockZ() - this.mapCenterZ) <= visibleHalfZ) {
+                double markerX = this.oldNorth ? -(marker.blockZ() + 0.5D) : marker.blockX() + 0.5D;
+                double markerZ = this.oldNorth ? marker.blockX() + 0.5D : marker.blockZ() + 0.5D;
+                if (Math.abs(markerX - this.mapCenterX) <= visibleHalfX
+                        && Math.abs(markerZ - this.mapCenterZ) <= visibleHalfZ) {
                     visibleMarkers.add(marker);
                 }
             }
             visibleMarkers.sort(Comparator.comparingDouble(marker -> {
-                double dx = marker.blockX() - playerX;
-                double dz = marker.blockZ() - playerZ;
+                double markerX = this.oldNorth ? -(marker.blockZ() + 0.5D) : marker.blockX() + 0.5D;
+                double markerZ = this.oldNorth ? marker.blockX() + 0.5D : marker.blockZ() + 0.5D;
+                double dx = markerX - this.mapCenterX;
+                double dz = markerZ - this.mapCenterZ;
                 return dx * dx + dz * dz;
             }));
             markers = visibleMarkers;
@@ -3376,8 +3380,10 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             if (++scanned > maxScanned || totalDrawn >= maxTotal) {
                 break;
             }
-            if (Math.abs(marker.blockX() - this.mapCenterX) > visibleHalfX
-                    || Math.abs(marker.blockZ() - this.mapCenterZ) > visibleHalfZ) {
+            double markerX = this.oldNorth ? -(marker.blockZ() + 0.5D) : marker.blockX() + 0.5D;
+            double markerZ = this.oldNorth ? marker.blockX() + 0.5D : marker.blockZ() + 0.5D;
+            if (Math.abs(markerX - this.mapCenterX) > visibleHalfX
+                    || Math.abs(markerZ - this.mapCenterZ) > visibleHalfZ) {
                 continue;
             }
             if (decimationMask != 0 && marker.feature() != SeedMapperFeature.WORLD_SPAWN) {
