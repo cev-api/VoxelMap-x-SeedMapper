@@ -67,6 +67,7 @@ public class MapSettingsManager implements ISettingsManager {
     public boolean showNetherPortalMarkers = true;
     public boolean showEndPortalMarkers = true;
     public boolean showEndGatewayMarkers = true;
+    public boolean showSeedMapOnMinimap = false;
     public boolean highlightTracerEnabled = true;
     public boolean showPlotLinesOnMinimap = true;
     public float highlightTracerThickness = 2.0F;
@@ -221,6 +222,7 @@ public class MapSettingsManager implements ISettingsManager {
                         case "Show Nether Portal Markers" -> showNetherPortalMarkers = Boolean.parseBoolean(curLine[1]);
                         case "Show End Portal Markers" -> showEndPortalMarkers = Boolean.parseBoolean(curLine[1]);
                         case "Show End Gateway Markers" -> showEndGatewayMarkers = Boolean.parseBoolean(curLine[1]);
+                        case "Show Seed Map On Minimap" -> showSeedMapOnMinimap = Boolean.parseBoolean(curLine[1]);
                         case "Highlight Tracer Enabled" -> highlightTracerEnabled = Boolean.parseBoolean(curLine[1]);
                         case "Show Plot Lines On Minimap" -> showPlotLinesOnMinimap = Boolean.parseBoolean(curLine[1]);
                         case "Highlight Tracer Thickness" -> highlightTracerThickness = Mth.clamp(Float.parseFloat(curLine[1]), 1.0F, 6.0F);
@@ -360,6 +362,7 @@ public class MapSettingsManager implements ISettingsManager {
             out.println("Show Nether Portal Markers:" + showNetherPortalMarkers);
             out.println("Show End Portal Markers:" + showEndPortalMarkers);
             out.println("Show End Gateway Markers:" + showEndGatewayMarkers);
+            out.println("Show Seed Map On Minimap:" + showSeedMapOnMinimap);
             out.println("Highlight Tracer Enabled:" + highlightTracerEnabled);
             out.println("Show Plot Lines On Minimap:" + showPlotLinesOnMinimap);
             out.println("Highlight Tracer Thickness:" + highlightTracerThickness);

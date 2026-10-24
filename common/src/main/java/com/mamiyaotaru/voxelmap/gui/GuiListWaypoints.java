@@ -10,9 +10,9 @@ import com.mamiyaotaru.voxelmap.util.Waypoint;
 import com.mojang.blaze3d.platform.InputConstants;
 import java.awt.Color;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.client.GameNarrator;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractSelectionList;
@@ -23,8 +23,6 @@ import net.minecraft.resources.Identifier;
 
 import java.awt.Color;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
@@ -45,11 +43,26 @@ class GuiListWaypoints extends AbstractSelectionList<GuiListWaypoints.WaypointIt
     GuiListWaypoints(GuiWaypoints parentGui) {
         super(VoxelConstants.getMinecraft(), parentGui.getWidth(), parentGui.getHeight() - 140, 54, 18);
         this.parentGui = parentGui;
+        int listWidth = Math.min(parentGui.getWidth() - 24, Math.max(260, Math.min(380, Math.round(parentGui.getWidth() * 0.28F))));
+        setWidth(listWidth);
+        setX((parentGui.getWidth() - listWidth) / 2);
 
         waypoints = new ArrayList<>();
         rebuildEntries();
 
         textureAtlas = VoxelConstants.getVoxelMapInstance().getWaypointManager().getTextureAtlas();
+    }
+
+    @Override
+    public int getRowWidth() {
+        return Math.max(0, getWidth() - 12);
+    }
+
+    @Override
+    protected int scrollBarX() {
+        // Keep the drag target inside this narrowed list widget; the vanilla
+        // position extends a few pixels past its right edge and misses clicks.
+        return getX() + getWidth() - 6;
     }
 
     protected void rebuildEntries() {
@@ -101,7 +114,20 @@ class GuiListWaypoints extends AbstractSelectionList<GuiListWaypoints.WaypointIt
         } else if (sortKey == 2) {
             waypoints.sort((p1, p2) -> String.CASE_INSENSITIVE_ORDER.compare(p1.waypoint.name, p2.waypoint.name) * order);
         } else if (sortKey == 3) {
-            waypoints.sort(ascending ? Comparator.naturalOrder() : Collections.reverseOrder());
+            Entity player = VoxelConstants.getPlayer();
+            if (player != null) {
+                double playerX = player.getX();
+                double playerZ = player.getZ();
+                Comparator<WaypointItem> byHorizontalDistance = Comparator.comparingDouble(item -> {
+                    double dx = item.waypoint.getXInCurrentDimension() + 0.5D - playerX;
+                    double dz = item.waypoint.getZInCurrentDimension() + 0.5D - playerZ;
+                    return dx * dx + dz * dz;
+                });
+                // Distance is a map-plane distance, so waypoint Y must not
+                // push a nearby X/Z location down the list. A down arrow
+                // means nearest first.
+                waypoints.sort(ascending ? byHorizontalDistance.reversed() : byHorizontalDistance);
+            }
         }  else if (sortKey == 4) {
             waypoints.sort((p1, p2) -> {
                 Waypoint waypoint1 = p1.waypoint;
@@ -220,7 +246,16 @@ class GuiListWaypoints extends AbstractSelectionList<GuiListWaypoints.WaypointIt
             }
 
             int color = waypoint.getUnifiedColor();
-            graphics.centeredText(parentGui.getFont(), waypoint.name, parentGui.getWidth() / 2, getY() + 5, color);
+            int textLeft = getX() + 24;
+            int textRight = getX() + getWidth() - 24;
+            int availableTextWidth = Math.max(0, textRight - textLeft);
+            String displayName = waypoint.name;
+            if (parentGui.getFont().width(displayName) > availableTextWidth) {
+                String ellipsis = "…";
+                displayName = parentGui.getFont().plainSubstrByWidth(displayName,
+                        Math.max(0, availableTextWidth - parentGui.getFont().width(ellipsis))) + ellipsis;
+            }
+            graphics.centeredText(parentGui.getFont(), displayName, (textLeft + textRight) / 2, getY() + 5, color);
 
             Sprite icon = textureAtlas.getAtlasSprite("selectable/" + waypoint.imageSuffix);
             if (icon == textureAtlas.getMissingImage()) {

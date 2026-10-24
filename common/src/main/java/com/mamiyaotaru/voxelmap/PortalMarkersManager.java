@@ -164,7 +164,7 @@ public class PortalMarkersManager {
         if (includeEndBeacons) {
             addInRange(result, endBeaconMarkers, centerX, centerZ, radius, PortalType.END_BEACON);
         }
-        return result;
+        return mergeEndPortalClusters(result);
     }
 
     public List<PortalMarker> getMarkersInBounds(int minX, int maxX, int minZ, int maxZ, boolean includeNether, boolean includeEnd, boolean includeEndBeacons) {
@@ -178,12 +178,72 @@ public class PortalMarkersManager {
         if (includeEndBeacons) {
             addInBounds(result, endBeaconMarkers, minX, maxX, minZ, maxZ, PortalType.END_BEACON);
         }
+        return mergeEndPortalClusters(result);
+    }
+
+    private List<PortalMarker> mergeEndPortalClusters(List<PortalMarker> markers) {
+        List<PortalMarker> result = new ArrayList<>();
+        List<PortalMarker> endMarkers = new ArrayList<>();
+        for (PortalMarker marker : markers) {
+            if (marker.type() == PortalType.END) {
+                endMarkers.add(marker);
+            } else {
+                result.add(marker);
+            }
+        }
+
+        boolean[] visited = new boolean[endMarkers.size()];
+        long mergeDistanceSquared = 16L;
+        for (int i = 0; i < endMarkers.size(); i++) {
+            if (visited[i]) continue;
+            List<PortalMarker> cluster = new ArrayList<>();
+            ArrayDeque<Integer> queue = new ArrayDeque<>();
+            visited[i] = true;
+            queue.add(i);
+            while (!queue.isEmpty()) {
+                PortalMarker current = endMarkers.get(queue.removeFirst());
+                cluster.add(current);
+                for (int j = 0; j < endMarkers.size(); j++) {
+                    if (visited[j]) continue;
+                    BlockPos candidate = endMarkers.get(j).pos();
+                    long dx = (long) candidate.getX() - current.pos().getX();
+                    long dy = (long) candidate.getY() - current.pos().getY();
+                    long dz = (long) candidate.getZ() - current.pos().getZ();
+                    if (dx * dx + dy * dy + dz * dz <= mergeDistanceSquared) {
+                        visited[j] = true;
+                        queue.addLast(j);
+                    }
+                }
+            }
+
+            // Keep one real active portal block as the icon position, choosing
+            // the block nearest the cluster's center so chunk splits coalesce.
+            PortalMarker representative = cluster.get(0);
+            long bestDistance = Long.MAX_VALUE;
+            for (PortalMarker candidate : cluster) {
+                long distance = 0L;
+                for (PortalMarker other : cluster) {
+                    long dx = (long) candidate.pos().getX() - other.pos().getX();
+                    long dy = (long) candidate.pos().getY() - other.pos().getY();
+                    long dz = (long) candidate.pos().getZ() - other.pos().getZ();
+                    distance += dx * dx + dy * dy + dz * dz;
+                }
+                if (distance < bestDistance) {
+                    bestDistance = distance;
+                    representative = candidate;
+                }
+            }
+            result.add(representative);
+        }
         return result;
     }
 
     private void addInRange(List<PortalMarker> target, Set<BlockPos> source, int centerX, int centerZ, int radius, PortalType type) {
         long radiusSq = (long) radius * radius;
         for (BlockPos marker : source) {
+            if (!isCurrentMarker(type, marker)) {
+                continue;
+            }
             long dx = (long) marker.getX() - centerX;
             long dz = (long) marker.getZ() - centerZ;
             if (dx * dx + dz * dz <= radiusSq) {
@@ -194,12 +254,30 @@ public class PortalMarkersManager {
 
     private void addInBounds(List<PortalMarker> target, Set<BlockPos> source, int minX, int maxX, int minZ, int maxZ, PortalType type) {
         for (BlockPos marker : source) {
+            if (!isCurrentMarker(type, marker)) {
+                continue;
+            }
             int x = marker.getX();
             int z = marker.getZ();
             if (x >= minX && x <= maxX && z >= minZ && z <= maxZ) {
                 target.add(new PortalMarker(type, marker));
             }
         }
+    }
+
+    private boolean isCurrentMarker(PortalType type, BlockPos marker) {
+        if (type != PortalType.END) {
+            return true;
+        }
+        Level level = GameVariableAccessShim.getWorld();
+        if (level == null) {
+            return true;
+        }
+        LevelChunk chunk = level.getChunkSource().getChunk(marker.getX() >> 4, marker.getZ() >> 4, false);
+        // Keep discovered markers for unloaded chunks, but reject stale saved
+        // frame positions when the chunk is available. Only active portal
+        // blocks count as an End Portal marker.
+        return chunk == null || chunk.getBlockState(marker).is(Blocks.END_PORTAL);
     }
 
     private ScanResult scanChunk(LevelChunk chunk) {

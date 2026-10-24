@@ -226,6 +226,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     private PopupGuiButton buttonWorldMapEntities;
     private PopupGuiButton buttonRealmView;
     private PopupGuiButton buttonSeedPreview;
+    private PopupGuiButton buttonToggleWaypoints;
     private final Minecraft minecraft = Minecraft.getInstance();
     private final Identifier voxelmapSkinLocation = Identifier.fromNamespaceAndPath(VoxelConstants.MOD_ID, "persistentmap/playerskin");
     private final Identifier crosshairResource = Identifier.parse("textures/gui/sprites/hud/crosshair.png");
@@ -526,6 +527,10 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         this.waypointSearchInput.active = true;
         this.waypointSearchInput.setFocused(false);
         this.addRenderableWidget(this.waypointSearchInput);
+        this.buttonToggleWaypoints = new PopupGuiButton(this.waypointSearchInput.getX(), this.waypointSearchInput.getY() - 22,
+                WAYPOINT_SEARCH_BOX_WIDTH, 18, Component.empty(), button -> toggleWorldMapWaypoints(), this);
+        this.addRenderableWidget(this.buttonToggleWaypoints);
+        refreshWaypointVisibilityButton();
         this.centerX = this.getWidth() / 2;
         this.centerY = (this.bottom - this.top) / 2;
         this.scScale = (float) minecraft.getWindow().getGuiScale();
@@ -592,6 +597,23 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             this.buttonWorldMapEntities.active = hasWorldMapEntitySource();
             this.buttonWorldMapEntities.setMessage(Component.translatable("worldmap.entities.button", I18n.get(this.options.showWorldMapEntities ? "options.on" : "options.off")));
         }
+    }
+
+    private void refreshWaypointVisibilityButton() {
+        if (this.buttonToggleWaypoints != null) {
+            this.buttonToggleWaypoints.setMessage(Component.translatable(this.options.showWaypoints
+                    ? "worldmap.waypoints.hide" : "worldmap.waypoints.show"));
+            this.buttonToggleWaypoints.active = mapOptions.waypointsAllowed;
+        }
+    }
+
+    private void toggleWorldMapWaypoints() {
+        if (!mapOptions.waypointsAllowed) {
+            return;
+        }
+        this.options.showWaypoints = !this.options.showWaypoints;
+        this.options.saveAll();
+        refreshWaypointVisibilityButton();
     }
 
     private boolean hasWorldMapEntitySource() {
@@ -1661,12 +1683,16 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 }
             }
 
-            Waypoint highlightedPoint = waypointManager.getHighlightedWaypoint();
-            if (highlightedPoint != null) {
-                boolean isHovered = drawWaypoint(graphics, highlightedPoint, textureAtlas, textureAtlas.getAtlasSprite("marker/target"), true, 0xFFFF0000, mouseX, mouseY);
-                if (isHovered) {
-                    currentlyHovered = highlightedPoint;
-                }
+        }
+        // The highlight line is an independent overlay. Keep its target icon
+        // visible and clickable even when the ordinary waypoint layer is hidden.
+        Waypoint highlightedPoint = waypointManager.getHighlightedWaypoint();
+        if (highlightedPoint != null && isWaypointVisibleInViewedDimension(highlightedPoint)) {
+            TextureAtlas textureAtlas = waypointManager.getTextureAtlas();
+            boolean isHovered = drawWaypoint(graphics, highlightedPoint, textureAtlas,
+                    textureAtlas.getAtlasSprite("marker/target"), true, 0xFFFF0000, mouseX, mouseY);
+            if (isHovered) {
+                currentlyHovered = highlightedPoint;
             }
         }
         hoverdWaypoint = currentlyHovered;
@@ -2585,6 +2611,13 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 : (!waypoint.enabled && !isHighlighted && !isHovered ? 0x55FFFFFF : 0xFFFFFFFF);
 
         icon.blit(graphics, RenderPipelines.GUI_TEXTURED, x - ICON_WIDTH / 2.0F, y - ICON_HEIGHT / 2.0F, ICON_WIDTH, ICON_HEIGHT, iconColor);
+        SeedMapperMarker waypointMarker = findSeedMapperMarkerAt(viewedX, viewedZ);
+        boolean waypointCompleted = waypointMarker != null
+                && isSeedMapperMarkerCompleted(currentSeedMapperWorldKey(), waypointMarker);
+        waypointCompleted |= isEndPortalCompleted(currentSeedMapperWorldKey(), viewedX, viewedZ);
+        if (waypointCompleted) {
+            drawCompletedTick(graphics, Math.round(x - ICON_WIDTH / 2.0F), Math.round(y - ICON_HEIGHT / 2.0F), ICON_WIDTH, ICON_HEIGHT);
+        }
 
         boolean showLabel = options.showWaypointNames && layerVisible(WorldMapDetailSettings.Layer.WAYPOINT_NAMES) && searchMatch && !far;
         if (showLabel) {
@@ -3909,9 +3942,11 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             return;
         }
         String worldKey = currentSeedMapperWorldKey();
-        boolean completed = seedMapperOptions.isCompleted(worldKey, marker.feature(), marker.blockX(), marker.blockZ());
+        boolean completed = isSeedMapperMarkerCompleted(worldKey, marker);
         Waypoint linkedWaypoint = findWaypointForMarker(marker);
-        if (linkedWaypoint != null && mapOptions.waypointsAllowed && options.showWaypoints) {
+        boolean waypointsAreRendered = layerVisible(WorldMapDetailSettings.Layer.WAYPOINTS)
+                && (!isFarZoomPerformanceMode() || this.options.isShowWaypointsInPerformanceModeEnabled());
+        if (linkedWaypoint != null && mapOptions.waypointsAllowed && options.showWaypoints && waypointsAreRendered) {
             return;
         }
         seedMapperMarkerHitboxes.add(new SeedMapperMarkerHitbox(marker, worldKey, screenX, screenY, iconWidth, iconHeight));
@@ -3998,7 +4033,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         return this.options.worldMapDimensionView.resolveIdentifier(currentLevel);
     }
 
-    private DimensionContainer getViewedDimensionContainer() {
+    public DimensionContainer getViewedDimensionContainer() {
         Level currentLevel = GameVariableAccessShim.getWorld();
         if (this.options.worldMapDimensionView == PersistentMapSettingsManager.WorldMapDimensionView.CURRENT && currentLevel != null) {
             return VoxelConstants.getVoxelMapInstance().getDimensionManager().getDimensionContainerByWorld(currentLevel);
@@ -4245,6 +4280,18 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     }
 
     private SeedMapperMarker findSeedMapperMarkerAt(int x, int z) {
+        if (isViewingCurrentDimension()) {
+            for (PortalMarkersManager.PortalMarker portal : VoxelConstants.getVoxelMapInstance().getPortalMarkersManager()
+                    .getMarkersInRange(x, z, 0, true, true, true)) {
+                if (portal.pos().getX() != x || portal.pos().getZ() != z) continue;
+                SeedMapperFeature feature = switch (portal.type()) {
+                    case NETHER -> SeedMapperFeature.NETHER_PORTAL;
+                    case END -> SeedMapperFeature.END_PORTAL;
+                    case END_BEACON -> SeedMapperFeature.END_BEACON;
+                };
+                return new SeedMapperMarker(feature, x, z);
+            }
+        }
         for (SeedMapperMarker marker : seedMapperLastMarkerResult) {
             if (marker.blockX() == x && marker.blockZ() == z) return marker;
         }
@@ -4821,7 +4868,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         if (marker == null || worldKey == null) {
             return;
         }
-        boolean completed = seedMapperOptions.isCompleted(worldKey, marker.feature(), marker.blockX(), marker.blockZ());
+        boolean completed = isSeedMapperMarkerCompleted(worldKey, marker);
         seedMapperOptions.setCompleted(worldKey, marker.feature(), marker.blockX(), marker.blockZ(), !completed);
         syncStrongholdPortalCompletion(marker, worldKey, !completed);
         if (!completed) {
@@ -4831,24 +4878,79 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         MapSettingsManager.instance.saveAll();
     }
 
+    public boolean hasSeedMapperCompletionForWaypoint(Waypoint waypoint) {
+        if (waypoint == null) {
+            return false;
+        }
+        int x = getWaypointXInViewedDimension(waypoint);
+        int z = getWaypointZInViewedDimension(waypoint);
+        if (isEndPortalCompleted(currentSeedMapperWorldKey(), x, z)) {
+            return true;
+        }
+        SeedMapperMarker marker = findSeedMapperMarkerAt(
+                x, z);
+        if (marker == null) {
+            return false;
+        }
+        return isSeedMapperMarkerCompleted(currentSeedMapperWorldKey(), marker);
+    }
+
+    private boolean isSeedMapperMarkerCompleted(String worldKey, SeedMapperMarker marker) {
+        if (marker == null) {
+            return false;
+        }
+        if (seedMapperOptions.isCompleted(worldKey, marker.feature(), marker.blockX(), marker.blockZ())) {
+            return true;
+        }
+        return marker.feature() == SeedMapperFeature.END_PORTAL
+                && isEndPortalCompleted(worldKey, marker.blockX(), marker.blockZ());
+    }
+
+    private boolean isEndPortalCompleted(String worldKey, int x, int z) {
+        return seedMapperOptions.isCompleted(worldKey, SeedMapperFeature.END_PORTAL, x, z)
+                || seedMapperOptions.isCompletedNear(worldKey, SeedMapperFeature.STRONGHOLD, x, z, 1024);
+    }
+
+    public void clearSeedMapperCompletionForWaypoint(Waypoint waypoint) {
+        if (waypoint == null) {
+            return;
+        }
+        int x = getWaypointXInViewedDimension(waypoint);
+        int z = getWaypointZInViewedDimension(waypoint);
+        SeedMapperMarker marker = findSeedMapperMarkerAt(
+                x, z);
+        String worldKey = currentSeedMapperWorldKey();
+        seedMapperOptions.setCompleted(worldKey, SeedMapperFeature.END_PORTAL, x, z, false);
+        if (marker == null) {
+            MapSettingsManager.instance.saveAll();
+            return;
+        }
+        seedMapperOptions.setCompleted(worldKey, marker.feature(), marker.blockX(), marker.blockZ(), false);
+        syncStrongholdPortalCompletion(marker, worldKey, false);
+        MapSettingsManager.instance.saveAll();
+    }
+
     private void syncStrongholdPortalCompletion(SeedMapperMarker marker, String worldKey, boolean completed) {
-        final int associationRadius = 256;
+        final int associationRadius = 1024;
         if (marker.feature() == SeedMapperFeature.STRONGHOLD) {
             List<PortalMarkersManager.PortalMarker> portals = VoxelConstants.getVoxelMapInstance().getPortalMarkersManager()
                     .getMarkersInRange(marker.blockX(), marker.blockZ(), associationRadius, false, true, false);
-            PortalMarkersManager.PortalMarker nearest = null;
-            long nearestDistance = (long) associationRadius * associationRadius + 1L;
             for (PortalMarkersManager.PortalMarker portal : portals) {
-                long dx = (long) portal.pos().getX() - marker.blockX();
-                long dz = (long) portal.pos().getZ() - marker.blockZ();
-                long distance = dx * dx + dz * dz;
-                if (distance < nearestDistance) {
-                    nearest = portal;
-                    nearestDistance = distance;
-                }
+                seedMapperOptions.setCompleted(worldKey, SeedMapperFeature.END_PORTAL,
+                        portal.pos().getX(), portal.pos().getZ(), completed);
             }
-            if (nearest != null) {
-                seedMapperOptions.setCompleted(worldKey, SeedMapperFeature.END_PORTAL, nearest.pos().getX(), nearest.pos().getZ(), completed);
+            // Auto portal waypoints can be the only visible representation of
+            // an unlit portal. Store completion at their exact coordinates too,
+            // so their single waypoint icon inherits the stronghold tick.
+            for (Waypoint waypoint : waypointManager.getWaypoints()) {
+                if (!isEndPortalWaypoint(waypoint) || !isWaypointVisibleInViewedDimension(waypoint)) continue;
+                int x = getWaypointXInViewedDimension(waypoint);
+                int z = getWaypointZInViewedDimension(waypoint);
+                long dx = (long) x - marker.blockX();
+                long dz = (long) z - marker.blockZ();
+                if (dx * dx + dz * dz <= (long) associationRadius * associationRadius) {
+                    seedMapperOptions.setCompleted(worldKey, SeedMapperFeature.END_PORTAL, x, z, completed);
+                }
             }
         } else if (marker.feature() == SeedMapperFeature.END_PORTAL) {
             try {
@@ -4876,6 +4978,12 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 // A structure seed is required to find the stronghold associated with a portal.
             }
         }
+    }
+
+    private boolean isEndPortalWaypoint(Waypoint waypoint) {
+        return waypoint != null && waypoint.name != null
+                && (waypoint.name.toLowerCase(Locale.ROOT).contains("end portal")
+                || "diamond".equalsIgnoreCase(waypoint.imageSuffix));
     }
 
     private boolean routeContains(int x, int z) {
@@ -5317,7 +5425,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         entries.add(new Popup.PopupEntry("Plot", 16, true, true));
         if (selectedWaypoint != null) entries.add(new Popup.PopupEntry("Point to Point", 23, true, true));
         if (selectedSeedMapperMarker != null && selectedSeedMapperWorldKey != null) {
-            boolean completed = seedMapperOptions.isCompleted(selectedSeedMapperWorldKey, selectedSeedMapperMarker.feature(), selectedSeedMapperMarker.blockX(), selectedSeedMapperMarker.blockZ());
+            boolean completed = isSeedMapperMarkerCompleted(selectedSeedMapperWorldKey, selectedSeedMapperMarker);
             entries.add(new Popup.PopupEntry(completed ? "Mark Incomplete" : "Mark Complete", 8, true, true));
         }
         if (routeContains(selectedWaypoint == null ? (int) cursorCoordX : getWaypointXInViewedDimension(selectedWaypoint), selectedWaypoint == null ? (int) cursorCoordZ : getWaypointZInViewedDimension(selectedWaypoint))) entries.add(new Popup.PopupEntry("Remove Point to Point", 24, true, true));
@@ -5343,7 +5451,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         }
         ArrayList<Popup.PopupEntry> entries = new ArrayList<>();
         boolean completed = selectedSeedMapperWorldKey != null
-                && seedMapperOptions.isCompleted(selectedSeedMapperWorldKey, selectedSeedMapperMarker.feature(), selectedSeedMapperMarker.blockX(), selectedSeedMapperMarker.blockZ());
+                && isSeedMapperMarkerCompleted(selectedSeedMapperWorldKey, selectedSeedMapperMarker);
         boolean highlightActive = isMarkerHighlighted(selectedSeedMapperMarker);
         if (selectedSeedMapperAssociatedWaypoint != null && !highlightActive) {
             entries.add(new Popup.PopupEntry(I18n.get("selectServer.edit"), 4, true, true));

@@ -22,6 +22,7 @@ import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperEspManager;
 import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperCommandHandler;
 import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperSettingsManager;
 import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperCompat;
+import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperMinimapPreviewSampler;
 import com.mamiyaotaru.voxelmap.seedmapper.SeedMapperImportedDatapackManager;
 import com.mamiyaotaru.voxelmap.rendering.CachedProjectionMatrixBuffer;
 import com.mamiyaotaru.voxelmap.rendering.RenderUtils;
@@ -62,6 +63,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.TreeSet;
+import java.util.concurrent.Future;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -140,6 +142,14 @@ public class Map implements Runnable, IChangeObserver, IReloadListener {
     private final Identifier resourceNetherPortal = Identifier.fromNamespaceAndPath(VoxelConstants.MOD_ID, "images/seedmapper/feature_icons/nether_portal.png");
     private final Identifier resourceEndPortalFrame = Identifier.fromNamespaceAndPath(VoxelConstants.MOD_ID, "images/seedmapper/feature_icons/end_portal_frame.png");
     private final Identifier resourceBedrock = Identifier.fromNamespaceAndPath(VoxelConstants.MOD_ID, "images/seedmapper/feature_icons/end_gateway.png");
+    private final Identifier resourceSeedMapMinimap = Identifier.fromNamespaceAndPath(VoxelConstants.MOD_ID, "map/seedmapper_minimap");
+    private final DynamicMutableTexture seedMapMinimapTexture;
+    private SeedMapperMinimapPreviewSampler.Key seedMapMinimapRequestedKey;
+    private SeedMapperMinimapPreviewSampler.Key seedMapMinimapDisplayedKey;
+    private int[] seedMapMinimapDisplayedColors;
+    private long seedMapMinimapMaskRevision = Long.MIN_VALUE;
+    private long minimapImageRevision;
+    private Future<SeedMapperMinimapPreviewSampler.Sample> seedMapMinimapFuture;
     private int scWidth;
     private int scHeight;
     private String message = "";
@@ -226,6 +236,9 @@ public class Map implements Runnable, IChangeObserver, IReloadListener {
         this.colorManager = VoxelConstants.getVoxelMapInstance().getColorManager();
         this.waypointManager = VoxelConstants.getVoxelMapInstance().getWaypointManager();
         this.minimapContext = new MinimapContext();
+        this.seedMapMinimapTexture = new DynamicMutableTexture("Voxelmap SeedMapper Minimap", SeedMapperMinimapPreviewSampler.SIZE, SeedMapperMinimapPreviewSampler.SIZE, true);
+        this.seedMapMinimapTexture.setSampler(RenderUtils.getSampler(true, false));
+        minecraft.getTextureManager().register(this.resourceSeedMapMinimap, this.seedMapMinimapTexture);
         ArrayList<KeyMapping> tempBindings = new ArrayList<>();
         tempBindings.addAll(Arrays.asList(minecraft.options.keyMappings));
         tempBindings.addAll(Arrays.asList(this.options.keyBindings));
@@ -1840,6 +1853,7 @@ public class Map implements Runnable, IChangeObserver, IReloadListener {
                 this.mapImages[this.zoom].upload();
                 this.lastImageX = this.lastX;
                 this.lastImageZ = this.lastZ;
+                this.minimapImageRevision++;
             }
         }
 
@@ -1872,6 +1886,7 @@ public class Map implements Runnable, IChangeObserver, IReloadListener {
             basePass.setRenderType(VoxelMapRenderTypes.GUI_TEXTURED_GEQUAL_DEPTH.apply(mapResources[zoom]));
             basePass.submitQuad(matrixStack, -256.0F, -256.0F, 0.0F, 512.0F, 512.0F, 0xFFFFFFFF);
             basePass.nextDraw();
+            drawSeedMapperMinimapBiomePreview(basePass, matrixStack, percentX, percentY, matrixScale);
             matrixStack.popMatrix();
 
             matrixStack.pushMatrix();
@@ -1949,6 +1964,113 @@ public class Map implements Runnable, IChangeObserver, IReloadListener {
         } finally {
             matrixStack.popMatrix();
         }
+    }
+
+    private void drawSeedMapperMinimapBiomePreview(SubmitPass pass, Matrix4fStack matrixStack, float percentX, float percentY, float matrixScale) {
+        if (!this.options.showSeedMapOnMinimap || !this.options.minimapAllowed) {
+            return;
+        }
+        int dimension = getCurrentCubiomesDimension();
+        if (dimension == Integer.MIN_VALUE) return;
+        long seed;
+        try {
+            seed = this.seedMapperOptions.resolveSeed(VoxelConstants.getVoxelMapInstance().getWorldSeed());
+        } catch (IllegalArgumentException ignored) {
+            return;
+        }
+
+        var worldMapOptions = VoxelConstants.getVoxelMapInstance().getPersistentMapOptions();
+        if (this.zoomScale < worldMapOptions.getSeedMapMinZoom()) return;
+        // The VoxelMap texture covers 32 * 2^zoom blocks, which is exactly
+        // 64 * zoomScale. Keep the seed sample near the player while flying.
+        int span = Math.max(1, (int) Math.ceil(64.0D * this.zoomScale));
+        int snap = Math.max(16, span / 4);
+        int centerX = Math.floorDiv((int) Math.floor(GameVariableAccessShim.xCoordDouble()), snap) * snap + snap / 2;
+        int centerZ = Math.floorDiv((int) Math.floor(GameVariableAccessShim.zCoordDouble()), snap) * snap + snap / 2;
+        int halfSpan = span / 2;
+        int mcVersion = SeedMapperCompat.getMcVersion();
+        boolean terrainEnabled = worldMapOptions.seedMapStyle.needsTerrain()
+                && this.zoomScale >= worldMapOptions.getSeedMapTerrainMinZoom();
+        SeedMapperMinimapPreviewSampler.Key key = new SeedMapperMinimapPreviewSampler.Key(seed, dimension, mcVersion, 0,
+                centerX - halfSpan, centerX + halfSpan, centerZ - halfSpan, centerZ + halfSpan,
+                this.seedMapperOptions.seedMapBiomeY, worldMapOptions.seedMapStyle,
+                worldMapOptions.getSeedMapContourStrength(), terrainEnabled);
+
+        applySeedMapperMinimapPreviewSample(key);
+        SeedMapperMinimapPreviewSampler.Key displayed = this.seedMapMinimapDisplayedKey;
+        if (displayed == null || displayed.seed() != key.seed() || displayed.dimension() != key.dimension()
+                || displayed.mcVersion() != key.mcVersion() || displayed.generatorFlags() != key.generatorFlags()
+                || displayed.biomeY() != key.biomeY() || displayed.maxX() - displayed.minX() != span
+                || displayed.maxZ() - displayed.minZ() != span || displayed.style() != key.style()
+                || displayed.contourStrength() != key.contourStrength() || displayed.terrainEnabled() != key.terrainEnabled()) {
+            return;
+        }
+
+        refreshSeedMapperMinimapMask(displayed);
+
+        matrixStack.pushMatrix();
+        // The outer map transform already offsets the VoxelMap image from
+        // lastImageX/Z to the player. Apply only the seed image's offset from
+        // that same anchor; using the player here applies the movement twice.
+        matrixStack.translate((float) (((displayed.minX() + displayed.maxX()) * 0.5D - this.lastImageX) / this.zoomScale * matrixScale),
+                (float) (((displayed.minZ() + displayed.maxZ()) * 0.5D - this.lastImageZ) / this.zoomScale * matrixScale), 0.0F);
+        pass.setRenderType(VoxelMapRenderTypes.GUI_TEXTURED_GEQUAL_DEPTH.apply(this.resourceSeedMapMinimap));
+        pass.submitQuad(matrixStack, -256.0F, -256.0F, 1.0F, 512.0F, 512.0F, 0xFFFFFFFF);
+        pass.nextDraw();
+        matrixStack.popMatrix();
+    }
+
+    private void applySeedMapperMinimapPreviewSample(SeedMapperMinimapPreviewSampler.Key key) {
+        if (!key.equals(this.seedMapMinimapRequestedKey)) {
+            this.seedMapMinimapRequestedKey = key;
+            this.seedMapMinimapFuture = SeedMapperMinimapPreviewSampler.request(key);
+        }
+        Future<SeedMapperMinimapPreviewSampler.Sample> future = this.seedMapMinimapFuture;
+        if (future == null || !future.isDone()) return;
+        try {
+            SeedMapperMinimapPreviewSampler.Sample sample = future.get();
+            this.seedMapMinimapFuture = null;
+            if (sample.key().equals(key) && sample.colors().length == SeedMapperMinimapPreviewSampler.SIZE * SeedMapperMinimapPreviewSampler.SIZE) {
+                this.seedMapMinimapDisplayedKey = key;
+                this.seedMapMinimapDisplayedColors = sample.colors();
+                this.seedMapMinimapMaskRevision = Long.MIN_VALUE;
+            }
+        } catch (Exception ignored) {
+            this.seedMapMinimapFuture = null;
+        }
+    }
+
+    private void refreshSeedMapperMinimapMask(SeedMapperMinimapPreviewSampler.Key key) {
+        if (this.seedMapMinimapMaskRevision == this.minimapImageRevision || this.seedMapMinimapDisplayedColors == null
+                || this.world == null || !key.equals(this.seedMapMinimapDisplayedKey)) {
+            return;
+        }
+
+        int[] colors = this.seedMapMinimapDisplayedColors;
+        int[] pixels = new int[colors.length];
+        double spanX = (double) key.maxX() - key.minX();
+        double spanZ = (double) key.maxZ() - key.minZ();
+        java.util.HashMap<Long, Boolean> renderedChunks = new java.util.HashMap<>();
+        for (int z = 0; z < SeedMapperMinimapPreviewSampler.SIZE; z++) {
+            int blockZ = (int) Math.floor(key.minZ() + (z + 0.5D) * spanZ / SeedMapperMinimapPreviewSampler.SIZE);
+            for (int x = 0; x < SeedMapperMinimapPreviewSampler.SIZE; x++) {
+                int blockX = (int) Math.floor(key.minX() + (x + 0.5D) * spanX / SeedMapperMinimapPreviewSampler.SIZE);
+                int chunkX = blockX >> 4;
+                int chunkZ = blockZ >> 4;
+                long chunkKey = (long) chunkX << 32 | chunkZ & 0xFFFFFFFFL;
+                boolean rendered = renderedChunks.computeIfAbsent(chunkKey, ignored -> {
+                    var chunk = this.world.getChunkSource().getChunk(chunkX, chunkZ, false);
+                    return chunk != null && !chunk.isEmpty();
+                });
+                if (!rendered) {
+                    int index = z * SeedMapperMinimapPreviewSampler.SIZE + x;
+                    pixels[index] = ColorUtils.premultiplyWithAlpha(ARGB.toABGR(0x96000000 | colors[index]));
+                }
+            }
+        }
+        this.seedMapMinimapTexture.setPixelsPremultipliedABGR(pixels);
+        this.seedMapMinimapTexture.upload();
+        this.seedMapMinimapMaskRevision = this.minimapImageRevision;
     }
 
 
@@ -2197,7 +2319,11 @@ public class Map implements Runnable, IChangeObserver, IReloadListener {
                 RenderType markerRenderType = VoxelMapRenderTypes.GUI_TEXTURED_GEQUAL_DEPTH.apply(icon);
                 RenderUtils.submitTexturedModalRect(context.order(SUBMIT_MAP_WAYPOINTS), matrixStack, markerRenderType, x - iconSize / 2.0F, y - iconSize / 2.0F, MAP_OVERLAY_DEPTH, iconSize, iconSize, iconColor);
             }
-            if (seedMapperOptions.isCompleted(worldKey, marker.feature(), marker.blockX(), marker.blockZ())) {
+            boolean completed = seedMapperOptions.isCompleted(worldKey, marker.feature(), marker.blockX(), marker.blockZ())
+                    || marker.feature() == com.mamiyaotaru.voxelmap.seedmapper.SeedMapperFeature.END_PORTAL
+                    && seedMapperOptions.isCompletedNear(worldKey, com.mamiyaotaru.voxelmap.seedmapper.SeedMapperFeature.STRONGHOLD,
+                    marker.blockX(), marker.blockZ(), 1024);
+            if (completed) {
                 drawCompletedTickOnMinimapMarker(context, matrixStack, x, y, iconSize);
             }
             if (marker.feature() == com.mamiyaotaru.voxelmap.seedmapper.SeedMapperFeature.ELYTRA

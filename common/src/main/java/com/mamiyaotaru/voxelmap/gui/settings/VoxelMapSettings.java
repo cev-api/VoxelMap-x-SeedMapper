@@ -62,7 +62,7 @@ public final class VoxelMapSettings {
 
         return List.of(
                 general(map),
-                minimap(voxelMap, map, radar, seed, openEntityTypeDialog, host),
+                minimap(voxelMap, map, radar, world, seed, openEntityTypeDialog, host),
                 worldMap(map, world, seed, host),
                 waypoints(map),
                 chunks(map, radar, world, host),
@@ -239,6 +239,7 @@ public final class VoxelMapSettings {
     }
 
     private static SettingsCategory minimap(VoxelMap voxelMap, MapSettingsManager map, RadarSettingsManager radar,
+                                            PersistentMapSettingsManager world,
                                             SeedMapperSettingsManager seed, Runnable openEntityTypeDialog, Supplier<Screen> host) {
         List<SettingsGroup> groups = new ArrayList<>(List.of(
                 group("options.voxelmap.group.visibilityPosition",
@@ -265,6 +266,26 @@ public final class VoxelMapSettings {
                                     }
                                 },
                                 () -> map.cavesAllowed, serverDisabled(), 0)),
+                group("options.voxelmap.group.minimapOverlays",
+                        toggle("minimap.seedMap", "options.voxelmap.minimap.seedMap", map,
+                                () -> map.showSeedMapOnMinimap, value -> map.showSeedMapOnMinimap = value),
+                        radarToggle("minimap.explored", "options.voxelmap.chunks.explored", radar,
+                                () -> radar.showExploredChunks, value -> radar.showExploredChunks = value),
+                        radarToggle("minimap.newChunkOverlay", "options.voxelmap.chunks.newDetector", radar,
+                                () -> radar.showNewerNewChunks, value -> radar.showNewerNewChunks = value),
+                        SettingsOption.toggle("minimap.worldmapExplored", "options.voxelmap.chunks.worldmapExplored", null,
+                                () -> world.showExploredChunks,
+                                value -> { world.showExploredChunks = value; world.saveAll(); }),
+                        SettingsOption.toggle("minimap.worldmapNewOld", "options.worldmap.showNewOldChunks", null,
+                                () -> world.getBooleanValue(EnumOptionsMinimap.WORLDMAP_SHOW_NEW_OLD_CHUNKS),
+                                value -> {
+                                    if (world.getBooleanValue(EnumOptionsMinimap.WORLDMAP_SHOW_NEW_OLD_CHUNKS) != value) {
+                                        world.toggleBooleanValue(EnumOptionsMinimap.WORLDMAP_SHOW_NEW_OLD_CHUNKS);
+                                        world.saveAll();
+                                    }
+                                }),
+                        visibilityOption("minimap.chunkTrails", world, com.mamiyaotaru.voxelmap.persistent.WorldMapDetailSettings.Layer.TRAILS),
+                        visibilityOption("minimap.trailDots", world, com.mamiyaotaru.voxelmap.persistent.WorldMapDetailSettings.Layer.TRAIL_NODES)),
                 group("options.voxelmap.group.hudLayout",
                         toggle("minimap.effects", "options.minimap.moveMapBelowStatusEffectIcons", map, () -> map.moveMapBelowStatusEffectIcons, value -> map.moveMapBelowStatusEffectIcons = value),
                         toggle("minimap.scoreboard", "options.minimap.moveScoreboardBelowMap", map, () -> map.moveScoreboardBelowMap, value -> map.moveScoreboardBelowMap = value)),
@@ -532,13 +553,22 @@ public final class VoxelMapSettings {
 
     private static SettingsGroup visibilityGroup(PersistentMapSettingsManager world) {
         List<SettingsOption<?>> options = new ArrayList<>();
-        for (var layer : com.mamiyaotaru.voxelmap.persistent.WorldMapDetailSettings.Layer.values())
-            options.add(SettingsOption.slider("worldmap.visibility." + layer, "options.voxelmap.worldmap.visibility." + layer, null,
-                    () -> (double) com.mamiyaotaru.voxelmap.persistent.WorldMapDetailSettings.visibilitySlider(world.detail.hideBeyond.getOrDefault(layer, 0)),
-                    value -> { world.detail.hideBeyond.put(layer, com.mamiyaotaru.voxelmap.persistent.WorldMapDetailSettings.visibilityCutoff(value.intValue())); world.saveAll(); },
-                    2, 19, 1, value -> Component.literal(value >= 19 ? "Always" : "Hide beyond 1:" + String.format(Locale.ROOT, "%,d", 1 << value.intValue())),
-                    () -> true, Component::empty, 0));
+        for (var layer : com.mamiyaotaru.voxelmap.persistent.WorldMapDetailSettings.Layer.values()) {
+            if (layer != com.mamiyaotaru.voxelmap.persistent.WorldMapDetailSettings.Layer.TRAILS
+                    && layer != com.mamiyaotaru.voxelmap.persistent.WorldMapDetailSettings.Layer.TRAIL_NODES) {
+                options.add(visibilityOption("worldmap.visibility." + layer, world, layer));
+            }
+        }
         return group("options.voxelmap.group.worldmapVisibility", options.toArray(SettingsOption[]::new));
+    }
+
+    private static SettingsOption<Double> visibilityOption(String id, PersistentMapSettingsManager world,
+            com.mamiyaotaru.voxelmap.persistent.WorldMapDetailSettings.Layer layer) {
+        return SettingsOption.slider(id, "options.voxelmap.worldmap.visibility." + layer, null,
+                () -> (double) com.mamiyaotaru.voxelmap.persistent.WorldMapDetailSettings.visibilitySlider(world.detail.hideBeyond.getOrDefault(layer, 0)),
+                value -> { world.detail.hideBeyond.put(layer, com.mamiyaotaru.voxelmap.persistent.WorldMapDetailSettings.visibilityCutoff(value.intValue())); world.saveAll(); },
+                2, 19, 1, value -> Component.literal(value >= 19 ? "Always" : "Hide beyond 1:" + String.format(Locale.ROOT, "%,d", 1 << value.intValue())),
+                () -> true, Component::empty, 0);
     }
 
     private static SettingsGroup renderingGroup(PersistentMapSettingsManager world) {
@@ -623,8 +653,6 @@ public final class VoxelMapSettings {
     private static SettingsCategory chunks(MapSettingsManager map, RadarSettingsManager radar, PersistentMapSettingsManager world, Supplier<Screen> host) {
         return new SettingsCategory("chunks", "options.voxelmap.category.chunks", List.of(
                 group("options.voxelmap.group.chunkOverlays",
-                        radarToggle("chunks.explored", "options.voxelmap.chunks.explored", radar, () -> radar.showExploredChunks, value -> radar.showExploredChunks = value),
-                        radarToggle("chunks.newDetector", "options.voxelmap.chunks.newDetector", radar, () -> radar.showNewerNewChunks, value -> radar.showNewerNewChunks = value),
                         enumToggle("chunks.grid", map, EnumOptionsMinimap.CHUNK_GRID),
                         SettingsOption.toggle("chunks.slime", "options.minimap.slimeChunks", null,
                                 () -> map.getBooleanValue(EnumOptionsMinimap.SLIME_CHUNKS),
@@ -634,21 +662,7 @@ public final class VoxelMapSettings {
                                     }
                                 },
                                 () -> VoxelConstants.getMinecraft().hasSingleplayerServer() || !VoxelConstants.getVoxelMapInstance().getWorldSeed().isEmpty(),
-                                requires("options.voxelmap.requires.seed"), 0),
-                        SettingsOption.toggle("chunks.worldmapExplored", "options.voxelmap.chunks.worldmapExplored", null,
-                                () -> world.showExploredChunks,
-                                value -> {
-                                    world.showExploredChunks = value;
-                                    world.saveAll();
-                                }),
-                        SettingsOption.toggle("chunks.worldmapNewOld", "options.worldmap.showNewOldChunks", null,
-                                () -> world.getBooleanValue(EnumOptionsMinimap.WORLDMAP_SHOW_NEW_OLD_CHUNKS),
-                                value -> {
-                                    if (world.getBooleanValue(EnumOptionsMinimap.WORLDMAP_SHOW_NEW_OLD_CHUNKS) != value) {
-                                        world.toggleBooleanValue(EnumOptionsMinimap.WORLDMAP_SHOW_NEW_OLD_CHUNKS);
-                                        world.saveAll();
-                                    }
-                                })),
+                                requires("options.voxelmap.requires.seed"), 0)),
                 group("options.voxelmap.group.chunkDetection",
                         SettingsOption.choice("chunks.detectMode", "options.voxelmap.chunks.detectMode", null,
                                 () -> radar.newerNewChunksDetectMode,

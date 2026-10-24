@@ -527,6 +527,34 @@ public class SeedMapperSettingsManager implements ISubSettingsManager {
         return completedFeatureEntries.contains(buildCompletionKey(worldKey, feature, x, z));
     }
 
+    public boolean isCompletedNear(String worldKey, SeedMapperFeature feature, int x, int z, int radius) {
+        if (worldKey == null || feature == null || radius < 0) {
+            return false;
+        }
+        String prefix = worldKey + "|" + feature.id() + "|";
+        long radiusSquared = (long) radius * radius;
+        for (String entry : completedFeatureEntries) {
+            if (!entry.startsWith(prefix)) {
+                continue;
+            }
+            String coordinates = entry.substring(prefix.length());
+            int separator = coordinates.indexOf('|');
+            if (separator < 0) {
+                continue;
+            }
+            try {
+                long dx = (long) Integer.parseInt(coordinates.substring(0, separator)) - x;
+                long dz = (long) Integer.parseInt(coordinates.substring(separator + 1)) - z;
+                if (dx * dx + dz * dz <= radiusSquared) {
+                    return true;
+                }
+            } catch (NumberFormatException ignored) {
+                // Ignore malformed persisted completion entries.
+            }
+        }
+        return false;
+    }
+
     public boolean isElytraMissing(String worldKey, int x, int z) {
         return Boolean.parseBoolean(elytraDetectionStates.getOrDefault(buildElytraKey(worldKey, x, z), "false"));
     }

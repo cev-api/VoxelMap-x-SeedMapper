@@ -55,6 +55,7 @@ public class GuiWaypoints extends PopupGuiScreen implements IGuiWaypoints {
     protected Waypoint selectedWaypoint;
     private final LinkedHashSet<Waypoint> selectedWaypoints = new LinkedHashSet<>();
     private List<Waypoint> pendingDeleteWaypoints = List.of();
+    private boolean pendingClearSeedMapperCompletion;
     protected Waypoint selectionAnchor;
     protected Waypoint highlightedWaypoint;
     protected Waypoint newWaypoint;
@@ -124,6 +125,9 @@ public class GuiWaypoints extends PopupGuiScreen implements IGuiWaypoints {
 
     private Component getDimensionFilterLabel() {
         if (dimensionFilterMode == 0) {
+            if (isViewingDifferentMapDimension()) {
+                return Component.literal("Dim: Map");
+            }
             return Component.literal("Dim: Current");
         }
         if (dimensionFilterMode == 1) {
@@ -154,7 +158,10 @@ public class GuiWaypoints extends PopupGuiScreen implements IGuiWaypoints {
         }
 
         if (dimensionFilterMode == 0) {
-            return waypoint.inDimension;
+            if (lastScreen instanceof GuiPersistentMap worldMap) {
+                return waypoint.inWorld && waypoint.isInDimension(worldMap.getViewedDimensionContainer());
+            }
+            return waypoint.isInDimension(getCurrentDimensionContainer());
         }
         if (dimensionFilterMode == 1) {
             return true;
@@ -162,10 +169,26 @@ public class GuiWaypoints extends PopupGuiScreen implements IGuiWaypoints {
 
         int index = dimensionFilterMode - 2;
         if (index < 0 || index >= dimensionFilterDimensions.size()) {
-            return waypoint.inDimension;
+            return waypoint.isInDimension(getCurrentDimensionContainer());
         }
         DimensionContainer selectedDimension = dimensionFilterDimensions.get(index);
         return waypoint.dimensions.isEmpty() || waypoint.dimensions.contains(selectedDimension);
+    }
+
+    private DimensionContainer getCurrentDimensionContainer() {
+        var player = VoxelConstants.getPlayer();
+        return player == null ? null : VoxelConstants.getVoxelMapInstance().getDimensionManager()
+                .getDimensionContainerByWorld(player.level());
+    }
+
+    private boolean isViewingDifferentMapDimension() {
+        if (!(lastScreen instanceof GuiPersistentMap worldMap) || VoxelConstants.getPlayer() == null) {
+            return false;
+        }
+        DimensionContainer viewed = worldMap.getViewedDimensionContainer();
+        DimensionContainer current = VoxelConstants.getVoxelMapInstance().getDimensionManager()
+                .getDimensionContainerByWorld(VoxelConstants.getPlayer().level());
+        return viewed != null && current != null && !viewed.getStorageName().equals(current.getStorageName());
     }
 
     private void sort() {
@@ -202,7 +225,7 @@ public class GuiWaypoints extends PopupGuiScreen implements IGuiWaypoints {
     private void deleteClicked() {
         if (!selectedWaypoints.isEmpty()) {
             pendingDeleteWaypoints = new ArrayList<>(selectedWaypoints);
-            if (!options.confirmWaypointDelete) {
+            if (!options.confirmWaypointDelete && !hasPendingSeedMapperCompletion()) {
                 deleteSelectedWaypoint();
                 return;
             }
@@ -402,8 +425,18 @@ public class GuiWaypoints extends PopupGuiScreen implements IGuiWaypoints {
     @Override
     public void popupAction(Popup popup, int action) {
         switch (action) {
-            case 10 -> deleteSelectedWaypoint();
-            case 11 -> pendingDeleteWaypoints = List.of();
+            case 10 -> {
+                pendingClearSeedMapperCompletion = false;
+                deleteSelectedWaypoint();
+            }
+            case 11 -> {
+                pendingDeleteWaypoints = List.of();
+                pendingClearSeedMapperCompletion = false;
+            }
+            case 12 -> {
+                pendingClearSeedMapperCompletion = true;
+                deleteSelectedWaypoint();
+            }
         }
     }
 
@@ -428,9 +461,22 @@ public class GuiWaypoints extends PopupGuiScreen implements IGuiWaypoints {
         ArrayList<Popup.PopupEntry> entries = new ArrayList<>();
         String title = pendingDeleteWaypoints.size() > 1 ? "Confirm Delete " + pendingDeleteWaypoints.size() + " Waypoints?" : "Confirm Delete?";
         entries.add(new Popup.PopupEntry(title, -1, false, false));
-        entries.add(new Popup.PopupEntry(I18n.get("selectServer.deleteButton"), 10, true, true));
+        if (hasPendingSeedMapperCompletion()) {
+            entries.add(new Popup.PopupEntry(Component.translatable("minimap.waypoints.deleteOnly").getString(), 10, true, true));
+            entries.add(new Popup.PopupEntry(Component.translatable("minimap.waypoints.deleteAndClearCompletion").getString(), 12, true, true));
+        } else {
+            entries.add(new Popup.PopupEntry(I18n.get("selectServer.deleteButton"), 10, true, true));
+        }
         entries.add(new Popup.PopupEntry(I18n.get("gui.cancel"), 11, true, true));
-        createPopup(getWidth() / 2 - 45, getHeight() / 2 - 20, buttonDelete.getX(), buttonDelete.getY(), 100, entries);
+        int popupWidth = hasPendingSeedMapperCompletion() ? 190 : 100;
+        createPopup(getWidth() / 2 - popupWidth / 2, getHeight() / 2 - 20, buttonDelete.getX(), buttonDelete.getY(), popupWidth, entries);
+    }
+
+    private boolean hasPendingSeedMapperCompletion() {
+        if (!(lastScreen instanceof GuiPersistentMap worldMap)) {
+            return false;
+        }
+        return pendingDeleteWaypoints.stream().anyMatch(worldMap::hasSeedMapperCompletionForWaypoint);
     }
 
     private void deleteSelectedWaypoint() {
@@ -439,6 +485,13 @@ public class GuiWaypoints extends PopupGuiScreen implements IGuiWaypoints {
         if (waypointsToDelete.isEmpty()) {
             return;
         }
+
+        if (pendingClearSeedMapperCompletion && lastScreen instanceof GuiPersistentMap worldMap) {
+            for (Waypoint waypoint : waypointsToDelete) {
+                worldMap.clearSeedMapperCompletionForWaypoint(waypoint);
+            }
+        }
+        pendingClearSeedMapperCompletion = false;
 
         waypointManager.deleteWaypoints(waypointsToDelete);
         for (Waypoint waypoint : waypointsToDelete) {
