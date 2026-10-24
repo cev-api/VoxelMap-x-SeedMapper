@@ -95,6 +95,7 @@ public class WaypointManager implements IReloadListener {
     private boolean loaded;
     private boolean needSave;
     private ArrayList<Waypoint> wayPts = new ArrayList<>();
+    private final java.util.Set<Waypoint> transientWaypoints = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
     private Waypoint highlightedWaypoint;
     private volatile String worldName = "";
     private String serverWorldIdentity = "";
@@ -197,6 +198,20 @@ public class WaypointManager implements IReloadListener {
 
     public ArrayList<Waypoint> getWaypoints() {
         return this.wayPts;
+    }
+
+    public void addTransientWaypoint(Waypoint waypoint) {
+        if (waypoint == null) return;
+        transientWaypoints.add(waypoint);
+        wayPts.add(waypoint);
+        waypointContainer.refreshRenderables();
+    }
+
+    public void removeTransientWaypoint(Waypoint waypoint) {
+        if (waypoint == null || !transientWaypoints.remove(waypoint)) return;
+        wayPts.remove(waypoint);
+        if (highlightedWaypoint == waypoint) setHighlightedWaypoint(null, false);
+        waypointContainer.refreshRenderables();
     }
 
     public WaypointContainer getWaypointContainer() {
@@ -726,6 +741,7 @@ public class WaypointManager implements IReloadListener {
             out.println("seeds:" + seedsString);
 
             for (Waypoint pt : this.wayPts) {
+                if (transientWaypoints.contains(pt)) continue;
                 if (!(!pt.name.isEmpty() && pt.name.charAt(0) == '^')) {
                     StringBuilder dimensionsString = new StringBuilder();
 

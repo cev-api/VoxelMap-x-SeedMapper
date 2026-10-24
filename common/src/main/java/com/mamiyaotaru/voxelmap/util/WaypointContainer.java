@@ -1,5 +1,7 @@
 package com.mamiyaotaru.voxelmap.util;
 
+import com.mamiyaotaru.voxelmap.persistent.GuiPersistentMap;
+
 import com.mamiyaotaru.voxelmap.MapSettingsManager;
 import com.mamiyaotaru.voxelmap.VoxelConstants;
 import com.mamiyaotaru.voxelmap.WaypointManager;
@@ -13,6 +15,7 @@ import net.minecraft.client.renderer.SubmitNodeCollector;
 import com.mojang.math.Axis;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -69,6 +72,7 @@ public class WaypointContainer {
 
     public void renderWaypoints(float partialTick, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, Camera camera) {
         if (waypointManager == null) return;
+        renderPointRoute(poseStack, submitNodeCollector, camera);
         if (renderables.isEmpty() && waypointManager.getHighlightedWaypoint() == null) return;
 
         if (options.highlightTracerEnabled) {
@@ -84,6 +88,37 @@ public class WaypointContainer {
         }
         if (options.showWaypointSigns) {
             renderWaypointSigns(poseStack, submitNodeCollector, camera);
+        }
+    }
+
+    private void renderPointRoute(PoseStack poseStack, SubmitNodeCollector collector, Camera camera) {
+        String dimension = VoxelConstants.getPlayer() == null ? "" : VoxelConstants.getPlayer().level().dimension().identifier().toString();
+        List<GuiPersistentMap.PointRouteTarget> targets = GuiPersistentMap.getPointRouteTargets().stream()
+                .filter(target -> target.dimension().equals(dimension)).toList();
+        if (targets.isEmpty() || VoxelConstants.getPlayer() == null) return;
+        Vec3 cameraPos = camera.position();
+        // Anchor destination heights to the terrain/waypoint instead of the player's
+        // current height. This keeps the whole route from bobbing as the player walks.
+        Vec3 start = new Vec3(camera.forwardVector()).scale(2.0D);
+        List<Vec3> points = new ArrayList<>();
+        points.add(start);
+        for (GuiPersistentMap.PointRouteTarget target : targets) {
+            points.add(new Vec3(target.x() + 0.5D, target.y() + 0.65D, target.z() + 0.5D).subtract(cameraPos));
+        }
+        float width = 2.5F;
+        float red = 1.0F, green = 0.58F, blue = 0.12F;
+        collector.order(VoxelMapRenderTypes.OVERLAY_ORDER_ESP_LINES)
+                .submitCustomGeometry(poseStack, VoxelMapRenderTypes.SEEDMAPPER_LINES_NO_DEPTH, (pose, buffer) -> {
+                    for (int i = 0; i + 1 < points.size(); i++) {
+                        Vec3 a = points.get(i);
+                        Vec3 b = points.get(i + 1);
+                        Vec3 normal = b.subtract(a).normalize();
+                        buffer.addVertex(pose, (float) a.x, (float) a.y, (float) a.z).setColor(red, green, blue, 1.0F).setNormal(pose, (float) normal.x, (float) normal.y, (float) normal.z).setLineWidth(width);
+                        buffer.addVertex(pose, (float) b.x, (float) b.y, (float) b.z).setColor(red, green, blue, 1.0F).setNormal(pose, (float) normal.x, (float) normal.y, (float) normal.z).setLineWidth(width);
+                    }
+                });
+        for (int i = 0; i + 1 < points.size(); i++) {
+            renderHighlightTracerPrism(poseStack, collector, points.get(i), points.get(i + 1), red, green, blue, width);
         }
     }
 

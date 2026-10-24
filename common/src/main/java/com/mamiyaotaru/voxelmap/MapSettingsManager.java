@@ -104,6 +104,7 @@ public class MapSettingsManager implements ISettingsManager {
     public boolean waypointCompassTextOutline = true;
     public int waypointCompassIconRange = -1;
     public int waypointCompassMaxWaypoints = 8;
+    public boolean waypointCompassNearOnTop = true;
     public int waypointCompassX = 50;
     public int waypointCompassY = 3;
     public int waypointCompassTextOpacity = 100;
@@ -270,6 +271,7 @@ public class MapSettingsManager implements ISettingsManager {
                         case "Waypoint Compass Text Outline" -> waypointCompassTextOutline = Boolean.parseBoolean(curLine[1]);
                         case "Waypoint Compass Icon Range" -> waypointCompassIconRange = Mth.clamp(Integer.parseInt(curLine[1]), -1, 1000000);
                         case "Waypoint Compass Max Waypoints" -> waypointCompassMaxWaypoints = Mth.clamp(Integer.parseInt(curLine[1]), 1, 64);
+                        case "Waypoint Compass Near On Top" -> waypointCompassNearOnTop = Boolean.parseBoolean(curLine[1]);
                         case "Waypoint Compass X" -> waypointCompassX = Mth.clamp(Integer.parseInt(curLine[1]), 0, 100);
                         case "Waypoint Compass Y" -> waypointCompassY = Mth.clamp(Integer.parseInt(curLine[1]), 0, 40);
                         case "Waypoint Compass Text Opacity" -> waypointCompassTextOpacity = Mth.clamp(Integer.parseInt(curLine[1]), 0, 100);
@@ -393,6 +395,7 @@ public class MapSettingsManager implements ISettingsManager {
             out.println("Waypoint Compass Text Outline:" + waypointCompassTextOutline);
             out.println("Waypoint Compass Icon Range:" + waypointCompassIconRange);
             out.println("Waypoint Compass Max Waypoints:" + waypointCompassMaxWaypoints);
+            out.println("Waypoint Compass Near On Top:" + waypointCompassNearOnTop);
             out.println("Waypoint Compass X:" + waypointCompassX);
             out.println("Waypoint Compass Y:" + waypointCompassY);
             out.println("Waypoint Compass Text Opacity:" + waypointCompassTextOpacity);

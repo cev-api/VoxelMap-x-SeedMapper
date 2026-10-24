@@ -5,6 +5,7 @@ import com.github.cubiomes.Generator;
 import com.github.cubiomes.TerrainNoise;
 import com.mamiyaotaru.voxelmap.MapSettingsManager;
 import com.mamiyaotaru.voxelmap.NewerNewChunksManager;
+import com.mamiyaotaru.voxelmap.PortalMarkersManager;
 import com.mamiyaotaru.voxelmap.RadarSettingsManager;
 import com.mamiyaotaru.voxelmap.VoxelConstants;
 import com.mamiyaotaru.voxelmap.WaypointManager;
@@ -232,6 +233,10 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     private final Identifier seedPreviewTextureLocation = Identifier.fromNamespaceAndPath(VoxelConstants.MOD_ID, "persistentmap/seedpreview");
     private final List<FeatureIconHitbox> seedMapperIconHitboxes = new ArrayList<>();
     private final List<SeedMapperMarkerHitbox> seedMapperMarkerHitboxes = new ArrayList<>();
+    private static final List<PointRouteTarget> pointRouteTargets = new ArrayList<>();
+    private static boolean pointRoutePlotting;
+    public record PointRouteTarget(int x, int y, int z, SeedMapperFeature feature, String worldKey, String dimension, Waypoint waypoint, String destinationName) { }
+    public static List<PointRouteTarget> getPointRouteTargets() { return List.copyOf(pointRouteTargets); }
     private Set<SeedMapperFeature> seedMapperSavedToggles;
     private SeedMapperFeature seedMapperIsolatedFeature;
     private int seedMapperIsolationBaseHash;
@@ -1085,6 +1090,18 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             return true;
         }
         if (mouseButtonEvent.button() == InputConstants.MOUSE_BUTTON_LEFT) {
+            if (pointRoutePlotting && isInMap(mouseX, mouseY)) {
+                SeedMapperMarkerHitbox routeHit = seedMapperMarkerAt(mouseX, mouseY);
+                Waypoint routeWaypoint = getHoveredWaypoint();
+                if (routeHit != null) {
+                    addPointRouteTarget(routeHit.marker().blockX(), terrainHighlightY(routeHit.marker().blockX(), routeHit.marker().blockZ()), routeHit.marker().blockZ(), routeHit.marker().feature(), routeHit.worldKey());
+                    return true;
+                }
+                if (routeWaypoint != null) {
+                    addPointRouteTarget(getWaypointXInViewedDimension(routeWaypoint), routeWaypoint.getY(), getWaypointZInViewedDimension(routeWaypoint), null, null);
+                    return true;
+                }
+            }
             boolean markerHandled;
             try {
                 markerHandled = handleSeedMapperMarkerLeftClick(mouseX, mouseY);
@@ -1569,6 +1586,8 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             }
 
             drawPlots(graphics, cursorCoordX, cursorCoordZ);
+            drawPointRoutes(graphics);
+            drawHighlightedWaypointLine(graphics);
 
             if (this.oldNorth) {
                 graphics.pose().rotate(-90.0F * Mth.DEG_TO_RAD);
@@ -3591,7 +3610,6 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         List<LegendEntry> visibleEntries = new ArrayList<>();
         for (SeedMapperFeature feature : SeedMapperFeature.values()) {
             if (feature == SeedMapperFeature.DATAPACK_STRUCTURE
-                    || feature == SeedMapperFeature.END_PORTAL
                     || feature == SeedMapperFeature.END_BEACON) {
                 continue;
             }
@@ -4221,6 +4239,59 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         return false;
     }
 
+    private SeedMapperMarkerHitbox seedMapperMarkerAt(int mouseX, int mouseY) {
+        for (SeedMapperMarkerHitbox hitbox : seedMapperMarkerHitboxes) if (hitbox.contains(mouseX, mouseY)) return hitbox;
+        return null;
+    }
+
+    private SeedMapperMarker findSeedMapperMarkerAt(int x, int z) {
+        for (SeedMapperMarker marker : seedMapperLastMarkerResult) {
+            if (marker.blockX() == x && marker.blockZ() == z) return marker;
+        }
+        return null;
+    }
+
+    private void addPointRouteTarget(int x, int y, int z, SeedMapperFeature feature, String worldKey) {
+        String destinationName;
+        if (feature != null) {
+            destinationName = Component.translatable(feature.translationKey()).getString();
+        } else {
+            Waypoint existing = waypointManager.getWaypoints().stream().filter(point -> point.x == x && point.z == z).findFirst().orElse(null);
+            destinationName = existing == null ? "Waypoint" : existing.name;
+        }
+        String dimension = getViewedDimensionIdentifier().toString();
+        if (pointRouteTargets.stream().anyMatch(target -> target.x() == x && target.z() == z && target.dimension().equals(dimension))) return;
+        String label = destinationName;
+        if (feature != null && selectedSeedMapperMarker != null && selectedSeedMapperMarker.feature() == feature
+                && selectedSeedMapperMarker.blockX() == x && selectedSeedMapperMarker.blockZ() == z
+                && selectedSeedMapperMarker.label() != null && !selectedSeedMapperMarker.label().isBlank()) {
+            label += " [" + selectedSeedMapperMarker.label() + "]";
+        }
+        int sequence = (int) pointRouteTargets.stream().filter(target -> target.dimension().equals(dimension)).count() + 1;
+        Waypoint markerWaypoint = new Waypoint(sequence + ". " + label, x, z, y, true, 1.0F, 0.52F, 0.12F,
+                "target", waypointManager.getCurrentSubworldDescriptor(false), new TreeSet<>(getViewedDimensionContainer() == null ? List.of() : List.of(getViewedDimensionContainer())));
+        waypointManager.addTransientWaypoint(markerWaypoint);
+        pointRouteTargets.add(new PointRouteTarget(x, y, z, feature, worldKey, dimension, markerWaypoint, label));
+    }
+
+    private static void clearPointRouteTargets() {
+        WaypointManager manager = VoxelConstants.getVoxelMapInstance().getWaypointManager();
+        for (PointRouteTarget target : pointRouteTargets) manager.removeTransientWaypoint(target.waypoint());
+        pointRouteTargets.clear();
+    }
+
+    private void removePointRouteTarget(PointRouteTarget target) {
+        if (pointRouteTargets.remove(target)) waypointManager.removeTransientWaypoint(target.waypoint());
+        String dimension = target.dimension();
+        int sequence = 1;
+        for (PointRouteTarget current : pointRouteTargets) {
+            if (!current.dimension().equals(dimension)) continue;
+            String name = (sequence++) + ". " + current.destinationName();
+            current.waypoint().name = name;
+        }
+        waypointManager.getWaypointContainer().refreshRenderables();
+    }
+
     private boolean handleSeedMapperMarkerLeftClick(int mouseX, int mouseY) {
         for (SeedMapperMarkerHitbox hitbox : seedMapperMarkerHitboxes) {
             if (!hitbox.contains(mouseX, mouseY)) {
@@ -4752,7 +4823,112 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         }
         boolean completed = seedMapperOptions.isCompleted(worldKey, marker.feature(), marker.blockX(), marker.blockZ());
         seedMapperOptions.setCompleted(worldKey, marker.feature(), marker.blockX(), marker.blockZ(), !completed);
+        syncStrongholdPortalCompletion(marker, worldKey, !completed);
+        if (!completed) {
+            String dimension = getViewedDimensionIdentifier().toString();
+            pointRouteTargets.stream().filter(target -> target.x() == marker.blockX() && target.z() == marker.blockZ() && target.dimension().equals(dimension)).toList().forEach(this::removePointRouteTarget);
+        }
         MapSettingsManager.instance.saveAll();
+    }
+
+    private void syncStrongholdPortalCompletion(SeedMapperMarker marker, String worldKey, boolean completed) {
+        final int associationRadius = 256;
+        if (marker.feature() == SeedMapperFeature.STRONGHOLD) {
+            List<PortalMarkersManager.PortalMarker> portals = VoxelConstants.getVoxelMapInstance().getPortalMarkersManager()
+                    .getMarkersInRange(marker.blockX(), marker.blockZ(), associationRadius, false, true, false);
+            PortalMarkersManager.PortalMarker nearest = null;
+            long nearestDistance = (long) associationRadius * associationRadius + 1L;
+            for (PortalMarkersManager.PortalMarker portal : portals) {
+                long dx = (long) portal.pos().getX() - marker.blockX();
+                long dz = (long) portal.pos().getZ() - marker.blockZ();
+                long distance = dx * dx + dz * dz;
+                if (distance < nearestDistance) {
+                    nearest = portal;
+                    nearestDistance = distance;
+                }
+            }
+            if (nearest != null) {
+                seedMapperOptions.setCompleted(worldKey, SeedMapperFeature.END_PORTAL, nearest.pos().getX(), nearest.pos().getZ(), completed);
+            }
+        } else if (marker.feature() == SeedMapperFeature.END_PORTAL) {
+            try {
+                long seed = resolveWorldMapSeed();
+                List<SeedMapperMarker> strongholds = SeedMapperLocatorService.get().queryStrongholdsBlocking(
+                        seed, Cubiomes.DIM_OVERWORLD(), SeedMapperCompat.getMcVersion(), getSeedMapperGeneratorFlags(),
+                        marker.blockX() - associationRadius, marker.blockX() + associationRadius,
+                        marker.blockZ() - associationRadius, marker.blockZ() + associationRadius,
+                        seedMapperOptions, worldKey);
+                SeedMapperMarker nearest = null;
+                long nearestDistance = (long) associationRadius * associationRadius + 1L;
+                for (SeedMapperMarker stronghold : strongholds) {
+                    long dx = (long) stronghold.blockX() - marker.blockX();
+                    long dz = (long) stronghold.blockZ() - marker.blockZ();
+                    long distance = dx * dx + dz * dz;
+                    if (distance < nearestDistance) {
+                        nearest = stronghold;
+                        nearestDistance = distance;
+                    }
+                }
+                if (nearest != null) {
+                    seedMapperOptions.setCompleted(worldKey, SeedMapperFeature.STRONGHOLD, nearest.blockX(), nearest.blockZ(), completed);
+                }
+            } catch (IllegalArgumentException ignored) {
+                // A structure seed is required to find the stronghold associated with a portal.
+            }
+        }
+    }
+
+    private boolean routeContains(int x, int z) {
+        String dimension = getViewedDimensionIdentifier().toString();
+        return pointRouteTargets.stream().anyMatch(target -> target.x() == x && target.z() == z && target.dimension().equals(dimension));
+    }
+
+    private boolean routeContains(Waypoint waypoint) {
+        return waypoint != null && routeContains(getWaypointXInViewedDimension(waypoint), getWaypointZInViewedDimension(waypoint));
+    }
+
+    private void drawPointRoutes(GuiGraphicsExtractor graphics) {
+        String viewedDimension = getViewedDimensionIdentifier().toString();
+        List<PointRouteTarget> visibleTargets = pointRouteTargets.stream().filter(target -> target.dimension().equals(viewedDimension)).toList();
+        if (visibleTargets.isEmpty()) return;
+        int startX;
+        int startZ;
+        boolean playerInRouteDimension = minecraft.level != null && minecraft.level.dimension().identifier().equals(getViewedDimensionIdentifier());
+        if (playerInRouteDimension) {
+            startX = Mth.floor(VoxelConstants.getPlayer().getX());
+            startZ = Mth.floor(VoxelConstants.getPlayer().getZ());
+        } else {
+            startX = Mth.floor(mapCenterX);
+            startZ = Mth.floor(mapCenterZ);
+        }
+        float width = Math.max(0.65F, 1.25F / Math.max(0.0000001F, mapToGui));
+        int color = 0xFFFF941F;
+        if (!playerInRouteDimension) {
+            startX = visibleTargets.getFirst().x();
+            startZ = visibleTargets.getFirst().z();
+        }
+        for (PointRouteTarget target : List.copyOf(visibleTargets)) {
+            if (target.feature() != null && target.worldKey() != null && seedMapperOptions.isCompleted(target.worldKey(), target.feature(), target.x(), target.z())) {
+                removePointRouteTarget(target);
+                continue;
+            }
+            if (playerInRouteDimension || target != visibleTargets.getFirst()) appendThickInterpolatedLine(startX, startZ, target.x(), target.z(), width, color);
+            startX = target.x();
+            startZ = target.z();
+        }
+        flushExploredQuads(graphics);
+    }
+
+    private void drawHighlightedWaypointLine(GuiGraphicsExtractor graphics) {
+        Waypoint highlighted = waypointManager.getHighlightedWaypoint();
+        if (highlighted == null || !isViewingCurrentDimension() || !isWaypointVisibleInViewedDimension(highlighted)) return;
+        int playerX = Mth.floor(VoxelConstants.getPlayer().getX());
+        int playerZ = Mth.floor(VoxelConstants.getPlayer().getZ());
+        int targetX = getWaypointXInViewedDimension(highlighted);
+        int targetZ = getWaypointZInViewedDimension(highlighted);
+        float width = Math.max(0.65F, 1.25F / Math.max(0.0000001F, mapToGui));
+        appendThickInterpolatedLine(playerX + 0.5F, playerZ + 0.5F, targetX + 0.5F, targetZ + 0.5F, width, 0xFFFF3030);
+        flushExploredQuads(graphics);
     }
 
     private Map<Long, Waypoint> buildSeedMapperWaypointLookup() {
@@ -5065,6 +5241,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
     @Override
     public void removed() {
+        pointRoutePlotting = false;
         persistentMap.suspendTerrainOverview();
         biomeViews.clear(); biomeDiskSource = null;
         trailTiles.clear();
@@ -5094,6 +5271,10 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     private void createPopup(int x, int y, int directX, int directY) {
         selectedSeedMapperMarker = null;
         selectedSeedMapperWorldKey = null;
+        if (selectedWaypoint != null) {
+            selectedSeedMapperMarker = findSeedMapperMarkerAt(getWaypointXInViewedDimension(selectedWaypoint), getWaypointZInViewedDimension(selectedWaypoint));
+            if (selectedSeedMapperMarker != null) selectedSeedMapperWorldKey = currentSeedMapperWorldKey();
+        }
         ArrayList<Popup.PopupEntry> entries = new ArrayList<>();
         if (selectedPlot != null) {
             entries.add(new Popup.PopupEntry("Delete Plot", 17, true, true));
@@ -5134,6 +5315,14 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         entry = new Popup.PopupEntry(I18n.get("minimap.waypoints.share"), 2, false, true);
         entries.add(entry);
         entries.add(new Popup.PopupEntry("Plot", 16, true, true));
+        if (selectedWaypoint != null) entries.add(new Popup.PopupEntry("Point to Point", 23, true, true));
+        if (selectedSeedMapperMarker != null && selectedSeedMapperWorldKey != null) {
+            boolean completed = seedMapperOptions.isCompleted(selectedSeedMapperWorldKey, selectedSeedMapperMarker.feature(), selectedSeedMapperMarker.blockX(), selectedSeedMapperMarker.blockZ());
+            entries.add(new Popup.PopupEntry(completed ? "Mark Incomplete" : "Mark Complete", 8, true, true));
+        }
+        if (routeContains(selectedWaypoint == null ? (int) cursorCoordX : getWaypointXInViewedDimension(selectedWaypoint), selectedWaypoint == null ? (int) cursorCoordZ : getWaypointZInViewedDimension(selectedWaypoint))) entries.add(new Popup.PopupEntry("Remove Point to Point", 24, true, true));
+        if (!pointRouteTargets.isEmpty()) entries.add(new Popup.PopupEntry("Clear All Point to Point Paths", 25, true, true));
+        if (pointRoutePlotting) entries.add(new Popup.PopupEntry("Stop Adding Points", 26, true, true));
         entry = new Popup.PopupEntry("Export Visible SeedMap", 6, true, seedMapperOptions.enabled);
         entries.add(entry);
         entry = new Popup.PopupEntry("Recenter Map", 12, true, true);
@@ -5166,6 +5355,10 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         addTransportMenuEntry(entries);
         entries.add(new Popup.PopupEntry(I18n.get("minimap.waypoints.share"), 2, true, true));
         entries.add(new Popup.PopupEntry(completed ? "Mark Incomplete" : "Mark Complete", 8, true, true));
+        entries.add(new Popup.PopupEntry("Point to Point", 23, true, true));
+        if (routeContains(selectedSeedMapperMarker.blockX(), selectedSeedMapperMarker.blockZ())) entries.add(new Popup.PopupEntry("Remove Point to Point", 24, true, true));
+        if (!pointRouteTargets.isEmpty()) entries.add(new Popup.PopupEntry("Clear All Point to Point Paths", 25, true, true));
+        if (pointRoutePlotting) entries.add(new Popup.PopupEntry("Stop Adding Points", 26, true, true));
         if (SeedMapperLootService.hasPredictableLoot(selectedSeedMapperMarker.feature())) {
             entries.add(new Popup.PopupEntry("Open Loot", 9, true, true));
         }
@@ -5211,6 +5404,19 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         this.addClicked = false;
         this.deleteClicked = false;
         switch (action) {
+            case 23 -> {
+                if (selectedSeedMapperMarker != null) addPointRouteTarget(selectedSeedMapperMarker.blockX(), terrainHighlightY(selectedSeedMapperMarker.blockX(), selectedSeedMapperMarker.blockZ()), selectedSeedMapperMarker.blockZ(), selectedSeedMapperMarker.feature(), selectedSeedMapperWorldKey);
+                else if (selectedWaypoint != null) addPointRouteTarget(getWaypointXInViewedDimension(selectedWaypoint), selectedWaypoint.getY(), getWaypointZInViewedDimension(selectedWaypoint), null, null);
+                pointRoutePlotting = !pointRouteTargets.isEmpty();
+            }
+            case 24 -> {
+                int targetX = selectedSeedMapperMarker != null ? selectedSeedMapperMarker.blockX() : selectedWaypoint != null ? getWaypointXInViewedDimension(selectedWaypoint) : x;
+                int targetZ = selectedSeedMapperMarker != null ? selectedSeedMapperMarker.blockZ() : selectedWaypoint != null ? getWaypointZInViewedDimension(selectedWaypoint) : z;
+                String dimension = getViewedDimensionIdentifier().toString();
+                pointRouteTargets.stream().filter(target -> target.x() == targetX && target.z() == targetZ && target.dimension().equals(dimension)).toList().forEach(this::removePointRouteTarget);
+            }
+            case 25 -> { clearPointRouteTargets(); pointRoutePlotting = false; }
+            case 26 -> pointRoutePlotting = false;
             case 16 -> {
                 plotMode = true;
                 plotStartSet = false;
@@ -5708,6 +5914,14 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     private void deleteSelectedWaypoint() {
         Waypoint toDelete = this.selectedWaypoint != null ? this.selectedWaypoint : this.pendingDeleteWaypoint;
         if (toDelete == null) {
+            return;
+        }
+
+        PointRouteTarget routeTarget = pointRouteTargets.stream().filter(target -> target.waypoint() == toDelete).findFirst().orElse(null);
+        if (routeTarget != null) {
+            removePointRouteTarget(routeTarget);
+            this.selectedWaypoint = null;
+            this.pendingDeleteWaypoint = null;
             return;
         }
 

@@ -636,7 +636,6 @@ public class Map implements Runnable, IChangeObserver, IReloadListener {
             drawCompassText(graphics, coords, centerX, barY - 12, 0xFFFFFFFF, true);
         }
 
-        int rendered = 0;
         double playerX = minecraft.player.getX();
         double playerY = minecraft.player.getY();
         double playerZ = minecraft.player.getZ();
@@ -671,7 +670,12 @@ public class Map implements Runnable, IChangeObserver, IReloadListener {
         });
 
         int maxRendered = Mth.clamp(options.waypointCompassMaxWaypoints, 1, 64);
-        for (CompassWaypoint compassWaypoint : compassWaypoints) {
+        int visibleCount = Math.min(maxRendered, compassWaypoints.size());
+        ArrayList<CompassWaypoint> drawOrder = new ArrayList<>(compassWaypoints.subList(0, visibleCount));
+        if (options.waypointCompassNearOnTop) {
+            drawOrder.sort((first, second) -> Integer.compare(second.distance(), first.distance()));
+        }
+        for (CompassWaypoint compassWaypoint : drawOrder) {
             Waypoint waypoint = compassWaypoint.waypoint();
             int x = centerX - Math.round(compassWaypoint.deltaYaw() / 90.0F * (barWidth / 2.0F));
             String label = waypoint.name;
@@ -683,9 +687,6 @@ public class Map implements Runnable, IChangeObserver, IReloadListener {
             drawCompassText(graphics, label, textX, barY + 22, color, true);
             drawCompassText(graphics, distanceLabel, textX, barY + 32, color, true);
 
-            if (++rendered >= maxRendered) {
-                break;
-            }
         }
     }
 

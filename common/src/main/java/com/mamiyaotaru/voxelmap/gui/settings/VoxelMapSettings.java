@@ -393,6 +393,8 @@ public final class VoxelMapSettings {
                         compassSlider("compass.max", "options.minimap.waypoints.compassMaxWaypoints", map,
                                 () -> (double) map.waypointCompassMaxWaypoints, value -> map.waypointCompassMaxWaypoints = value.intValue(), 1, 64, 1,
                                 value -> Component.literal(String.valueOf(value.intValue()))),
+                        compassToggle("compass.nearOnTop", "options.minimap.waypoints.compassNearOnTop", map,
+                                () -> map.waypointCompassNearOnTop, value -> map.waypointCompassNearOnTop = value),
                         compassSlider("compass.x", "options.minimap.waypoints.compassX", map,
                                 () -> (double) map.waypointCompassX, value -> map.waypointCompassX = value.intValue(), 0, 100, 1,
                                 value -> Component.literal(value.intValue() + "%")),

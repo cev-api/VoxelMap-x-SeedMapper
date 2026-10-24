@@ -91,6 +91,14 @@ public final class SeedMapperLocatorService {
         return queryBlocking(key);
     }
 
+    public List<SeedMapperMarker> queryStrongholdsBlocking(long seed, int dimension, int mcVersion, int generatorFlags, int minX, int maxX, int minZ, int maxZ, SeedMapperSettingsManager settings, String datapackWorldKey) {
+        QueryKey base = buildQueryKey(seed, dimension, mcVersion, generatorFlags, minX, maxX, minZ, maxZ, settings, datapackWorldKey);
+        long strongholdMask = 1L << SeedMapperFeature.STRONGHOLD.ordinal();
+        QueryKey key = new QueryKey(base.seed(), base.dimension(), base.mcVersion(), base.generatorFlags(), base.minX(), base.maxX(), base.minZ(), base.maxZ(),
+                false, strongholdMask, base.datapackMarkerHash(), base.customStructureSaltHash(), base.settings(), base.datapackWorldKey());
+        return queryBlocking(key);
+    }
+
     public List<SeedMapperMarker> queryLootableBlocking(long seed, int dimension, int mcVersion, int generatorFlags, int minX, int maxX, int minZ, int maxZ, SeedMapperSettingsManager settings) {
         QueryKey key = buildQueryKey(seed, dimension, mcVersion, generatorFlags, minX, maxX, minZ, maxZ, settings, null, true);
         return queryBlocking(key);
