@@ -181,6 +181,7 @@ Common commands:
 - Supports deeper SeedMap zoom in and out, with Shift for faster steps.
 - Supports touchpad/trackpad pinch zoom on the SeedMap and fullscreen map.
 - Provides marker context actions for completion toggles, loot actions, and waypoint interactions.
+- Provides a show/hide waypoints button and draws a line to the highlighted waypoint; SeedMapper markers remain visible when their linked waypoint layer is hidden.
 - Provides configurable transport shortcuts for teleport, flight, pathing, and other client/server commands.
 - Provides transport shortcut controls for excluding Y coordinates and showing all shortcuts in the main menu.
 - Transport shortcut names, commands, visibility, and client-command flags persist across launches.
@@ -196,12 +197,18 @@ Common commands:
 - Handles world-map input for right-click actions, coordinate editing, autocomplete, and resizing without losing screen values.
 - Supports player and dimension-aware world-map state, including custom-server dimensions and aliases.
 
+#### Point to Point Routes
+- Right-click a waypoint or SeedMapper structure on the world map and select **Point to Point** to start a route, then left-click additional waypoints or structure markers to add them in order.
+- Shows numbered temporary waypoints and orange straight lines from the player through each destination on the world map and in the game world. Routes are displayed separately for each dimension.
+- Right-click to stop adding points, remove a point, or clear all routes. Closing the map also stops adding points; completing a SeedMapper structure removes it from the route.
+- Route waypoints are temporary and are not saved as permanent waypoints. Lines show direct connections and do not pathfind around terrain.
+
 #### Detail, Visibility, and Performance
 
 Fullscreen map detail, visibility, rendering, and zoom controls are in the sidebar options screen under **World Map**.
 
 - **Detail** provides **Full Detail** and **Balanced** presets, independent chunk-trail and new/old-chunk resolutions, explored-terrain resolution, and automatic layer hiding controls. Full Detail keeps all layers visible, uses exact chunk overlays, and selects all explored-terrain pixels.
-- **Visibility by Zoom** provides separate sliders for terrain, chunk trails, trail nodes, new/old chunks, waypoints, waypoint names, entities, and SeedMap biomes. Each slider ends with **Always**.
+- **Visibility by Zoom** provides separate sliders for terrain, new/old chunks, waypoints, waypoint names, entities, and SeedMap biomes. Chunk trail and trail node visibility controls are under **Minimap → Overlay**. Each slider ends with **Always**.
 - **Rendering** offers **Automatic**, **Cached image**, and **Geometry** overlay modes, image scaling, smoothing, and optional marker reduction while moving or at high counts.
 - **Zoom & Storage** controls the zoom limits, scroll steps per doubling, zoom snapping, and **Retained Zoom View Cache**. Completed views are reused for repeat zooming within a configurable memory budget; older views can be evicted.
 - **Display → Show Loading Bars** enables or disables the individual loading bars at the bottom left.
@@ -223,6 +230,7 @@ Full Detail applies to explored terrain and overlays. SeedMap's preview resoluti
 
 ### Minimap and Chunk Overlay Improvements
 - Renders SeedMapper markers on the minimap.
+- Provides an optional **SeedMap Overlay** under **Minimap → Overlay**, showing seed-predicted biomes and terrain where minimap chunks have not been rendered. It uses the SeedMap style and zoom settings.
 - Renders Newer New Chunks overlays on the minimap and world map (see New Chunks System above).
 - Provides chunk grid and slime chunk options.
 - Provides solid chunk-line rendering and thickness controls.
@@ -236,7 +244,9 @@ Full Detail applies to explored terrain and overlays. SeedMap's preview resoluti
 - Records portals automatically and detects them across supported dimensions.
 - Imports waypoints from Xaero's Minimap and Wurst.
 - Supports multi-select waypoint handling and optional delete confirmation.
-- Provides expanded waypoint compass and label placement options.
+- Provides expanded waypoint compass and label placement options, including drawing nearer compass waypoints on top.
+- Sorts waypoint distances horizontally and filters the waypoint list by the dimension currently viewed on the world map.
+- Links nearby stronghold and End portal completion markers and can clear associated completion when deleting a waypoint from the world map.
 - Provides dimension filtering and copy-to-clipboard in share flows.
 - Provides a waypoint icon picker that preserves the selected icon across the current settings flow.
 
