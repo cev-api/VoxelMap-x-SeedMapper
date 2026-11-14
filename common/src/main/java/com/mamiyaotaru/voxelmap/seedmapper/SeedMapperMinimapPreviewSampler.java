@@ -137,7 +137,7 @@ public final class SeedMapperMinimapPreviewSampler {
         return (64 + (hash & 0x5F)) << 16 | (64 + (hash >> 8 & 0x5F)) << 8 | (64 + (hash >> 16 & 0x5F));
     }
 
-    private static int[] sampleHeights(Key key) {
+    static int[] sampleHeights(Key key) {
         var layout = SeedPreviewTerrainSampling.layout(key.minX(), key.maxX(), key.minZ(), key.maxZ());
         int rowWidth = layout.width() + 1;
         int[] coarse = new int[rowWidth * (layout.height() + 1)];
@@ -145,10 +145,29 @@ public final class SeedMapperMinimapPreviewSampler {
             MemorySegment params = TerrainNoise.allocate(arena);
             Cubiomes.setupTerrainNoise(params, key.mcVersion(), key.generatorFlags());
             Cubiomes.initTerrainNoise(params, key.seed(), key.dimension());
+            MemorySegment chunkBuffer = arena.allocate(Cubiomes.C_INT, 256);
+            Map<Long, int[]> chunks = new HashMap<>();
             for (int z = 0; z <= layout.height(); z++) {
                 for (int x = 0; x <= layout.width(); x++) {
-                    coarse[z * rowWidth + x] = Cubiomes.samplePreliminarySurfaceLevel(
-                            params, layout.minX() + x * layout.step(), layout.minZ() + z * layout.step());
+                    int blockX = layout.minX() + x * layout.step();
+                    int blockZ = layout.minZ() + z * layout.step();
+                    int height;
+                    if (key.dimension() == Cubiomes.DIM_OVERWORLD()) {
+                        height = Cubiomes.samplePreliminarySurfaceLevel(params, blockX, blockZ);
+                    } else {
+                        int chunkX = Math.floorDiv(blockX, 16), chunkZ = Math.floorDiv(blockZ, 16);
+                        long chunkKey = ((long) chunkX << 32) | (chunkZ & 0xffffffffL);
+                        int[] chunk = chunks.get(chunkKey);
+                        if (chunk == null) {
+                            Cubiomes.generateRegion(params, chunkX, chunkZ, 1, 1, MemorySegment.NULL, 0,
+                                    key.dimension() == Cubiomes.DIM_END() ? 32 : 16, chunkBuffer, 1);
+                            chunk = new int[256];
+                            for (int i = 0; i < chunk.length; i++) chunk[i] = chunkBuffer.getAtIndex(Cubiomes.C_INT, i);
+                            chunks.put(chunkKey, chunk);
+                        }
+                        height = chunk[Math.floorMod(blockX, 16) * 16 + Math.floorMod(blockZ, 16)];
+                    }
+                    coarse[z * rowWidth + x] = height;
                 }
             }
         }

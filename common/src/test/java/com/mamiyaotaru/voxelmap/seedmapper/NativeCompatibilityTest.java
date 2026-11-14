@@ -4,6 +4,7 @@ import com.github.cubiomes.Cubiomes;
 import com.github.cubiomes.Generator;
 import com.github.cubiomes.StructureConfig;
 import com.github.cubiomes.TerrainNoise;
+import com.mamiyaotaru.voxelmap.persistent.PersistentMapSettingsManager;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.util.Map;
@@ -11,6 +12,33 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 class NativeCompatibilityTest {
+    @Test
+    void minimapTerrainSamplingSupportsEveryDimension() {
+        for (int dimension : new int[]{Cubiomes.DIM_OVERWORLD(), Cubiomes.DIM_NETHER(), Cubiomes.DIM_END()}) {
+            var key = new SeedMapperMinimapPreviewSampler.Key(12345L, dimension, Cubiomes.MC_26_3(), 0,
+                    -32, 32, -32, 32, 64, PersistentMapSettingsManager.SeedMapStyle.HEIGHT, 0.5F, true);
+            int[] heights = SeedMapperMinimapPreviewSampler.sampleHeights(key);
+            assertEquals(SeedMapperMinimapPreviewSampler.SIZE * SeedMapperMinimapPreviewSampler.SIZE, heights.length);
+            for (int height : heights) {
+                assertTrue(height >= -64 && height <= 320, "dimension=" + dimension + ", height=" + height);
+            }
+        }
+    }
+
+    @Test
+    void minimapTerrainSurvivesPortalTransitionsAtCrashLocation() {
+        for (int dimension : new int[]{Cubiomes.DIM_OVERWORLD(), Cubiomes.DIM_NETHER(),
+                Cubiomes.DIM_OVERWORLD(), Cubiomes.DIM_NETHER()}) {
+            var key = new SeedMapperMinimapPreviewSampler.Key(1054341629L, dimension, Cubiomes.MC_26_3(), 0,
+                    -128, 0, -384, -256, 64, PersistentMapSettingsManager.SeedMapStyle.HEIGHT, 0.5F, true);
+            int[] heights = SeedMapperMinimapPreviewSampler.sampleHeights(key);
+            assertEquals(SeedMapperMinimapPreviewSampler.SIZE * SeedMapperMinimapPreviewSampler.SIZE, heights.length);
+            for (int height : heights) {
+                assertTrue(height >= -64 && height <= 320, "dimension=" + dimension + ", height=" + height);
+            }
+        }
+    }
+
     @Test
     void bundledLibrarySupports263AndKeepsOlderBiomePredictions() {
         try (Arena arena = Arena.ofConfined()) {
